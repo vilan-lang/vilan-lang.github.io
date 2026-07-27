@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: "Inter"; font-weight: 100 900; src: url(https://vilan-lang.org/assets/fonts/inter-latin.woff2) format("woff2"); }
+* { margin: 0; box-sizing: border-box; }
+html, body { width: 1000px; height: 680px; background: #120004; overflow: hidden; }
+body { font-family: Inter, sans-serif; color: #F9DFE7; position: relative; }
+
+.blob { position: absolute; border-radius: 50%; filter: blur(90px); }
+.b1 { width: 620px; height: 420px; left: 190px; top: -140px; background: radial-gradient(closest-side, #B23056, transparent); opacity: 0.55; }
+.b2 { width: 480px; height: 360px; right: -140px; bottom: -140px; background: radial-gradient(closest-side, #EB682E, transparent); opacity: 0.35; }
+.b3 { width: 420px; height: 340px; left: -150px; bottom: -120px; background: radial-gradient(closest-side, #672283, transparent); opacity: 0.45; }
+.grain { position: absolute; inset: 0; opacity: 0.5; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E"); }
+
+.window { position: absolute; left: 90px; top: 64px; width: 820px; background: #180509;
+  border: 1px solid rgba(249, 223, 231, 0.14); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6); }
+.titlebar { display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+  background: rgba(249, 223, 231, 0.04); border-bottom: 1px solid rgba(249, 223, 231, 0.08); }
+.dot { width: 11px; height: 11px; border-radius: 50%; opacity: 0.85; }
+.title { margin: 0 auto; font: 12px Inter; opacity: 0.55; }
+.editor { display: flex; padding: 18px 0 22px; font: 13px/1.85 Consolas, monospace; }
+.gutter { white-space: pre; width: 56px; text-align: right; padding-right: 16px; opacity: 0.28; user-select: none; }
+.code { white-space: pre; color: rgba(249, 223, 231, 0.92); }
+.k { color: #EB682E; } .s { color: #E5AFD9; } .d { opacity: 0.5; }
+.err { text-decoration: underline wavy #D84730 1.5px; text-underline-offset: 5px; }
+
+.hover { position: absolute; left: 330px; top: 404px; width: 430px; background: #22080f;
+  border: 1px solid rgba(249, 223, 231, 0.18); border-radius: 10px; padding: 12px 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55); }
+.hover .msg { font: 12.5px/1.6 Inter; }
+.hover .msg b { color: #D84730; font-weight: 600; }
+.hover .from { margin-top: 8px; font: 11px Inter; opacity: 0.45; }
+.statusbar { display: flex; gap: 18px; padding: 8px 16px; font: 11px Inter;
+  border-top: 1px solid rgba(249, 223, 231, 0.08); opacity: 0.55; }
+.statusbar .right { margin-left: auto; }
+.problem { color: #D84730; }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="grain"></div>
+
+  <div class="window">
+    <div class="titlebar">
+      <div class="dot" style="background:#D84730"></div>
+      <div class="dot" style="background:#EB682E"></div>
+      <div class="dot" style="background:#8B2786"></div>
+      <div class="title">app.vl — vilan</div>
+    </div>
+    <div class="editor">
+      <div class="gutter">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11</div>
+      <div class="code"><span class="k">import</span> std::print;
+<span class="k">import</span> std::option::Option::{ self, Some, None };
+<span class="k">fun</span> find_user(id: i32): Option&lt;str&gt; {
+    <span class="k">if</span> id == 1 { Some(<span class="s">"Ada"</span>) } <span class="k">else</span> { None }
+}
+<span class="k">fun</span> greet(name: str): str {
+    <span class="s">i"hello {name}"</span>
+}
+<span class="k">fun</span> main() {
+    print(greet(<span class="err">find_user(2)</span>));
+}</div>
+    </div>
+    <div class="statusbar">
+      <span class="problem">⊗ 1</span><span>vilan-lsp</span><span class="right">Ln 10, Col 17 · app.vl</span>
+    </div>
+  </div>
+
+  <div class="hover">
+    <div class="msg"><b>Expected str, but got Option&lt;str&gt; instead.</b></div>
+    <div class="msg" style="margin-top:6px; opacity:0.8">greet takes a <span style="font-family:Consolas,monospace">str</span> — match the <span style="font-family:Consolas,monospace">Option</span> first.</div>
+    <div class="from">vilan · live as you type</div>
+  </div>
+</body>
+</html>
