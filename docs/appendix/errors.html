@@ -1,0 +1,628 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Error index - The vilan documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-f3347d90.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The vilan documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="error-index"><a class="header" href="#error-index">Error index</a></h1>
+<p>You saw an error; this page says what it means and where to go. Messages
+are quoted the way the compiler prints them, with <code>…</code> standing in for the
+parts that vary. Find yours with a page search.</p>
+<p>(Organized companion: the <a href="gotchas.html">gotchas checklist</a> covers traps by
+topic rather than by message.)</p>
+<h2 id="names-and-imports"><a class="header" href="#names-and-imports">Names and imports</a></h2>
+<p><strong>“cannot find ‘…’ in this scope”</strong> · <strong>“cannot find type ‘…’”</strong>
+The name isn’t visible here. Usually a missing <code>import</code> — remember that
+everything, even <code>print</code>, is imported explicitly. If you did import it,
+check for a typo or a shadowing local.
+→ <a href="../tour/hello-vilan.html">Hello vilan</a>, <a href="../spec/names.html">spec §4</a></p>
+<p><strong>“<code>std</code> is a namespace, not a value — import the module first …”</strong>
+You wrote a qualified path like <code>std::math::min(1, 2)</code> inline. That
+spelling isn’t supported. Import the module, then qualify through its
+name: <code>import std::math;</code> and <code>math::min(1, 2)</code>.
+→ <a href="../tour/hello-vilan.html">Hello vilan</a></p>
+<p><strong>“<code>…</code> requires the <code>…</code> layer of <code>std</code> and cannot run on <code>…</code>”</strong>
+Code reachable from this build’s entry calls into a module the platform
+doesn’t have — <code>std::fs</code> from a browser build, <code>std::dom</code> from a node
+build. The error lists the call chain from <code>main</code> to the crossing.
+Importing the module is not the problem (imports are free); reaching it
+is. Move the call behind the right entry, or check the package’s
+<code>target</code>.
+→ <a href="../tour/platforms.html">Platforms</a></p>
+<p><strong>“<code>…</code> requires … and cannot run on <code>…</code> / reachable from <code>…</code>, fenced <code>[platform(…)]</code>”</strong>
+A function declared a platform fence and something it (transitively)
+reaches requires a layer one of the fenced platforms doesn’t serve. The
+chain shows the path from the fence. Fences check on every compile —
+narrowing the fence, or moving the colored call out from behind it, are
+the two fixes.
+→ <a href="../tour/platforms.html">Platforms</a></p>
+<p><strong>“cannot find module ‘…’ to import”</strong>
+The path names a module file that doesn’t exist. <code>pkg::routes</code> means
+“<code>routes.vl</code> in this package’s source root” — check the file name and
+the package you’re in.
+→ <a href="../tour/hello-vilan.html">Hello vilan</a></p>
+<p><strong>“module ‘…’ resolved to ‘…’ on disk, but it is imported as ‘…’”</strong>
+Your filesystem ignores case (NTFS, and macOS by default) and answered
+the import with a differently-cased file. Module names match byte for
+byte (§4.2), so this would fail to build on a case-sensitive filesystem
+— rename the file or the import so the two agree.
+→ <a href="../spec/names.html">Names, modules, and packages</a></p>
+<h2 id="types-and-generics"><a class="header" href="#types-and-generics">Types and generics</a></h2>
+<p><strong>“Expected …, but got … instead.”</strong>
+The general type mismatch. One special case surprises people: an <code>i53</code>
+mixed with a bare integer literal — the literal is <code>i32</code>, and there are
+no implicit conversions. Suffix it (<code>stamp + 1000i53</code>).
+→ <a href="../tour/values-and-types.html">Values and types</a></p>
+<p><strong>“generic parameter ‘…’ is missing the bound ‘: …’ required by this call”</strong>
+You called something that needs a capability (say <code>PartialEq</code>) with a
+generic parameter that doesn’t declare it. Add the bound to <em>your</em>
+signature: <code>fun caller&lt;U: PartialEq&gt;(…)</code>.
+→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“cannot call method ‘…’ on …”</strong>
+The value’s type doesn’t have that method. If the type is a generic
+parameter, you probably need a bound. If it says something like
+<code>|i32| i32</code>, you’re calling a method on a closure — often a sign a
+different value was passed than you think.
+→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“‘…’ does not implement trait ‘…’: missing ‘…’”</strong>
+An <code>impl … with Trait</code> doesn’t provide every required method, or a bound
+demands a trait the type never implemented.
+→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“… match the receiver convention”</strong> · <strong>“… match the parameter convention”</strong> · <strong>“… match the declared type”</strong> · <strong>“… match the declared return type”</strong> · <strong>“… match the declared parameter list”</strong> · <strong>“… match the trait’s type-parameter list”</strong>
+A method an <code>impl … with Trait</code> provides must match the trait’s
+declaration, not just its name: the receiver convention (<code>self</code> / <code>&amp;self</code>
+/ <code>&amp;mut self</code> / <code>own self</code>), the parameter count and each parameter’s
+convention and type, the return type, and — for a generic method — the
+type-parameter count. Types are compared with <code>Self</code> read as the impl’s
+subject and the trait’s generic parameters read as the <code>with</code>-clause
+arguments (<code>impl Meters with From&lt;Feet&gt;</code> expects <code>fun from(value: Feet): Meters</code>). Asyncness is not required to match — an async impl of a
+synchronous trait method is allowed (dispatch is monomorphized, so callers
+await it regardless).
+→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“match is not exhaustive: missing …”</strong> · <strong>“match is not exhaustive: add a catch-all <code>_</code> leg”</strong>
+Some variants have no arm. Handle them or add <code>_ =&gt; …</code>. This error is
+the feature: it’s what fires everywhere when you add a variant.
+→ <a href="../tour/control-flow.html">Control flow</a></p>
+<p><strong>“struct ‘…’ has no field ‘…’”</strong> · <strong>“variant ‘…’ does not belong to the matched enum”</strong>
+A field or variant name is off. For the variant case inside <code>match</code>,
+remember patterns bind with <code>let</code> — a bare misspelled variant is an
+error here, never a silent catch-all.
+→ <a href="../tour/control-flow.html">Control flow</a></p>
+<p><strong>“<code>…</code> compares two values of the same type, but the operands are <code>…</code> and <code>…</code>”</strong>
+Comparisons follow the trait model (<code>==</code> is <code>PartialEq</code>, <code>&lt;</code> is
+<code>PartialOrd</code>): the right operand must be the left’s type, and there are
+no implicit conversions. An unsuffixed literal adapts to its peer
+(<code>stamp &lt; 3</code> is fine for an <code>i53</code> stamp); two differently-typed
+<em>variables</em> need a suffix or an <code>as_*</code> conversion. Related:
+<strong>“<code>bool</code> has no ordering”</strong> (compare with <code>==</code>/<code>!=</code>) and
+<strong>“<code>&amp;&amp;</code> takes <code>bool</code> operands”</strong> (vilan has no truthiness).
+→ <a href="../tour/values-and-types.html">Values and types</a></p>
+<p><strong>“type ‘…’ does not implement the <code>…</code> operator; add <code>impl … with …</code> providing <code>…</code>”</strong>
+An operator was used on a type without the matching trait impl — <code>+</code>
+needs <code>Add</code>, <code>==</code> needs <code>PartialEq</code>, <code>&lt;</code>/<code>&lt;=</code>/<code>&gt;</code>/<code>&gt;=</code> need
+<code>PartialOrd</code> (implement <code>partial_compare</code> once; the operators dispatch
+through it, and <code>lt</code>/<code>le</code>/<code>gt</code>/<code>ge</code> come free as defaults).
+→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“the literal <code>…</code> is out of range for <code>…</code> (…)”</strong>
+The number doesn’t fit the type. For <code>i53</code>/<code>u53</code> the range is ±2^53 —
+JavaScript’s exact-integer window. Bigger integers take <code>BigInt</code> (<code>7n</code>).
+→ <a href="../tour/values-and-types.html">Values and types</a></p>
+<p><strong>“unknown numeric suffix <code>…</code>”</strong>
+The letters after the number aren’t a type. If it says <code>i64</code> or <code>u64</code>:
+those were renamed to <code>i53</code>/<code>u53</code>.
+→ <a href="../tour/values-and-types.html">Values and types</a></p>
+<p><strong>“type of … could not be resolved”</strong>
+Inference gave up somewhere upstream — this error is usually the <em>echo</em>
+of another one, so fix the first error in the list. When it appears
+alone, an annotation at the binding usually grounds it.
+→ <a href="gotchas.html">gotchas</a></p>
+<h2 id="memory-and-mutation"><a class="header" href="#memory-and-mutation">Memory and mutation</a></h2>
+<p><strong>“cannot mutate immutable ‘…’”</strong>
+The binding was declared with <code>let</code>. Declare it <code>mut</code> — or, if you’re
+inside a method, take <code>&amp;mut self</code>.
+→ <a href="../tour/memory-model.html">The memory model</a></p>
+<p><strong>“a view cannot escape its scope: it may not be returned, stored in a field, placed in a collection, or carried in an enum payload. …”</strong>
+Views (<code>&amp;x</code>, <code>&amp;mut x</code>) are short-lived by design: lend, use, done. To
+keep a reference around, store a plain value, a <code>Handle</code> into an
+<code>Arena</code>, or a <code>Shared</code> cell.
+→ <a href="../tour/memory-model.html">The memory model</a></p>
+<p><strong>“cannot reassign ‘…’ while a view into it is live (rule 4 …)”</strong>
+Replacing the whole value would detach the view from live storage. Finish
+using the view first (its life ends with its block), or re-derive it after
+the replacement. Views anchor wherever they come from — <code>&amp;x</code>, a
+view-returning call (<code>list.at(0)</code>, <code>arena.get(h)</code>), or a <code>Some(let v)</code>
+capture of one — so the rule is the same for all three.
+→ <a href="../tour/memory-model.html">The memory model</a></p>
+<p><strong>“cannot mutate ‘…’ with ‘….(..)’ while a view into it is live (rule 4 …)”</strong>
+The call may advance the container’s <em>geometry</em> (grow, shrink, reallocate,
+swap an aggregate field) while a view points into it. Only
+geometry-advancing callees trigger this — a method that just writes fields
+or elements through <code>&amp;mut self</code> passes freely (the compiler infers which is
+which). Do the mutation before taking the view, or after its block ends.
+→ <a href="../tour/memory-model.html">The memory model</a></p>
+<p><strong>“cannot hold a view across ‘await’: ‘…’ is still live here. …”</strong>
+Your function suspends while a view is live, and whatever it points into
+could change during the pause. Re-derive the view after the await
+(<code>rows[i].field</code> again) instead of keeping it.
+→ <a href="../tour/memory-model.html">The memory model</a>, <a href="../tour/async.html">Async</a></p>
+<p><strong>“view binding ‘…’ cannot be <code>mut</code>: a view cannot be rebound. …”</strong>
+<code>mut v = &amp;mut x</code> doesn’t mean what it would in Rust. Declare the view
+with <code>let</code>; assigning through it (<code>v = …</code>) already writes the target.
+→ <a href="../tour/memory-model.html">The memory model</a></p>
+<h2 id="resources"><a class="header" href="#resources">Resources</a></h2>
+<p>A <code>resource</code> type has a single owner and moves rather than copies; a
+struct, enum, or tuple holding one is a resource too, inferred by
+containment (<code>Option&lt;Database&gt;</code> is a resource, <code>Option&lt;i32&gt;</code> is not). A
+resource <em>moves</em> on binding (<code>let b = a</code>), on <code>own</code>-passing, on return, and
+into a constructor; it is <em>loaned</em> — no ownership change — through <code>self</code>,
+<code>&amp;</code>, and <code>&amp;mut</code>. The <code>Drop</code> destructor trait and its restrictions are below.
+At each scope end the compiler runs the destructor on the still-owned resource
+locals, in reverse declaration order — through <code>try</code>/<code>finally</code>, so <code>ret</code>,
+<code>jump</code>, and a thrown panic all run it on the way out; a resource without a
+<code>Drop</code> impl still has its fields destroyed. A module-level resource lives for
+the process and never drops. A drop that panics while a panic is already
+unwinding replaces the in-flight error (JS <code>finally</code> semantics). The tutorial
+is <a href="../tour/resources.html">Resources</a>; the normative rules are spec
+<a href="../spec/memory.html">§6.8</a>.</p>
+<p><strong>“use of <code>…</code> after it was moved — a resource has a single owner”</strong>
+The binding was moved (bound to another name, passed to an <code>own</code>
+parameter, returned, or matched by value) and then used again. The note
+points at the move. Loan it instead (<code>&amp;x</code> / <code>&amp;mut x</code>, or a method call),
+or, if you really need two owners, restructure with <code>Option</code> + <code>take</code>.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“cannot move a resource field out of a live aggregate — … no partial moves …”</strong>
+<code>let x = s.db</code>, or passing / returning <code>s.db</code> by value, would move a
+resource out of a struct that is still alive — v1 has no partial moves.
+Loan the field (<code>&amp;s.db</code>, <code>&amp;mut s.db</code>, <code>s.db.method(…)</code>), or make the field
+an <code>Option&lt;…&gt;</code> and <code>take()</code> it out.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>…</code> is moved on one path through this branch but not another — …”</strong>
+An <code>if</code>/<code>match</code> moves the binding on some paths and not others, so its
+end-of-scope ownership isn’t static (v1 has no runtime drop flags). Move it
+on <em>every</em> path, or on none — or hold it in an <code>Option</code> and <code>take()</code> on the
+path that consumes it. A diverging leg (one that <code>ret</code>s or <code>jump</code>s out) is
+exempt: it never reaches the merge.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>…</code> is declared outside this loop and moved inside it — …”</strong>
+Moving a binding from a loop body would move it again on the next
+iteration. Move a value declared <em>inside</em> the loop, or loan the outer one
+(<code>&amp;x</code> / <code>&amp;mut x</code>).
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>…</code> is a module-level resource — it has process lifetime and cannot be moved …”</strong>
+A top-level <code>let</code> resource lives for the whole process and never drops (the
+serve-forever server’s <code>Database</code>). Consuming it — moving it into a local,
+passing it to an <code>own</code> parameter, or <code>drop(x)</code> — would hand a
+process-lifetime resource to a droppable owner and close the shared handle
+out from under the rest of the program. Reach it by loan only: method calls,
+<code>&amp;x</code>, <code>&amp;mut x</code>. To own a database that closes at a scope’s end, open it in a
+local instead.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“a closure cannot capture the resource <code>…</code> — …”</strong>
+A closure or <code>async</code>/spawn body referenced a <em>local</em> or <em>parameter</em> resource
+from an enclosing scope; capturing it would give the closure a second owner.
+Pass a loan into the call, give ownership to the struct that owns the
+closure’s lifetime, or hoist the resource to <strong>module level</strong> — a module
+global is loan-only and process-lifetime, so a closure may reference it
+without becoming an owner. (A closure’s own <em>parameter</em> is per-call, not a
+capture — injected <code>context</code>-clause bodies are unaffected.)
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>…</code> is not move-clean when instantiated with a resource — …”</strong>
+A generic function or method was called with a resource type argument
+(<code>Option&lt;Database&gt;</code>, <code>wrap(db)</code>), and its body — checked with that type
+parameter treated as a resource — breaks the affine rules in one of three
+ways. It uses a value of the parameter’s type <strong>more than once</strong> (moves it
+on some paths but not all, or captures it in a closure) — a resource has a
+single owner; or an <strong><code>own</code> parameter of resource type is never moved out</strong>
+— because the generic body is shared across every instantiation, it cannot
+run a destructor, so an <code>own T</code> must be moved out on <em>every</em> path (returned,
+or handed to another owner), or the function must take a concrete type; or
+it <strong>passes such a value to <code>drop&lt;T&gt;</code></strong> — that erased body has no concrete
+destructor either, so the resource would leak (<code>drop(x)</code> on data is a fine
+no-op, which is why the data instantiation stays accepted — destroy at a
+concrete type, or move the value out to the caller). The error is spanned at
+the <strong>call</strong> (the instantiation), with a note into the generic’s body. A
+clean generic moves each such value exactly once (as <code>Option::unwrap(self): T</code> does), never copying, capturing, or forwarding it to the sink;
+<code>drop(concrete)</code> on a concrete resource <em>is</em> the destructor. Instantiating
+the same generic at a data type is unaffected.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“the resource <code>…</code> cannot be used where <code>any</code> is expected — …”</strong>
+<code>any</code> is a data sink, and a resource must keep its single owner: passing
+one to <code>print</code>, binding it to <code>let x: any</code>, or returning it as <code>any</code>
+would launder the discipline away. Debug-print the resource’s fields
+instead.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>…</code> cannot hold the resource <code>…</code> — a native container’s internals are host code …”</strong>
+<code>List</code>, <code>Map</code>, <code>Set</code>, and the external generics (<code>Shared</code>, <code>Task</code>,
+<code>Promise</code>, <code>Context</code>) can’t hold a resource in v1 — the move checker
+can’t see inside host storage. <code>Option</code> is the sanctioned resource
+container; or keep the resource in a struct field.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> / <code>[derive(Hashable)]</code> / <code>[derive(PartialEq)]</code> type <code>…</code> is the resource <code>…</code> — …”</strong>
+A resource is not plain data: it cannot be sent over the wire, hashed by
+value, or compared by copy. Drop it from the derived type, or carry a
+plain-data handle (an id, a key) in its place.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>…</code> implements <code>Drop</code> but is not a resource — … declare it a <code>resource</code> …”</strong>
+<code>Drop</code> — the destruction hook — may be implemented only for a <code>resource</code>
+type. A destructor without move discipline is exactly the double-close bug:
+copy the value and each copy would run <code>drop</code>. Declare the type <code>resource</code>
+so it moves instead of being copied. (Plain-data, framework-driven teardown
+uses the cooperative <code>Disposable</code> protocol, not <code>Drop</code>.)
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>drop</code> for <code>…</code> is async — teardown must be synchronous …”</strong>
+A <code>drop</code> body may not be <code>async</code>, nor await (call an async function): a
+destructor runs synchronously in v1. Cancel owned tasks through an
+<code>OwnedNursery</code> — whose own <code>drop</code> cancels them — rather than awaiting them.
+Awaited teardown is a future design.
+→ <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>drop</code> for <code>…</code> requires an ambient context — teardown must be context-free …”</strong>
+A <code>drop</code> body reached something that needs an ambient context — most often a
+<code>Signal</code> write, which threads the current turn as a hidden argument. A
+destructor’s call sites are scope exits, which thread no context, so it
+cannot receive one. Keep teardown context-free: hand turn-joining or
+signal-writing work to an owner that runs inside a turn, not to the
+destructor.
+→ <a href="../tour/resources.html">Resources</a></p>
+<h2 id="async"><a class="header" href="#async">Async</a></h2>
+<p><strong>“<code>…</code> receives an async closure, but its type awaits nothing — declare it <code>async || T</code> (or return void for spawn semantics)”</strong>
+A closure that suspends was stored into a struct field typed as a
+plain, value-returning closure (at the literal or a later assignment).
+Either the field should be <code>async |…| T</code>, or — if fire-and-forget is
+fine — its return type should be <code>void</code>. (A plain <em>parameter</em> no longer
+produces this error: it adapts — the callee instantiates an async copy
+that awaits the callback.)
+→ <a href="../tour/async.html">Async</a>, <a href="../tour/functions-and-closures.html">Functions &amp; closures</a></p>
+<p><strong>“<code>…</code> requires a synchronous closure (<code>sync</code>): its completion is part of the declaring function’s synchronous protocol …”</strong>
+The parameter is a <code>sync</code> contract position — <code>Signal::map</code>,
+<code>set_with</code>, <code>turn</code>/<code>batch</code> bodies, the UI render callbacks — where the
+callback must finish inside a synchronous protocol, so it cannot adapt.
+Move the async work outside the callback: an explicit <code>turn(…)</code> whose
+awaiting body holds one turn across its awaits, <code>Draft</code>/<code>optimistic</code> for local-first commits, or a
+spawned <code>async { … }</code> block. The transitive form (“this call passes an
+async closure that reaches <code>…</code>”) points at the call that made the
+closure async and notes where it was forwarded.
+→ <a href="../tour/async.html">Async</a>, <a href="../guide/reactive.html">Reactivity</a></p>
+<p><strong>“<code>…</code> is a host (<code>external</code>) function — it cannot await a vilan closure …”</strong>
+Host code can’t await your callback, so an <code>external</code> function’s
+value-returning closure parameters only accept synchronous closures
+(void-returning ones spawn, as everywhere). A parameter <em>declared</em>
+<code>async |…| T</code> is exempt — that is the host’s explicit contract to await
+the closure itself.
+→ <a href="../tour/async.html">Async</a></p>
+<p><strong>“an async closure cannot adapt a trait/generic-dispatched call …”</strong>
+Adaptation instantiates a statically-known callee, and a
+trait/generic-dispatched call doesn’t have one — the concrete method
+varies per instantiation. Bind the receiver concretely before the call,
+or declare the trait method’s parameter <code>async || T</code> so every impl
+takes the typed channel.
+→ <a href="../tour/async.html">Async</a></p>
+<p><strong>“<code>…</code> returns an async closure, but its declared return type awaits nothing — declare it <code>async || T</code> (or return void for spawn semantics)”</strong>
+The function’s declared return type is a plain, value-returning closure,
+but a <code>ret</code> (or the tail) hands back a closure that suspends. Mark the
+return type <code>async || T</code> so calls through the returned value await —
+<code>make()()</code> and <code>let go = make(); go()</code> both do — or return a
+<code>void</code>-returning closure for spawn semantics.
+→ <a href="../tour/async.html">Async</a></p>
+<p><strong>“the initializer of <code>…</code> calls <code>…</code>, which is async — a module-level binding cannot await”</strong>
+A top-level <code>let</code> runs when the module loads, and module initialization
+is synchronous — there is no enclosing function to become async, so the
+value would be a live promise wearing the wrong type. Wrap the work in
+a function and call it from <code>main</code>. The variant “the initializer of
+<code>…</code> runs a closure that awaits” is the same rule when the awaiting
+thing has no name — an adopted async closure applied directly, a
+<code>run(value, body)</code> whose body suspends, or a <code>nursery</code> at top level.
+(Creating an async closure at top level is fine; it awaits nothing
+until called.)
+→ <a href="../tour/async.html">Async</a></p>
+<p><strong>“<code>…</code> form an initialization cycle: module-level bindings initialize in dependency order, and a cycle has no such order”</strong>
+Module-level bindings initialize in dependency order (spec §7.1): each
+one runs after everything its initializer evaluates at load — the
+bindings it reads, plus whatever is read inside anything it <em>calls</em> on
+the way. A cycle among those evaluations has no valid order, so it is
+refused at compile time; the message names the round trip (<code>via A → B → A</code>) and each participant’s declaration. The self-referential form —
+“<code>…</code>’s initializer evaluates <code>…</code> itself, which has not initialized
+yet” — is the one-binding case of the same rule. Creating a closure
+evaluates nothing, so two module-level closures may name each other
+freely; moving one of the cycle’s reads inside a closure is the usual
+fix. If the chain runs through a dispatched call, every implementation
+of that method participates — including one your program never
+instantiates; the message says so when it applies.
+→ <a href="../spec/execution.html">Execution</a></p>
+<p><strong>“<code>!</code> requires the nearest enclosing function to declare an <code>Option</code>/<code>Result</code>-compatible return type …”</strong>
+<code>!</code> propagates the failure by <em>returning</em> it, so the surrounding
+function must return an <code>Option</code>/<code>Result</code> that can carry it. Inside a
+closure or a UI handler, <code>match</code> instead.
+→ <a href="../tour/control-flow.html">Control flow</a></p>
+<h2 id="contexts-and-ui"><a class="header" href="#contexts-and-ui">Contexts and UI</a></h2>
+<p><strong>“context <code>owner_scope</code> is read here, but this code can be reached without an enclosing <code>run</code>”</strong>
+The most common first UI error: you built reactive state (an <code>effect</code>, a
+binding) outside every ownership boundary. Wrap the entry point in
+<code>mount_root</code> — or <code>run_with_owner</code> in a test.
+→ <a href="../guide/ui.html">Building UI</a>, <a href="../guide/reactive.html">Reactive state</a></p>
+<p><strong>“<code>…</code> reads context <code>…</code>, so it can’t be used as a value”</strong>
+A function that reads an ambient context (like the current owner) can’t
+be passed around as a plain closure — the context channel would be
+severed. Wrap it in a closure literal at the use site instead.
+→ <a href="../tour/functions-and-closures.html">Functions &amp; closures</a></p>
+<p><strong>“an injected (<code>context</code>-typed) closure can only be called, forwarded …, or passed to <code>run</code>”</strong>
+Injected closures (the ones with <code>context</code> clauses in their type) are
+deliberately restricted so the ambient value can always be threaded to
+them. Don’t store them; call or forward them.
+→ <a href="../tour/functions-and-closures.html">Functions &amp; closures</a></p>
+<p><strong>“unused result of a <code>[must_use]</code> call: bind it (e.g. <code>owner.take(…)</code>), or <code>let _ = …</code> to discard.”</strong>
+The call returns something that stops working if you drop it (a
+<code>Subscription</code>, typically). Keep it, hand it to an owner, or discard it
+on purpose with <code>let _ = …</code>.
+→ <a href="../guide/reactive.html">Reactive state</a></p>
+<h2 id="wire-and-rpc"><a class="header" href="#wire-and-rpc">Wire and rpc</a></h2>
+<p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> type <code>…</code> is <code>…</code>, which is not Wire — …”</strong>
+Something unserializable (a closure, a <code>Signal</code>) is inside a payload
+type. Wire types carry data only: scalars, <code>str</code>, <code>bool</code>,
+<code>List</code>/<code>Option</code> of Wire, and other Wire types.
+→ <a href="../guide/services.html">Services &amp; RPC</a></p>
+<p><strong><code>RpcError::Contract</code> at connect time</strong>
+Client and server were built from different versions of the service.
+Rebuild both. During development, a <em>leaked old server</em> still holding
+the port is the usual culprit — <code>ss -tlnp | grep &lt;port&gt;</code> and kill it.
+→ <a href="../guide/services.html">Services &amp; RPC</a>, <a href="gotchas.html">gotchas</a></p>
+<p><strong><code>RpcError::Transport("not connected")</code> / <code>("connection lost")</code></strong>
+The connection is down (fail-fast) or dropped mid-call (in-flight
+rejection). Nothing is retried automatically, because your rpc might
+not be safe to repeat. Retry at the app level if that’s correct — a
+draft’s next push already does.
+→ <a href="../guide/services.html">Services &amp; RPC</a></p>
+<h2 id="compile-time-evaluation"><a class="header" href="#compile-time-evaluation">Compile-time evaluation</a></h2>
+<p><strong>“<code>asset::emit</code> outside a <code>const</code> expression”</strong>
+Styles (and other build assets) are constructed at compile time. Build
+the <code>Style</code> in a <code>const</code> (<code>let card = const style()…</code>); select and merge
+already-built styles at runtime.
+→ <a href="../guide/styling.html">Styling</a>, <a href="../tour/macros-and-const.html">Macros &amp; const</a></p>
+<p><strong>“a <code>const</code> result must be plain data; this evaluates to …”</strong>
+The <code>const</code> expression produced something that can’t be baked into the
+output (a closure, a host object). Fold values, not behavior.
+→ <a href="../tour/macros-and-const.html">Macros &amp; const</a></p>
+<h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
+<p><strong>A struct literal in a condition parses as the block</strong>
+Struct literals are ordinary operator operands (<code>Point { … } == q</code>
+compares), but condition positions exclude them — after <code>if Foo</code> or a
+<code>match</code> subject, the <code>{</code> is the block/arms, by design. Written without
+parentheses, <code>if p == Point { … } { … }</code> leaves a bare <code>Point</code> as the
+condition’s operand, which reports <strong>“<code>Point</code> is a type, not a value”</strong>.
+Parenthesize the literal: <code>if p == (Point { x = 1 }) { … }</code>.
+→ <a href="../spec/grammar.html">spec §3.8</a></p>
+<p><strong>“<code>Name</code> is a type, not a value”</strong> (also <em>“a trait / a type parameter /
+a module, not a value”</em>)
+A type, trait, type parameter, or module name was used where a value is
+expected (<code>let q = Point;</code>). A type names a kind, not a runtime value —
+construct it (<code>Point { … }</code>), name a variant (<code>Color::Red</code>), or call a
+static (<code>Point::new(…)</code>).
+→ <a href="../spec/names.html">spec §4.2</a></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../spec/appendix.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../appendix/gotchas.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../spec/appendix.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../appendix/gotchas.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/vilan-993df79f.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

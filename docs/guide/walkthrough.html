@@ -1,0 +1,499 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>A full-stack walkthrough - The vilan documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-f3347d90.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The vilan documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="a-full-stack-walkthrough"><a class="header" href="#a-full-stack-walkthrough">A full-stack walkthrough</a></h1>
+<p>Every guide so far taught one layer. This chapter builds a whole app, so
+you can see the layers meet: <strong>Notes</strong> — sign in, a note list that syncs
+live between browser windows, and an editor that saves as you type.</p>
+<p>The finished app lives in the repo at
+<a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/walkthrough/"><code>vilan/examples/walkthrough/</code></a>, about 500
+lines in <strong>one package</strong>. Every snippet below is quoted from those files,
+and the test suite builds the app on every run, so this chapter can’t
+quietly rot. To run it:</p>
+<pre><code class="language-sh">cd vilan/examples/walkthrough
+vilan run .             # builds both entries, starts the server
+                        # → http://localhost:4600
+</code></pre>
+<p>Open two browser windows side by side. Sign in, add a note in one window,
+and watch it appear in the other. Open a note and type — the other window
+follows keystroke by keystroke.</p>
+<h2 id="the-shape"><a class="header" href="#the-shape">The shape</a></h2>
+<pre><code class="language-toml">[package]
+name = "notes"
+
+[entry.client]
+target = "browser"
+
+[entry.server]
+</code></pre>
+<pre><code>walkthrough/
+  vilan.toml
+  src/
+    client.vl     the browser entry
+    server.vl     the node entry
+    store.vl      the service, next to its database
+    notes.vl      the types that cross the wire
+    routes.vl     the route enum
+    views.vl      the UI
+    app.html      the shell the server serves
+</code></pre>
+<p>One package, two entries (<a href="../tour/platforms.html">Platforms</a> introduced
+this layout). There is no client/server directory split and no shared
+<code>common</code> package — every file is visible to both entries, and the
+compiler sorts out what may run where by <strong>what each entry reaches</strong>.
+<code>store.vl</code> uses SQLite freely because only the server entry calls into
+it; if client code ever reached that far, the build would fail with the
+call chain.</p>
+<p>The data flows in one loop, and the whole app hangs off it:</p>
+<pre><code>you type → rpc → server writes SQL → server writes its signal
+        → the mirror updates every client → the UI re-renders one binding
+</code></pre>
+<p>Your own edit comes back to you the same way everyone else’s does. There
+is no “local state vs server state” bookkeeping — the mirror <em>is</em> the
+state, and drafts smooth over the last inch (the input you’re typing in).</p>
+<h2 id="the-wire-types"><a class="header" href="#the-wire-types">The wire types</a></h2>
+<p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/notes.vl"><code>src/notes.vl</code></a>
+declares the payloads both sides speak. This is most of the
+client/server contract — there is no schema file, no endpoint list, no
+client SDK to regenerate:</p>
+<pre><code class="language-vilan fragment">[derive(Wire, PartialEq, Debug)]
+struct Note {
+	id: i32,
+	title: str,
+	body: str,
+}
+</code></pre>
+<h2 id="the-service-next-to-its-resources"><a class="header" href="#the-service-next-to-its-resources">The service: next to its resources</a></h2>
+<p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/store.vl"><code>src/store.vl</code></a>
+is the heart of the app. Its database is <strong>module-level</strong> — opened once at
+startup, process-lifetime, closed only when the process ends:</p>
+<pre><code class="language-vilan fragment">// Process lifetime: opened once, never dropped (a serve-forever server's
+// `Database` is exactly this). Every method reaches it by loan.
+let db: Database = open_database();
+
+[service(NotesClient)]
+struct NotesStore {
+	[expose] notes: Signal&lt;List&lt;Note&gt;&gt;,
+}
+</code></pre>
+<p>Why module-level, and not a field on <code>NotesStore</code>? A <code>Database</code> is a
+<code>resource</code>: it has a single owner, it <em>moves</em> rather than copies, and it closes
+itself when its owner’s scope ends. A struct that owns a resource is itself a
+resource — and <code>[service]</code> generates a dispatcher that captures the store into
+one closure per <code>[rpc]</code> method, which a resource can’t be (a closure capturing a
+resource is the double-owner bug the class exists to prevent). So the long-lived
+database lives at module scope, and the store holds only the reactive state it
+exposes. Each <code>[rpc]</code> body reaches <code>db</code> directly, by loan:</p>
+<pre><code class="language-vilan fragment">[rpc]
+fun retitle_note(self, token: str, note_id: i32, title: str): i32 {
+	match session_user(db, token) {
+		Some(let _user) =&gt; {
+			db.prepare("UPDATE note SET title = ? WHERE id = ?").run([title, note_id]);
+			self.notes.set_with(|list| list.map(|note| {
+				if note.id == note_id {
+					Note { id = note.id, title = title, body = note.body }
+				} else {
+					note
+				}
+			}));
+			note_id
+		},
+		None =&gt; 0 - 1,
+	}
+}
+</code></pre>
+<p>Three things worth pausing on:</p>
+<ul>
+<li><strong>A module-level resource is loan-only.</strong> <code>db.prepare(...)</code> and
+<code>session_user(db, ...)</code> borrow it; the compiler rejects taking ownership
+away — moving it (<code>let mine = db</code>) or <code>drop(db)</code> — because process-lifetime
+state has no scope to be handed off to. It simply lives for the whole run.</li>
+<li><strong>No injected hooks.</strong> The service used to be forced into a shared
+package that couldn’t name <code>Database</code>, so its methods called closures
+the server installed at boot. Platform coloring removed the need: the
+service lives with its database, the browser build takes only the
+generated stub and contract hash from this module, and the bodies stay
+server-side because only the server entry reaches them (<a href="services.html#where-the-service-lives">Services &amp;
+RPC</a>).</li>
+<li><strong>The order matters.</strong> Persist first, then update the signal. The
+signal write is what broadcasts to every client, so a crash between
+the two can never announce state that was never stored
+(<a href="persistence.html">Persistence</a> covers this).</li>
+</ul>
+<p>Title and body commit separately (<code>retitle_note</code> and <code>rewrite_note</code>):
+the editor uses one draft per field, and per-field rpcs mean one field’s
+edit never re-sends the other’s text.</p>
+<p>Auth is register-or-login in one rpc: an unknown username creates the
+account (pbkdf2-hashed password), a known one checks it, and either path
+opens a session row whose token identifies later calls (<a href="services.html#authentication">Services &amp;
+RPC</a>). <code>open_database()</code> creates the tables at
+startup; <code>boot()</code> loads the mirror once from the already-open database.</p>
+<h2 id="the-server-entry-read-boot-serve"><a class="header" href="#the-server-entry-read-boot-serve">The server entry: read, boot, serve</a></h2>
+<p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/server.vl"><code>src/server.vl</code></a>
+is now the boring file, which is the point:</p>
+<pre><code class="language-vilan fragment">async fun main() {
+	let client_js = fs::read_file_to_str("dist/client.js");
+	let client_css = fs::read_file_to_str("dist/client.css");
+	let app_html = fs::read_file_to_str("src/app.html");
+
+	let store = boot();
+
+	serve_service(4600, store.dispatcher().into_protocol(json_codec()), |request| {
+		match request.path() {
+			"/client.js" =&gt; Response::builder().set_header("Content-Type", "text/javascript").body(client_js).build(),
+			"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
+			_ =&gt; Response::builder().set_header("Content-Type", "text/html").body(app_html).build(),
+		}
+	}, || print("notes server listening on http://localhost:4600"));
+}
+</code></pre>
+<p>The catch-all serves the shell for every unknown path. That’s what makes
+deep links like <code>/note/7</code> load (<a href="routing.html#deep-links-and-the-server">Routing</a>).
+The client bundle it ships is <code>dist/client.js</code> — <code>vilan build</code> compiles
+browser entries first, so the file is always fresh by the time the
+server entry builds.</p>
+<h2 id="the-client-entry-four-signals-and-a-mount"><a class="header" href="#the-client-entry-four-signals-and-a-mount">The client entry: four signals and a mount</a></h2>
+<p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/client.vl"><code>src/client.vl</code></a> is
+the whole wiring diagram:</p>
+<pre><code class="language-vilan fragment">async fun main() {
+	let notes: Signal&lt;List&lt;Note&gt;&gt; = Signal::new([]);
+	let token = Signal::new(storage::get("notes-token"));
+	let route = current_path().map(parse);
+
+	match NotesClient::connect("/", json_codec()) {
+		Ok(let client) =&gt; {
+			let _sync = client.notes.sub(|list| notes.set(list));
+			let _root = mount_root("app", || screen(client, notes, token, route));
+		},
+		Err(let error) =&gt; print(i"connect failed: {error.debug()}"),
+	}
+}
+</code></pre>
+<p>Read it as: mirror in, token from <code>localStorage</code> (a reload stays signed
+in), the typed route derived from the URL, connect, mount. <code>NotesClient</code>
+comes from <code>import pkg::store::NotesClient;</code> — the same module whose
+bodies run SQL on the server, of which this build sees only the stub.
+Everything after this line is just views reading those signals.</p>
+<h2 id="routes"><a class="header" href="#routes">Routes</a></h2>
+<p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/routes.vl"><code>src/routes.vl</code></a>
+is the enum-router pattern from <a href="routing.html">Routing</a>, at its smallest:</p>
+<pre><code class="language-vilan fragment">[derive(PartialEq)]
+enum Route {
+	Home,
+	Note(i32),
+	NotFound,
+}
+</code></pre>
+<p>plus <code>parse</code> and <code>href</code> as the inverse pair, and pages that <code>swap</code> on
+<code>route</code>.</p>
+<h2 id="the-views"><a class="header" href="#the-views">The views</a></h2>
+<p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/views.vl"><code>src/views.vl</code></a>
+has three layers, each one guide’s idea:</p>
+<p><strong>The gate.</strong> The sign-in panel <code>show</code>s while the token is empty; the
+routed app <code>show</code>s once it isn’t. Signing in stores the token; signing
+out removes it and navigates home.</p>
+<p><strong>The list page.</strong> An add form bound to a local signal, and the list
+itself — one keyed <code>bind_each</code> over the mirror:</p>
+<pre><code class="language-vilan fragment">.child(view("ul").bind_each(notes, |note| note.id, |note| note_row(client, note, token)))
+</code></pre>
+<p>That single line is the live sync. When any client adds or deletes a
+note, the mirror updates and the keyed rows reconcile
+(<a href="ui.html#lists-bind_each">Building UI</a>).</p>
+<p><strong>The editor.</strong> The note page finds its note in the mirror, waits for it
+under <code>when(present)</code> (so a deep link shows “loading…” until the first
+sync), and then the editor binds one draft per field:</p>
+<pre><code class="language-vilan fragment">let title = draft(seed_title, |value: str| commit_outcome(client.retitle_note(token.get(), note_id, value), note_id));
+let body = draft(seed_body, |value: str| commit_outcome(client.rewrite_note(token.get(), note_id, value), note_id));
+
+// Remote edits (another session's typing — or our own echo) fold in.
+entry.effect(|current: Option&lt;Note&gt;| {
+	match current {
+		Some(let note) =&gt; {
+			title.adopt(note.title);
+			body.adopt(note.body);
+		},
+		None =&gt; {},
+	}
+});
+
+view("div")
+	.child(view("input").styled(field).attr("placeholder", "Title…").bind_draft(title))
+	.child(view("span").styled(muted).bind_text(title.state.map(state_text)))
+	…
+</code></pre>
+<p>This is the local-first loop from <a href="reactive.html">Reactive state</a> closed
+end to end: typing updates the input instantly, each keystroke commits
+through its rpc, the server broadcasts, and the <code>adopt</code> in the effect
+folds remote changes in. Your own echo changes nothing. Another
+session’s edit updates your field — unless you’re mid-edit, in which
+case your text wins until it commits. There is no Save button because
+there is nothing left for one to do.</p>
+<h2 id="things-to-try"><a class="header" href="#things-to-try">Things to try</a></h2>
+<ul>
+<li><strong>Two windows.</strong> Type a title in one and watch the other follow. Then
+type in <em>both</em> fields at once, one per window.</li>
+<li><strong>Kill the server</strong> (Ctrl-C) with the app open. The “reconnecting…”
+banner appears (one <code>show</code> on the transport’s state signal). Restart
+the server: the banner clears and the mirror resyncs by itself.</li>
+<li><strong>Restart the server</strong> and reload: the notes are still there. SQLite
+did that, not the mirror.</li>
+<li><strong>Deep-link</strong> to a note (<code>/note/1</code>) in a fresh window: “loading…”
+flashes until the first sync, then the editor seeds.</li>
+<li><strong>Cross the platform line.</strong> Add <code>load_notes(self.db)</code> — or any
+<code>pkg::store</code> call — somewhere the client entry reaches, and rebuild:
+the error names the whole chain from <code>main</code> down to the SQL.</li>
+</ul>
+<h2 id="where-each-idea-came-from"><a class="header" href="#where-each-idea-came-from">Where each idea came from</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>In this app</th><th>Taught in</th></tr>
+</thead>
+<tbody>
+<tr><td>the package, its two entries</td><td><a href="../tour/hello-vilan.html">Hello vilan</a>, <a href="../tour/platforms.html">Platforms</a></td></tr>
+<tr><td><code>Note</code>, derives, the enums</td><td><a href="../tour/data-and-traits.html">Data &amp; traits</a></td></tr>
+<tr><td>signals, effects, drafts</td><td><a href="reactive.html">Reactive state</a></td></tr>
+<tr><td>views, <code>bind_each</code>, <code>when</code>, <code>show</code></td><td><a href="ui.html">Building UI</a></td></tr>
+<tr><td>the <code>const</code> styles</td><td><a href="styling.html">Styling</a></td></tr>
+<tr><td>the route enum, <code>swap</code>, <code>link</code></td><td><a href="routing.html">Routing</a></td></tr>
+<tr><td><code>[service]</code>, mirrors, reconnect</td><td><a href="services.html">Services &amp; RPC</a></td></tr>
+<tr><td>SQLite, the fallback, boot order</td><td><a href="persistence.html">Persistence</a></td></tr>
+</tbody>
+</table>
+</div>
+<p>From here, the honest next step is to change something: add a
+<code>created_at: Instant</code> to <code>Note</code> (the compiler will walk you through
+every place it matters), or add a second entity. The shape you’d follow
+is exactly the one above.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../guide/ssr.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../guide/dev-loop.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../guide/ssr.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../guide/dev-loop.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/vilan-993df79f.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

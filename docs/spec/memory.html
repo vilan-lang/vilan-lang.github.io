@@ -1,0 +1,663 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>§6 The memory model - The vilan documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-f3347d90.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The vilan documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="spec-6--the-memory-model"><a class="header" href="#spec-6--the-memory-model">Spec §6 — The memory model</a></h1>
+<p>Values are copied (§6.1); sharing is asked for explicitly. Every explicit
+sharing mechanism — views, projections, <code>Shared</code>, <code>Arena</code>/<code>Handle</code>, and the
+resource class (§6.8) — is a <em>claim</em> on an owner, and all of them obey the
+one law stated in §6.0. The numbered sections that follow are that law’s
+projections: the four rules (design:
+<code>proposal/memory-management-rev-1.md</code>), the escape hatches, and resources
+(design: <code>proposal/claims-and-epochs.md</code>, <code>proposal/destruction.md</code>). Rules
+1–3 and rule 4’s static half are normative and enforced; rule 4’s dynamic
+remainder is future work, marked below.</p>
+<h2 id="60-the-law--owners-epochs-and-claims"><a class="header" href="#60-the-law--owners-epochs-and-claims">6.0 The law — owners, epochs, and claims</a></h2>
+<p>One relation underlies every sharing mechanism in this chapter; the
+sections after it are its projections.</p>
+<p>An <strong>owner</strong> is any value with independent existence: a binding, a
+container, an arena slot, a counted cell, a resource. Every owner has an
+<strong>epoch</strong> — an abstract counter that advances on a fixed set of <strong>events</strong>,
+determined by the owner’s shape:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>owner shape</th><th>epoch events</th></tr>
+</thead>
+<tbody>
+<tr><td>scalar cell (a boxed local)</td><td>rebinding, death</td></tr>
+<tr><td>aggregate (a struct root)</td><td>+ reassigning an aggregate field out from under an interior view</td></tr>
+<tr><td>container (<code>List</code>, arena slots)</td><td>+ geometry: resize, insert, remove, reallocation</td></tr>
+<tr><td>counted cell (<code>Shared</code>; the future counted tier, §6.8)</td><td>+ the strong count reaching zero</td></tr>
+<tr><td>resource (§6.8)</td><td>+ the move (the source binding’s epoch ends), + <code>drop</code> (the final event)</td></tr>
+</tbody>
+</table>
+</div>
+<p>A <strong>claim</strong> is any alias to a place inside an owner: a <code>&amp;</code>/<code>&amp;mut</code> view
+(§6.3), an <code>Arena</code> <code>Handle</code>, a <code>Weak</code>, a loan of a resource. In the
+abstract a claim is the triple <em>(owner identity, path, epoch at capture)</em>.</p>
+<p><strong>The law: a claim is valid while its owner’s epoch is unchanged.</strong> Nothing
+else is forbidden — aliasing is permitted, and writing through an alias is
+permitted (§6.4 declines exclusivity); only <em>using</em> a claim whose owner’s
+epoch has advanced is illegal. A <strong>suspension point</strong> (<code>await</code>) is the
+degenerate event: while a function is suspended, other turns run, so every
+owner’s epoch must be assumed to advance — <code>await</code> bumps the world (§6.6).</p>
+<p>A claim’s validity is established at exactly one of two times, giving <strong>two
+enforcement regimes</strong>:</p>
+<ul>
+<li><strong>Static discharge — views (§6.3).</strong> The compiler proves that no event
+occurs between a view’s capture and its last use. The proof needs a
+<em>surveyable interval</em>, which is why views are second-class: lexical
+liveness (declaration to block end) is the interval the compiler can
+audit. Because the proof is total, the access is infallible and free —
+a view compiles to a bare <code>(base, key)</code> and checks nothing at runtime.</li>
+<li><strong>Dynamic carry — handles.</strong> When a claim outlives every surveyable
+interval — stored in a field, kept across <code>await</code>, held between turns —
+it carries its epoch as data (a <code>Handle</code>’s generation) and every access
+re-establishes validity by comparison, answering <code>Option&lt;&amp;T&gt;</code>. The check
+runs at use time, so access is <em>failable, and the failability is in the
+type</em>. A handle is a view that survived by carrying its proof obligation
+with it.</li>
+</ul>
+<p>The same relation, read at compile time or at use time:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>concern</th><th>static (proof)</th><th>dynamic (check)</th></tr>
+</thead>
+<tbody>
+<tr><td>interior access</td><td><code>&amp;</code>/<code>&amp;mut</code> views; <code>borrows</code> provenance (§6.5)</td><td><code>Arena.get(handle): Option&lt;&amp;T&gt;</code></td></tr>
+<tr><td>invalidation</td><td>rule 4 (§6.4): reassignment, mutating call</td><td>generation mismatch → <code>None</code></td></tr>
+<tr><td>suspension</td><td>no view across <code>await</code> (§6.6)</td><td>handles cross freely; the next access re-validates</td></tr>
+<tr><td>death</td><td>resources: use-after-move; drops placed statically (§6.8)</td><td>a stale handle / <code>Weak</code> → <code>None</code></td></tr>
+<tr><td>exclusivity</td><td>declined — aliased views and content writes are legal</td><td>traps only on <em>invalidating</em> overlap (§6.7)</td></tr>
+</tbody>
+</table>
+</div>
+<p>Reading down the columns: the left is what the compiler proves when
+liveness is lexical; the right is the identical relation carried as data
+when the claim must outlive the compiler’s sight. Sections 6.1–6.8 place
+each mechanism in a cell — rules 1–2 (§6.1–§6.2) govern owners that carry
+no claims; rule 3 (§6.3) is the static column’s interval requirement; rule
+4 (§6.4) is the static invalidation cell; <code>borrows</code> (§6.5) makes a claim’s
+origin explicit; the escape hatches (§6.7) are the dynamic column; and
+resources (§6.8) are the static <strong>death</strong> cell, where use-after-move is the
+compile-time twin of a stale handle’s <code>None</code>.</p>
+<h2 id="61-rule-1--values-are-copied-copies-are-semantic"><a class="header" href="#61-rule-1--values-are-copied-copies-are-semantic">6.1 Rule 1 — values are copied; copies are semantic</a></h2>
+<p>Every binding, assignment, argument pass, field initialization, and
+return <strong>copies</strong> the value. After <code>mut b = a</code>, mutating <code>b</code> never
+affects <code>a</code> — for primitives, structs, enums, tuples, lists, and every
+other value type alike:</p>
+<pre><code class="language-vilan">import std::print;
+
+struct Point { x: i32, y: i32 }
+
+fun main() {
+	mut a = Point { x = 4, y = 6 };
+	mut b = a;
+	b.x = 10;
+	print(a.x);   // 4 — b is a semantic copy
+}
+</code></pre>
+<h2 id="62-rule-2--elision-is-an-optimization-never-observable"><a class="header" href="#62-rule-2--elision-is-an-optimization-never-observable">6.2 Rule 2 — elision is an optimization, never observable</a></h2>
+<p>An implementation may skip a copy (reuse the storage) when no conforming
+program can tell — e.g. when the source is never used again. Elision must
+not change any program’s output; a live view of the source counts as a
+use. (This rule licenses the JS backend to alias under the hood; it
+grants programs nothing.)</p>
+<h2 id="63-rule-3--references-are-second-class-views"><a class="header" href="#63-rule-3--references-are-second-class-views">6.3 Rule 3 — references are second-class views</a></h2>
+<p><code>&amp;place</code> / <code>&amp;mut place</code> create a <strong>view</strong>: an alias of a place, readonly
+or writable. Views are values of view type (<code>&amp;T</code>, <code>&amp;mut T</code>) but are
+deliberately second-class — a view may not outlive the thing it views:</p>
+<ul>
+<li>A view may be a <strong>parameter</strong> (the caller’s place is lent for the
+call), a <strong>short-lived local</strong>, or a <strong>return projecting a parameter</strong>
+(§6.5). One vocabulary, position-dependent defaults: <code>&amp;mut self</code> on a
+method, <code>bump(&amp;mut c)</code> at a call site, <code>x: &amp;mut T</code> in a signature all
+carry the same convention.</li>
+<li>A view may <strong>not</strong> be stored in a struct field, a collection element,
+or a <code>Signal</code>/<code>Shared</code> payload; may not be returned except through a
+<code>borrows</code> projection; may not be captured by a closure that outlives
+the place; may not cross an <code>await</code> (§6.6).</li>
+</ul>
+<p>Mutating through a view writes the viewed place; reading its value
+requires an explicit <code>*</code>. A view in <strong>value position</strong> — passed where a
+value is expected, used as an operator’s operand, or bound to a value
+type — is a compile error, never a silent coercion to the pointee (so the
+<code>(base, key)</code> representation of a scalar view can’t leak); write <code>*v</code> to
+copy the value out. Iteration by view (<code>for e in &amp;mut list</code>) binds each
+element as a view — assignment and field writes go through; <code>*e</code> reads the
+element. The parameter conventions:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Convention</th><th>Written</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td>bare</td><td><code>x: T</code></td><td>by value (a copy — rule 1)</td></tr>
+<tr><td>own</td><td><code>own x: T</code></td><td>by value, explicitly (documentation of intent)</td></tr>
+<tr><td>ref</td><td><code>&amp;x</code> / <code>x: &amp;T</code></td><td>readonly view</td></tr>
+<tr><td>ref mut</td><td><code>&amp;mut x</code> / <code>x: &amp;mut T</code></td><td>writable view</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="64-rule-4--no-invalidating-mutation-under-a-live-view"><a class="header" href="#64-rule-4--no-invalidating-mutation-under-a-live-view">6.4 Rule 4 — no invalidating mutation under a live view</a></h2>
+<p>While a view of a place is live, mutations that would <strong>invalidate</strong> the
+view (replacing the aggregate that contains the place, removing the
+element it points into, resizing past it) are forbidden. The compiler
+enforces the statically-decidable half in full: reassigning the viewed
+root (or an enclosing place), and any call that may advance the root’s
+<em>geometry</em> — the callee’s inferred <code>bumps</code> verdict per parameter, so a
+content-stable <code>&amp;mut</code> callee (one that only writes fields or elements
+through the parameter) passes freely. Views anchor at their origin roots
+wherever they arise: a direct <code>&amp;place</code>, a view-returning call (the
+callee’s <code>borrows</code> positions mapped through the arguments), or a
+wrapped-view <code>match</code> capture — a projection returned through a call is
+policed exactly like the <code>&amp;place</code> it came from.</p>
+<p><em>Implementation note: the dynamic remainder (aliasing reached through
+calls, container-internal invalidation) is tracked future work. When it
+lands it enforces the <strong>same event set</strong> as the static rule above (§6.0’s
+design invariant): a trap fires on a reassignment, a geometry change, or a
+death under a live claim — never on a mere overlap of content writes, which
+the static rule deliberately permits (aliased views, and writing through
+them, are legal). <code>Shared.read()/write()</code> are the cell-level form of this
+dynamic check (§6.7).</em></p>
+<h2 id="65-projections-borrows"><a class="header" href="#65-projections-borrows">6.5 Projections: <code>borrows</code></a></h2>
+<p>A function may return a view <strong>into one of its parameters</strong> — the one
+sanctioned escape from rule 3’s return ban. The projected parameter is
+named by a <code>borrows</code> clause, which is <strong>inferred</strong> when the body makes it
+evident (a method returning a view of <code>self</code> needs no clause):</p>
+<pre><code class="language-vilan fragment">fun write(self): &amp;mut T borrows self;   // Shared::write — explicit
+fun get(&amp;mut self, i: i32): &amp;mut T      // inferred: borrows self
+</code></pre>
+<p>At the call site the returned view obeys the same second-class rules,
+with the borrow anchored to the projected argument: the argument’s place
+is treated as viewed while the result is live (rule 4 applies to it).
+Returning a view of a <strong>local</strong> is always an error (it would dangle).</p>
+<p>The clause is a <em>set</em>: a function whose branches return a view of
+different parameters projects them all (<code>borrows a, b</code>), and the call
+result anchors at every corresponding argument. Hover shows the inferred
+clause on any projection, alongside its sibling effect <strong><code>bumps</code></strong> — the
+per-<code>&amp;mut</code>-parameter <em>geometry verdict</em> §6.4’s call rule fires on. A
+<code>&amp;mut</code> parameter the body only writes fields or elements through is
+<strong>content-stable</strong> (absent from the clause; the owner’s epoch holds); one
+the body may resize, insert into, remove from, or whole-reassign through
+<strong>bumps</strong>. Both effects are inferred, never written (the explicit
+<code>borrows</code> clause remains legal); an unknowable callee — a bodiless trait
+signature, an untabled host function — is treated as bumping and, when
+view-typed, as projecting every argument: the conservative direction.</p>
+<p><code>Option&lt;&amp;T&gt;</code> is permitted as a return type for “a view, maybe” (map
+lookups); the <code>Some</code> payload obeys the same anchoring. An <code>Option&lt;&amp;mut T&gt;</code>
+may also be built <strong>inline as a transient</strong> and matched in the same
+expression — <code>match Some(&amp;mut a) { Some(let v) =&gt; … }</code>, including the
+conditional form <code>match if c { Some(&amp;mut x) } else { None } { … }</code> and
+forwarding a bare view parameter (<code>match Some(p) { … }</code> for <code>p: &amp;mut T</code>).
+Because the transient never outlives the <code>match</code> that consumes it, its
+payload may view a <strong>local</strong> (unlike a returned projection). Binding the
+same constructor to a <code>let</code> stores the view and is rejected.</p>
+<h2 id="66-views-and-suspension"><a class="header" href="#66-views-and-suspension">6.6 Views and suspension</a></h2>
+<p><strong>A view may not be live across an <code>await</code>.</strong> Between suspension and
+resumption other code runs and may invalidate any place; rather than
+extend rule 4 across turns, the language forbids the shape. Re-derive
+the view after the suspension:</p>
+<pre><code class="language-vilan fragment">let row = &amp;mut rows[index];
+send(row.id);              // suspends
+row.text = "sent";         // ✗ error: view live across await
+
+send(rows[index].id);      // ✓ re-derive
+rows[index].text = "sent";
+</code></pre>
+<p>This applies to every suspension point: calls to async functions
+(implicitly awaited, §7), explicit <code>await</code>, and calls through async
+closure values.</p>
+<h2 id="67-library-escape-hatches-informative"><a class="header" href="#67-library-escape-hatches-informative">6.7 Library escape hatches (informative)</a></h2>
+<p><code>Shared&lt;T&gt;</code> (one shared cell; <code>read()</code> copies, <code>write()</code> yields a
+statement-scoped view of the contents) and <code>Arena&lt;T&gt;</code>/<code>Handle&lt;T&gt;</code> (stable,
+generation-checked identities — handles are plain values, storable where
+views are not) are std types built on these rules, not extensions of them.
+They are §6.0’s <strong>dynamic regime</strong>: a <code>Handle</code>’s generation is its owner’s
+epoch carried as data, and <code>Arena.get</code> answers <code>Option&lt;&amp;T&gt;</code>. When the
+counted tier (§6.8) gives <code>Shared</code> a runtime check, that check enforces the
+same event set as rule 4 — a reassignment, geometry change, or death of the
+cell under another live view traps, while overlapping writes through the
+cell do not (the reconciled trap law of §6.0; a <code>write</code> view is <em>not</em>
+exclusive). See <a href="../std/cells.html">cells</a>.</p>
+<h2 id="68-resources-and-destruction"><a class="header" href="#68-resources-and-destruction">6.8 Resources and destruction</a></h2>
+<p><em>(Design: <code>proposal/destruction.md</code>.)</em> Rule 1 copies values, and a
+droppable value cannot survive copying: a copied file handle double-closes,
+a copied refcount miscounts. Destruction is therefore not bolted onto the
+data world — the world is partitioned. <strong>Data</strong> is everything above: copied
+on binding, elided at last use, reclaimed by the host. A <strong>resource</strong> is a
+small, explicitly-rooted class with <em>affine</em> discipline — one owner at a
+time, no copies — whose owner’s scope end runs its destructor. This section
+is the static <strong>death</strong> cell of §6.0: a resource’s move ends the source
+binding’s epoch, and <code>drop</code> is its final event.</p>
+<p>The class is two tiers. <strong>Tier 1</strong>, specified here and enforced on JS, is
+<em>unique</em> resources: one owner, move-only. <strong>Tier 2</strong> (<code>Shared</code> as a counted
+resource, <code>Weak</code>, counted closure environments) is specified against the
+future native arc and is out of scope for this section beyond the forward
+references above.</p>
+<h3 id="the-resource-class"><a class="header" href="#the-resource-class">The resource class</a></h3>
+<ul>
+<li><strong><code>resource</code> is a declaration modifier</strong>, written in <code>external</code>’s
+position: <code>resource struct S</code>, <code>resource external struct D</code>, <code>resource enum E</code>.</li>
+<li><strong>Containment infers.</strong> An aggregate — struct, enum, tuple, or fixed
+array <code>[R; n]</code> — with a resource field, payload, element, or member type
+<em>is</em> a resource, recursively (the <code>Wire</code>/<code>Hashable</code> all-fields machinery
+with the polarity flipped: any resource member marks the whole). Declaring
+<code>resource</code> on such a type is allowed and checked; omitting it never hides
+resource-ness.</li>
+<li><strong>The modifier is required at leaves.</strong> An <code>external struct</code> is opaque, so
+a host-object resource (<code>Database</code>) must declare itself one.</li>
+<li><strong>Per-instantiation for generics.</strong> <code>Option&lt;Database&gt;</code> is a resource
+instantiation; <code>Option&lt;i32&gt;</code> stays data. Resource-ness of a generic type
+is decided at each instantiation, like the platform and asyncness bits.</li>
+<li><strong><code>Drop</code> may be implemented only for a resource type</strong> (see below); an
+impl on a data type is an error steering to add <code>resource</code>.</li>
+</ul>
+<h3 id="the-affine-rules"><a class="header" href="#the-affine-rules">The affine rules</a></h3>
+<p><em>Move</em> transfers ownership and leaves the source binding dead; <em>loan</em> is the
+existing second-class view (<code>self</code> / <code>&amp;</code> / <code>&amp;mut</code> conventions, §6.3), which
+changes no ownership and is policed by rule 4.</p>
+<ul>
+<li><strong>R1 — binding moves.</strong> <code>let b = a;</code> transfers ownership; any later use of
+<code>a</code> is a compile error naming the move site. No copies ever fire for a
+resource.</li>
+<li><strong>R2 — overwrite drops.</strong> Assigning onto a binding that still owns a
+resource drops the old value first, then moves the new one in.</li>
+<li><strong>R3 — parameters.</strong> <code>self</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans, unchanged; <code>own x</code> is a move — and for a resource <em>only</em> a move: an <code>own</code> argument that is
+not the binding’s last use is an error (where a data <code>own</code> would silently
+copy).</li>
+<li><strong>R4 — returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
+diverging leg is exempt).</li>
+<li><strong>R5 — fields.</strong> A struct literal moves resources in. A resource field is
+read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>); moving it out of a
+live aggregate is rejected — v1 has no partial moves. The sanctioned
+partial move is <code>Option</code> (below).</li>
+<li><strong>R6 — match consumes.</strong> Matching a resource <em>by value</em> consumes the
+subject; pattern captures move the payloads into the arm. Matching a loan
+(<code>match &amp;self.state</code>) inspects without consuming.</li>
+<li><strong>R7 — no conditional moves.</strong> A binding must be moved on every path
+through a scope or on none; moving it on one path only is an error. This
+keeps end-of-scope ownership static — there are no runtime drop flags in
+v1.</li>
+<li><strong>R8 — no moves in repeatable interiors.</strong> Moving a binding declared
+outside a loop from inside its body is an error (the move would repeat).</li>
+<li><strong>R9 — closures and spawns cannot capture resources.</strong> Capturing one would
+give the closure a second owner. Injected <code>context</code>-clause bodies receive
+resource <em>parameters</em> as loans — parameters are per-call, not captures —
+so <code>nursery(|n| ..)</code>-shaped APIs are unaffected. A closure referencing a
+<strong>module-level</strong> resource is likewise exempt: a module global is loan-only
+and lives for the process (see <em>Module-level resources never drop</em>, below),
+so the closure can never own it and no second owner is created — the
+reference is a per-call loan, exactly like a parameter. Captures of a
+<strong>local</strong> or a <strong>parameter</strong> stay rejected.</li>
+<li><strong>R10 — no resource elements in the native containers.</strong> <code>List</code> / <code>Map</code> /
+<code>Set</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
+reject resource type arguments in v1 — their internals are host code the
+move checker cannot see. <code>Option</code> is the sanctioned container (it is a
+vilan enum, checkable under R11).</li>
+<li><strong>R11 — generics must be move-clean per instantiation.</strong> Instantiating a
+type parameter with a resource type re-checks the instantiated body under
+the affine rules (T := the resource): every T-typed value is used at most
+once as a move, with no captures and no copies. <code>Option::unwrap(self): T</code>
+passes; a body that reads its parameter twice fails <strong>at the instantiation
+site</strong>, not inside std. For an <code>own T</code> parameter the rule tightens to
+<em>exactly</em> once (a generic body is emitted once and so cannot run an
+instantiation-conditional destructor; zero moves would leak).</li>
+<li><strong>R12 — no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
+is an error (<code>print(db)</code> included): <code>any</code> is a data sink, and the
+discipline must not launder away. Debug-print the fields instead.</li>
+</ul>
+<h3 id="destruction--the-drop-trait"><a class="header" href="#destruction--the-drop-trait">Destruction — the <code>Drop</code> trait</a></h3>
+<pre><code class="language-vilan fragment">trait Drop {
+	fun drop(&amp;mut self);
+}
+</code></pre>
+<p>The body cleans up through the <code>&amp;mut self</code> loan; the compiler destroys the
+fields <em>afterward</em>, in reverse field order. <code>&amp;mut self</code> is the exact and
+only accepted shape — a by-value <code>self</code> could move the value out and keep it
+alive (resurrection), a <code>&amp;self</code> receiver cannot run the mutating teardown,
+an extra parameter cannot be supplied by an inserted call, and a
+value-returning body is rejected. Two further restrictions are enforced:</p>
+<ul>
+<li><strong><code>drop</code> is synchronous.</strong> An <code>async</code> or awaiting <code>drop</code> body is rejected
+— teardown runs synchronously in v1. (Cancel owned tasks through an
+<code>OwnedNursery</code>, whose own <code>drop</code> cancels them.)</li>
+<li><strong><code>drop</code> is context-free.</strong> A <code>drop</code> body that requires an ambient context
+(for example, one that writes a <code>Signal</code>, which threads the turn as a
+hidden context argument) is rejected: a destructor’s call sites are scope
+exits, which thread no context.</li>
+</ul>
+<p>A resource without a <code>Drop</code> impl is legal — containment alone still enforces
+moves and destroys the resource’s fields. <code>Drop</code> is distinct from the
+cooperative <code>Disposable</code> protocol, which is the data-world teardown hook
+(subscriptions, owners) and is capture-based (exactly why it is not a
+resource mechanism).</p>
+<h3 id="drop-timing-and-order"><a class="header" href="#drop-timing-and-order">Drop timing and order</a></h3>
+<p>At the owner’s scope end, still-owned resource locals drop in <strong>reverse
+declaration order</strong>. A value’s own <code>drop</code> body runs <strong>before its fields</strong>,
+and the fields drop in reverse field order; an enum’s payload drops with the
+value. <strong>Every exit runs drops</strong> — fall-through, <code>ret</code>, <code>jump break</code>, <code>jump continue</code> (out of the scopes they leave), and panic unwinding — because a
+resource-owning scope lowers to a <code>try</code>/<code>finally</code> and every exit flows
+through the <code>finally</code>. Concrete <code>own</code> resource <em>parameters</em> drop at scope
+end like locals (a generic <code>own T</code> is required to move out instead, per
+R11).</p>
+<ul>
+<li><strong>Module-level resources never drop.</strong> A top-level <code>let</code> resource has
+process lifetime (the serve-forever server’s <code>Database</code>). It is
+consequently <strong>loan-only</strong>: moving it into a local, an <code>own</code> argument, or
+<code>drop(x)</code> would hand a process-lifetime resource to a droppable owner and
+is rejected; method calls and <code>&amp;</code> / <code>&amp;mut</code> passing are accepted.</li>
+<li><strong>Panic during unwind.</strong> A <code>drop</code> that panics while a panic is already
+unwinding replaces the in-flight error (JS <code>finally</code> semantics; a native
+backend would abort).</li>
+<li><strong>Across <code>await</code>.</strong> Owning a resource across a suspension is legal —
+frames own their locals, and §6.6’s no-view-across-<code>await</code> restriction is
+about <em>loans</em>, not ownership. Under cancellation a bridged operation
+rejects, the frame unwinds, and drops run.</li>
+<li><strong>Exit after finally.</strong> When a value-returning <code>main</code> owns a resource, its
+process exit is sequenced <em>after</em> the teardown <code>finally</code> runs, so scope-end
+drops are never skipped by process termination.</li>
+</ul>
+<h3 id="optiontake-and-optionreplace"><a class="header" href="#optiontake-and-optionreplace"><code>Option.take</code> and <code>Option.replace</code></a></h3>
+<p>Moving out of a place must leave a valid value behind. One intrinsic pair on
+<code>Option&lt;T&gt;</code> provides the sanctioned partial move:</p>
+<pre><code class="language-vilan fragment">impl Option&lt;type T&gt; {
+	fun take(&amp;mut self): Option&lt;T&gt;;              // Some(v) -&gt; None here, Some(v) out
+	fun replace(&amp;mut self, value: T): Option&lt;T&gt;; // new value in, old contents out
+}
+</code></pre>
+<p><code>self.slot.take()</code> is how a resource field leaves a live aggregate (R5), and
+<code>match opt.take() { Some(let c) =&gt; drop(c), None =&gt; {} }</code> is the
+conditional-teardown idiom R7 pushes toward. Both are ordinary std surface,
+useful for data too.</p>
+<h3 id="early-teardown--drop"><a class="header" href="#early-teardown--drop">Early teardown — <code>drop</code></a></h3>
+<pre><code class="language-vilan fragment">fun drop&lt;T&gt;(own value: T) {}
+</code></pre>
+<p>Moving a value into <code>drop</code> destroys it at that (immediate) scope end instead
+of waiting for the owner’s scope to close. The call is rewritten at each
+site by the concrete argument type: for a resource it lowers to that type’s
+destructor; for plain data it is a no-op that consumes the argument for its
+effects. There is no public <code>close()</code> to keep in sync with a destructor —
+<code>drop(x)</code> is the early form. Inside a generic body a <code>drop(x)</code> on a value of
+a still-abstract type <code>T</code> has no concrete destructor (a generic body is
+emitted once, erased), so R11 rejects it <strong>under a resource instantiation</strong>
+(“the erased body cannot destroy a <code>T</code> — move it out to the caller”); a data
+instantiation keeps the legitimate no-op consume.</p>
+<h3 id="ownednursery"><a class="header" href="#ownednursery"><code>OwnedNursery</code></a></h3>
+<p><code>OwnedNursery</code> (<code>std::task</code>) is the resource-owner for object-lifetime
+background work that no function-scoped <code>nursery</code> can hold. It wraps a
+<code>Nursery</code> (which stays data — the ambient handle; <code>Context&lt;R&gt;</code> is
+R10-rejected, so ownership lives only in the wrapper). <code>enter(body)</code> runs
+<code>body</code> with the owner’s nursery established as ambient — every task spawned
+in the body’s dynamic extent registers with the owner — but, unlike
+<code>nursery</code>, does <em>not</em> join: it returns the body’s value as soon as the body
+settles, leaving the spawned tasks running under the owner. Its <code>Drop</code>
+cancels the owned nursery, so dropping the owner (at scope end or via
+<code>drop(owner)</code>) aborts in-flight bridged IO.</p>
+<p>Its nursery runs in <strong>detached mode</strong>: because nothing ever joins the owned
+children, a child failure that is not a cancellation echo takes the
+free-task reporting path (console, with the spawn origin) rather than being
+stored for a join, and a child does not cancel its siblings — ownership is
+lifetime, not fate-sharing. Cancellation echoes stay silent.</p>
+<h3 id="services-and-resources"><a class="header" href="#services-and-resources">Services and resources</a></h3>
+<p>A <code>[service]</code> struct that owns a resource field is itself a resource by
+containment, and its generated dispatcher builds per-<code>[rpc]</code> handler
+closures that capture <code>self</code> — which R9 forbids. R9’s module-level exemption
+does not apply here: <code>self</code> is a local store value, not a module global, so
+the capture is a genuine second owner. This collision is <strong>by design</strong>: the
+sanctioned shape is the module-level idiom — hoist the resource (a
+<code>Database</code>) to a module-level <code>let</code>, and let the store hold only its reactive
+state (plain data) and reach the resource by loan. The module-level resource
+is process-lifetime and never drops, and reachability keeps its initializer
+out of the client bundle.</p>
+<h3 id="honesty-limits"><a class="header" href="#honesty-limits">Honesty limits</a></h3>
+<p>The following are recorded limits the model does not promise, not bugs:</p>
+<ul>
+<li><strong>A never-settling await leaks its frame’s drops.</strong> An <em>unbridged</em> await
+that never resolves (nothing cancels it) leaves its frame — and the
+resources the frame owns — undropped. This is structured concurrency’s
+concern, not the memory model’s.</li>
+<li><strong>R11/R12 diagnostic residues</strong> (completeness, not soundness). The
+per-instantiation move scan descends into <em>direct</em> lexical closures only,
+so a double move of <code>T</code> inside a <em>nested</em> closure is not separately
+flagged (its capture is still caught); dispatched (trait-typed-receiver)
+callees are not re-discovered by R11’s scan or R12’s <code>any</code>-coercion check,
+matching the standing convention that convention checks skip dispatched
+callees — R11’s per-instantiation re-check is the net under that residue.
+A cross-file instantiation may anchor its <em>primary</em> span imprecisely (the
+body note carries the correct source). A module-<em>initializer</em> global →
+global move is not scanned — benign, since module globals never drop.</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../spec/types.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../spec/execution.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../spec/types.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../spec/execution.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/vilan-993df79f.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
