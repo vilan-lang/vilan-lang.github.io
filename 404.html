@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Vilan</title>
+    <meta name="robots" content="noindex">
+    <!-- The book moved from /vilan/ to /docs/ (road-to-launch P2). Released
+         binaries through v0.15.0 deep-link the old path from editor hovers
+         (via the github.io 301), so this forwarder must keep answering:
+         /vilan/<page> → /docs/<page>, fragment intact. Anything else gets
+         the home page. -->
+    <script>
+        var p = location.pathname;
+        if (p.indexOf('/vilan') === 0) {
+            location.replace('/docs' + p.slice('/vilan'.length)
+                + location.search + location.hash);
+        }
+    </script>
+</head>
+<body>
+    <p>Not found — <a href="/">vilan-lang.org</a> ·
+       <a href="/docs/">the docs</a></p>
+</body>
+</html>

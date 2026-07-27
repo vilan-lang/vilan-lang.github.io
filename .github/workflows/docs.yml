@@ -1,0 +1,57 @@
+# Build the vilan book INTO this site at /docs/ (road-to-launch P2; the
+# user's call: docs live at vilan-lang.org/docs/). This repo owns the build
+# so no cross-repo credential exists: it checks out the public toolchain
+# repo, builds the book, and commits the result to itself.
+#
+# Freshness: the vilan cut flow dispatches this workflow after pushing main
+# (gh workflow run docs.yml -R vilan-lang/vilan-lang.github.io); the daily
+# schedule is the safety net for anything missed.
+name: docs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"
+  push:
+    branches: [main]
+    paths: [".github/workflows/docs.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: vilan-lang/vilan
+          ref: main
+          path: toolchain
+      - name: Install mdBook
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-x86_64-unknown-linux-gnu.tar.gz \
+            | tar -xz -C "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Build the book into docs/
+        run: |
+          mdbook build toolchain/vilan/docs
+          rm -rf docs
+          mv toolchain/vilan/docs/book docs
+          rm -rf toolchain
+      - name: Commit if the book changed
+        run: |
+          git add -A docs
+          if git diff --cached --quiet; then
+            echo "::notice::the book is unchanged"
+          else
+            git -c user.name="docs-builder" -c user.email="docs@vilan-lang.org" \
+              commit -m "docs: rebuild the book from vilan-lang/vilan@main"
+            git push
+          fi
