@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The dev loop - The vilan documentation</title>
+        <title>The CLI - The vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -174,193 +174,119 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-dev-loop"><a class="header" href="#the-dev-loop">The dev loop</a></h1>
-<p>You built an app in the <a href="walkthrough.html">walkthrough</a>. This chapter is about
-<em>iterating</em> on it — the edit-save-see loop. <code>vilan run --watch</code> on a
-full-stack project closes that loop with <strong>hot module replacement (HMR)</strong>:
-save a source file and the running browser app updates in place, reactive
-state intact, without a full page reload.</p>
-<p>Nothing here needs the walkthrough app specifically. Any project with a
-browser leg will do, and <code>vilan init my-app --template fullstack</code> writes
-one (<a href="../tour/hello-vilan.html#start-a-project">Start a project</a>). From the
-project directory:</p>
-<pre><code class="language-sh">vilan run --watch .
-</code></pre>
-<p>A project with a browser leg prints one extra line at startup:</p>
-<pre><code class="language-text">hmr: dev channel on 127.0.0.1:35917
-</code></pre>
-<p>That is the <strong>dev channel</strong> — a tiny local endpoint the browser connects back
-to. From then on every save rebuilds all legs and the channel tells the
-browser exactly what changed. Nothing new to learn and no separate <code>dev</code>
-command: <code>run --watch</code> already <em>means</em> “the dev loop”.</p>
-<h2 id="what-each-edit-does"><a class="header" href="#what-each-edit-does">What each edit does</a></h2>
-<p>Change detection is by <strong>output bytes</strong>, not by guessing from the source: each
-save rebuilds every leg, and the <em>artifacts</em> are compared. That makes the
-verdict exact.</p>
+                        <h1 id="the-cli"><a class="header" href="#the-cli">The CLI</a></h1>
+<p>The whole toolchain is one binary. <code>vilan &lt;command&gt; --help</code> prints each
+command’s flags; this page adds the behavior the one-line help can’t
+carry. One rule up front: <strong><code>vilan upgrade</code> is the only command that
+touches the network.</strong> Everything else — builds, dependency resolution,
+tests — works offline (git dependencies are fetched once by the first
+build that needs them, then served from the cache forever).</p>
+<p>For the guided on-ramp, see <a href="../tour/hello-vilan.html">Hello Vilan</a>; for
+<code>--watch</code>, HMR, and the manifest keys that shape the dev loop, see
+<a href="../guide/dev-loop.html">the dev loop</a>.</p>
+<h2 id="vilan-init-name"><a class="header" href="#vilan-init-name"><code>vilan init [name]</code></a></h2>
+<p>Scaffolds a ready-to-run project: a manifest, sources that compile, and
+a <code>.gitignore</code>. With <code>name</code>, creates that directory (it must not exist
+or must be empty); without, scaffolds into the current directory (which
+must not already hold a <code>vilan.toml</code>). It never overwrites a file, and
+it creates no git repository — <code>git init</code> stays yours.</p>
+<p><code>--template &lt;name&gt;</code> picks the shape; omitted, an interactive prompt asks
+(without a terminal that is a clean error, never a hang):</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>You edited…</th><th>What happens</th></tr>
+<tr><th>Template</th><th>What you get</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Client code</strong></td><td>The browser bundle changes → a <strong>swap</strong>: the new bundle is evaluated in place, module state carried across (below). No reload.</td></tr>
-<tr><td><strong>A stylesheet only</strong></td><td>Just the CSS sidecar changed → the stylesheet is <strong>hot-swapped</strong>, no reload, no swap — the page doesn’t even flicker.</td></tr>
-<tr><td><strong>Server code</strong></td><td>The server bundle changed → the <strong>Node process restarts</strong>. The browser stays connected; its live rpc mirror reconnects on its own (the same backoff that survives a server crash) and resyncs from the server’s current values.</td></tr>
-<tr><td><strong>Shared code</strong> (a module both entries reach, or a <code>common</code> library both legs use)</td><td>Both bundles change → the server restarts <strong>and</strong> the browser swaps. The fresh client dials the new contract, so a changed rpc shape never leaves a stale client talking to a new server.</td></tr>
-<tr><td><strong>A file with a mistake</strong></td><td>The compile error shows in the terminal <em>and</em> as an in-page <strong>overlay</strong> — the real file, line, and message — while the running app keeps its last good build. Fix it and the next good save clears the overlay and swaps normally.</td></tr>
+<tr><td><code>node</code></td><td>a package that runs on node, with a sibling module and a test</td></tr>
+<tr><td><code>browser</code></td><td>a reactive browser app (a counter, an <code>index.html</code>)</td></tr>
+<tr><td><code>fullstack</code></td><td>one package, two entries — a browser client and a node server</td></tr>
 </tbody>
 </table>
 </div>
-<p>A server-only edit pushes <strong>nothing</strong> to the browser — the client is
-unaffected, so it isn’t disturbed. That the Node leg <em>restarts</em> rather than
-hot-swapping is deliberate: the process is cheap and a fresh start is always
-correct, so there is no server-side HMR to reason about.</p>
-<p>The error overlay carries the <strong>real diagnostics</strong> — the file, the <code>line:col</code>,
-the message, and any note — the same text your terminal shows, rendered over the
-page so the eyes already on the browser don’t miss it. The terminal stays
-authoritative; the overlay is the copy, and the next successful save clears it.</p>
-<h2 id="what-carries-across-a-swap-and-what-resets"><a class="header" href="#what-carries-across-a-swap-and-what-resets">What carries across a swap, and what resets</a></h2>
-<p>A swap re-evaluates the whole client bundle. Two things survive it:</p>
+<p>The templates are compiled and run by vilan’s own test suite, so a
+scaffold that stops working fails vilan’s build before it reaches yours.</p>
+<h2 id="vilan-build-file"><a class="header" href="#vilan-build-file"><code>vilan build [file]</code></a></h2>
+<p>Compiles to JavaScript. The path may be a <code>.vl</code> file, a project
+directory, or omitted — then the nearest <code>vilan.toml</code> decides what to
+build. A single-entry package writes <code>&lt;file&gt;.js</code> beside the entry; a
+multi-entry package writes <code>dist/&lt;name&gt;.js</code> per entry. Assets emitted at
+compile time (the styling system’s CSS) land beside the output.
+<code>[build] run</code> hooks execute first; a failing hook fails the build.</p>
 <ul>
-<li><strong>Module-level state.</strong> Every top-level binding is carried across by its
-key (<code>package::module::name</code>) and a fingerprint of its type. A plain-data
-binding carries its value; a module-level <code>Signal</code> or <code>Shared</code> carries its
-<em>payload</em> into a fresh cell. So <code>mut count</code> and a module-level list signal
-keep their live contents while you edit the view that renders them.</li>
-<li><strong>Everything the server holds.</strong> The server doesn’t swap — it restarts with
-its state in SQLite (or wherever it lives), and the client’s mirror resyncs.
-In a full-stack app that is <em>most</em> of your durable state, which is why the
-swap can afford to be simple about the rest.</li>
+<li><code>--stdout</code> — print the JavaScript instead of writing a file.</li>
+<li><code>--platform &lt;p&gt;</code> — <code>node</code>, <code>deno</code>, <code>bun</code>, <code>browser</code>, or <code>none</code>;
+overrides the package’s <code>target</code> (<code>--target</code> is an accepted alias).
+<code>none</code> checks against no platform’s layers — the strictest reading.</li>
+<li><code>--watch</code> — rebuild whenever a watched source changes (Ctrl-C stops).</li>
+<li><code>-d, --debug</code> — also emit <code>.parse.out</code> / <code>.analyze.out</code> /
+<code>.callgraph.out</code> dumps, for poking at the compiler’s view of your code.</li>
+<li><code>--backend js</code> — the only backend today; the flag exists so a future
+one has somewhere to live.</li>
 </ul>
-<p>Top-level bindings like these keep their live values while you edit the view
-that renders them:</p>
-<pre><code class="language-vilan browser">import std::dev;
-import std::reactive::Signal;
-
-// Carried across every swap by key + type. Edit main's body, save, and these
-// hold their values — only the view re-runs.
-mut opened = 0;
-let recent: Signal&lt;List&lt;str&gt;&gt; = Signal::new([]);
-
-fun main() {
-	opened = opened + 1;
-	recent.set(["home"]);
-}
-</code></pre>
-<p>What resets is state minted <strong>inside functions during mount</strong> — an ephemeral
-signal created in a component, the focused element, scroll position,
-half-typed text not yet pushed. Fine-grained reactivity gives these no stable
-identity to reattach to, so a swap lets them go. A plain browser refresh is the
-always-available complete reset.</p>
-<p><strong>The initializer-edit rule.</strong> Editing a binding’s <em>initializer</em> without
-changing its <em>type</em> keeps the live value — the new initializer does <strong>not</strong>
-run:</p>
-<pre><code class="language-vilan fragment">mut counter = 0;      // edit this to `mut counter = 100`, save…
-// …and `counter` stays at whatever it had climbed to. During iteration the
-// value you're watching *is* the work — this is the behavior every mainstream
-// hot-reloader converged on.
-</code></pre>
-<p>Change the binding’s <em>type</em>, though, and the old value is the wrong shape:
-that binding fresh-initializes (a “fingerprint miss”), which is the correct
-answer, not a failure. To carry a value your edit reshapes anyway, or to carry
-something minted inside a function, reach for the manual channel —
-<a href="../std/dev.html"><code>std::dev</code></a>’s <code>stash</code>/<code>take</code>.</p>
-<h2 id="escape-hatches"><a class="header" href="#escape-hatches">Escape hatches</a></h2>
+<h2 id="vilan-check-file"><a class="header" href="#vilan-check-file"><code>vilan check [file]</code></a></h2>
+<p><code>build</code> without the output: type-checks and reports diagnostics, writes
+nothing, and runs <strong>no</strong> <code>[build] run</code> hooks. Same path forms and flags
+(<code>--platform</code>, <code>--watch</code>, <code>-d</code>). In a multi-entry package it checks
+every entry, each under its own platform. Exit is non-zero when
+diagnostics were reported.</p>
+<h2 id="vilan-run-file-args"><a class="header" href="#vilan-run-file-args"><code>vilan run [file] [args…]</code></a></h2>
+<p>Builds and runs. Anything after the file is forwarded to the program —
+reach it with <code>process::args()</code>. Under <code>--watch</code> it rebuilds and
+restarts on every save; in a project with a browser leg, hot module
+replacement is on by default — the page swaps changed code in place
+instead of reloading (see <a href="../guide/dev-loop.html">the dev loop</a>).</p>
 <ul>
-<li><strong><code>--no-hmr</code></strong> — turn HMR off and get the plain restart-the-whole-app watch
-loop (exactly the pre-HMR behavior). Reach for it if a swap ever surprises
-you and you want the blunt instrument back.</li>
-<li><strong><code>--hmr-port &lt;port&gt;</code></strong> — the dev channel defaults to <code>35917</code>; change it if
-that port is taken. <code>--hmr-port 0</code> asks the OS for any free port and the
-startup line reports the one it got.</li>
-<li><strong>A browser refresh</strong> is always a full, clean reset — seed state lives only
-in the page’s heap, so reloading throws all of it away.</li>
+<li><code>--watch</code> — place it before the file, ahead of any program args.</li>
+<li><code>--no-hmr</code> — plain restart-the-server watching, no dev channel.</li>
+<li><code>--hmr-port &lt;port&gt;</code> — the <code>127.0.0.1</code> port for the HMR channel
+(<code>0</code> means an OS-assigned one).</li>
+<li><code>--entry &lt;name&gt;</code> — in a package (or workspace) with more than one
+runnable entry, which one to launch. The others still compile; they
+just don’t run. The manifest’s <code>default-entry</code> makes the flag
+unnecessary; with neither, the error names both ways to choose.</li>
 </ul>
-<h2 id="running-something-alongside-the-build"><a class="header" href="#running-something-alongside-the-build">Running something alongside the build</a></h2>
-<p>A project that needs a step Vilan doesn’t do — a Tailwind pass, an asset
-pipeline, a codegen sidecar — declares it in the manifest:</p>
-<pre><code class="language-toml">[build]
-run = "npx tailwindcss -i src/app.css -o dist/app.css"
-</code></pre>
-<p>Several steps go in a list and run in order:</p>
-<pre><code class="language-toml">[build]
-run = [
-	"npx tailwindcss -i src/app.css -o dist/app.css",
-	"node scripts/generate-icons.mjs",
-]
-</code></pre>
-<p>The rules are short:</p>
+<h2 id="vilan-fmt-paths"><a class="header" href="#vilan-fmt-paths"><code>vilan fmt [paths…]</code></a></h2>
+<p>Formats source files in place; directories are walked, and the default
+is the current directory. Formatting is conservative and a fixed point:</p>
 <ul>
-<li>They run <strong>before</strong> each build — including every <code>--watch</code> round — because a
-hook exists to produce something the build then consumes.</li>
-<li>Each is a command line for your shell (<code>sh -c</code> / <code>cmd /C</code>), so pipes, globs
-and <code>&amp;&amp;</code> work; the working directory is the manifest’s own, so relative paths
-mean what they say in the file you wrote them in.</li>
-<li>A hook that exits non-zero <strong>fails the build</strong>, naming the command. Nothing
-after it runs.</li>
-<li>Output goes straight to your terminal. (Under <code>vilan build --stdout</code>, which
-writes the emitted JS to stdout, a chatty hook shares that stream — redirect
-it in the command if you pipe the build.)</li>
-<li><code>vilan check</code> produces no artifacts, so it runs no hooks.</li>
+<li>A statement over 100 columns whose expression is a method chain
+splits — subject on the statement’s line, one <code>.link(…)</code> per line
+below it — and the rule applies per line, recursively: a nested chain
+or list literal that still overflows splits one level further in. A
+chain that fits stays on (or collapses back to) one line.</li>
+<li>Parenthesized groups you wrote are kept, even where the grammar
+doesn’t need them — a redundant paren is usually there for clarity.</li>
+<li>Argument lists are never wrapped: layout hangs off a call’s last
+argument, so a long earlier argument leaves a long line.</li>
+<li>A file the formatter cannot yet print faithfully is left byte-for-byte
+untouched, never half-formatted.</li>
 </ul>
-<h2 id="picking-which-server-to-run"><a class="header" href="#picking-which-server-to-run">Picking which server to run</a></h2>
-<p>You only need this section if your project has <strong>two or more</strong> runnable node
-legs — a <code>[project]</code> of several packages, or one package with several node
-<code>[entry.&lt;name&gt;]</code> sections. The usual one-package app has a single node entry,
-so <code>run</code> just runs it.</p>
-<p><code>run</code> (and <code>run --watch</code>) executes one Node leg. A project with a single <code>node</code>
-leg needs no help — that one runs. With two or more (say a <code>server</code> and a
-diagnostics <code>probe</code>), designate one in the manifest:</p>
-<pre><code class="language-toml"># one package, several entries
-[package]
-name = "app"
-default-entry = "server"
-</code></pre>
-<pre><code class="language-toml"># a workspace of packages
-[project]
-packages = ["client", "server", "probe"]
-default-entry = "server"
-</code></pre>
-<p>Then <code>vilan run .</code> needs no flag. For a one-off — running the probe instead —
-<code>--entry &lt;name&gt;</code> overrides the manifest:</p>
-<pre><code class="language-sh">vilan run --watch --entry probe .
-</code></pre>
-<p>With neither, <code>run</code> stops and lists the candidates:</p>
-<pre><code class="language-text">error: this workspace has more than one `node` package to run — pick one with --entry &lt;name&gt;, or designate one for good with `[project] default-entry` in vilan.toml: probe, server
-</code></pre>
-<p>A <code>default-entry</code> that names nothing runnable is an error too, rather than a
-silent fallback — it names an <code>[entry.&lt;name&gt;]</code> section in the package shape, and
-a member package’s <code>name</code> in the workspace shape.</p>
-<p>The non-selected Node legs still <strong>compile</strong> as part of the project — their
-bundles land in <code>dist/</code> and a shared edit still recompiles them — they just
-aren’t launched. Under <code>--watch</code> the browser legs hot-swap exactly as usual; the
-chosen server restarts on its own edits, and a change to a leg that isn’t running
-does nothing visible (its <code>dist/</code> bundle refreshes, but nothing restarts).</p>
-<h2 id="the-css-link-idiom"><a class="header" href="#the-css-link-idiom">The CSS <code>&lt;link&gt;</code> idiom</a></h2>
-<p>CSS hot-swap works by bumping the cache-buster on your stylesheet <code>&lt;link&gt;</code>, so
-it needs the stylesheet to <em>be</em> a <code>&lt;link&gt;</code> to <code>dist/&lt;leg&gt;.css</code>:</p>
-<pre><code class="language-text">&lt;link rel="stylesheet" href="/client.css"&gt;
-</code></pre>
-<p>An app that inlines its CSS into the page instead gets a full <strong>swap</strong> on a
-style change rather than the flicker-free stylesheet reload — still correct
-(the byte-diff classifies inlined CSS as a bundle change), just not as
-surgical. The <code>&lt;link&gt;</code> form is the one to prefer for the tightest loop.</p>
-<h2 id="cleaning-up-strays"><a class="header" href="#cleaning-up-strays">Cleaning up strays</a></h2>
-<p>The swap disposes the UI root and closes the live rpc socket for you. Anything
-<em>else</em> a bundle started outside the reactive system — a raw interval, a bare
-task — keeps running after a swap unless you register a cleanup. That, plus
-the <code>stash</code>/<code>take</code> carryover channel and the <code>hmr_active</code> guard, is the whole
-of <a href="../std/dev.html"><code>std::dev</code></a>.</p>
+<p><code>--check</code> reports the files that would change and exits 1 if any —
+the CI spelling. Nothing is rewritten.</p>
+<h2 id="vilan-test-path"><a class="header" href="#vilan-test-path"><code>vilan test [path]</code></a></h2>
+<p>Runs <code>*_test.vl</code> files — the given file, a directory of tests, or every
+test in the project. A test file lives beside the code it tests and
+compiles as a file <em>of</em> its package: <code>pkg::</code> siblings and dependencies
+resolve exactly as they do for the rest of the package. Each test passes
+by exiting 0; a failed <code>assert</code> panics, which fails it. Tests run on
+node whatever the package’s <code>target</code> says. <code>--watch</code> re-runs on save.</p>
+<h2 id="vilan-upgrade"><a class="header" href="#vilan-upgrade"><code>vilan upgrade</code></a></h2>
+<p>Replaces this binary — and <code>vilan-lsp</code> beside it — with the newest
+release, downloading for your platform and swapping the pair atomically
+(<code>vilan-lsp</code> first, so the two are never newer-cli/older-lsp). The
+licenses and third-party notices travel along. <code>--check</code> reports whether
+a newer release exists and changes nothing.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../guide/walkthrough.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../spec/appendix.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../std/collections.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../appendix/errors.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -370,11 +296,11 @@ of <a href="../std/dev.html"><code>std::dev</code></a>.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../guide/walkthrough.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../spec/appendix.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../std/collections.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../appendix/errors.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
