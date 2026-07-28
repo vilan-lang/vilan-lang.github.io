@@ -1,3 +1,8 @@
+"Vilan Display" is a Modified Version of the Raleway font software:
+subset to the latin range and renamed, as the Open Font License requires
+of modified versions ("Raleway" is a Reserved Font Name). The original
+copyright notice and license follow, verbatim.
+
 Copyright 2010 The Raleway Project Authors (impallari@gmail.com), with Reserved Font Name "Raleway".
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
