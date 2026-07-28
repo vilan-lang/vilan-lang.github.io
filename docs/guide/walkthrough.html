@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,11 +182,14 @@ live between browser windows, and an editor that saves as you type.</p>
 <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/walkthrough/"><code>vilan/examples/walkthrough/</code></a>, about 500
 lines in <strong>one package</strong>. Every snippet below is quoted from those files,
 and the test suite builds the app on every run, so this chapter can’t
-quietly rot. To run it:</p>
-<pre><code class="language-sh">cd vilan/examples/walkthrough
+quietly rot. To run it, clone the repository and start it:</p>
+<pre><code class="language-sh">git clone https://github.com/vilan-lang/vilan
+cd vilan/vilan/examples/walkthrough
 vilan run .             # builds both entries, starts the server
                         # → http://localhost:4600
 </code></pre>
+<p>(You can also read straight through without running anything — every
+snippet below is reproduced in full.)</p>
 <p>Open two browser windows side by side. Sign in, add a note in one window,
 and watch it appear in the other. Open a note and type — the other window
 follows keystroke by keystroke.</p>
@@ -317,7 +320,7 @@ is now the boring file, which is the point:</p>
 			"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
 			_ =&gt; Response::builder().set_header("Content-Type", "text/html").body(app_html).build(),
 		}
-	}, || print("notes server listening on http://localhost:4600"));
+	}, |server| print(i"notes server listening on {server.url()}"));
 }
 </code></pre>
 <p>The catch-all serves the shell for every unknown path. That’s what makes
@@ -423,7 +426,7 @@ the error names the whole chain from <code>main</code> down to the SQL.</li>
 <tr><th>In this app</th><th>Taught in</th></tr>
 </thead>
 <tbody>
-<tr><td>the package, its two entries</td><td><a href="../tour/hello-vilan.html">Hello vilan</a>, <a href="../tour/platforms.html">Platforms</a></td></tr>
+<tr><td>the package, its two entries</td><td><a href="../tour/hello-vilan.html">Hello Vilan</a>, <a href="../tour/platforms.html">Platforms</a></td></tr>
 <tr><td><code>Note</code>, derives, the enums</td><td><a href="../tour/data-and-traits.html">Data &amp; traits</a></td></tr>
 <tr><td>signals, effects, drafts</td><td><a href="reactive.html">Reactive state</a></td></tr>
 <tr><td>views, <code>bind_each</code>, <code>when</code>, <code>show</code></td><td><a href="ui.html">Building UI</a></td></tr>
@@ -490,7 +493,7 @@ is exactly the one above.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

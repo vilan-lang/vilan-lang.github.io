@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -179,7 +179,7 @@
 <p>Normative rules: spec <a href="../spec/execution.html">§7 Execution &amp; async</a>.</p>
 </blockquote>
 <p>If you know async/await in JavaScript, here is the whole model in one
-line: vilan keeps the machinery and deletes the keywords. Calling an
+line: Vilan keeps the machinery and deletes the keywords. Calling an
 async function just gives you the value. You don’t write <code>await</code>, you
 don’t mark functions <code>async</code>, and you never see <code>Promise&lt;T&gt;</code> in a return
 type. The compiler figures out which functions suspend and awaits the
@@ -222,7 +222,7 @@ fun main() {
 	print(await pending);                     // now collect the spawned one
 }
 </code></pre>
-<p>So in JS you mark the async case and waiting is explicit. In vilan you
+<p>So in JS you mark the async case and waiting is explicit. In Vilan you
 mark the <em>concurrent</em> case and waiting is the default. Fire-and-forget
 is just spawning and dropping the task: <code>let _done = async save(entry);</code>. To wait on many at once, <code>Task::settle_all(tasks)</code> from
 <code>std::task</code>.</p>
@@ -403,7 +403,21 @@ for it; keep bare spawns for genuine fire-and-forget.</p>
 <h2 id="timers"><a class="header" href="#timers">Timers</a></h2>
 <p>From <code>std::time</code>: <code>sleep_for(duration)</code> and <code>sleep(millis)</code> suspend.
 <code>Duration::millis/seconds/minutes/hours/days</code> build durations. <code>now()</code>
-reads the clock. Details in the <a href="../std/time.html">time reference</a>.</p>
+reads the clock.</p>
+<p>A <code>Timer</code> is a delay you keep hold of — it starts on construction, and
+you either wait for its verdict or call it off:</p>
+<pre><code class="language-vilan">import std::print;
+import std::time::Timer;
+
+fun main() {
+	let pending = Timer::after(2400);
+	pending.cancel();
+	print(pending.wait());   // false — cancelled before it fired
+}
+</code></pre>
+<p><code>wait()</code> yields <code>true</code> if the timer fired and <code>false</code> if it was
+cancelled, and that verdict is remembered for every later waiter.
+Details in the <a href="../std/time.html">time reference</a>.</p>
 <h2 id="what-async-does-not-do"><a class="header" href="#what-async-does-not-do">What async does NOT do</a></h2>
 <ul>
 <li><strong>No promise-colored signatures.</strong> Return types are the plain values.
@@ -488,7 +502,7 @@ topic, not a language rule.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -253,7 +253,7 @@ impl SocketDuplex {
 	port: i32,
 	protocol: RpcProtocol,
 	fallback: |Request| Response,   // plain-http requests: assets + app shell
-	on_ready: || void,
+	on_ready: |Server| void,        // `server.port()` is the port actually bound
 )
 </code></pre>
 <p><code>serve_service</code> = WebSocket upgrade + per-connection session registration
@@ -321,7 +321,7 @@ transport or protocol bridge.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

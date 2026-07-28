@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -231,7 +231,7 @@ on node the process exits when it finishes. <a href="../tour/async.html">Async</
 the owner is rebound, resized, moved, or dropped; a <a href="#claim">claim</a> is valid
 only while it has not. <a href="../spec/memory.html">The memory model</a>.</p>
 <p><strong>extern</strong> — a declaration binding a host (JavaScript) function, object,
-or property so vilan code can call it. <a href="../tour/platforms.html">Platforms</a>.</p>
+or property so Vilan code can call it. <a href="../tour/platforms.html">Platforms</a>.</p>
 <p><strong>frame</strong> — one encoded message on the wire. You only meet it when
 building custom transports. <a href="../std/rpc.html">rpc reference</a>.</p>
 <p><strong>handle</strong> — a small copyable id into an <a href="#arena">arena</a>. Storable
@@ -251,6 +251,10 @@ receives a live copy of. The server writes; every client updates.
 <p><strong>monomorphization</strong> — how generics compile: each concrete use gets its
 own specialized code, so generic dispatch has no runtime cost.
 <a href="../tour/data-and-traits.html">Data and traits</a>.</p>
+<p><strong>nursery</strong> — the structured way to spawn: <code>nursery(body)</code> joins every
+task spawned in the body’s dynamic extent before returning the body’s
+value, applies the first-observed error rule, and owns the cancellation
+signal std IO listens on. <a href="../tour/async.html">Async</a>.</p>
 <p><strong>owner</strong> — the object that collects subscriptions and disposes them
 when its subtree dies. Created by the framework at
 <a href="#boundary">boundaries</a>; you rarely touch one directly.
@@ -271,7 +275,7 @@ types, <code>List</code>, <code>void</code>. Everything else is imported explici
 and is destroyed deterministically at scope end — a <code>Database</code>, an
 <code>OwnedNursery</code>. <a href="../tour/resources.html">Resources</a>.</p>
 <p><strong>safe integer</strong> — an integer JavaScript’s 64-bit floats represent
-exactly: anything within ±2^53. vilan’s <code>i53</code>/<code>u53</code> are named for this
+exactly: anything within ±2^53. Vilan’s <code>i53</code>/<code>u53</code> are named for this
 window. <a href="../tour/values-and-types.html">Values and types</a>.</p>
 <p><strong>service</strong> — a server struct whose <code>[rpc]</code> methods clients call and
 whose <code>[expose]</code>d signals clients <a href="#mirror">mirror</a>.
@@ -284,10 +288,6 @@ Gives you a <code>Task&lt;T&gt;</code>. <a href="../tour/async.html">Async</a>.<
 same-task. A task’s failure is absorbed at the spawn — a later <code>await</code>
 receives it; an unobserved failure is reported, not crashed on.
 <a href="../tour/async.html">Async</a>.</p>
-<p><strong>nursery</strong> — the structured way to spawn: <code>nursery(body)</code> joins every
-task spawned in the body’s dynamic extent before returning the body’s
-value, applies the first-observed error rule, and owns the cancellation
-signal std IO listens on. <a href="../tour/async.html">Async</a>.</p>
 <p><strong>subscription</strong> — one live “call me on change” registration on a
 signal. Effects manage theirs through <a href="#owner">owners</a>; manual <code>sub</code>
 hands you the object to dispose. <a href="../guide/reactive.html">Reactive state</a>.</p>
@@ -363,7 +363,7 @@ and options of Wire types, and anything with <code>[derive(Wire)]</code>.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

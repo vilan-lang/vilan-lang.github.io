@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,14 +178,14 @@
 <blockquote>
 <p>Normative rules: spec <a href="../spec/memory.html">§6 The memory model</a>.</p>
 </blockquote>
-<p>This is the chapter where vilan differs most from JavaScript, so it goes
+<p>This is the chapter where Vilan differs most from JavaScript, so it goes
 slowly. The one-sentence version: <strong>values are copied, and sharing is
 something you ask for explicitly.</strong></p>
 <p>In JavaScript, objects and arrays are shared by reference. Passing one to
 a function means the function can mutate your data. Storing one in two
 places means a change shows up in both. That’s convenient right up until
 it isn’t, and then it’s a bug hunt.</p>
-<p>vilan flips the default. Everything copies. Then it gives you four tools,
+<p>Vilan flips the default. Everything copies. Then it gives you four tools,
 each for one kind of sharing, so that when data <em>is</em> shared, the code
 says so. Here’s the decision tree you’ll internalize quickly:</p>
 <ol>
@@ -265,7 +265,7 @@ moment.</strong> A view can be a parameter or a short-lived local. It cannot be
 stored in a struct field, put in a list, returned into long-lived state,
 or held across an <code>await</code>. Lend, use, done. That confinement is what
 makes views safe without a whole lifetime system — if you’ve heard Rust
-horror stories, this is the part vilan deliberately keeps small.</p>
+horror stories, this is the part Vilan deliberately keeps small.</p>
 <p>Views also make loops that mutate in place. A plain <code>for x in list</code>
 copies each element; <code>for e in &amp;mut list</code> gives you writable views
 instead:</p>
@@ -422,7 +422,7 @@ at the function boundary, or restructure around <code>Shared</code> or a signal�
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

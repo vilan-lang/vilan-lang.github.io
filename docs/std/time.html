@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,7 +178,7 @@
 <p>Instants, durations, and timers. Both types are Wire — they ride rpc
 payloads (<code>created_at: Instant</code> in a mirrored record is the standard
 timestamp shape).</p>
-<pre><code class="language-vilan fragment">import std::time::{ now, Instant, Duration, sleep, sleep_for };
+<pre><code class="language-vilan fragment">import std::time::{ now, Instant, Duration, sleep, sleep_for, Timer };
 </code></pre>
 <h2 id="instant"><a class="header" href="#instant">Instant</a></h2>
 <p>A moment in time — epoch milliseconds in an <code>i53</code> under the hood.</p>
@@ -226,11 +226,54 @@ fun main() {
 <p>Ordering two instants (or durations) is the <code>&lt;</code>/<code>&lt;=</code>/<code>&gt;</code>/<code>&gt;=</code> operators
 dispatching through their <code>PartialOrd</code> impls — the same
 <code>partial_compare</code> you’d call by hand.</p>
-<h2 id="timers"><a class="header" href="#timers">Timers</a></h2>
+<h2 id="sleeping"><a class="header" href="#sleeping">Sleeping</a></h2>
 <pre><code class="language-vilan fragment">fun sleep(ms: i32)                  // suspend (async; callers implicitly await)
 fun sleep_for(duration: Duration)
-fun set_timeout(callback: || void, ms: i32)   // host setTimeout, fire-and-forget
 </code></pre>
+<p>Inside a nursery’s extent a sleep carries the ambient cancel signal, so
+cancelling the nursery cuts it short instead of waiting the timer out.</p>
+<h2 id="timer"><a class="header" href="#timer">Timer</a></h2>
+<p>A sleep nobody can reach into is sometimes not what you want: you need to
+start a delay now, hand it around, and later either learn that it fired or
+take it back. That’s a <code>Timer</code> — <code>setTimeout</code> and <code>clearTimeout</code> as one
+value.</p>
+<pre><code class="language-vilan fragment">impl Timer {
+	fun after(ms: i32): Timer                  // starts NOW
+	fun after_for(duration: Duration): Timer
+	fun wait(self): bool                       // async; true = fired, false = cancelled
+	fun cancel(self)
+}
+</code></pre>
+<p>A timer starts on construction and settles exactly once, on a <strong>verdict</strong>:
+<code>true</code> if it fired, <code>false</code> if <code>cancel()</code> got there first. The verdict is
+remembered, so every waiter sees the same answer — one parked before it
+settled, one arriving long after — and asking a settled timer is immediate.</p>
+<pre><code class="language-vilan">import std::print;
+import std::time::Timer;
+
+fun main() {
+	let revert = Timer::after(2400);
+	// … something happens that makes the pending revert wrong …
+	revert.cancel();
+	print(revert.wait());   // false — it never fired
+}
+</code></pre>
+<p>That is the re-clickable-button shape: keep the timer in hand, and a new
+click cancels the one still pending before starting its own.</p>
+<p><code>Timer</code> is an ordinary value wrapping one host handle, the way a <code>Signal</code>
+wraps one cell — copying it (assigning, passing, storing it in a field)
+shares the same timer, so cancelling through any copy settles them all.</p>
+<h3 id="timers-and-nurseries"><a class="header" href="#timers-and-nurseries">Timers and nurseries</a></h3>
+<p><code>wait</code> carries the ambient cancel signal exactly as <code>sleep</code> does, and the
+difference between the two cancellations matters:</p>
+<ul>
+<li><strong><code>timer.cancel()</code></strong> is a verdict. The host timer is cleared and every
+waiter resolves <code>false</code>.</li>
+<li><strong>A cancelling nursery</strong> tears down the task that was awaiting — the
+structured path — and does <em>not</em> touch the timer. No verdict, no
+<code>clearTimeout</code>: the timer belongs to whoever holds the value, so its other
+holders can still wait on it, or call it off themselves.</li>
+</ul>
 <h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
 <ul>
 <li>Duration constructors take <code>i53</code> — remember the suffix on computed
@@ -238,6 +281,10 @@ literals (<code>Duration::millis(500i53 * factor)</code>); see
 <a href="../appendix/gotchas.html">gotchas</a>.</li>
 <li><code>now()</code> is a host call, so it can’t be <code>const</code>-folded, and programs using
 it aren’t output-deterministic — keep it out of golden-file tests.</li>
+<li>A pending <code>Timer</code> keeps the host alive: on node the process will not exit
+while one is outstanding, exactly as an outstanding <code>sleep</code> holds it open.
+There is no unref knob — cancel the timer if the program should be free to
+end.</li>
 <li>Wire format: an <code>Instant</code> serializes as its <code>i53</code> millis — exact for any
 realistic date (i53 rides the wire as a float’s 53 bits, safe past year
 200,000).</li>
@@ -294,7 +341,7 @@ realistic date (i53 rides the wire as a float’s 53 bits, safe past year
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

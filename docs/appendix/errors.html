@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,12 +185,12 @@ topic rather than by message.)</p>
 The name isn’t visible here. Usually a missing <code>import</code> — remember that
 everything, even <code>print</code>, is imported explicitly. If you did import it,
 check for a typo or a shadowing local.
-→ <a href="../tour/hello-vilan.html">Hello vilan</a>, <a href="../spec/names.html">spec §4</a></p>
+→ <a href="../tour/hello-vilan.html">Hello Vilan</a>, <a href="../spec/names.html">spec §4</a></p>
 <p><strong>“<code>std</code> is a namespace, not a value — import the module first …”</strong>
 You wrote a qualified path like <code>std::math::min(1, 2)</code> inline. That
 spelling isn’t supported. Import the module, then qualify through its
 name: <code>import std::math;</code> and <code>math::min(1, 2)</code>.
-→ <a href="../tour/hello-vilan.html">Hello vilan</a></p>
+→ <a href="../tour/hello-vilan.html">Hello Vilan</a></p>
 <p><strong>“<code>…</code> requires the <code>…</code> layer of <code>std</code> and cannot run on <code>…</code>”</strong>
 Code reachable from this build’s entry calls into a module the platform
 doesn’t have — <code>std::fs</code> from a browser build, <code>std::dom</code> from a node
@@ -210,7 +210,7 @@ the two fixes.
 The path names a module file that doesn’t exist. <code>pkg::routes</code> means
 “<code>routes.vl</code> in this package’s source root” — check the file name and
 the package you’re in.
-→ <a href="../tour/hello-vilan.html">Hello vilan</a></p>
+→ <a href="../tour/hello-vilan.html">Hello Vilan</a></p>
 <p><strong>“module ‘…’ resolved to ‘…’ on disk, but it is imported as ‘…’”</strong>
 Your filesystem ignores case (NTFS, and macOS by default) and answered
 the import with a differently-cased file. Module names match byte for
@@ -265,7 +265,7 @@ no implicit conversions. An unsuffixed literal adapts to its peer
 (<code>stamp &lt; 3</code> is fine for an <code>i53</code> stamp); two differently-typed
 <em>variables</em> need a suffix or an <code>as_*</code> conversion. Related:
 <strong>“<code>bool</code> has no ordering”</strong> (compare with <code>==</code>/<code>!=</code>) and
-<strong>“<code>&amp;&amp;</code> takes <code>bool</code> operands”</strong> (vilan has no truthiness).
+<strong>“<code>&amp;&amp;</code> takes <code>bool</code> operands”</strong> (Vilan has no truthiness).
 → <a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“type ‘…’ does not implement the <code>…</code> operator; add <code>impl … with …</code> providing <code>…</code>”</strong>
 An operator was used on a type without the matching trait impl — <code>+</code>
@@ -342,13 +342,13 @@ or, if you really need two owners, restructure with <code>Option</code> + <code>
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“cannot move a resource field out of a live aggregate — … no partial moves …”</strong>
 <code>let x = s.db</code>, or passing / returning <code>s.db</code> by value, would move a
-resource out of a struct that is still alive — v1 has no partial moves.
+resource out of a struct that is still alive — there are no partial moves.
 Loan the field (<code>&amp;s.db</code>, <code>&amp;mut s.db</code>, <code>s.db.method(…)</code>), or make the field
 an <code>Option&lt;…&gt;</code> and <code>take()</code> it out.
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“<code>…</code> is moved on one path through this branch but not another — …”</strong>
 An <code>if</code>/<code>match</code> moves the binding on some paths and not others, so its
-end-of-scope ownership isn’t static (v1 has no runtime drop flags). Move it
+end-of-scope ownership isn’t static (there are no runtime drop flags). Move it
 on <em>every</em> path, or on none — or hold it in an <code>Option</code> and <code>take()</code> on the
 path that consumes it. A diverging leg (one that <code>ret</code>s or <code>jump</code>s out) is
 exempt: it never reaches the merge.
@@ -403,7 +403,7 @@ instead.
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“<code>…</code> cannot hold the resource <code>…</code> — a native container’s internals are host code …”</strong>
 <code>List</code>, <code>Map</code>, <code>Set</code>, and the external generics (<code>Shared</code>, <code>Task</code>,
-<code>Promise</code>, <code>Context</code>) can’t hold a resource in v1 — the move checker
+<code>Promise</code>, <code>Context</code>) can’t hold a resource — the move checker
 can’t see inside host storage. <code>Option</code> is the sanctioned resource
 container; or keep the resource in a struct field.
 → <a href="../tour/resources.html">Resources</a></p>
@@ -421,7 +421,7 @@ uses the cooperative <code>Disposable</code> protocol, not <code>Drop</code>.)
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“<code>drop</code> for <code>…</code> is async — teardown must be synchronous …”</strong>
 A <code>drop</code> body may not be <code>async</code>, nor await (call an async function): a
-destructor runs synchronously in v1. Cancel owned tasks through an
+destructor runs synchronously. Cancel owned tasks through an
 <code>OwnedNursery</code> — whose own <code>drop</code> cancels them — rather than awaiting them.
 Awaited teardown is a future design.
 → <a href="../tour/resources.html">Resources</a></p>
@@ -452,7 +452,7 @@ spawned <code>async { … }</code> block. The transitive form (“this call pass
 async closure that reaches <code>…</code>”) points at the call that made the
 closure async and notes where it was forwarded.
 → <a href="../tour/async.html">Async</a>, <a href="../guide/reactive.html">Reactivity</a></p>
-<p><strong>“<code>…</code> is a host (<code>external</code>) function — it cannot await a vilan closure …”</strong>
+<p><strong>“<code>…</code> is a host (<code>external</code>) function — it cannot await a Vilan closure …”</strong>
 Host code can’t await your callback, so an <code>external</code> function’s
 value-returning closure parameters only accept synchronous closures
 (void-returning ones spawn, as everywhere). A parameter <em>declared</em>
@@ -560,6 +560,15 @@ parentheses, <code>if p == Point { … } { … }</code> leaves a bare <code>Poin
 condition’s operand, which reports <strong>“<code>Point</code> is a type, not a value”</strong>.
 Parenthesize the literal: <code>if p == (Point { x = 1 }) { … }</code>.
 → <a href="../spec/grammar.html">spec §3.8</a></p>
+<p><strong>“a string cannot span lines unless it is triple-quoted …”</strong>
+A <code>"…"</code> or <code>i"…"</code> ran into a line break before its closing quote. Either
+the quote is missing — that is the common case, and the error is reported
+on the string’s own line rather than wherever the next <code>"</code> happens to be
+— or the text really is multi-line, in which case write it <code>"""…"""</code>
+(<code>i"""…"""</code> with holes). A single line break inside a one-line string is
+<code>\n</code>. Nothing escapes a line break: a trailing <code>\</code> does not continue the
+literal onto the next line.
+→ <a href="../tour/values-and-types.html">Values and types</a>, <a href="../spec/lexical.html">spec §2.3</a></p>
 <p><strong>“<code>Name</code> is a type, not a value”</strong> (also <em>“a trait / a type parameter /
 a module, not a value”</em>)
 A type, trait, type parameter, or module name was used where a value is
@@ -619,7 +628,7 @@ static (<code>Point::new(…)</code>).
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

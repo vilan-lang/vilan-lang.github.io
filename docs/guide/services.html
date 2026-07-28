@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,7 +175,7 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="services--rpc"><a class="header" href="#services--rpc">Services &amp; RPC</a></h1>
-<p>This is the chapter where vilan’s full-stack story comes together. The
+<p>This is the chapter where Vilan’s full-stack story comes together. The
 short version: you write one ordinary struct on the server, mark a few
 things on it, and you get a typed client, live data sync, and reconnect
 handling without writing any protocol code.</p>
@@ -229,7 +229,7 @@ fun main() {
 	};
 	serve_service(4000, notes.dispatcher().into_protocol(json_codec()), |request| {
 		Response::builder().body("app shell here").build()
-	}, || print("listening on :4000"));
+	}, |server| print(i"listening on {server.url()}"));
 }
 </code></pre>
 <p>And a client. <code>NotesClient::connect</code> gives you an object whose exposed
@@ -285,7 +285,7 @@ browser build may do that, and the <a href="walkthrough.html">walkthrough</a> fo
 the full shape.</p>
 <h2 id="what-can-cross-the-wire-wire"><a class="header" href="#what-can-cross-the-wire-wire">What can cross the wire: <code>Wire</code></a></h2>
 <p>Everything that travels — rpc parameters, return types, mirrored
-payloads — must be serializable, which vilan calls <strong>Wire</strong>. The scalars
+payloads — must be serializable, which Vilan calls <strong>Wire</strong>. The scalars
 are Wire (<code>bool</code>, the integers including <code>i53</code>, floats, <code>str</code>). <code>List</code>
 and <code>Option</code> of Wire types are Wire. And your own types opt in with a
 derive:</p>
@@ -301,6 +301,42 @@ exactly where you want to find out.</p>
 <p>The codec is chosen at connect time: <code>json_codec()</code> for a readable wire,
 <code>binary_codec()</code> for a compact one. Client and server must use the same
 one.</p>
+<h2 id="naming-server-entities-handlet"><a class="header" href="#naming-server-entities-handlet">Naming server entities: <code>Handle&lt;T&gt;</code></a></h2>
+<p>Payloads carry <em>data</em>. When a client needs to talk about a <strong>thing the
+server owns</strong> — the node to update, the draft to commit, the route’s
+entity — it needs a name for it, and the name has to survive the round
+trip. That name is <code>Handle&lt;T&gt;</code> from <code>std::arena</code>, which is <code>Wire</code>:</p>
+<pre><code class="language-vilan fragment">[derive(Wire)]
+struct Rename { node: Handle&lt;Doc&gt;, title: str }
+
+[service]
+struct Docs {
+	docs: Arena&lt;Doc&gt;,
+}
+</code></pre>
+<p>The server hands out handles; the client stores them and quotes them
+back. Only <code>{ index, generation }</code> travels — the <code>T</code> is phantom — so the
+entity itself never has to be Wire, and never has to leave the server.</p>
+<p>The payoff is what happens when the entity is gone. The arena’s
+generation check answers a stale handle with <code>None</code>, so a client acting
+on something another client just deleted gets a clean “not there”
+instead of a phantom write into a reused slot. It is the same rule local
+code already lives by, extended to the wire, and it is why a handle
+beats an integer id you check by hand.</p>
+<p><strong>Scope the arena to the session.</strong> <code>(index, generation)</code> is guessable, so
+an arena shared across tenants hands every client names that mean
+something to the others. Create the arena when the session is
+established and drop it with the session: a handle from one session then
+names nothing in another, by construction. Authorize the session first;
+then look the handle up in that session’s arena.</p>
+<p>When the arena genuinely has to be shared, <code>Arena::branded()</code> numbers its
+generations from a random base instead of <code>0</code>, so its handles resolve to
+<code>None</code> in any other arena rather than naming the slot of the same index.
+Nothing else changes — staleness, reuse and the <code>None</code> answer are as
+before. Treat it as a confusion guard, not an authorization check: the
+brand rides inside the handles it issues, so a client with one valid
+handle can derive it. It keeps tenants’ names from colliding; the session
+check is still what decides who may act.</p>
 <h2 id="what-rpc-calls-do"><a class="header" href="#what-rpc-calls-do">What rpc calls do</a></h2>
 <ul>
 <li>On the client they return <code>Result&lt;T, RpcError&gt;</code> and are implicitly
@@ -358,9 +394,9 @@ never re-subscribe manually. The full state machine is in the
 <a href="../std/rpc.html">rpc reference</a>.</p>
 </blockquote>
 <h2 id="authentication"><a class="header" href="#authentication">Authentication</a></h2>
-<p>The straightforward shape, proven in the kolt pilot: a <code>login</code> rpc
-returns a token, later rpcs take the token as their first parameter, and
-the server validates it per call.</p>
+<p>The straightforward shape, and the one the walkthrough app uses: a
+<code>login</code> rpc returns a token, later rpcs take the token as their first
+parameter, and the server validates it per call.</p>
 <pre><code class="language-vilan fragment">[rpc]
 fun login(self, username: str, password: str): AuthOutcome { … }
 
@@ -396,7 +432,7 @@ longer the only legal home for anything.</p>
 	port,
 	service.dispatcher().into_protocol(json_codec()),
 	|request| …,       // http fallback: serve assets + the app shell
-	|| …,              // on_ready
+	|server| …,        // on_ready — `server.port()` is the bound port
 )
 </code></pre>
 <p><code>dispatcher()</code> is generated by <code>[service]</code>. The fallback answers every
@@ -468,7 +504,7 @@ tasks that write signals when done.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

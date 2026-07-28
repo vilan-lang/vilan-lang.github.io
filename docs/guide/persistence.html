@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,7 +181,7 @@ process itself via <code>std::process</code>. These modules live in the process
 layer, so they’re available in node/deno/bun builds. The rpc layer that
 sits on top is <a href="services.html">Services &amp; RPC</a>.</p>
 <h2 id="sqlite-stddb"><a class="header" href="#sqlite-stddb">SQLite: <code>std::db</code></a></h2>
-<p>vilan ships with an embedded SQLite binding (node’s built-in SQLite
+<p>Vilan ships with an embedded SQLite binding (node’s built-in SQLite
 underneath). There is no ORM and no query builder. You write SQL, with
 <code>?</code> placeholders for values:</p>
 <pre><code class="language-vilan norun">import std::print;
@@ -190,11 +190,13 @@ import std::option::Option::{ self, Some, None };
 
 fun main() {
 	let db = Database::open("app.db");
-	db.exec("CREATE TABLE IF NOT EXISTS task (
+	db.exec("""
+	CREATE TABLE IF NOT EXISTS task (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		created_at INTEGER NOT NULL
-	)");
+	)
+	""");
 
 	let id = db.prepare("INSERT INTO task (name, created_at) VALUES (?, ?)")
 		.run(["write docs", 1720656000000i53]);
@@ -289,7 +291,7 @@ long-lived <em>client</em> process (a probe holding a socket, say) has to keep
 <code>main</code> open itself — await something that ends with the app, or
 <code>sleep_for</code> a long duration.</p>
 <h2 id="putting-it-together"><a class="header" href="#putting-it-together">Putting it together</a></h2>
-<p>The boot sequence of a kolt-shaped server, in order:</p>
+<p>The boot sequence of a full-stack server, in order:</p>
 <ol>
 <li><code>Database::open</code>, then <code>exec</code> the schema
 (<code>CREATE TABLE IF NOT EXISTS …</code>).</li>
@@ -354,7 +356,7 @@ was never stored.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

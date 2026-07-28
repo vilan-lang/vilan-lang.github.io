@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -261,7 +261,7 @@ them in place. That’s a <a href="memory-model.html">memory model</a> topic.</p
 }
 </code></pre>
 <h2 id="option-and-result"><a class="header" href="#option-and-result">Option and Result</a></h2>
-<p>vilan has no <code>null</code> and no exceptions. Instead:</p>
+<p>Vilan has no <code>null</code> and no exceptions. Instead:</p>
 <ul>
 <li>A value that might be absent is an <code>Option&lt;T&gt;</code> — either <code>Some(value)</code>
 or <code>None</code>.</li>
@@ -301,7 +301,7 @@ fun main() {
 <p>This is what <code>try</code>/<code>catch</code> becomes: failures travel up through return
 types, visibly, and the caller decides what to do.</p>
 <p><code>!</code> returns the failure <strong>as-is</strong>, so the value’s error type must already
-be the function’s — vilan doesn’t convert it behind your back. When the
+be the function’s — Vilan doesn’t convert it behind your back. When the
 types differ, convert at the value, before the <code>!</code>: <code>.map_err(…)</code> changes
 a <code>Result</code>’s error, and <code>.ok_or(err)</code> turns an <code>Option</code>’s <code>None</code> into an
 <code>Err</code> you supply.</p>
@@ -448,7 +448,7 @@ false, and it’s how <code>vilan test</code> decides a test failed.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -228,21 +228,27 @@ dependencies are future work).</li>
 <li><strong><code>[entry.&lt;name&gt;]</code></strong> — one build entry per table: <code>path</code> (default
 <code>&lt;root&gt;/&lt;name&gt;.vl</code>) and <code>target</code> (default <code>node</code>). A package with
 entries builds each for its own platform; reachability (§11.2) is
-what lets one source tree serve several.</li>
+what lets one source tree serve several. <code>[package] default-entry</code>
+names the entry <code>vilan run</code> executes when several are runnable.</li>
 <li><strong><code>[library]</code></strong> — a dependency-only package: <code>name</code>, <code>description</code>,
 <code>root</code>, <code>dependencies</code>, and <strong><code>[library.layer.&lt;name&gt;]</code></strong> overlays
 (<code>root</code>, <code>platform = ["…"]</code>) for per-platform sources.</li>
 <li><strong><code>[project]</code></strong> — a workspace: <code>packages = ["member", …]</code> (paths);
 building the project builds every member against its own manifest.
+<code>default-entry</code> names the member <code>vilan run</code> executes when several
+are runnable.
 Its own <code>dependencies</code> are declared once for the members to share: a
 member writes <code>dep = { project = true }</code> to take that declaration
 (paths in it resolve against the <strong>project root</strong>). Inheritance is
 per dependency and opt-in — nothing is inherited implicitly — and
 <code>project = true</code> combines with no other key.</li>
-<li><strong><code>[build]</code></strong> — codegen options: <code>preset</code> (<code>"debug"</code> | <code>"release"</code>)
-and the per-feature overrides <code>indent</code>, <code>spaces</code>, <code>debug-names</code>.
-Build options never change program semantics (§7.6), only the
-emitted text.</li>
+<li><strong><code>[build]</code></strong> — <code>run</code>, plus codegen options: <code>preset</code> (<code>"debug"</code> |
+<code>"release"</code>) and the per-feature overrides <code>indent</code>, <code>spaces</code>,
+<code>debug-names</code>. Build options never change program semantics (§7.6),
+only the emitted text. <code>run</code> is a command line — or a list of them —
+executed through the host shell <strong>before</strong> each build (each <code>--watch</code>
+round included), in the manifest’s directory, in order; a non-zero
+exit fails the build. <code>vilan check</code> builds nothing and runs none.</li>
 <li><strong><code>[macro]</code></strong> — the compile-time interpreter budget: <code>fuel</code> (steps
 per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
 </ul>
@@ -250,7 +256,8 @@ per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</l
 <p>Each entry emits <code>dist/&lt;name&gt;.js</code> for its platform (browser entries
 first, so a server that ships bundles finds them fresh), plus
 <code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).
-<code>vilan run</code> builds all entries and starts the one <code>@process</code> entry;
+<code>vilan run</code> builds all entries and starts one <code>@process</code> entry — the
+only one, the designated <code>default-entry</code>, or the one <code>--entry</code> names;
 <code>vilan check</code> checks every entry, always. The emitted text beyond
 §7.6’s guarantees is implementation-defined.</p>
 
@@ -305,7 +312,7 @@ first, so a server that ships bundles finds them fresh), plus
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

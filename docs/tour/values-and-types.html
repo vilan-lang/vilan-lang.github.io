@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,7 +191,7 @@ fun main() {
 	print(i"{name} {count} {wide}");
 }
 </code></pre>
-<p>One thing to know up front: everything in vilan is a <strong>value</strong>. Assigning
+<p>One thing to know up front: everything in Vilan is a <strong>value</strong>. Assigning
 a value to a new binding gives you a copy, not a second name for the same
 thing. If that sounds strange coming from JavaScript, start with
 <a href="coming-from-javascript.html">Coming from JavaScript</a>, then read
@@ -206,10 +206,10 @@ literal like <code>42</code> is <code>i32</code>. Other widths take a suffix: <c
 <li>Floats: <code>f64</code> (a bare <code>2.5</code>, or the <code>f</code> suffix) and <code>f32</code> (<code>2.5f32</code>).</li>
 <li><code>BigInt</code> — arbitrary precision, with the <code>n</code> suffix (<code>7n</code>).</li>
 </ul>
-<p>Why <code>i53</code> and not <code>i64</code>? Because vilan runs on JavaScript, and JavaScript
+<p>Why <code>i53</code> and not <code>i64</code>? Because Vilan runs on JavaScript, and JavaScript
 numbers are 64-bit floats. Every integer up to ±2^53 is exact in a float.
 Beyond that, precision silently disappears. Rather than offer an <code>i64</code>
-that quietly isn’t one, vilan names the type for what it actually
+that quietly isn’t one, Vilan names the type for what it actually
 delivers. If you need more than 53 bits, use <code>BigInt</code>.</p>
 <p>The compiler checks every literal against its type’s range, so an
 out-of-range literal is a compile error rather than a wrong value.</p>
@@ -243,7 +243,7 @@ undefined behavior — the compiler checks literals, not runtime math.
 Details in spec <a href="../spec/execution.html">§7.2a</a>.</p>
 </blockquote>
 <h2 id="strings-and-interpolation"><a class="header" href="#strings-and-interpolation">Strings and interpolation</a></h2>
-<p><code>"…"</code> is a plain string, and vilan does <strong>not</strong> interpret <code>{}</code> inside it.
+<p><code>"…"</code> is a plain string, and Vilan does <strong>not</strong> interpret <code>{}</code> inside it.
 To interpolate, prefix the string with <code>i</code>:</p>
 <pre><code class="language-vilan">import std::print;
 
@@ -256,6 +256,40 @@ fun main() {
 </code></pre>
 <p>Concatenation is <code>+</code>. The full method list (split, trim, contains, and so
 on) is in the <a href="../std/strings.html">strings reference</a>.</p>
+<p>For text that spans lines, <code>"""…"""</code> is a <strong>raw</strong> multiline string:
+nothing follows the opening delimiter on its line, the closing delimiter
+sits alone on its line, and the whitespace before it is the indentation
+stripped from every line — so the literal can sit at the indentation of
+the code around it. Prefix it with <code>i</code> to get holes as well:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	let name = "John";
+	print("""
+		raw: \n stays two characters, {braces} are literal
+		""");
+	print(i"""
+		Hello, {name}!
+		    This line keeps its extra indentation.
+		Braces are written \{like this\}.
+		""");
+}
+</code></pre>
+<p>The trimming is decided before the holes are: a line that opens with a
+hole is indented like any other line. Inside <code>i"""…"""</code> exactly two
+escapes exist — <code>\{</code> and <code>\}</code> — and everything else is raw, just as in
+the plain form.</p>
+<p>The triple-quoted forms are the <em>only</em> ones that span lines. A <code>"…"</code> or
+<code>i"…"</code> must close on the line it opens; a raw line break inside one is an
+error that names both fixes — <code>"""…"""</code> for multi-line text, <code>\n</code> for a
+single break:</p>
+<pre><code class="language-vilan fragment">let wrong = "first line
+second line";                          // error: a string cannot span lines
+let short = "first line\nsecond line"; // one break: write it `\n`
+</code></pre>
+<p>That is a small restriction with a large payoff: a closing quote you
+forget is reported on its own line, instead of the string running on to
+the next <code>"</code> somewhere below and burying the real mistake.</p>
 <h2 id="tuples"><a class="header" href="#tuples">Tuples</a></h2>
 <p><code>(a, b)</code> groups a few values without declaring a struct. Take them
 apart with a destructuring <code>let</code>, or reach one element by position:</p>
@@ -338,7 +372,7 @@ compiler makes you handle the <code>None</code> case before you can use the valu
 This is one of the big shifts from JavaScript, and
 <a href="control-flow.html">Control flow</a> shows how natural it becomes. (<code>null</code>
 technically exists at the host boundary, for externs that can return JS
-null, but ordinary vilan code never sees it.)</p>
+null, but ordinary Vilan code never sees it.)</p>
 
                     </main>
 
@@ -391,7 +425,7 @@ null, but ordinary vilan code never sees it.)</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

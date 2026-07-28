@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-f3347d90.js"></script>
+        <script src="toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,17 +174,20 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-vilan-documentation"><a class="header" href="#the-vilan-documentation">The vilan documentation</a></h1>
-<p>How to use the vilan language, its standard library, and the frameworks
+                        <h1 id="the-vilan-documentation"><a class="header" href="#the-vilan-documentation">The Vilan documentation</a></h1>
+<p>How to use the Vilan language, its standard library, and the frameworks
 built on top of it. If you’re wondering where something lives: this book
-is about <em>using</em> vilan. Design history and rationale live in
-<code>vilan/proposal/</code>.</p>
+is about <em>using</em> Vilan. Design history and rationale live in the
+repository’s <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/proposal/"><code>vilan/proposal/</code></a>.</p>
+<p><strong>Brand new?</strong> <a href="tour/hello-vilan.html">Hello Vilan</a> installs the toolchain and
+gets a program running in a couple of minutes. Everything in this book
+assumes only that the <code>vilan</code> command is on your PATH.</p>
 <h2 id="parts"><a class="header" href="#parts">Parts</a></h2>
 <ul>
 <li><strong><a href="tour/">Tour</a></strong> — the language itself, taught informally. Start with
 <a href="tour/coming-from-javascript.html">Coming from JavaScript</a> if that’s your
 background, then read in order. Come back any time you need a syntax
-reminder.</li>
+reminder. Nothing in the tour assumes you know the other parts.</li>
 <li><strong><a href="guide/">Guides</a></strong> — the frameworks, task by task: reactive state,
 building UI, styling, routing, talking to a server. Each guide reads
 front to back and links into the reference for exact signatures.</li>
@@ -195,12 +198,14 @@ rules, the memory model, execution. This is the advanced tier. The tour
 teaches; the spec defines; where they disagree, the spec wins.</li>
 <li><strong><a href="appendix/">Appendix</a></strong> — the <a href="appendix/errors.html">error index</a> (“you saw this message, go here”), the <a href="appendix/gotchas.html">gotchas checklist</a>, and the <a href="appendix/glossary.html">glossary</a>.</li>
 </ul>
-<h2 id="reading-this-as-a-website"><a class="header" href="#reading-this-as-a-website">Reading this as a website</a></h2>
-<p>The book renders with <a href="https://rust-lang.github.io/mdBook/">mdBook</a>:
-<code>mdbook serve vilan/docs</code> gives a local live-reloading site with search
-and a sidebar (<code>cargo install mdbook</code> once). Pushes to <code>main</code> publish it
-to GitHub Pages automatically. Everything also reads fine as plain files
-— the site adds navigation, it doesn’t replace the markdown.</p>
+<h2 id="where-this-book-lives"><a class="header" href="#where-this-book-lives">Where this book lives</a></h2>
+<p>The published copy is at <a href="https://vilan-lang.org/docs/">https://vilan-lang.org/docs/</a> — search
+and a sidebar included, always built from the latest <code>main</code>. That is the
+copy to link to and the one most readers want.</p>
+<p>The source is markdown in the
+<a href="https://github.com/vilan-lang/vilan">repository</a> under <code>vilan/docs/</code>, so
+everything also reads fine as plain files. If you have the repository
+checked out, <code>cargo install mdbook</code> once and then <code>mdbook serve vilan/docs</code> gives you the same site locally with live reload.</p>
 <h2 id="conventions"><a class="header" href="#conventions">Conventions</a></h2>
 <ul>
 <li>Examples are complete programs unless explicitly labelled a fragment —
@@ -220,8 +225,8 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><th>Chapter</th><th>Covers</th></tr>
 </thead>
 <tbody>
-<tr><td><a href="tour/coming-from-javascript.html">Coming from JavaScript</a></td><td>the three big shifts, a JS→vilan phrasebook</td></tr>
-<tr><td><a href="tour/hello-vilan.html">Hello vilan</a></td><td>the CLI, <code>vilan.toml</code>, packages &amp; workspaces, imports</td></tr>
+<tr><td><a href="tour/coming-from-javascript.html">Coming from JavaScript</a></td><td>the three big shifts, a JS→Vilan phrasebook</td></tr>
+<tr><td><a href="tour/hello-vilan.html">Hello Vilan</a></td><td>installing, the CLI, <code>vilan.toml</code>, packages &amp; workspaces, imports</td></tr>
 <tr><td><a href="tour/values-and-types.html">Values &amp; types</a></td><td>bindings, primitives &amp; numeric widths, strings &amp; interpolation, tuples, collections</td></tr>
 <tr><td><a href="tour/functions-and-closures.html">Functions &amp; closures</a></td><td><code>fun</code>, closure types, named-fn coercion, async closures and their seams, context clauses</td></tr>
 <tr><td><a href="tour/data-and-traits.html">Data &amp; traits</a></td><td>structs, enums, <code>impl</code>, generics &amp; bounds, traits, derives</td></tr>
@@ -247,7 +252,9 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><td><a href="guide/routing.html">Routing</a></td><td>enum routes, <code>parse</code>/<code>href</code>, <code>link</code>, <code>swap</code>, navigation</td></tr>
 <tr><td><a href="guide/services.html">Services &amp; RPC</a></td><td><code>[service]</code>/<code>[rpc]</code>/<code>[expose]</code>, Wire, mirrors, reconnection, the server side</td></tr>
 <tr><td><a href="guide/persistence.html">Persistence &amp; the server</a></td><td><code>std::db</code> (SQLite), the http server, files, the process</td></tr>
+<tr><td><a href="guide/ssr.html">Server-side rendering</a></td><td>render-and-replace, one component on both legs, the HTML shell</td></tr>
 <tr><td><a href="guide/walkthrough.html">A full-stack walkthrough</a></td><td>the Notes app end to end — every layer meeting, quoted from a real, tested example</td></tr>
+<tr><td><a href="guide/dev-loop.html">The dev loop</a></td><td><code>run --watch</code>, hot module replacement, what carries across a swap</td></tr>
 </tbody>
 </table>
 </div>
@@ -271,8 +278,9 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><td><a href="std/style.html">style</a></td><td>the full <code>std::style</code> API</td></tr>
 <tr><td><a href="std/rpc.html">rpc</a></td><td><code>std::rpc</code> — transports, clients, frames</td></tr>
 <tr><td><a href="std/browser.html">browser</a></td><td><code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>, <code>std::storage</code></td></tr>
+<tr><td><a href="std/dev.html">dev / HMR</a></td><td><code>std::dev</code> — <code>stash</code>/<code>take</code>, <code>on_teardown</code>, <code>hmr_active</code></td></tr>
 <tr><td><a href="std/process.html">process</a></td><td>db, http, fs, process, rpc_server</td></tr>
-<tr><td><a href="std/misc.html">misc</a></td><td>io, promise, context, crypto, jwt, asset</td></tr>
+<tr><td><a href="std/misc.html">misc</a></td><td>io, task, promise, context, crypto, jwt, asset</td></tr>
 </tbody>
 </table>
 </div>
@@ -344,7 +352,7 @@ affected docs page <strong>in the same commit</strong>.</li>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/vilan-993df79f.js"></script>
+        <script src="theme/vilan-f4d49cc4.js"></script>
 
 
 

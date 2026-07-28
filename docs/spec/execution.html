@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -239,7 +239,7 @@ range-checked at compile time (§2.3); runtime operations are not. An
 opt-in checked family (<code>add_safe</code>, …) is recorded future work; <code>BigInt</code>
 is the answer where the range itself is the problem.</p>
 <h2 id="73-the-async-model"><a class="header" href="#73-the-async-model">7.3 The async model</a></h2>
-<p>vilan is <strong>await-by-default</strong>. Asyncness is a property of <em>functions</em>,
+<p>Vilan is <strong>await-by-default</strong>. Asyncness is a property of <em>functions</em>,
 inferred, and never written in return types:</p>
 <ol>
 <li>A function is <strong>async</strong> iff its body contains a suspension point: a
@@ -319,7 +319,7 @@ into <code>map</code> adapts both), and never crosses these boundaries:</p>
 <li>a <code>sync</code> parameter (error, including transitively — the diagnostic
 names the call that made the closure async);</li>
 <li>a host (<code>external</code>) function’s value-returning closure parameter —
-host code cannot await a vilan closure;</li>
+host code cannot await a Vilan closure;</li>
 <li>a trait/generic-dispatched call — there is no statically-known callee
 to instantiate (bind the receiver concretely, or declare the trait
 parameter <code>async</code>);</li>
@@ -377,7 +377,7 @@ selects an adapted instance per §7.4.</p>
 <ul>
 <li>a body throw wins (it always happens before the join);</li>
 <li>otherwise the earliest-settled task failure wins, re-raised from the
-<code>nursery</code> call; a failure that is a vilan panic carries the spawn’s
+<code>nursery</code> call; a failure that is a Vilan panic carries the spawn’s
 origin (the spawning function’s name) in its message.</li>
 </ul>
 <p>On the first failure the nursery cancels (below). Every other
@@ -451,7 +451,7 @@ initializer rule: an initializer cannot await).</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

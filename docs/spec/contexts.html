@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -177,7 +177,7 @@
                         <h1 id="spec-8--contexts"><a class="header" href="#spec-8--contexts">Spec §8 — Contexts</a></h1>
 <p>A <strong>context</strong> is a dynamically-scoped value: established for the dynamic
 extent of a body, readable from anything that runs within that extent,
-invisible outside it. Contexts are vilan’s answer to ambient parameters
+invisible outside it. Contexts are Vilan’s answer to ambient parameters
 — the current reactive owner, the current turn, the enclosing nursery —
 without global mutable state and without threading a parameter by hand
 through every signature.</p>
@@ -290,7 +290,7 @@ fun main() {
 <p>This is the stability rule §7.5 relies on: ambient values do not shift
 across suspensions or across deferred invocation, because the closure’s
 channel was fixed when it was made. (Contrast dynamic-binding systems
-where the <em>call site’s</em> environment decides; in vilan only <code>run</code>’s
+where the <em>call site’s</em> environment decides; in Vilan only <code>run</code>’s
 extent and creation sites decide.)</p>
 <h2 id="85-injected-closures-the-context-clause"><a class="header" href="#85-injected-closures-the-context-clause">8.5 Injected closures: the <code>context</code> clause</a></h2>
 <p>Capture-at-creation has one structural consequence: a closure literal
@@ -396,7 +396,7 @@ language rules; they are specified by their reference pages.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

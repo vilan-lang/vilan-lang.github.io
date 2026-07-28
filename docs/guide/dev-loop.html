@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -177,12 +177,16 @@
                         <h1 id="the-dev-loop"><a class="header" href="#the-dev-loop">The dev loop</a></h1>
 <p>You built an app in the <a href="walkthrough.html">walkthrough</a>. This chapter is about
 <em>iterating</em> on it — the edit-save-see loop. <code>vilan run --watch</code> on a
-full-stack workspace closes that loop with <strong>hot module replacement (HMR)</strong>:
+full-stack project closes that loop with <strong>hot module replacement (HMR)</strong>:
 save a source file and the running browser app updates in place, reactive
 state intact, without a full page reload.</p>
+<p>Nothing here needs the walkthrough app specifically. Any project with a
+browser leg will do, and <code>vilan init my-app --template fullstack</code> writes
+one (<a href="../tour/hello-vilan.html#start-a-project">Start a project</a>). From the
+project directory:</p>
 <pre><code class="language-sh">vilan run --watch .
 </code></pre>
-<p>On a workspace with a browser leg this prints one extra line at startup:</p>
+<p>A project with a browser leg prints one extra line at startup:</p>
 <pre><code class="language-text">hmr: dev channel on 127.0.0.1:35917
 </code></pre>
 <p>That is the <strong>dev channel</strong> — a tiny local endpoint the browser connects back
@@ -202,7 +206,7 @@ verdict exact.</p>
 <tr><td><strong>Client code</strong></td><td>The browser bundle changes → a <strong>swap</strong>: the new bundle is evaluated in place, module state carried across (below). No reload.</td></tr>
 <tr><td><strong>A stylesheet only</strong></td><td>Just the CSS sidecar changed → the stylesheet is <strong>hot-swapped</strong>, no reload, no swap — the page doesn’t even flicker.</td></tr>
 <tr><td><strong>Server code</strong></td><td>The server bundle changed → the <strong>Node process restarts</strong>. The browser stays connected; its live rpc mirror reconnects on its own (the same backoff that survives a server crash) and resyncs from the server’s current values.</td></tr>
-<tr><td><strong>Shared code</strong> (a <code>common</code> library both legs use)</td><td>Both bundles change → the server restarts <strong>and</strong> the browser swaps. The fresh client dials the new contract, so a changed rpc shape never leaves a stale client talking to a new server.</td></tr>
+<tr><td><strong>Shared code</strong> (a module both entries reach, or a <code>common</code> library both legs use)</td><td>Both bundles change → the server restarts <strong>and</strong> the browser swaps. The fresh client dials the new contract, so a changed rpc shape never leaves a stale client talking to a new server.</td></tr>
 <tr><td><strong>A file with a mistake</strong></td><td>The compile error shows in the terminal <em>and</em> as an in-page <strong>overlay</strong> — the real file, line, and message — while the running app keeps its last good build. Fix it and the next good save clears the overlay and swaps normally.</td></tr>
 </tbody>
 </table>
@@ -246,7 +250,7 @@ fun main() {
 <p>What resets is state minted <strong>inside functions during mount</strong> — an ephemeral
 signal created in a component, the focused element, scroll position,
 half-typed text not yet pushed. Fine-grained reactivity gives these no stable
-identity to reattach to, so v1 lets them go. A plain browser refresh is the
+identity to reattach to, so a swap lets them go. A plain browser refresh is the
 always-available complete reset.</p>
 <p><strong>The initializer-edit rule.</strong> Editing a binding’s <em>initializer</em> without
 changing its <em>type</em> keeps the live value — the new initializer does <strong>not</strong>
@@ -272,23 +276,66 @@ startup line reports the one it got.</li>
 <li><strong>A browser refresh</strong> is always a full, clean reset — seed state lives only
 in the page’s heap, so reloading throws all of it away.</li>
 </ul>
+<h2 id="running-something-alongside-the-build"><a class="header" href="#running-something-alongside-the-build">Running something alongside the build</a></h2>
+<p>A project that needs a step Vilan doesn’t do — a Tailwind pass, an asset
+pipeline, a codegen sidecar — declares it in the manifest:</p>
+<pre><code class="language-toml">[build]
+run = "npx tailwindcss -i src/app.css -o dist/app.css"
+</code></pre>
+<p>Several steps go in a list and run in order:</p>
+<pre><code class="language-toml">[build]
+run = [
+	"npx tailwindcss -i src/app.css -o dist/app.css",
+	"node scripts/generate-icons.mjs",
+]
+</code></pre>
+<p>The rules are short:</p>
+<ul>
+<li>They run <strong>before</strong> each build — including every <code>--watch</code> round — because a
+hook exists to produce something the build then consumes.</li>
+<li>Each is a command line for your shell (<code>sh -c</code> / <code>cmd /C</code>), so pipes, globs
+and <code>&amp;&amp;</code> work; the working directory is the manifest’s own, so relative paths
+mean what they say in the file you wrote them in.</li>
+<li>A hook that exits non-zero <strong>fails the build</strong>, naming the command. Nothing
+after it runs.</li>
+<li>Output goes straight to your terminal. (Under <code>vilan build --stdout</code>, which
+writes the emitted JS to stdout, a chatty hook shares that stream — redirect
+it in the command if you pipe the build.)</li>
+<li><code>vilan check</code> produces no artifacts, so it runs no hooks.</li>
+</ul>
 <h2 id="picking-which-server-to-run"><a class="header" href="#picking-which-server-to-run">Picking which server to run</a></h2>
-<p><code>run</code> (and <code>run --watch</code>) executes one Node leg. A workspace with a single
-<code>node</code> package needs no help — that one runs. A workspace with <strong>two or more</strong>
-<code>node</code> packages (say a <code>server</code> and a diagnostics <code>probe</code>) has to be told which,
-with <code>--entry &lt;name&gt;</code>:</p>
-<pre><code class="language-sh">vilan run --watch --entry server .
+<p>You only need this section if your project has <strong>two or more</strong> runnable node
+legs — a <code>[project]</code> of several packages, or one package with several node
+<code>[entry.&lt;name&gt;]</code> sections. The usual one-package app has a single node entry,
+so <code>run</code> just runs it.</p>
+<p><code>run</code> (and <code>run --watch</code>) executes one Node leg. A project with a single <code>node</code>
+leg needs no help — that one runs. With two or more (say a <code>server</code> and a
+diagnostics <code>probe</code>), designate one in the manifest:</p>
+<pre><code class="language-toml"># one package, several entries
+[package]
+name = "app"
+default-entry = "server"
 </code></pre>
-<p>Without it, <code>run</code> stops and lists the candidates:</p>
-<pre><code class="language-text">error: this workspace has more than one `node` package to run — pick one with --entry &lt;name&gt;: probe, server
+<pre><code class="language-toml"># a workspace of packages
+[project]
+packages = ["client", "server", "probe"]
+default-entry = "server"
 </code></pre>
-<p>The non-selected Node legs still <strong>compile</strong> as part of the workspace — their
+<p>Then <code>vilan run .</code> needs no flag. For a one-off — running the probe instead —
+<code>--entry &lt;name&gt;</code> overrides the manifest:</p>
+<pre><code class="language-sh">vilan run --watch --entry probe .
+</code></pre>
+<p>With neither, <code>run</code> stops and lists the candidates:</p>
+<pre><code class="language-text">error: this workspace has more than one `node` package to run — pick one with --entry &lt;name&gt;, or designate one for good with `[project] default-entry` in vilan.toml: probe, server
+</code></pre>
+<p>A <code>default-entry</code> that names nothing runnable is an error too, rather than a
+silent fallback — it names an <code>[entry.&lt;name&gt;]</code> section in the package shape, and
+a member package’s <code>name</code> in the workspace shape.</p>
+<p>The non-selected Node legs still <strong>compile</strong> as part of the project — their
 bundles land in <code>dist/</code> and a shared edit still recompiles them — they just
 aren’t launched. Under <code>--watch</code> the browser legs hot-swap exactly as usual; the
 chosen server restarts on its own edits, and a change to a leg that isn’t running
-does nothing visible (its <code>dist/</code> bundle refreshes, but nothing restarts). Which
-leg is the default is a per-workspace choice we may add to the manifest later;
-for now it’s the flag.</p>
+does nothing visible (its <code>dist/</code> bundle refreshes, but nothing restarts).</p>
 <h2 id="the-css-link-idiom"><a class="header" href="#the-css-link-idiom">The CSS <code>&lt;link&gt;</code> idiom</a></h2>
 <p>CSS hot-swap works by bumping the cache-buster on your stylesheet <code>&lt;link&gt;</code>, so
 it needs the stylesheet to <em>be</em> a <code>&lt;link&gt;</code> to <code>dist/&lt;leg&gt;.css</code>:</p>
@@ -356,7 +403,7 @@ of <a href="../std/dev.html"><code>std::dev</code></a>.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

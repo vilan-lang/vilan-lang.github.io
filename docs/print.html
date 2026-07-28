@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-f3347d90.js"></script>
+        <script src="toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,17 +175,20 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-vilan-documentation"><a class="header" href="#the-vilan-documentation">The vilan documentation</a></h1>
-<p>How to use the vilan language, its standard library, and the frameworks
+                        <h1 id="the-vilan-documentation"><a class="header" href="#the-vilan-documentation">The Vilan documentation</a></h1>
+<p>How to use the Vilan language, its standard library, and the frameworks
 built on top of it. If you’re wondering where something lives: this book
-is about <em>using</em> vilan. Design history and rationale live in
-<code>vilan/proposal/</code>.</p>
+is about <em>using</em> Vilan. Design history and rationale live in the
+repository’s <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/proposal/"><code>vilan/proposal/</code></a>.</p>
+<p><strong>Brand new?</strong> <a href="#hello-vilan">Hello Vilan</a> installs the toolchain and
+gets a program running in a couple of minutes. Everything in this book
+assumes only that the <code>vilan</code> command is on your PATH.</p>
 <h2 id="parts"><a class="header" href="#parts">Parts</a></h2>
 <ul>
 <li><strong><a href="tour">Tour</a></strong> — the language itself, taught informally. Start with
 <a href="#coming-from-javascript">Coming from JavaScript</a> if that’s your
 background, then read in order. Come back any time you need a syntax
-reminder.</li>
+reminder. Nothing in the tour assumes you know the other parts.</li>
 <li><strong><a href="guide">Guides</a></strong> — the frameworks, task by task: reactive state,
 building UI, styling, routing, talking to a server. Each guide reads
 front to back and links into the reference for exact signatures.</li>
@@ -196,12 +199,14 @@ rules, the memory model, execution. This is the advanced tier. The tour
 teaches; the spec defines; where they disagree, the spec wins.</li>
 <li><strong><a href="appendix">Appendix</a></strong> — the <a href="#error-index">error index</a> (“you saw this message, go here”), the <a href="#gotchas">gotchas checklist</a>, and the <a href="#glossary">glossary</a>.</li>
 </ul>
-<h2 id="reading-this-as-a-website"><a class="header" href="#reading-this-as-a-website">Reading this as a website</a></h2>
-<p>The book renders with <a href="https://rust-lang.github.io/mdBook/">mdBook</a>:
-<code>mdbook serve vilan/docs</code> gives a local live-reloading site with search
-and a sidebar (<code>cargo install mdbook</code> once). Pushes to <code>main</code> publish it
-to GitHub Pages automatically. Everything also reads fine as plain files
-— the site adds navigation, it doesn’t replace the markdown.</p>
+<h2 id="where-this-book-lives"><a class="header" href="#where-this-book-lives">Where this book lives</a></h2>
+<p>The published copy is at <a href="https://vilan-lang.org/docs/">https://vilan-lang.org/docs/</a> — search
+and a sidebar included, always built from the latest <code>main</code>. That is the
+copy to link to and the one most readers want.</p>
+<p>The source is markdown in the
+<a href="https://github.com/vilan-lang/vilan">repository</a> under <code>vilan/docs/</code>, so
+everything also reads fine as plain files. If you have the repository
+checked out, <code>cargo install mdbook</code> once and then <code>mdbook serve vilan/docs</code> gives you the same site locally with live reload.</p>
 <h2 id="conventions"><a class="header" href="#conventions">Conventions</a></h2>
 <ul>
 <li>Examples are complete programs unless explicitly labelled a fragment —
@@ -221,8 +226,8 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><th>Chapter</th><th>Covers</th></tr>
 </thead>
 <tbody>
-<tr><td><a href="#coming-from-javascript">Coming from JavaScript</a></td><td>the three big shifts, a JS→vilan phrasebook</td></tr>
-<tr><td><a href="#hello-vilan">Hello vilan</a></td><td>the CLI, <code>vilan.toml</code>, packages &amp; workspaces, imports</td></tr>
+<tr><td><a href="#coming-from-javascript">Coming from JavaScript</a></td><td>the three big shifts, a JS→Vilan phrasebook</td></tr>
+<tr><td><a href="#hello-vilan">Hello Vilan</a></td><td>installing, the CLI, <code>vilan.toml</code>, packages &amp; workspaces, imports</td></tr>
 <tr><td><a href="#values-and-types">Values &amp; types</a></td><td>bindings, primitives &amp; numeric widths, strings &amp; interpolation, tuples, collections</td></tr>
 <tr><td><a href="#functions--closures">Functions &amp; closures</a></td><td><code>fun</code>, closure types, named-fn coercion, async closures and their seams, context clauses</td></tr>
 <tr><td><a href="#data-and-traits">Data &amp; traits</a></td><td>structs, enums, <code>impl</code>, generics &amp; bounds, traits, derives</td></tr>
@@ -248,7 +253,9 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><td><a href="#routing">Routing</a></td><td>enum routes, <code>parse</code>/<code>href</code>, <code>link</code>, <code>swap</code>, navigation</td></tr>
 <tr><td><a href="#services--rpc">Services &amp; RPC</a></td><td><code>[service]</code>/<code>[rpc]</code>/<code>[expose]</code>, Wire, mirrors, reconnection, the server side</td></tr>
 <tr><td><a href="#persistence-and-the-server">Persistence &amp; the server</a></td><td><code>std::db</code> (SQLite), the http server, files, the process</td></tr>
+<tr><td><a href="#server-side-rendering-1">Server-side rendering</a></td><td>render-and-replace, one component on both legs, the HTML shell</td></tr>
 <tr><td><a href="#a-full-stack-walkthrough">A full-stack walkthrough</a></td><td>the Notes app end to end — every layer meeting, quoted from a real, tested example</td></tr>
+<tr><td><a href="#the-dev-loop">The dev loop</a></td><td><code>run --watch</code>, hot module replacement, what carries across a swap</td></tr>
 </tbody>
 </table>
 </div>
@@ -272,8 +279,9 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><td><a href="#stdstyle--reference">style</a></td><td>the full <code>std::style</code> API</td></tr>
 <tr><td><a href="#stdrpc--reference">rpc</a></td><td><code>std::rpc</code> — transports, clients, frames</td></tr>
 <tr><td><a href="#browser-modules--reference">browser</a></td><td><code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>, <code>std::storage</code></td></tr>
+<tr><td><a href="#dev--hmr--reference">dev / HMR</a></td><td><code>std::dev</code> — <code>stash</code>/<code>take</code>, <code>on_teardown</code>, <code>hmr_active</code></td></tr>
 <tr><td><a href="#process-modules--reference">process</a></td><td>db, http, fs, process, rpc_server</td></tr>
-<tr><td><a href="#misc--reference">misc</a></td><td>io, promise, context, crypto, jwt, asset</td></tr>
+<tr><td><a href="#misc--reference">misc</a></td><td>io, task, promise, context, crypto, jwt, asset</td></tr>
 </tbody>
 </table>
 </div>
@@ -301,7 +309,7 @@ affected docs page <strong>in the same commit</strong>.</li>
 </div>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="coming-from-javascript"><a class="header" href="#coming-from-javascript">Coming from JavaScript</a></h1>
-<p>vilan compiles to JavaScript and runs on node and in the browser. If you
+<p>Vilan compiles to JavaScript and runs on node and in the browser. If you
 know JS or TypeScript, most of the syntax will feel familiar. A handful of
 ideas are genuinely different, though. This page is the five-minute
 orientation. Each topic links to the chapter that teaches it properly.</p>
@@ -309,7 +317,7 @@ orientation. Each topic links to the chapter that teaches it properly.</p>
 <p><strong>1. Values are copied, not shared.</strong></p>
 <p>In JavaScript, objects and arrays are passed around by reference. Two
 variables can point at the same object, and a change through one is
-visible through the other. In vilan, assigning or passing a value gives
+visible through the other. In Vilan, assigning or passing a value gives
 the receiver its own copy. Nothing is shared unless you ask for sharing
 explicitly.</p>
 <pre><code class="language-vilan">import std::print;
@@ -343,7 +351,7 @@ for the explicit keywords when you <em>don’t</em> want to wait. The
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>You write in JS/TS</th><th>You write in vilan</th></tr>
+<tr><th>You write in JS/TS</th><th>You write in Vilan</th></tr>
 </thead>
 <tbody>
 <tr><td><code>function f(x) { … }</code></td><td><code>fun f(x: i32): i32 { … }</code></td></tr>
@@ -379,16 +387,34 @@ want a <code>Signal</code> (reactive state) or a <code>Shared</code> cell, both 
 <li><strong>Don’t sprinkle <code>await</code>.</strong> It’s already there.</li>
 </ul>
 <h2 id="where-to-go-next"><a class="header" href="#where-to-go-next">Where to go next</a></h2>
-<p>Read <a href="#hello-vilan">Hello vilan</a> to get a program running, then follow
+<p>Read <a href="#hello-vilan">Hello Vilan</a> to get a program running, then follow
 the tour in order. When you start building UI or talking to a server, the
 <a href="guide">guides</a> take over. And whenever something surprises you, check
 the <a href="#gotchas">gotchas page</a> — if it surprised us first, it
 is written down there.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="hello-vilan"><a class="header" href="#hello-vilan">Hello vilan</a></h1>
-<p>vilan compiles to JavaScript. Your programs run on node (or deno, or bun)
-and in the browser. One tool, the <code>vilan</code> binary, does everything: build,
-run, check, format, test.</p>
+<h1 id="hello-vilan"><a class="header" href="#hello-vilan">Hello Vilan</a></h1>
+<p>Vilan compiles to JavaScript. Your programs run on node (or deno, or bun)
+and in the browser. One tool, the <code>vilan</code> binary, does everything:
+scaffold, build, run, check, format, test.</p>
+<h2 id="install-the-toolchain"><a class="header" href="#install-the-toolchain">Install the toolchain</a></h2>
+<p>You need two things: <a href="https://nodejs.org">node</a> (to <em>run</em> what you build)
+and the <code>vilan</code> binary itself. On Linux and macOS:</p>
+<pre><code class="language-sh">curl -fsSL https://github.com/vilan-lang/vilan/releases/latest/download/install.sh | sh
+</code></pre>
+<p>On Windows, in PowerShell:</p>
+<pre><code class="language-powershell">irm https://github.com/vilan-lang/vilan/releases/latest/download/install.ps1 | iex
+</code></pre>
+<p>Either way <code>vilan</code> (and <code>vilan-lsp</code>, the language server) lands in
+<code>~/.vilan/bin</code> — <code>%USERPROFILE%\.vilan\bin</code> on Windows. The unix script
+prints the PATH line to add; the PowerShell one edits your user PATH
+itself, so open a new terminal afterwards. <code>vilan --version</code> confirms it
+worked, and <code>vilan upgrade</code> updates it later.</p>
+<p>Homebrew (<code>brew install vilan-lang/vilan/vilan</code>) and building from source
+are the other two routes; the
+<a href="https://github.com/vilan-lang/vilan#getting-started">repository README</a>
+has both. Every command in this book assumes only that <code>vilan</code> is on your
+PATH.</p>
 <h2 id="a-first-program"><a class="header" href="#a-first-program">A first program</a></h2>
 <pre><code class="language-vilan">import std::print;
 
@@ -407,6 +433,39 @@ vilan check hello.vl    # just type-check — writes nothing
 is imported explicitly — even <code>print</code>. Your files will start with a few
 <code>import</code> lines, just like ES modules. Second, indentation is tabs by
 convention, and <code>vilan fmt</code> will format files for you.</p>
+<h2 id="start-a-project"><a class="header" href="#start-a-project">Start a project</a></h2>
+<p>A single file is fine for a first look. For anything you will come back
+to, scaffold a project: <code>vilan init</code> writes a manifest, sources that
+already compile, and a <code>.gitignore</code>.</p>
+<pre><code class="language-sh">vilan init my-app                       # pick a template at the prompt
+vilan init my-app --template fullstack  # or say which one outright
+cd my-app
+vilan run .
+</code></pre>
+<p>Three templates, for the three shapes that exist:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>--template</code></th><th>What you get</th></tr>
+</thead>
+<tbody>
+<tr><td><code>node</code></td><td>the smallest real package: an entry, a module beside it, a <code>*_test.vl</code></td></tr>
+<tr><td><code>browser</code></td><td>a reactive browser app — <code>index.html</code> beside the emitted bundle</td></tr>
+<tr><td><code>fullstack</code></td><td>one package, two entries: a browser client and a node server (<a href="#the-shape-of-a-full-stack-app">below</a>)</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>fullstack</code> is the default — a bare Enter at the prompt takes it — because
+it is the shape the examples and the walkthrough teach. Pass <code>--template</code>
+and there is no prompt at all, which is what a script wants (without a
+terminal to prompt on, <code>vilan init</code> says so and stops rather than
+hanging).</p>
+<p>With no name, <code>vilan init</code> scaffolds into the current directory, as long
+as that directory is not already a project. Nothing is ever overwritten,
+either way. The <code>[package] name</code> comes from the directory’s name, with
+anything a name cannot carry folded to <code>_</code> (<code>my-app</code> → <code>my_app</code>). No
+repository is created: you get a <code>.gitignore</code>, and <code>git init</code> stays
+yours.</p>
 <h2 id="the-cli"><a class="header" href="#the-cli">The CLI</a></h2>
 <div class="table-wrapper">
 <table>
@@ -414,6 +473,7 @@ convention, and <code>vilan fmt</code> will format files for you.</p>
 <tr><th>Command</th><th>What it does</th></tr>
 </thead>
 <tbody>
+<tr><td><code>vilan init [name]</code></td><td>scaffold a project; <code>--template</code> picks <code>node</code>, <code>browser</code>, or <code>fullstack</code></td></tr>
 <tr><td><code>vilan build [path]</code></td><td>compile to <code>&lt;file&gt;.js</code> (no path: use the nearest <code>vilan.toml</code>)</td></tr>
 <tr><td><code>vilan check [path]</code></td><td>type-check and report problems, write nothing</td></tr>
 <tr><td><code>vilan run [path] [args…]</code></td><td>build and run; extra args reach <code>process::args()</code></td></tr>
@@ -426,6 +486,10 @@ convention, and <code>vilan fmt</code> will format files for you.</p>
 whenever a source file changes. <code>--platform browser</code> builds for the
 browser instead of node (<code>--target</code> also works). <code>--stdout</code> prints the JS
 instead of writing a file.</p>
+<p>A <code>*_test.vl</code> lives beside the code it tests and compiles as a file <em>of</em>
+its package: it imports <code>pkg::</code> siblings and the package’s dependencies
+exactly the way the rest of the package does. Tests run on node, whatever
+the package’s <code>target</code> says.</p>
 <h2 id="projects-vilantoml"><a class="header" href="#projects-vilantoml">Projects: <code>vilan.toml</code></a></h2>
 <p>A single <code>.vl</code> file is fine for experiments. Real projects get a folder
 with a <code>vilan.toml</code> manifest. An application looks like this:</p>
@@ -454,7 +518,10 @@ work offline, and a moved tag cannot change what you already built.
 Nothing else fetches: the editor uses the cache when it’s there and
 never reaches the network.</p>
 <p>A workspace groups several packages so they build together with one
-<code>vilan build .</code> at the root:</p>
+<code>vilan build .</code> at the root. You need it less often than you might
+expect — a client + server app is <em>one</em> package with two entries (see
+<a href="#the-shape-of-a-full-stack-app">below</a>) — so reach for a workspace when
+members genuinely want their own manifests and dependency sets:</p>
 <pre><code class="language-toml">[project]
 packages = ["common", "client", "server"]
 
@@ -474,15 +541,16 @@ another package sees. A <code>path</code> written at the root is relative to the
 own <code>shapes = { path = "…" }</code> simply uses that one — there is no
 shadowing rule to remember, because inheritance only happens where you
 ask for it.</p>
-<p>By default the source root is the package directory and the entry file is
-<code>main.vl</code>. You can point elsewhere with <code>root = "src"</code> and
-<code>entry = "app.vl"</code> if you prefer.</p>
+<p>By default a package’s sources live in <code>src/</code> and the entry file is
+<code>src/main.vl</code> — that is where <code>vilan build</code> looks when the manifest says
+nothing. Point it elsewhere with <code>root = "."</code> (sources beside the
+manifest) or <code>entry = "app.vl"</code>.</p>
 <h2 id="imports"><a class="header" href="#imports">Imports</a></h2>
 <pre><code class="language-vilan fragment">import std::print;                          // one item
 import std::reactive::{ Signal, combine };  // several at once
 import std::option::Option::{ self, Some, None };  // a type plus its variants
 import pkg::routes::{ Route, parse };       // another file in YOUR package
-import common::{ Task, KoltClient };        // a dependency, by its name
+import common::{ Note, NotesClient };       // a dependency, by its name
 </code></pre>
 <p>There are three places an import can come from:</p>
 <ul>
@@ -515,8 +583,13 @@ target = "browser"
     server.vl     the node entry
     …             everything else, shared by whichever entry reaches it
 </code></pre>
-<p>Larger apps split into a <code>[project]</code> workspace of packages and libraries,
-as above. Either way, the compiler knows which standard-library modules
+<p>Start here — <code>vilan init my-app --template fullstack</code> writes exactly this
+layout, ready to run. It is the shape the examples use too: the
+<a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/walkthrough/">walkthrough app</a>,
+the <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/todo/">to-do app</a>,
+and the <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/ssr/">SSR example</a>
+are all one package with two entries. Larger apps split into a <code>[project]</code>
+workspace of packages and libraries, as above. Either way, the compiler knows which standard-library modules
 exist on which platform: if code the browser entry can <em>reach</em> calls into
 <code>std::db</code> (a server thing), you get a clear compile error naming the call
 chain — importing the module is fine, reaching it is what’s checked. The
@@ -540,7 +613,7 @@ fun main() {
 	print(i"{name} {count} {wide}");
 }
 </code></pre>
-<p>One thing to know up front: everything in vilan is a <strong>value</strong>. Assigning
+<p>One thing to know up front: everything in Vilan is a <strong>value</strong>. Assigning
 a value to a new binding gives you a copy, not a second name for the same
 thing. If that sounds strange coming from JavaScript, start with
 <a href="#coming-from-javascript">Coming from JavaScript</a>, then read
@@ -555,10 +628,10 @@ literal like <code>42</code> is <code>i32</code>. Other widths take a suffix: <c
 <li>Floats: <code>f64</code> (a bare <code>2.5</code>, or the <code>f</code> suffix) and <code>f32</code> (<code>2.5f32</code>).</li>
 <li><code>BigInt</code> — arbitrary precision, with the <code>n</code> suffix (<code>7n</code>).</li>
 </ul>
-<p>Why <code>i53</code> and not <code>i64</code>? Because vilan runs on JavaScript, and JavaScript
+<p>Why <code>i53</code> and not <code>i64</code>? Because Vilan runs on JavaScript, and JavaScript
 numbers are 64-bit floats. Every integer up to ±2^53 is exact in a float.
 Beyond that, precision silently disappears. Rather than offer an <code>i64</code>
-that quietly isn’t one, vilan names the type for what it actually
+that quietly isn’t one, Vilan names the type for what it actually
 delivers. If you need more than 53 bits, use <code>BigInt</code>.</p>
 <p>The compiler checks every literal against its type’s range, so an
 out-of-range literal is a compile error rather than a wrong value.</p>
@@ -592,7 +665,7 @@ undefined behavior — the compiler checks literals, not runtime math.
 Details in spec <a href="#spec-7--execution--async">§7.2a</a>.</p>
 </blockquote>
 <h2 id="strings-and-interpolation"><a class="header" href="#strings-and-interpolation">Strings and interpolation</a></h2>
-<p><code>"…"</code> is a plain string, and vilan does <strong>not</strong> interpret <code>{}</code> inside it.
+<p><code>"…"</code> is a plain string, and Vilan does <strong>not</strong> interpret <code>{}</code> inside it.
 To interpolate, prefix the string with <code>i</code>:</p>
 <pre><code class="language-vilan">import std::print;
 
@@ -605,6 +678,40 @@ fun main() {
 </code></pre>
 <p>Concatenation is <code>+</code>. The full method list (split, trim, contains, and so
 on) is in the <a href="#strings--reference">strings reference</a>.</p>
+<p>For text that spans lines, <code>"""…"""</code> is a <strong>raw</strong> multiline string:
+nothing follows the opening delimiter on its line, the closing delimiter
+sits alone on its line, and the whitespace before it is the indentation
+stripped from every line — so the literal can sit at the indentation of
+the code around it. Prefix it with <code>i</code> to get holes as well:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	let name = "John";
+	print("""
+		raw: \n stays two characters, {braces} are literal
+		""");
+	print(i"""
+		Hello, {name}!
+		    This line keeps its extra indentation.
+		Braces are written \{like this\}.
+		""");
+}
+</code></pre>
+<p>The trimming is decided before the holes are: a line that opens with a
+hole is indented like any other line. Inside <code>i"""…"""</code> exactly two
+escapes exist — <code>\{</code> and <code>\}</code> — and everything else is raw, just as in
+the plain form.</p>
+<p>The triple-quoted forms are the <em>only</em> ones that span lines. A <code>"…"</code> or
+<code>i"…"</code> must close on the line it opens; a raw line break inside one is an
+error that names both fixes — <code>"""…"""</code> for multi-line text, <code>\n</code> for a
+single break:</p>
+<pre><code class="language-vilan fragment">let wrong = "first line
+second line";                          // error: a string cannot span lines
+let short = "first line\nsecond line"; // one break: write it `\n`
+</code></pre>
+<p>That is a small restriction with a large payoff: a closing quote you
+forget is reported on its own line, instead of the string running on to
+the next <code>"</code> somewhere below and burying the real mistake.</p>
 <h2 id="tuples"><a class="header" href="#tuples">Tuples</a></h2>
 <p><code>(a, b)</code> groups a few values without declaring a struct. Take them
 apart with a destructuring <code>let</code>, or reach one element by position:</p>
@@ -687,7 +794,7 @@ compiler makes you handle the <code>None</code> case before you can use the valu
 This is one of the big shifts from JavaScript, and
 <a href="#control-flow">Control flow</a> shows how natural it becomes. (<code>null</code>
 technically exists at the host boundary, for externs that can return JS
-null, but ordinary vilan code never sees it.)</p>
+null, but ordinary Vilan code never sees it.)</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="functions--closures"><a class="header" href="#functions--closures">Functions &amp; closures</a></h1>
 <blockquote>
@@ -713,7 +820,7 @@ fun main() {
 }
 </code></pre>
 <p>Notice there is no <code>return</code> on the last line. A bare expression at the
-end of a block is the block’s value. You’ll see this everywhere in vilan.
+end of a block is the block’s value. You’ll see this everywhere in Vilan.
 <code>if</code>, <code>match</code>, and plain blocks all work the same way.</p>
 <p>Generic functions take type parameters. Bounds say what the body is
 allowed to do with them:</p>
@@ -721,7 +828,7 @@ allowed to do with them:</p>
 </code></pre>
 <h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
 <p>A closure is an inline function value. Where JavaScript writes
-<code>x =&gt; x * 2</code>, vilan writes <code>|x| x * 2</code>. Parameter types are usually
+<code>x =&gt; x * 2</code>, Vilan writes <code>|x| x * 2</code>. Parameter types are usually
 inferred from where the closure is used. Annotate them when they aren’t:</p>
 <pre><code class="language-vilan">import std::print;
 
@@ -739,7 +846,7 @@ fun main() {
 <code>|| U</code>, and one that returns nothing is <code>|| void</code>. These appear as
 parameter types, in <code>let</code> annotations, and as struct fields.</p>
 <p>Closures capture their surroundings <strong>by value</strong> at the moment they are
-created. vilan copies, remember. When a closure needs to share mutable
+created. Vilan copies, remember. When a closure needs to share mutable
 state with its creator, they hold a <code>Shared</code> cell together. The
 <a href="#the-memory-model">memory model</a> explains that pattern.</p>
 <h2 id="named-functions-as-closures"><a class="header" href="#named-functions-as-closures">Named functions as closures</a></h2>
@@ -758,7 +865,7 @@ fun main() {
 	print(loud.get());
 }
 </code></pre>
-<p>This works for plain vilan functions. It does not work for generic
+<p>This works for plain Vilan functions. It does not work for generic
 functions, methods, <code>async</code> functions, or externs. For those, write the
 small wrapping closure — the compiler will tell you when you hit one.</p>
 <h2 id="async-closures"><a class="header" href="#async-closures">Async closures</a></h2>
@@ -766,18 +873,21 @@ small wrapping closure — the compiler will tell you when you hit one.</p>
 async work.</p>
 <p>A closure type can carry an <code>async</code> marker: <code>async |T| U</code>. Calls through
 a value of that type are awaited automatically, the same way direct
-calls to async functions are (see <a href="#async">Async</a>). The marker is
-allowed in exactly two places: parameter types and <code>let</code> annotations.</p>
-<pre><code class="language-vilan fragment">struct Draft&lt;T&gt; {
-	commit: |T| Option&lt;str&gt;,          // struct fields store the plain type
+calls to async functions are (see <a href="#async">Async</a>). Write it anywhere
+a closure type is declared — a parameter, a <code>let</code> annotation, a struct
+field, a return type:</p>
+<pre><code class="language-vilan fragment">fun draft&lt;T&gt;(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;   // a parameter
+
+struct Poller {
+	tick: async || i32,               // a struct field
 }
-…
-let commit: async |T| Option&lt;str&gt; = self.commit;   // re-mark at a let
-let outcome = commit(value);                        // this call awaits
+
+let commit: async |T| Option&lt;str&gt; = stored;   // a let annotation
+let outcome = commit(value);                  // …and this call awaits
 </code></pre>
-<p>That “store plain, re-mark at a <code>let</code>” dance is the standard pattern for
-async callbacks kept in struct fields, because the marker doesn’t exist
-on field types yet.</p>
+<p>An unannotated <code>let</code> needs no marker at all: a binding that holds an
+async closure adopts its asyncness. <a href="#async-closures-1">Async</a>
+covers the same seams from the async side.</p>
 <p>There is one more rule, and it works in your favor. Passing an async
 closure where a plain closure is expected is an error if the plain type
 returns a value — you would receive a promise pretending to be the
@@ -808,12 +918,6 @@ compiler rejects that shape outright. Second, a function that reads a
 context can’t be passed around as a plain value, because the context
 channel would be severed. Both produce clear errors when you hit them.</p>
 </blockquote>
-<h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
-<ul>
-<li>Chained element access on a call result (<code>read()[i]</code>) can lose the
-element type. Bind, then index. (Tuple <code>.0</code>/<code>.1</code> access isn’t
-implemented at all yet — destructure tuples instead.)</li>
-</ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="data-and-traits"><a class="header" href="#data-and-traits">Data and traits</a></h1>
 <blockquote>
@@ -899,7 +1003,7 @@ fun main() {
 </code></pre>
 <p>The <code>&amp;mut self</code> on <code>bump</code> matters: it means “mutate the actual receiver,
 not a copy”. Plain <code>self</code> receives a copy, like every other value in
-vilan. The <a href="#the-memory-model">memory model</a> chapter makes this precise.</p>
+Vilan. The <a href="#the-memory-model">memory model</a> chapter makes this precise.</p>
 <h2 id="generics-and-bounds"><a class="header" href="#generics-and-bounds">Generics and bounds</a></h2>
 <p>Type parameters work on functions, structs, enums, and impls. A bound
 constrains what the code may do with the parameter:</p>
@@ -985,6 +1089,7 @@ write the boilerplate:</p>
 <tr><td><code>PartialEq</code></td><td>structural <code>==</code></td></tr>
 <tr><td><code>Debug</code></td><td><code>.debug()</code> — a developer-facing rendering</td></tr>
 <tr><td><code>Default</code></td><td><code>Default::default()</code> built from the fields’ defaults</td></tr>
+<tr><td><code>Hashable</code></td><td>usability as a <code>Map</code> key or <code>Set</code> member (<code>std::hash</code>)</td></tr>
 <tr><td><code>Json</code></td><td>JSON encode/decode (<code>std::json</code>)</td></tr>
 <tr><td><code>Wire</code></td><td>serialization for rpc payloads (<code>std::wire</code>)</td></tr>
 </tbody>
@@ -1102,7 +1207,7 @@ them in place. That’s a <a href="#the-memory-model">memory model</a> topic.</p
 }
 </code></pre>
 <h2 id="option-and-result"><a class="header" href="#option-and-result">Option and Result</a></h2>
-<p>vilan has no <code>null</code> and no exceptions. Instead:</p>
+<p>Vilan has no <code>null</code> and no exceptions. Instead:</p>
 <ul>
 <li>A value that might be absent is an <code>Option&lt;T&gt;</code> — either <code>Some(value)</code>
 or <code>None</code>.</li>
@@ -1142,7 +1247,7 @@ fun main() {
 <p>This is what <code>try</code>/<code>catch</code> becomes: failures travel up through return
 types, visibly, and the caller decides what to do.</p>
 <p><code>!</code> returns the failure <strong>as-is</strong>, so the value’s error type must already
-be the function’s — vilan doesn’t convert it behind your back. When the
+be the function’s — Vilan doesn’t convert it behind your back. When the
 types differ, convert at the value, before the <code>!</code>: <code>.map_err(…)</code> changes
 a <code>Result</code>’s error, and <code>.ok_or(err)</code> turns an <code>Option</code>’s <code>None</code> into an
 <code>Err</code> you supply.</p>
@@ -1242,14 +1347,14 @@ false, and it’s how <code>vilan test</code> decides a test failed.</p>
 <blockquote>
 <p>Normative rules: spec <a href="#spec-6--the-memory-model">§6 The memory model</a>.</p>
 </blockquote>
-<p>This is the chapter where vilan differs most from JavaScript, so it goes
+<p>This is the chapter where Vilan differs most from JavaScript, so it goes
 slowly. The one-sentence version: <strong>values are copied, and sharing is
 something you ask for explicitly.</strong></p>
 <p>In JavaScript, objects and arrays are shared by reference. Passing one to
 a function means the function can mutate your data. Storing one in two
 places means a change shows up in both. That’s convenient right up until
 it isn’t, and then it’s a bug hunt.</p>
-<p>vilan flips the default. Everything copies. Then it gives you four tools,
+<p>Vilan flips the default. Everything copies. Then it gives you four tools,
 each for one kind of sharing, so that when data <em>is</em> shared, the code
 says so. Here’s the decision tree you’ll internalize quickly:</p>
 <ol>
@@ -1329,7 +1434,7 @@ moment.</strong> A view can be a parameter or a short-lived local. It cannot be
 stored in a struct field, put in a list, returned into long-lived state,
 or held across an <code>await</code>. Lend, use, done. That confinement is what
 makes views safe without a whole lifetime system — if you’ve heard Rust
-horror stories, this is the part vilan deliberately keeps small.</p>
+horror stories, this is the part Vilan deliberately keeps small.</p>
 <p>Views also make loops that mutate in place. A plain <code>for x in list</code>
 copies each element; <code>for e in &amp;mut list</code> gives you writable views
 instead:</p>
@@ -1424,7 +1529,7 @@ row.text = "sent";       // ✗ rejected: view held across await
 send(rows[i].id);        // ✓ re-derive after the suspension
 rows[i].text = "sent";
 </code></pre>
-<h2 id="traps-1"><a class="header" href="#traps-1">Traps</a></h2>
+<h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
 <li>“Why didn’t my mutation stick?” You mutated a copy. Either take <code>&amp;mut</code>
 at the function boundary, or restructure around <code>Shared</code> or a signal’s
@@ -1440,7 +1545,7 @@ at the function boundary, or restructure around <code>Shared</code> or a signal�
 <p>Normative rules: spec <a href="#spec-7--execution--async">§7 Execution &amp; async</a>.</p>
 </blockquote>
 <p>If you know async/await in JavaScript, here is the whole model in one
-line: vilan keeps the machinery and deletes the keywords. Calling an
+line: Vilan keeps the machinery and deletes the keywords. Calling an
 async function just gives you the value. You don’t write <code>await</code>, you
 don’t mark functions <code>async</code>, and you never see <code>Promise&lt;T&gt;</code> in a return
 type. The compiler figures out which functions suspend and awaits the
@@ -1483,7 +1588,7 @@ fun main() {
 	print(await pending);                     // now collect the spawned one
 }
 </code></pre>
-<p>So in JS you mark the async case and waiting is explicit. In vilan you
+<p>So in JS you mark the async case and waiting is explicit. In Vilan you
 mark the <em>concurrent</em> case and waiting is the default. Fire-and-forget
 is just spawning and dropping the task: <code>let _done = async save(entry);</code>. To wait on many at once, <code>Task::settle_all(tasks)</code> from
 <code>std::task</code>.</p>
@@ -1664,7 +1769,21 @@ for it; keep bare spawns for genuine fire-and-forget.</p>
 <h2 id="timers"><a class="header" href="#timers">Timers</a></h2>
 <p>From <code>std::time</code>: <code>sleep_for(duration)</code> and <code>sleep(millis)</code> suspend.
 <code>Duration::millis/seconds/minutes/hours/days</code> build durations. <code>now()</code>
-reads the clock. Details in the <a href="#stdtime--reference">time reference</a>.</p>
+reads the clock.</p>
+<p>A <code>Timer</code> is a delay you keep hold of — it starts on construction, and
+you either wait for its verdict or call it off:</p>
+<pre><code class="language-vilan">import std::print;
+import std::time::Timer;
+
+fun main() {
+	let pending = Timer::after(2400);
+	pending.cancel();
+	print(pending.wait());   // false — cancelled before it fired
+}
+</code></pre>
+<p><code>wait()</code> yields <code>true</code> if the timer fired and <code>false</code> if it was
+cancelled, and that verdict is remembered for every later waiter.
+Details in the <a href="#stdtime--reference">time reference</a>.</p>
 <h2 id="what-async-does-not-do"><a class="header" href="#what-async-does-not-do">What async does NOT do</a></h2>
 <ul>
 <li><strong>No promise-colored signatures.</strong> Return types are the plain values.
@@ -1675,7 +1794,7 @@ spawn. Same single-threaded event loop as JS underneath.</li>
 await is rejected. Re-derive after — see
 <a href="#the-memory-model">the memory model</a>.</li>
 </ul>
-<h2 id="traps-2"><a class="header" href="#traps-2">Traps</a></h2>
+<h2 id="traps-1"><a class="header" href="#traps-1">Traps</a></h2>
 <ul>
 <li>On node, <strong>the process exits when nothing is left to do</strong>: once
 <code>main</code> finishes, only live host handles (a running timer, a socket, a
@@ -1702,7 +1821,7 @@ topic, not a language rule.</p>
 <blockquote>
 <p>Normative rules: spec <a href="#spec-6--the-memory-model">§6.8 Resources and destruction</a>.</p>
 </blockquote>
-<p>Almost everything in vilan is a value: it copies, and the copy is yours (the
+<p>Almost everything in Vilan is a value: it copies, and the copy is yours (the
 <a href="#the-memory-model">memory model</a> chapter). A few things can’t work that way.
 A database handle that copied would close twice. A task owner that copied
 would cancel the wrong tasks. These are <strong>resources</strong>: values with a single
@@ -1906,7 +2025,7 @@ right away, and the tasks keep running under <code>owner</code>. When <code>owne
 the end of <code>main</code>, or at an explicit <code>drop(owner)</code>), the tasks are cancelled.
 That is the whole point: the <em>owner’s</em> lifetime bounds the work, and the
 owner is an ordinary resource the scope rules already know how to tear down.</p>
-<h2 id="traps-3"><a class="header" href="#traps-3">Traps</a></h2>
+<h2 id="traps-2"><a class="header" href="#traps-2">Traps</a></h2>
 <ul>
 <li><strong>“Why can’t I use it again?”</strong> You moved it. Loan it (<code>&amp;x</code> / <code>&amp;mut x</code>, or
 a method call) instead of binding, passing, or returning it by value.</li>
@@ -1923,7 +2042,7 @@ Cancel owned tasks through an <code>OwnedNursery</code> rather than awaiting the
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="macros--const"><a class="header" href="#macros--const">Macros &amp; const</a></h1>
-<p>vilan has two tools that run at compile time. <code>const</code> computes <em>values</em>
+<p>Vilan has two tools that run at compile time. <code>const</code> computes <em>values</em>
 ahead of time. Macros generate <em>code</em>. In both cases the emitted
 JavaScript carries only the results, never the computation.</p>
 <p>Most days you’ll use these indirectly: <code>[derive(…)]</code> is a macro, and
@@ -1989,13 +2108,14 @@ macro fun derive_display(item: Item): Source {
 		}
 		arms = arms + i"\"{field.name}=\" + format(self.{field.name})";
 	}
-	source(i"impl {target.name} with Display \{
-	fun to_string(self): str \{
-		import std::display::format;
-		{arms}
-	\}
-\}
-")
+	source(i"""
+		impl {target.name} with Display \{
+			fun to_string(self): str \{
+				import std::display::format;
+				{arms}
+			\}
+		\}
+		""")
 }
 
 [derive_display]
@@ -2010,14 +2130,18 @@ fun main() {
 </code></pre>
 <p>How to read that:</p>
 <ul>
-<li><code>macro fun</code> declares the macro. Its body is ordinary vilan, but it
+<li><code>macro fun</code> declares the macro. Its body is ordinary Vilan, but it
 compiles against <code>macro_std</code> — a small compile-time standard library
 with <code>source</code>, the <code>meta</code> types (<code>Item</code>, <code>StructItem</code>, …), and the
 basics. Its imports are its own; it can’t reach into your program.</li>
 <li>The macro receives the annotated item as data. <code>item.as_struct()</code>
 gives the struct’s name and fields.</li>
-<li>It returns <code>Source</code>: text, usually built with interpolation. Literal
-braces in generated code are escaped as <code>\{</code> and <code>\}</code>.</li>
+<li>It returns <code>Source</code>: text, usually built with interpolation. The
+<code>i"""…"""</code> form is the one to reach for — the template is written as
+the generated code will read, indented with the macro around it (the
+closing delimiter’s indentation is stripped from every line). Literal
+braces in generated code are escaped as <code>\{</code> and <code>\}</code>; the holes’
+braces are not.</li>
 <li>The returned source is spliced in <em>before</em> type checking, so generated
 code is checked exactly like code you wrote by hand.</li>
 </ul>
@@ -2078,6 +2202,17 @@ default), <strong>deno</strong>, <strong>bun</strong>, or the <strong>browser</s
 can actually do. Call a server function from code a browser build can
 reach, and you get a clear compile error naming the call chain — not a
 runtime crash. That’s the whole idea of this chapter.</p>
+<h2 id="the-std-layers"><a class="header" href="#the-std-layers">The std layers</a></h2>
+<ul>
+<li><strong>Base</strong> — platform-neutral, available everywhere: collections,
+<code>Option</code>/<code>Result</code>, strings, numbers, <code>reactive</code>, <code>shared</code>, <code>time</code>,
+json/wire/binary, the rpc client machinery, <code>style</code>, <code>fetch</code>,
+<code>crypto</code>, and friends.</li>
+<li><strong>Browser layer</strong> — <code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>,
+<code>std::storage</code>. Browser builds only.</li>
+<li><strong>Process layer</strong> (node/deno/bun) — <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
+<code>std::process</code>, <code>std::rpc_server</code>. Server builds only.</li>
+</ul>
 <blockquote>
 <p><strong>Going deeper.</strong> The check is on <em>reachable code</em>, not on imports. A
 file may import <code>std::fs</code> and compile for the browser, as long as no
@@ -2090,32 +2225,12 @@ Module-level <code>let</code>s follow the same rule: a binding’s initializer r
 (and is checked, and is bundled) only if something reachable references
 it — a server-only global in a shared file costs the browser build
 nothing. <code>const</code> initializers run at build time and ship as plain
-values, so they never color anything.
-Where a team wants an explicit boundary, <code>[platform("browser")]</code> on a
-function declares the platforms it promises to run on — the compiler
-checks the promise on every compile (entry or not, whatever the build
-target), and a violation lands at the fence with its chain instead of
-at some distant entry in a dependent build. Patterns use the manifest
-layers’ vocabulary: <code>"node"</code>, <code>"browser"</code>, families like
-<code>"@process"</code>, or several at once for code that must stay neutral.
-The editor shows the same information as you write: violations appear
-as live diagnostics at the offending call, and hovering a function
-shows its inferred requirement and how it got it — e.g. <code>requires the `process` layer of `std` (via `save → write_file (std::fs)`)</code>.</p>
+values, so they never color anything.</p>
 </blockquote>
-<h2 id="the-std-layers"><a class="header" href="#the-std-layers">The std layers</a></h2>
-<ul>
-<li><strong>Base</strong> — platform-neutral, available everywhere: collections,
-<code>Option</code>/<code>Result</code>, strings, numbers, <code>reactive</code>, <code>shared</code>, <code>time</code>,
-json/wire/binary, the rpc client machinery, <code>style</code>, <code>fetch</code>,
-<code>crypto</code>, and friends.</li>
-<li><strong>Browser layer</strong> — <code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>,
-<code>std::storage</code>. Browser builds only.</li>
-<li><strong>Process layer</strong> (node/deno/bun) — <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
-<code>std::process</code>, <code>std::rpc_server</code>. Server builds only.</li>
-</ul>
 <h2 id="full-stack-packages"><a class="header" href="#full-stack-packages">Full-stack packages</a></h2>
 <p>A client + server app fits in <strong>one package</strong> with two entries — each
-<code>[entry.&lt;name&gt;]</code> names an entry file and the platform it builds for:</p>
+<code>[entry.&lt;name&gt;]</code> names an entry file and the platform it builds for.
+This is the default shape; reach past it only when you have a reason:</p>
 <pre><code class="language-toml">[package]
 name = "app"
 
@@ -2140,9 +2255,10 @@ node entry; <code>vilan check</code> checks all entries, always. Reachability do
 the sorting: the same <code>store.vl</code> may use <code>std::fs</code> freely, because only
 the server entry reaches into it — if client code ever calls that far,
 the build fails with the call chain.</p>
-<p>Larger apps can still split into a workspace of packages — a shared
-<code>[library]</code> for payload types, a browser package, a server package —
-and each member may declare its own entries:</p>
+<p>The advanced form, for larger apps, is a workspace of packages — a
+shared <code>[library]</code> for payload types, a browser package, a server
+package — where each member has its own manifest and dependency set, and
+may declare its own entries:</p>
 <pre><code>app/
   vilan.toml       [project] packages = ["common", "client", "server"]
   common/          [library] — payload types (base layer only)
@@ -2153,6 +2269,19 @@ and each member may declare its own entries:</p>
 compiler checks each against its own platform, including that <code>common</code>
 stays platform-neutral. Either shape, the service lives next to its
 resources (see <a href="#services--rpc">Services</a>).</p>
+<blockquote>
+<p><strong>Going deeper.</strong> Where a team wants an explicit boundary,
+<code>[platform("browser")]</code> on a function declares the platforms it
+promises to run on — the compiler checks the promise on every compile
+(entry or not, whatever the build target), and a violation lands at the
+fence with its chain instead of at some distant entry in a dependent
+build. Patterns use the manifest layers’ vocabulary: <code>"node"</code>,
+<code>"browser"</code>, families like <code>"@process"</code>, or several at once for code
+that must stay neutral. The editor shows the same information as you
+write: violations appear as live diagnostics at the offending call, and
+hovering a function shows its inferred requirement and how it got it —
+e.g. <code>requires the `process` layer of `std` (via `save → write_file (std::fs)`)</code>.</p>
+</blockquote>
 <h2 id="externs--talking-to-the-host"><a class="header" href="#externs--talking-to-the-host">Externs — talking to the host</a></h2>
 <p>You’ll mostly consume host bindings through std. But when you need a
 node API or browser API that std doesn’t wrap yet, you can bind it
@@ -2203,7 +2332,7 @@ layered — most libraries never need this.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="reactive-state"><a class="header" href="#reactive-state">Reactive state</a></h1>
-<p><code>std::reactive</code> is vilan’s state layer. If you’ve used signals in Solid or
+<p><code>std::reactive</code> is Vilan’s state layer. If you’ve used signals in Solid or
 Preact, you’ll be at home immediately. If you’re coming from React, think
 of a signal as a piece of state that components subscribe to directly —
 there is no re-render, no dependency array, no memoization dance. When a
@@ -2237,7 +2366,7 @@ signal.get(): T                        // current value
 signal.set(value: T)                   // write + notify subscribers
 signal.set_with(transform: sync |T| T) // read-modify-write in one step
 </code></pre>
-<p>Signals hold <strong>values</strong>. vilan copies, so <code>get</code> hands you a copy, and the
+<p>Signals hold <strong>values</strong>. Vilan copies, so <code>get</code> hands you a copy, and the
 only way to change what subscribers see is <code>set</code> or <code>set_with</code>. To update
 a list inside a signal, transform it:</p>
 <pre><code class="language-vilan">import std::print;
@@ -2313,7 +2442,7 @@ only on <em>later</em> changes, and you keep the <code>Subscription</code> and c
 <p>Every effect is a subscription, and subscriptions must die when the
 thing that created them goes away — otherwise a page you navigated off
 keeps reacting forever. That’s a memory leak in any reactive system.
-vilan’s answer is <strong>owners</strong>, and the good news is that in normal app
+Vilan’s answer is <strong>owners</strong>, and the good news is that in normal app
 code you never manage them: the UI layer creates owners exactly where
 subtrees can die (a mounted root, a list row, a conditional block), and
 every <code>effect</code> you create automatically registers with the nearest one.</p>
@@ -2355,7 +2484,7 @@ the primitive under <code>mount_root</code>.</p>
 </blockquote>
 <h2 id="turns-when-changes-become-visible"><a class="header" href="#turns-when-changes-become-visible">Turns: when changes become visible</a></h2>
 <p>If an event handler sets five signals, you want watchers to see the
-final state once, not five intermediate states. vilan batches writes
+final state once, not five intermediate states. Vilan batches writes
 into <strong>turns</strong>. Inside a turn, <code>set</code> just records. When the turn
 settles, each affected watcher runs once with the final values:</p>
 <pre><code class="language-text">click ──▶ the handler runs inside a fresh turn
@@ -2470,7 +2599,7 @@ and <code>bind_draft</code> in <a href="#building-ui">Building UI</a> is the inp
 update plan for keyed lists (keep this row, refresh that one, these are
 gone). It’s the pure engine underneath <code>ui</code>’s <code>bind_each</code>. You’d only
 call it directly to build your own list-rendering primitive.</p>
-<h2 id="traps-4"><a class="header" href="#traps-4">Traps</a></h2>
+<h2 id="traps-3"><a class="header" href="#traps-3">Traps</a></h2>
 <ul>
 <li><code>sub</code> gives you a <code>Subscription</code> to dispose manually. Prefer <code>effect</code>
 and let the owner handle it.</li>
@@ -2484,7 +2613,7 @@ subtrees.</li>
 <h1 id="building-ui"><a class="header" href="#building-ui">Building UI</a></h1>
 <p><code>std::ui</code> is a declarative view layer with no virtual DOM. A <code>View</code>
 describes a DOM element. Methods chain to build it. Where React re-runs
-components and diffs the result, vilan binds individual DOM properties to
+components and diffs the result, Vilan binds individual DOM properties to
 signals — when a signal changes, exactly that text node or attribute
 updates and nothing else runs.</p>
 <p>Available in browser builds (<code>target = "browser"</code> in <code>vilan.toml</code>, or
@@ -2671,14 +2800,15 @@ many plain function calls sit in between:</p>
 </code></pre>
 <p>Navigate away, and the page’s owner is disposed — every binding the page
 created dies with it. Delete row 2, and only row 2’s bindings die. This
-is why there is no unsubscribe code anywhere in a vilan app: the tree of
+is why there is no unsubscribe code anywhere in a Vilan app: the tree of
 boundaries <em>is</em> the cleanup logic, and the framework already placed
 them where subtrees end.</p>
 <h2 id="server-side-rendering"><a class="header" href="#server-side-rendering">Server-side rendering</a></h2>
-<p>The same component code runs on the server. On <code>@process</code> (a node build)
-<code>std::ui</code> builds an HTML <strong>string</strong> instead of live DOM, and <code>render(view)</code>
-serializes it — first paint and SEO, before any JavaScript (A7, <code>proposal/ssr.md</code>).
-A route handler calls your own <code>app()</code> and splices the markup into its HTML shell.</p>
+<p>The same component code runs on the server. On a node build <code>std::ui</code>
+builds an HTML <strong>string</strong> instead of live DOM, and <code>render(view)</code>
+serializes it — first paint and SEO, before any JavaScript. A route
+handler calls your own <code>app()</code> and splices the markup into its HTML
+shell. The <a href="#server-side-rendering-1">server-side rendering guide</a> walks the whole loop.</p>
 <pre><code class="language-vilan">import std::ui::{ view, View, render };
 import std::reactive::Signal;
 import std::print;
@@ -2713,7 +2843,7 @@ reaching for raw DOM cannot SSR; the cross-platform error says so at the import.
 directly: <code>get_element_by_id</code>, <code>query_selector</code>,
 <code>element.set_attribute</code>, and so on. See the
 <a href="#browser-modules--reference">browser reference</a>.</p>
-<h2 id="traps-5"><a class="header" href="#traps-5">Traps</a></h2>
+<h2 id="traps-4"><a class="header" href="#traps-4">Traps</a></h2>
 <ul>
 <li><code>show</code> keeps bindings live while hidden — they keep firing. If the
 hidden content is expensive, use <code>when</code>.</li>
@@ -2834,7 +2964,7 @@ build — two styles that both say <code>padding(space(4))</code> share one clas
 breakpoint can’t wrap another media-conditioned style (you’ll get a
 compile-time panic saying so).</p>
 </blockquote>
-<h2 id="traps-6"><a class="header" href="#traps-6">Traps</a></h2>
+<h2 id="traps-5"><a class="header" href="#traps-5">Traps</a></h2>
 <ul>
 <li>A <code>style()</code> chain outside <code>const</code> fails with an “emission outside
 const” error. Build styles in <code>const</code>, select and merge them at
@@ -2850,7 +2980,7 @@ ride along via <code>.raw</code>).</li>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="routing"><a class="header" href="#routing">Routing</a></h1>
 <p>Routers you’ve used probably match URL pattern strings: <code>"/w/:id/task/:tid"</code>.
-vilan’s router doesn’t. <strong>Routes are enums.</strong> You describe your app’s pages
+Vilan’s router doesn’t. <strong>Routes are enums.</strong> You describe your app’s pages
 as an enum, write one function that parses a path into it and one that
 prints it back, and the type system takes it from there. Every link targets
 a page that exists. Every page receives exactly the parameters it declares.
@@ -2984,7 +3114,7 @@ handler does it:</p>
 <p>On the client side, a deep-linked page usually needs data that hasn’t
 synced yet. Mount it under <code>when(present)</code> so it appears when the data
 does — see <a href="#services--rpc">Services &amp; RPC</a>.</p>
-<h2 id="traps-7"><a class="header" href="#traps-7">Traps</a></h2>
+<h2 id="traps-6"><a class="header" href="#traps-6">Traps</a></h2>
 <ul>
 <li>Keep <code>parse</code> and <code>href</code> next to each other and test them as a pair.
 Their agreement is the one thing the type system can’t check for you.
@@ -2997,7 +3127,7 @@ deferral). <code>segments</code> sees only the pathname.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="services--rpc"><a class="header" href="#services--rpc">Services &amp; RPC</a></h1>
-<p>This is the chapter where vilan’s full-stack story comes together. The
+<p>This is the chapter where Vilan’s full-stack story comes together. The
 short version: you write one ordinary struct on the server, mark a few
 things on it, and you get a typed client, live data sync, and reconnect
 handling without writing any protocol code.</p>
@@ -3051,7 +3181,7 @@ fun main() {
 	};
 	serve_service(4000, notes.dispatcher().into_protocol(json_codec()), |request| {
 		Response::builder().body("app shell here").build()
-	}, || print("listening on :4000"));
+	}, |server| print(i"listening on {server.url()}"));
 }
 </code></pre>
 <p>And a client. <code>NotesClient::connect</code> gives you an object whose exposed
@@ -3107,7 +3237,7 @@ browser build may do that, and the <a href="#a-full-stack-walkthrough">walkthrou
 the full shape.</p>
 <h2 id="what-can-cross-the-wire-wire"><a class="header" href="#what-can-cross-the-wire-wire">What can cross the wire: <code>Wire</code></a></h2>
 <p>Everything that travels — rpc parameters, return types, mirrored
-payloads — must be serializable, which vilan calls <strong>Wire</strong>. The scalars
+payloads — must be serializable, which Vilan calls <strong>Wire</strong>. The scalars
 are Wire (<code>bool</code>, the integers including <code>i53</code>, floats, <code>str</code>). <code>List</code>
 and <code>Option</code> of Wire types are Wire. And your own types opt in with a
 derive:</p>
@@ -3123,6 +3253,42 @@ exactly where you want to find out.</p>
 <p>The codec is chosen at connect time: <code>json_codec()</code> for a readable wire,
 <code>binary_codec()</code> for a compact one. Client and server must use the same
 one.</p>
+<h2 id="naming-server-entities-handlet"><a class="header" href="#naming-server-entities-handlet">Naming server entities: <code>Handle&lt;T&gt;</code></a></h2>
+<p>Payloads carry <em>data</em>. When a client needs to talk about a <strong>thing the
+server owns</strong> — the node to update, the draft to commit, the route’s
+entity — it needs a name for it, and the name has to survive the round
+trip. That name is <code>Handle&lt;T&gt;</code> from <code>std::arena</code>, which is <code>Wire</code>:</p>
+<pre><code class="language-vilan fragment">[derive(Wire)]
+struct Rename { node: Handle&lt;Doc&gt;, title: str }
+
+[service]
+struct Docs {
+	docs: Arena&lt;Doc&gt;,
+}
+</code></pre>
+<p>The server hands out handles; the client stores them and quotes them
+back. Only <code>{ index, generation }</code> travels — the <code>T</code> is phantom — so the
+entity itself never has to be Wire, and never has to leave the server.</p>
+<p>The payoff is what happens when the entity is gone. The arena’s
+generation check answers a stale handle with <code>None</code>, so a client acting
+on something another client just deleted gets a clean “not there”
+instead of a phantom write into a reused slot. It is the same rule local
+code already lives by, extended to the wire, and it is why a handle
+beats an integer id you check by hand.</p>
+<p><strong>Scope the arena to the session.</strong> <code>(index, generation)</code> is guessable, so
+an arena shared across tenants hands every client names that mean
+something to the others. Create the arena when the session is
+established and drop it with the session: a handle from one session then
+names nothing in another, by construction. Authorize the session first;
+then look the handle up in that session’s arena.</p>
+<p>When the arena genuinely has to be shared, <code>Arena::branded()</code> numbers its
+generations from a random base instead of <code>0</code>, so its handles resolve to
+<code>None</code> in any other arena rather than naming the slot of the same index.
+Nothing else changes — staleness, reuse and the <code>None</code> answer are as
+before. Treat it as a confusion guard, not an authorization check: the
+brand rides inside the handles it issues, so a client with one valid
+handle can derive it. It keeps tenants’ names from colliding; the session
+check is still what decides who may act.</p>
 <h2 id="what-rpc-calls-do"><a class="header" href="#what-rpc-calls-do">What rpc calls do</a></h2>
 <ul>
 <li>On the client they return <code>Result&lt;T, RpcError&gt;</code> and are implicitly
@@ -3180,9 +3346,9 @@ never re-subscribe manually. The full state machine is in the
 <a href="#stdrpc--reference">rpc reference</a>.</p>
 </blockquote>
 <h2 id="authentication"><a class="header" href="#authentication">Authentication</a></h2>
-<p>The straightforward shape, proven in the kolt pilot: a <code>login</code> rpc
-returns a token, later rpcs take the token as their first parameter, and
-the server validates it per call.</p>
+<p>The straightforward shape, and the one the walkthrough app uses: a
+<code>login</code> rpc returns a token, later rpcs take the token as their first
+parameter, and the server validates it per call.</p>
 <pre><code class="language-vilan fragment">[rpc]
 fun login(self, username: str, password: str): AuthOutcome { … }
 
@@ -3218,7 +3384,7 @@ longer the only legal home for anything.</p>
 	port,
 	service.dispatcher().into_protocol(json_codec()),
 	|request| …,       // http fallback: serve assets + the app shell
-	|| …,              // on_ready
+	|server| …,        // on_ready — `server.port()` is the bound port
 )
 </code></pre>
 <p><code>dispatcher()</code> is generated by <code>[service]</code>. The fallback answers every
@@ -3226,7 +3392,7 @@ plain http request — serve <code>client.js</code> and <code>client.css</code>,
 app shell for anything else so deep links work (see
 <a href="#routing">Routing</a>). For custom per-connection state, drop down to
 <code>serve_connected</code> — see the <a href="#stdrpc--reference">rpc reference</a>.</p>
-<h2 id="traps-8"><a class="header" href="#traps-8">Traps</a></h2>
+<h2 id="traps-7"><a class="header" href="#traps-7">Traps</a></h2>
 <ul>
 <li>Mysterious contract-mismatch failures while developing usually mean an
 <em>old server process</em> is still holding the port. Check with
@@ -3246,7 +3412,7 @@ process itself via <code>std::process</code>. These modules live in the process
 layer, so they’re available in node/deno/bun builds. The rpc layer that
 sits on top is <a href="#services--rpc">Services &amp; RPC</a>.</p>
 <h2 id="sqlite-stddb"><a class="header" href="#sqlite-stddb">SQLite: <code>std::db</code></a></h2>
-<p>vilan ships with an embedded SQLite binding (node’s built-in SQLite
+<p>Vilan ships with an embedded SQLite binding (node’s built-in SQLite
 underneath). There is no ORM and no query builder. You write SQL, with
 <code>?</code> placeholders for values:</p>
 <pre><code class="language-vilan norun">import std::print;
@@ -3255,11 +3421,13 @@ import std::option::Option::{ self, Some, None };
 
 fun main() {
 	let db = Database::open("app.db");
-	db.exec("CREATE TABLE IF NOT EXISTS task (
+	db.exec("""
+	CREATE TABLE IF NOT EXISTS task (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		created_at INTEGER NOT NULL
-	)");
+	)
+	""");
 
 	let id = db.prepare("INSERT INTO task (name, created_at) VALUES (?, ?)")
 		.run(["write docs", 1720656000000i53]);
@@ -3354,7 +3522,7 @@ long-lived <em>client</em> process (a probe holding a socket, say) has to keep
 <code>main</code> open itself — await something that ends with the app, or
 <code>sleep_for</code> a long duration.</p>
 <h2 id="putting-it-together"><a class="header" href="#putting-it-together">Putting it together</a></h2>
-<p>The boot sequence of a kolt-shaped server, in order:</p>
+<p>The boot sequence of a full-stack server, in order:</p>
 <ol>
 <li><code>Database::open</code>, then <code>exec</code> the schema
 (<code>CREATE TABLE IF NOT EXISTS …</code>).</li>
@@ -3374,7 +3542,7 @@ JavaScript loads, runs, and fetches. That costs first paint and it costs SEO —
 crawler sees a blank page. Server-side rendering fixes both by doing the first
 render on the server: the page arrives already painted, and the client takes over
 from there.</p>
-<p>vilan’s model is <strong>render, then replace</strong>. There is no hydration — the client
+<p>Vilan’s model is <strong>render, then replace</strong>. There is no hydration — the client
 does not adopt the server’s DOM. It renders the same view fresh and swaps it in.</p>
 <ol>
 <li><strong>Render.</strong> The server calls your own view-building code against the process
@@ -3391,9 +3559,11 @@ truth.</li>
 </ol>
 <h2 id="one-component-both-legs"><a class="header" href="#one-component-both-legs">One component, both legs</a></h2>
 <p>The whole trick is a shared <code>fun app(): View</code>. It imports <code>std::ui</code>, which
-resolves <em>per platform</em>: the browser layer (live DOM) in the client build, the
-process layer (an HTML string tree) in the server build — the same source, no
-annotation. Put it in a <code>common</code> library both packages depend on.</p>
+resolves <em>per entry</em>: the browser layer (live DOM) in the client leg, the
+process layer (an HTML string tree) in the server leg — the same source, no
+annotation. Put it in a module beside the two entry files (one package, two
+entries — the <a href="#platforms">full-stack shape</a>); in a workspace, put it
+in a <code>common</code> library both packages depend on instead.</p>
 <pre><code class="language-vilan">import std::ui::{ view, View, render };
 import std::reactive::Signal;
 import std::print;
@@ -3426,7 +3596,7 @@ fun app(): View {
 
 fun main() {
 	let client_js = fs::read_file_to_str("dist/client.js");
-	let shell = fs::read_file_to_str("server/src/app.html");
+	let shell = fs::read_file_to_str("src/app.html");
 	Server::builder()
 		.port(8791)
 		.on_request(|request| {
@@ -3480,24 +3650,33 @@ component that leans on an effect side-channel at build time renders stale on th
 server (effects don’t run there). Text and attribute values are escaped, so a
 hostile string is inert markup, not injected HTML.</p>
 <h2 id="the-double-fetch-honestly"><a class="header" href="#the-double-fetch-honestly">The double-fetch, honestly</a></h2>
-<p>v1 embeds no initial state. A data-backed app still fetches its data over rpc on
-boot exactly as a client-only app does — so the data is fetched once for the
-server render and again on the client. A change between the two shows as a content
-update when the client replaces (the honest behavior, not a mismatch error).</p>
+<p>Server-side rendering embeds no initial state today. A data-backed app
+still fetches its data over rpc on boot exactly as a client-only app does —
+so the data is fetched once for the server render and again on the client. A
+change between the two shows as a content update when the client replaces
+(the honest behavior, not a mismatch error).</p>
 <p>Serializing the initial store into the page and adopting it client-side — so the
-first client fetch is skipped — is a planned next slice (<code>proposal/ssr.md</code> §6c),
-held back because it introduces a cross-process state contract v1 does not need.
-The end state beyond that is resumability (A7b): the server serializes the
-reactive graph and handlers so the client executes <em>nothing</em> at boot. Render and
-replace is the fallback that remains under both.</p>
+first client fetch is skipped — is planned but not built, held back because it
+introduces a cross-process state contract this version does not need. Further
+out is <em>resumability</em>: the server serializes the reactive graph and the handlers
+too, so the client executes nothing at boot. Render-and-replace is the fallback
+that remains under both.</p>
 <h2 id="try-it"><a class="header" href="#try-it">Try it</a></h2>
-<p><code>examples/ssr</code> is the whole loop in three small packages — <code>common</code> (the shared
-<code>app()</code>), <code>client</code> (browser), and <code>server</code> (node):</p>
-<pre><code class="language-sh">vilan run examples/ssr
+<p>The repository carries the whole loop as a runnable example:
+<a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/ssr/"><code>vilan/examples/ssr/</code></a>
+— one package with two entries, <code>src/app.vl</code> (the shared <code>app()</code>),
+<code>src/client.vl</code> (browser), and <code>src/server.vl</code> (node). Clone it and run:</p>
+<pre><code class="language-sh">git clone https://github.com/vilan-lang/vilan
+cd vilan
+vilan run vilan/examples/ssr
 # open http://localhost:8791/ — view source shows the rendered markup
 </code></pre>
 <p>View the page source and you will see the list already in the HTML, before any
 script runs. Load it in a browser and the client boots and replaces it in place.</p>
+<p>To build the same thing from nothing instead, <code>vilan init my-app --template fullstack</code> gives you the one-package/two-entries scaffold this page assumes
+(see <a href="#start-a-project">Start a project</a>); add the
+shared <code>app()</code> module, <code>render</code> on the server leg, and the <code>&lt;!--ssr--&gt;</code> marker
+in the shell, as above.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="a-full-stack-walkthrough"><a class="header" href="#a-full-stack-walkthrough">A full-stack walkthrough</a></h1>
 <p>Every guide so far taught one layer. This chapter builds a whole app, so
@@ -3507,11 +3686,14 @@ live between browser windows, and an editor that saves as you type.</p>
 <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/walkthrough/"><code>vilan/examples/walkthrough/</code></a>, about 500
 lines in <strong>one package</strong>. Every snippet below is quoted from those files,
 and the test suite builds the app on every run, so this chapter can’t
-quietly rot. To run it:</p>
-<pre><code class="language-sh">cd vilan/examples/walkthrough
+quietly rot. To run it, clone the repository and start it:</p>
+<pre><code class="language-sh">git clone https://github.com/vilan-lang/vilan
+cd vilan/vilan/examples/walkthrough
 vilan run .             # builds both entries, starts the server
                         # → http://localhost:4600
 </code></pre>
+<p>(You can also read straight through without running anything — every
+snippet below is reproduced in full.)</p>
 <p>Open two browser windows side by side. Sign in, add a note in one window,
 and watch it appear in the other. Open a note and type — the other window
 follows keystroke by keystroke.</p>
@@ -3642,7 +3824,7 @@ is now the boring file, which is the point:</p>
 			"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
 			_ =&gt; Response::builder().set_header("Content-Type", "text/html").body(app_html).build(),
 		}
-	}, || print("notes server listening on http://localhost:4600"));
+	}, |server| print(i"notes server listening on {server.url()}"));
 }
 </code></pre>
 <p>The catch-all serves the shell for every unknown path. That’s what makes
@@ -3748,7 +3930,7 @@ the error names the whole chain from <code>main</code> down to the SQL.</li>
 <tr><th>In this app</th><th>Taught in</th></tr>
 </thead>
 <tbody>
-<tr><td>the package, its two entries</td><td><a href="#hello-vilan">Hello vilan</a>, <a href="#platforms">Platforms</a></td></tr>
+<tr><td>the package, its two entries</td><td><a href="#hello-vilan">Hello Vilan</a>, <a href="#platforms">Platforms</a></td></tr>
 <tr><td><code>Note</code>, derives, the enums</td><td><a href="#data-and-traits">Data &amp; traits</a></td></tr>
 <tr><td>signals, effects, drafts</td><td><a href="#reactive-state">Reactive state</a></td></tr>
 <tr><td>views, <code>bind_each</code>, <code>when</code>, <code>show</code></td><td><a href="#building-ui">Building UI</a></td></tr>
@@ -3767,12 +3949,16 @@ is exactly the one above.</p>
 <h1 id="the-dev-loop"><a class="header" href="#the-dev-loop">The dev loop</a></h1>
 <p>You built an app in the <a href="#a-full-stack-walkthrough">walkthrough</a>. This chapter is about
 <em>iterating</em> on it — the edit-save-see loop. <code>vilan run --watch</code> on a
-full-stack workspace closes that loop with <strong>hot module replacement (HMR)</strong>:
+full-stack project closes that loop with <strong>hot module replacement (HMR)</strong>:
 save a source file and the running browser app updates in place, reactive
 state intact, without a full page reload.</p>
+<p>Nothing here needs the walkthrough app specifically. Any project with a
+browser leg will do, and <code>vilan init my-app --template fullstack</code> writes
+one (<a href="#start-a-project">Start a project</a>). From the
+project directory:</p>
 <pre><code class="language-sh">vilan run --watch .
 </code></pre>
-<p>On a workspace with a browser leg this prints one extra line at startup:</p>
+<p>A project with a browser leg prints one extra line at startup:</p>
 <pre><code class="language-text">hmr: dev channel on 127.0.0.1:35917
 </code></pre>
 <p>That is the <strong>dev channel</strong> — a tiny local endpoint the browser connects back
@@ -3792,7 +3978,7 @@ verdict exact.</p>
 <tr><td><strong>Client code</strong></td><td>The browser bundle changes → a <strong>swap</strong>: the new bundle is evaluated in place, module state carried across (below). No reload.</td></tr>
 <tr><td><strong>A stylesheet only</strong></td><td>Just the CSS sidecar changed → the stylesheet is <strong>hot-swapped</strong>, no reload, no swap — the page doesn’t even flicker.</td></tr>
 <tr><td><strong>Server code</strong></td><td>The server bundle changed → the <strong>Node process restarts</strong>. The browser stays connected; its live rpc mirror reconnects on its own (the same backoff that survives a server crash) and resyncs from the server’s current values.</td></tr>
-<tr><td><strong>Shared code</strong> (a <code>common</code> library both legs use)</td><td>Both bundles change → the server restarts <strong>and</strong> the browser swaps. The fresh client dials the new contract, so a changed rpc shape never leaves a stale client talking to a new server.</td></tr>
+<tr><td><strong>Shared code</strong> (a module both entries reach, or a <code>common</code> library both legs use)</td><td>Both bundles change → the server restarts <strong>and</strong> the browser swaps. The fresh client dials the new contract, so a changed rpc shape never leaves a stale client talking to a new server.</td></tr>
 <tr><td><strong>A file with a mistake</strong></td><td>The compile error shows in the terminal <em>and</em> as an in-page <strong>overlay</strong> — the real file, line, and message — while the running app keeps its last good build. Fix it and the next good save clears the overlay and swaps normally.</td></tr>
 </tbody>
 </table>
@@ -3836,7 +4022,7 @@ fun main() {
 <p>What resets is state minted <strong>inside functions during mount</strong> — an ephemeral
 signal created in a component, the focused element, scroll position,
 half-typed text not yet pushed. Fine-grained reactivity gives these no stable
-identity to reattach to, so v1 lets them go. A plain browser refresh is the
+identity to reattach to, so a swap lets them go. A plain browser refresh is the
 always-available complete reset.</p>
 <p><strong>The initializer-edit rule.</strong> Editing a binding’s <em>initializer</em> without
 changing its <em>type</em> keeps the live value — the new initializer does <strong>not</strong>
@@ -3862,23 +4048,66 @@ startup line reports the one it got.</li>
 <li><strong>A browser refresh</strong> is always a full, clean reset — seed state lives only
 in the page’s heap, so reloading throws all of it away.</li>
 </ul>
+<h2 id="running-something-alongside-the-build"><a class="header" href="#running-something-alongside-the-build">Running something alongside the build</a></h2>
+<p>A project that needs a step Vilan doesn’t do — a Tailwind pass, an asset
+pipeline, a codegen sidecar — declares it in the manifest:</p>
+<pre><code class="language-toml">[build]
+run = "npx tailwindcss -i src/app.css -o dist/app.css"
+</code></pre>
+<p>Several steps go in a list and run in order:</p>
+<pre><code class="language-toml">[build]
+run = [
+	"npx tailwindcss -i src/app.css -o dist/app.css",
+	"node scripts/generate-icons.mjs",
+]
+</code></pre>
+<p>The rules are short:</p>
+<ul>
+<li>They run <strong>before</strong> each build — including every <code>--watch</code> round — because a
+hook exists to produce something the build then consumes.</li>
+<li>Each is a command line for your shell (<code>sh -c</code> / <code>cmd /C</code>), so pipes, globs
+and <code>&amp;&amp;</code> work; the working directory is the manifest’s own, so relative paths
+mean what they say in the file you wrote them in.</li>
+<li>A hook that exits non-zero <strong>fails the build</strong>, naming the command. Nothing
+after it runs.</li>
+<li>Output goes straight to your terminal. (Under <code>vilan build --stdout</code>, which
+writes the emitted JS to stdout, a chatty hook shares that stream — redirect
+it in the command if you pipe the build.)</li>
+<li><code>vilan check</code> produces no artifacts, so it runs no hooks.</li>
+</ul>
 <h2 id="picking-which-server-to-run"><a class="header" href="#picking-which-server-to-run">Picking which server to run</a></h2>
-<p><code>run</code> (and <code>run --watch</code>) executes one Node leg. A workspace with a single
-<code>node</code> package needs no help — that one runs. A workspace with <strong>two or more</strong>
-<code>node</code> packages (say a <code>server</code> and a diagnostics <code>probe</code>) has to be told which,
-with <code>--entry &lt;name&gt;</code>:</p>
-<pre><code class="language-sh">vilan run --watch --entry server .
+<p>You only need this section if your project has <strong>two or more</strong> runnable node
+legs — a <code>[project]</code> of several packages, or one package with several node
+<code>[entry.&lt;name&gt;]</code> sections. The usual one-package app has a single node entry,
+so <code>run</code> just runs it.</p>
+<p><code>run</code> (and <code>run --watch</code>) executes one Node leg. A project with a single <code>node</code>
+leg needs no help — that one runs. With two or more (say a <code>server</code> and a
+diagnostics <code>probe</code>), designate one in the manifest:</p>
+<pre><code class="language-toml"># one package, several entries
+[package]
+name = "app"
+default-entry = "server"
 </code></pre>
-<p>Without it, <code>run</code> stops and lists the candidates:</p>
-<pre><code class="language-text">error: this workspace has more than one `node` package to run — pick one with --entry &lt;name&gt;: probe, server
+<pre><code class="language-toml"># a workspace of packages
+[project]
+packages = ["client", "server", "probe"]
+default-entry = "server"
 </code></pre>
-<p>The non-selected Node legs still <strong>compile</strong> as part of the workspace — their
+<p>Then <code>vilan run .</code> needs no flag. For a one-off — running the probe instead —
+<code>--entry &lt;name&gt;</code> overrides the manifest:</p>
+<pre><code class="language-sh">vilan run --watch --entry probe .
+</code></pre>
+<p>With neither, <code>run</code> stops and lists the candidates:</p>
+<pre><code class="language-text">error: this workspace has more than one `node` package to run — pick one with --entry &lt;name&gt;, or designate one for good with `[project] default-entry` in vilan.toml: probe, server
+</code></pre>
+<p>A <code>default-entry</code> that names nothing runnable is an error too, rather than a
+silent fallback — it names an <code>[entry.&lt;name&gt;]</code> section in the package shape, and
+a member package’s <code>name</code> in the workspace shape.</p>
+<p>The non-selected Node legs still <strong>compile</strong> as part of the project — their
 bundles land in <code>dist/</code> and a shared edit still recompiles them — they just
 aren’t launched. Under <code>--watch</code> the browser legs hot-swap exactly as usual; the
 chosen server restarts on its own edits, and a change to a leg that isn’t running
-does nothing visible (its <code>dist/</code> bundle refreshes, but nothing restarts). Which
-leg is the default is a per-workspace choice we may add to the manifest later;
-for now it’s the flag.</p>
+does nothing visible (its <code>dist/</code> bundle refreshes, but nothing restarts).</p>
 <h2 id="the-css-link-idiom"><a class="header" href="#the-css-link-idiom">The CSS <code>&lt;link&gt;</code> idiom</a></h2>
 <p>CSS hot-swap works by bumping the cache-buster on your stylesheet <code>&lt;link&gt;</code>, so
 it needs the stylesheet to <em>be</em> a <code>&lt;link&gt;</code> to <code>dist/&lt;leg&gt;.css</code>:</p>
@@ -4014,7 +4243,7 @@ Iterator::from_fn(fn: || Option&lt;T&gt;): IteratorFromFn&lt;T&gt;   // an itera
 <code>Range</code> is exactly this.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="option--result--reference"><a class="header" href="#option--result--reference">Option &amp; Result — reference</a></h1>
-<p><code>Option&lt;T&gt;</code> is how vilan says “maybe a value” (there is no <code>null</code>), and
+<p><code>Option&lt;T&gt;</code> is how Vilan says “maybe a value” (there is no <code>null</code>), and
 <code>Result&lt;T, E&gt;</code> is how it says “this can fail” (there are no exceptions).
 Both are plain enums with a large helper-method surface, listed here. For
 how they replace <code>null</code> checks and <code>try</code>/<code>catch</code> in practice — including
@@ -4488,12 +4717,78 @@ a value, copy it out (<code>*view</code>), edit, and <code>set</code> it back �
 edges/fields update independently.</li>
 <li>Traversal is re-<code>get</code> per step — the arena stays mutable while you walk.</li>
 </ul>
+<h3 id="handles-cross-the-wire"><a class="header" href="#handles-cross-the-wire">Handles cross the wire</a></h3>
+<p>A handle is two integers, so <code>Handle&lt;T&gt;</code> is <code>Wire</code>: it can sit in an rpc
+payload, and a server-side arena becomes the <strong>naming layer</strong> for clients —
+the stable entity reference they quote back (“update node X”). The <code>T</code> is
+phantom; only <code>{ index, generation }</code> travels, so a handle names entities
+whose type is not itself Wire.</p>
+<pre><code class="language-vilan">import std::print;
+import std::arena::{ Arena, Handle };
+import std::json::{ encode_json, decode_json };
+import std::result::Result::{ self, Ok, Err };
+import std::option::Option::{ self, Some, None };
+
+[derive(Wire)]
+struct Rename { node: Handle&lt;str&gt;, title: str }
+
+fun main() {
+	mut titles: Arena&lt;str&gt; = Arena::new();
+	let node = titles.insert("old");
+	// The client received `node` earlier and now quotes it back.
+	let request: Result&lt;Rename, str&gt; = decode_json(encode_json(Rename { node = node, title = "new" }));
+	match request {
+		Ok(let rename) =&gt; {
+			titles.set(rename.node, rename.title);
+			print(titles.get(rename.node).unwrap_or("gone"));
+		},
+		Err(let reason) =&gt; print(reason),
+	}
+}
+</code></pre>
+<p>The generational rule becomes the <strong>distributed staleness story</strong> for free: a
+client acting on an entity another client deleted gets the same clean <code>None</code>
+(and <code>set</code> returns <code>false</code>) as local code holding a stale handle. No phantom
+write, one rule from a local list to an rpc boundary.</p>
+<p>Scope the arena to the session. A handle is a name, and <code>(index, generation)</code>
+is guessable, so an arena shared across tenants hands every client names that
+mean something to the others. A <strong>per-session arena</strong> — created when the
+session is established, dropped with it — makes a handle from one session name
+nothing in another, by construction. Authorize the session; then look the
+handle up in that session’s arena.</p>
+<p>When one arena <em>is</em> shared and its handles must not be interchangeable,
+<code>Arena::branded()</code> adds the belt to that suspenders: its generation counters
+start at a random value instead of <code>0</code>, so a handle issued by one branded arena
+resolves to <code>None</code> in every other one rather than naming that arena’s slot of
+the same index.</p>
+<pre><code class="language-vilan">import std::print;
+import std::arena::{ Arena, Handle };
+import std::option::Option::{ self, Some, None };
+
+fun main() {
+	mut mine: Arena&lt;i32&gt; = Arena::branded();
+	mut theirs: Arena&lt;i32&gt; = Arena::branded();
+	let handle = mine.insert(7);
+	theirs.insert(9);
+	print(theirs.get(handle).unwrap_or(-1));   // -1 — a foreign name
+	print(mine.get(handle).unwrap_or(-1));     // 7
+}
+</code></pre>
+<p>Everything else is unchanged: branding only moves where the counters start, so
+removal, staleness and slot reuse behave exactly as above, and a brand mismatch
+is the same clean <code>None</code> (and <code>false</code> from <code>set</code>) as a stale handle — never a
+panic.</p>
+<p>A brand is a <strong>confusion guard, not an authorization check</strong>. It travels inside
+the handles it issues, so a client holding one valid handle can derive it. It
+stops one tenant’s names from meaning something to another and stops blind
+guessing; it does not make a handle unforgeable. Authorize the session first —
+then look the handle up in that session’s arena.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="stdtime--reference"><a class="header" href="#stdtime--reference">std::time — reference</a></h1>
 <p>Instants, durations, and timers. Both types are Wire — they ride rpc
 payloads (<code>created_at: Instant</code> in a mirrored record is the standard
 timestamp shape).</p>
-<pre><code class="language-vilan fragment">import std::time::{ now, Instant, Duration, sleep, sleep_for };
+<pre><code class="language-vilan fragment">import std::time::{ now, Instant, Duration, sleep, sleep_for, Timer };
 </code></pre>
 <h2 id="instant"><a class="header" href="#instant">Instant</a></h2>
 <p>A moment in time — epoch milliseconds in an <code>i53</code> under the hood.</p>
@@ -4541,11 +4836,54 @@ fun main() {
 <p>Ordering two instants (or durations) is the <code>&lt;</code>/<code>&lt;=</code>/<code>&gt;</code>/<code>&gt;=</code> operators
 dispatching through their <code>PartialOrd</code> impls — the same
 <code>partial_compare</code> you’d call by hand.</p>
-<h2 id="timers-1"><a class="header" href="#timers-1">Timers</a></h2>
+<h2 id="sleeping"><a class="header" href="#sleeping">Sleeping</a></h2>
 <pre><code class="language-vilan fragment">fun sleep(ms: i32)                  // suspend (async; callers implicitly await)
 fun sleep_for(duration: Duration)
-fun set_timeout(callback: || void, ms: i32)   // host setTimeout, fire-and-forget
 </code></pre>
+<p>Inside a nursery’s extent a sleep carries the ambient cancel signal, so
+cancelling the nursery cuts it short instead of waiting the timer out.</p>
+<h2 id="timer"><a class="header" href="#timer">Timer</a></h2>
+<p>A sleep nobody can reach into is sometimes not what you want: you need to
+start a delay now, hand it around, and later either learn that it fired or
+take it back. That’s a <code>Timer</code> — <code>setTimeout</code> and <code>clearTimeout</code> as one
+value.</p>
+<pre><code class="language-vilan fragment">impl Timer {
+	fun after(ms: i32): Timer                  // starts NOW
+	fun after_for(duration: Duration): Timer
+	fun wait(self): bool                       // async; true = fired, false = cancelled
+	fun cancel(self)
+}
+</code></pre>
+<p>A timer starts on construction and settles exactly once, on a <strong>verdict</strong>:
+<code>true</code> if it fired, <code>false</code> if <code>cancel()</code> got there first. The verdict is
+remembered, so every waiter sees the same answer — one parked before it
+settled, one arriving long after — and asking a settled timer is immediate.</p>
+<pre><code class="language-vilan">import std::print;
+import std::time::Timer;
+
+fun main() {
+	let revert = Timer::after(2400);
+	// … something happens that makes the pending revert wrong …
+	revert.cancel();
+	print(revert.wait());   // false — it never fired
+}
+</code></pre>
+<p>That is the re-clickable-button shape: keep the timer in hand, and a new
+click cancels the one still pending before starting its own.</p>
+<p><code>Timer</code> is an ordinary value wrapping one host handle, the way a <code>Signal</code>
+wraps one cell — copying it (assigning, passing, storing it in a field)
+shares the same timer, so cancelling through any copy settles them all.</p>
+<h3 id="timers-and-nurseries"><a class="header" href="#timers-and-nurseries">Timers and nurseries</a></h3>
+<p><code>wait</code> carries the ambient cancel signal exactly as <code>sleep</code> does, and the
+difference between the two cancellations matters:</p>
+<ul>
+<li><strong><code>timer.cancel()</code></strong> is a verdict. The host timer is cleared and every
+waiter resolves <code>false</code>.</li>
+<li><strong>A cancelling nursery</strong> tears down the task that was awaiting — the
+structured path — and does <em>not</em> touch the timer. No verdict, no
+<code>clearTimeout</code>: the timer belongs to whoever holds the value, so its other
+holders can still wait on it, or call it off themselves.</li>
+</ul>
 <h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
 <ul>
 <li>Duration constructors take <code>i53</code> — remember the suffix on computed
@@ -4553,6 +4891,10 @@ literals (<code>Duration::millis(500i53 * factor)</code>); see
 <a href="#gotchas">gotchas</a>.</li>
 <li><code>now()</code> is a host call, so it can’t be <code>const</code>-folded, and programs using
 it aren’t output-deterministic — keep it out of golden-file tests.</li>
+<li>A pending <code>Timer</code> keeps the host alive: on node the process will not exit
+while one is outstanding, exactly as an outstanding <code>sleep</code> holds it open.
+There is no unref knob — cancel the timer if the program should be free to
+end.</li>
 <li>Wire format: an <code>Instant</code> serializes as its <code>i53</code> millis — exact for any
 realistic date (i53 rides the wire as a float’s 53 bits, safe past year
 200,000).</li>
@@ -4703,7 +5045,7 @@ fun main() {
 <code>read_chunk()</code> (<code>finished()</code>/<code>payload()</code> per chunk) — the SSE fallback
 transport uses this.</p>
 <p>Note <code>fetch</code> is base-layer: it works in the browser <em>and</em> on node. For
-talking to your own vilan service, prefer the generated rpc client over
+talking to your own Vilan service, prefer the generated rpc client over
 hand-rolled fetch calls.</p>
 <h2 id="stdws"><a class="header" href="#stdws">std::ws</a></h2>
 <p>Websocket <strong>framing</strong> — building and parsing raw frames. This is
@@ -4801,8 +5143,8 @@ fun main() {
 	print(current);
 }
 </code></pre>
-<p>(Bind the tuple before taking elements — chained access on a call result,
-<code>both.get().1</code>, doesn’t type yet; see the gotchas appendix.)</p>
+<p>(Destructuring names the parts, which reads better than positions;
+<code>both.get().1</code> also works.)</p>
 <h2 id="subscription-disposable"><a class="header" href="#subscription-disposable">Subscription, Disposable</a></h2>
 <pre><code class="language-vilan fragment">trait Disposable { fun dispose(self); }
 struct Subscription { … }        // impl Disposable
@@ -5089,7 +5431,7 @@ impl SocketDuplex {
 	port: i32,
 	protocol: RpcProtocol,
 	fallback: |Request| Response,   // plain-http requests: assets + app shell
-	on_ready: || void,
+	on_ready: |Server| void,        // `server.port()` is the port actually bound
 )
 </code></pre>
 <p><code>serve_service</code> = WebSocket upgrade + per-connection session registration
@@ -5221,7 +5563,7 @@ fun main() {
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="dev--hmr--reference"><a class="header" href="#dev--hmr--reference">Dev / HMR — reference</a></h1>
 <p><code>std::dev</code> is the app-facing surface of <strong>hot module replacement</strong> — the
-live-update loop <code>vilan run --watch</code> runs for a full-stack app (see
+live-update loop <code>vilan run --watch</code> runs for a full-stack project (see
 <a href="#the-dev-loop">The dev loop</a> for the whole picture). Browser-only,
 and every hook here is a <strong>no-op outside a hot reload</strong>: importing it costs
 nothing in a production build, so you can leave the calls in place.</p>
@@ -5364,6 +5706,7 @@ impl ServerBuilder {
 }
 impl Server {
 	fun start(self)        // begin listening; holds the event loop
+	fun port(self): i32    // the bound port (see below)
 	fun url(self): str
 }
 
@@ -5390,6 +5733,21 @@ impl ResponseStream {
 	fun on_close(self, handler: || void)   // the client went away
 }
 </code></pre>
+<p><code>ServerBuilder::port(0)</code> asks the OS for a free port instead of guessing
+one — and the <code>Server</code> handed to <code>on_start</code> carries the port it actually
+bound, so <code>port()</code> and <code>url()</code> are right in either case:</p>
+<pre><code class="language-vilan norun">import std::print;
+import std::http::{ Response, Server };
+
+fun main() {
+	Server::builder()
+		.port(0)
+		.on_request(|request| Response::builder().body("hi").build())
+		.on_start(|server| print(i"listening on {server.url()} (port {server.port()})"))
+		.build()
+		.start();
+}
+</code></pre>
 <p>A <strong>streaming</strong> response holds the connection open: once the status and
 headers are written, <code>on_open</code> receives the live <code>ResponseStream</code> and
 writes chunks over time (SSE’s shape — a suspending <code>on_open</code> runs as
@@ -5402,7 +5760,7 @@ app you won’t touch any of this directly — <code>serve_service</code> wraps 
 	port: i32,
 	protocol: RpcProtocol,             // service.dispatcher().into_protocol(codec)
 	fallback: |Request| Response,      // plain-http requests
-	on_ready: || void,
+	on_ready: |Server| void,           // `server.port()` is the port actually bound
 )
 
 fun serve_connected(port, protocol, on_connection, fallback, on_ready)
@@ -5427,7 +5785,8 @@ fun scan(): str                  // read a line from stdin
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="misc--reference"><a class="header" href="#misc--reference">Misc — reference</a></h1>
 <p>The small modules that don’t need a page of their own: <code>std::io</code>,
-<code>std::promise</code>, <code>std::context</code>, <code>std::crypto</code>, <code>std::jwt</code>, <code>std::asset</code>.</p>
+<code>std::task</code>, <code>std::promise</code>, <code>std::context</code>, <code>std::crypto</code>, <code>std::jwt</code>,
+<code>std::asset</code>.</p>
 <h2 id="stdio"><a class="header" href="#stdio">std::io</a></h2>
 <pre><code class="language-vilan fragment">fun print(message: any)                     // console.log
 fun panic(message: str)                     // abort with a message
@@ -5530,8 +5889,9 @@ fun random_uuid(): str
 fun equals_constant_time(a: Bytes, b: Bytes): bool   // timing-safe compare
 </code></pre>
 <p>WebCrypto-backed (async where the host is). For password hashing on the
-server, bind the host’s sync primitives as externs (the kolt pilot uses
-node’s <code>pbkdf2Sync</code>) — candidates for std promotion.</p>
+server, bind the host’s sync primitives as externs (the walkthrough
+example binds node’s <code>pbkdf2Sync</code> this way) — candidates for std
+promotion.</p>
 <h2 id="stdjwt"><a class="header" href="#stdjwt">std::jwt</a></h2>
 <p>HS512 JSON Web Tokens; claims are any <code>Wire</code> type:</p>
 <pre><code class="language-vilan fragment">async fun sign_hs512&lt;C: Wire&gt;(secret: Bytes, claims: C): str
@@ -5548,7 +5908,7 @@ CSS file (<code>emit("css", rule)</code>). A browser build with emissions produc
 <code>&lt;entry&gt;.css</code> beside <code>&lt;entry&gt;.js</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="spec-1--introduction--conformance"><a class="header" href="#spec-1--introduction--conformance">Spec §1 — Introduction &amp; conformance</a></h1>
-<p>This is the vilan language specification: the normative definition of what
+<p>This is the Vilan language specification: the normative definition of what
 programs mean and which programs are rejected. The <a href="tour">tour</a> teaches;
 this defines. Where the two disagree, this document wins.</p>
 <h2 id="11-scope-and-normativity"><a class="header" href="#11-scope-and-normativity">1.1 Scope and normativity</a></h2>
@@ -5572,7 +5932,7 @@ itself depends on (appendix §A.4): <code>Option</code>, the <code>Try</code>/<c
 operator traits, <code>PartialEq</code>/<code>PartialOrd</code>, <code>Context</code>, <code>Task</code>, <code>Promise</code>,
 <code>List</code>, and the primitive types’ declarations.</p>
 <h2 id="12-program-processing-phases"><a class="header" href="#12-program-processing-phases">1.2 Program processing phases</a></h2>
-<p>A vilan program is processed in phases; each phase’s errors preclude the
+<p>A Vilan program is processed in phases; each phase’s errors preclude the
 next. A <strong>conforming program</strong> passes all of them.</p>
 <ol>
 <li><strong>Lexing</strong> (§2) — source text to tokens.</li>
@@ -5675,7 +6035,8 @@ non-hex letter: <code>0xFFu8</code> is valid; <code>0xFFf</code> is a single hex
 not <code>0xFF</code> with suffix <code>f</code>.</p>
 <h3 id="strings"><a class="header" href="#strings">Strings</a></h3>
 <pre><code class="language-text">STRING           = '"' , { string_char } , '"' ;
-string_char      = "\" any_char | any_char_except_quote_backslash ;
+string_char      = "\" any_char_except_line_terminator
+                 | any_char_except_quote_backslash_or_line_terminator ;
 MULTILINE_STRING = '"""' , raw_text , '"""' ;
 </code></pre>
 <p>In a plain string a backslash escapes the next character; escape sequences
@@ -5684,10 +6045,16 @@ JavaScript string-escape semantics (<code>\n</code>, <code>\"</code>, <code>\\</
 string is <strong>raw</strong> (a backslash is a backslash) and runs to the first
 <code>"""</code>; the whitespace prefix of the line containing the closing delimiter
 is stripped from every line of the content.</p>
-<p>Both forms may span lines, and in both a source line break contributes a
-single <code>\n</code> to the value per the line-terminator rule above. An escaped
-<code>\r</code> is unaffected: it is written into the literal, not read off the end
-of a line.</p>
+<p>A single-quoted string <strong>must close on the line it opens</strong>. A raw line
+break inside <code>"…"</code> is an error, and so is a backslash immediately before
+one — nothing escapes a line terminator, because the literal has to close
+on its line either way. Multi-line text is written <code>"""…"""</code>; a single
+line break inside a one-line string is written <code>\n</code>. (The rule buys error
+locality: a forgotten closing quote is reported at its own line instead of
+running on to the next <code>"</code> anywhere below it.)</p>
+<p>In a multiline string a source line break contributes a single <code>\n</code> to the
+value per the line-terminator rule above. An escaped <code>\r</code> is unaffected:
+it is written into the literal, not read off the end of a line.</p>
 <h3 id="interpolated-strings"><a class="header" href="#interpolated-strings">Interpolated strings</a></h3>
 <p><code>i"…"</code> is an interpolated string: <code>{expr}</code> holes embed expressions; <code>\{</code>
 and <code>\}</code> are literal braces. The construct is defined by desugaring — an
@@ -5700,10 +6067,42 @@ delimit the hole; string literals inside a hole may still contain braces)
 and parsed as a single parenthesized expression. The result of the whole
 form is <code>str</code>; each part must therefore be valid as a <code>+</code> operand with
 <code>str</code> (§5’s operator dispatch).</p>
-<p>An interpolated string may also span lines — the multi-line
-<code>source(i"…")</code> form is how a macro writes the code it returns — and its
-literal fragments follow the same line-terminator rule: one <code>\n</code> per
-source line break.</p>
+<p><code>i"…"</code> obeys the single-line rule of its plain twin: a raw line break in
+its body — or a backslash before one — is the same error. Interpolated
+multi-line text is <code>i"""…"""</code>, which is how a macro writes the code it
+returns.</p>
+<h4 id="interpolated-multiline-strings"><a class="header" href="#interpolated-multiline-strings">Interpolated multiline strings</a></h4>
+<pre><code class="language-text">INTERPOLATED_MULTILINE = 'i' , '"""' , raw_text , '"""' ;
+</code></pre>
+<p><code>i"""…"""</code> is the multiline string with holes. Two rules apply, in this
+order:</p>
+<ol>
+<li><strong>Trimming, on the literal’s raw text.</strong> The layout rule of a plain
+<code>"""</code> applies unchanged and applies <em>first</em>: nothing may follow the
+opening delimiter on its line, the closing delimiter sits alone on its
+line, and the whitespace preceding it is the indentation prefix
+stripped from the start of every content line. Holes and <code>\{</code> / <code>\}</code>
+count as ordinary characters of that text, so a hole never disturbs its
+line’s indent accounting: a line opening with a hole is indented like
+any other, and a hole in the middle of a line has no effect on it. A
+hole may span lines; its continuation lines carry the prefix like every
+other line, and stripping is a no-op inside the hole, where whitespace
+is trivia.</li>
+<li><strong>Fragmenting, on the trimmed text.</strong> Exactly two escapes exist: <code>\{</code>
+and <code>\}</code>, each a literal brace. Nothing else is an escape — a backslash
+before any other character is a literal backslash and that character,
+the same near-rawness as a plain <code>"""</code> (<code>\n</code> is a backslash and an
+<code>n</code>). An unescaped <code>}</code> outside a hole is an error, as it is in <code>i"…"</code>.</li>
+</ol>
+<p>The body is raw and runs to the first <code>"""</code>, so a single <code>"</code> and a <code>""</code>
+pair are ordinary content. The value is a <code>str</code>, and — this being one of
+the two forms that may span lines — a source line break in it contributes
+one <code>\n</code>.</p>
+<pre><code class="language-vilan fragment">let report = i"""
+    {name} scored {score}.
+    Braces are written \{like this\}.
+    """
+</code></pre>
 <p><em>Implementation note: because a hole is re-lexed as ordinary tokens, a
 string literal inside a hole cannot use <code>\"</code> escapes — nested quoting
 inside holes is currently a parse error. Bind the value to a local first.</em></p>
@@ -6280,9 +6679,8 @@ literal).</li>
 <p><em>Implementation note (tracked gaps): a closure bound to a local and
 called directly does not infer its parameter types from the call;
 <code>effect</code>’s unannotated closure parameter can type against the impl’s
-abstract <code>T</code> (B23); chained element access on a call result can lose the
-element type. Each has a pinned test; the workaround is an annotation or
-a binding.</em></p>
+abstract <code>T</code> (B23). Each has a pinned test; the workaround is an
+annotation or a binding.</em></p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="spec-6--the-memory-model"><a class="header" href="#spec-6--the-memory-model">Spec §6 — The memory model</a></h1>
 <p>Values are copied (§6.1); sharing is asked for explicitly. Every explicit
@@ -6578,7 +6976,7 @@ reference is a per-call loan, exactly like a parameter. Captures of a
 <code>Set</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
 reject resource type arguments in v1 — their internals are host code the
 move checker cannot see. <code>Option</code> is the sanctioned container (it is a
-vilan enum, checkable under R11).</li>
+Vilan enum, checkable under R11).</li>
 <li><strong>R11 — generics must be move-clean per instantiation.</strong> Instantiating a
 type parameter with a resource type re-checks the instantiated body under
 the affine rules (T := the resource): every T-typed value is used at most
@@ -6778,7 +7176,7 @@ range-checked at compile time (§2.3); runtime operations are not. An
 opt-in checked family (<code>add_safe</code>, …) is recorded future work; <code>BigInt</code>
 is the answer where the range itself is the problem.</p>
 <h2 id="73-the-async-model"><a class="header" href="#73-the-async-model">7.3 The async model</a></h2>
-<p>vilan is <strong>await-by-default</strong>. Asyncness is a property of <em>functions</em>,
+<p>Vilan is <strong>await-by-default</strong>. Asyncness is a property of <em>functions</em>,
 inferred, and never written in return types:</p>
 <ol>
 <li>A function is <strong>async</strong> iff its body contains a suspension point: a
@@ -6858,7 +7256,7 @@ into <code>map</code> adapts both), and never crosses these boundaries:</p>
 <li>a <code>sync</code> parameter (error, including transitively — the diagnostic
 names the call that made the closure async);</li>
 <li>a host (<code>external</code>) function’s value-returning closure parameter —
-host code cannot await a vilan closure;</li>
+host code cannot await a Vilan closure;</li>
 <li>a trait/generic-dispatched call — there is no statically-known callee
 to instantiate (bind the receiver concretely, or declare the trait
 parameter <code>async</code>);</li>
@@ -6916,7 +7314,7 @@ selects an adapted instance per §7.4.</p>
 <ul>
 <li>a body throw wins (it always happens before the join);</li>
 <li>otherwise the earliest-settled task failure wins, re-raised from the
-<code>nursery</code> call; a failure that is a vilan panic carries the spawn’s
+<code>nursery</code> call; a failure that is a Vilan panic carries the spawn’s
 origin (the spawning function’s name) in its message.</li>
 </ul>
 <p>On the first failure the nursery cancels (below). Every other
@@ -6942,7 +7340,7 @@ initializer rule: an initializer cannot await).</p>
 <h1 id="spec-8--contexts"><a class="header" href="#spec-8--contexts">Spec §8 — Contexts</a></h1>
 <p>A <strong>context</strong> is a dynamically-scoped value: established for the dynamic
 extent of a body, readable from anything that runs within that extent,
-invisible outside it. Contexts are vilan’s answer to ambient parameters
+invisible outside it. Contexts are Vilan’s answer to ambient parameters
 — the current reactive owner, the current turn, the enclosing nursery —
 without global mutable state and without threading a parameter by hand
 through every signature.</p>
@@ -7055,7 +7453,7 @@ fun main() {
 <p>This is the stability rule §7.5 relies on: ambient values do not shift
 across suspensions or across deferred invocation, because the closure’s
 channel was fixed when it was made. (Contrast dynamic-binding systems
-where the <em>call site’s</em> environment decides; in vilan only <code>run</code>’s
+where the <em>call site’s</em> environment decides; in Vilan only <code>run</code>’s
 extent and creation sites decide.)</p>
 <h2 id="85-injected-closures-the-context-clause"><a class="header" href="#85-injected-closures-the-context-clause">8.5 Injected closures: the <code>context</code> clause</a></h2>
 <p>Capture-at-creation has one structural consequence: a closure literal
@@ -7115,7 +7513,7 @@ language rules; they are specified by their reference pages.</p>
 with its result: the emitted program carries the value as a literal,
 never the computation. Const evaluation and macro expansion (§10) run
 in the same fueled compile-time interpreter; they are the two phases
-that execute vilan code at build time.</p>
+that execute Vilan code at build time.</p>
 <h2 id="91-the-const-expression"><a class="header" href="#91-the-const-expression">9.1 The <code>const</code> expression</a></h2>
 <p><code>const</code> is a prefix operator over an expression. It captures
 <strong>greedily</strong>: everything to the end of the surrounding expression folds
@@ -7183,7 +7581,7 @@ position the block folds to the value of the returned expression
 <li>Macros may call other macros as ordinary functions during expansion.</li>
 </ul>
 <h2 id="102-the-macro-environment"><a class="header" href="#102-the-macro-environment">10.2 The macro environment</a></h2>
-<p>A macro’s body is ordinary vilan, but it compiles against
+<p>A macro’s body is ordinary Vilan, but it compiles against
 <strong><code>macro_std</code></strong> — the compile-time standard library (<code>source</code>, the
 <code>meta</code> item types, collections, strings) — and only that: a macro’s
 imports are its own, and it cannot reference the surrounding program’s
@@ -7271,21 +7669,27 @@ dependencies are future work).</li>
 <li><strong><code>[entry.&lt;name&gt;]</code></strong> — one build entry per table: <code>path</code> (default
 <code>&lt;root&gt;/&lt;name&gt;.vl</code>) and <code>target</code> (default <code>node</code>). A package with
 entries builds each for its own platform; reachability (§11.2) is
-what lets one source tree serve several.</li>
+what lets one source tree serve several. <code>[package] default-entry</code>
+names the entry <code>vilan run</code> executes when several are runnable.</li>
 <li><strong><code>[library]</code></strong> — a dependency-only package: <code>name</code>, <code>description</code>,
 <code>root</code>, <code>dependencies</code>, and <strong><code>[library.layer.&lt;name&gt;]</code></strong> overlays
 (<code>root</code>, <code>platform = ["…"]</code>) for per-platform sources.</li>
 <li><strong><code>[project]</code></strong> — a workspace: <code>packages = ["member", …]</code> (paths);
 building the project builds every member against its own manifest.
+<code>default-entry</code> names the member <code>vilan run</code> executes when several
+are runnable.
 Its own <code>dependencies</code> are declared once for the members to share: a
 member writes <code>dep = { project = true }</code> to take that declaration
 (paths in it resolve against the <strong>project root</strong>). Inheritance is
 per dependency and opt-in — nothing is inherited implicitly — and
 <code>project = true</code> combines with no other key.</li>
-<li><strong><code>[build]</code></strong> — codegen options: <code>preset</code> (<code>"debug"</code> | <code>"release"</code>)
-and the per-feature overrides <code>indent</code>, <code>spaces</code>, <code>debug-names</code>.
-Build options never change program semantics (§7.6), only the
-emitted text.</li>
+<li><strong><code>[build]</code></strong> — <code>run</code>, plus codegen options: <code>preset</code> (<code>"debug"</code> |
+<code>"release"</code>) and the per-feature overrides <code>indent</code>, <code>spaces</code>,
+<code>debug-names</code>. Build options never change program semantics (§7.6),
+only the emitted text. <code>run</code> is a command line — or a list of them —
+executed through the host shell <strong>before</strong> each build (each <code>--watch</code>
+round included), in the manifest’s directory, in order; a non-zero
+exit fails the build. <code>vilan check</code> builds nothing and runs none.</li>
 <li><strong><code>[macro]</code></strong> — the compile-time interpreter budget: <code>fuel</code> (steps
 per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
 </ul>
@@ -7293,7 +7697,8 @@ per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</l
 <p>Each entry emits <code>dist/&lt;name&gt;.js</code> for its platform (browser entries
 first, so a server that ships bundles finds them fresh), plus
 <code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).
-<code>vilan run</code> builds all entries and starts the one <code>@process</code> entry;
+<code>vilan run</code> builds all entries and starts one <code>@process</code> entry — the
+only one, the designated <code>default-entry</code>, or the one <code>--entry</code> names;
 <code>vilan check</code> checks every entry, always. The emitted text beyond
 §7.6’s guarantees is implementation-defined.</p>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -7372,12 +7777,12 @@ topic rather than by message.)</p>
 The name isn’t visible here. Usually a missing <code>import</code> — remember that
 everything, even <code>print</code>, is imported explicitly. If you did import it,
 check for a typo or a shadowing local.
-→ <a href="#hello-vilan">Hello vilan</a>, <a href="#spec-4--names-modules-and-packages">spec §4</a></p>
+→ <a href="#hello-vilan">Hello Vilan</a>, <a href="#spec-4--names-modules-and-packages">spec §4</a></p>
 <p><strong>“<code>std</code> is a namespace, not a value — import the module first …”</strong>
 You wrote a qualified path like <code>std::math::min(1, 2)</code> inline. That
 spelling isn’t supported. Import the module, then qualify through its
 name: <code>import std::math;</code> and <code>math::min(1, 2)</code>.
-→ <a href="#hello-vilan">Hello vilan</a></p>
+→ <a href="#hello-vilan">Hello Vilan</a></p>
 <p><strong>“<code>…</code> requires the <code>…</code> layer of <code>std</code> and cannot run on <code>…</code>”</strong>
 Code reachable from this build’s entry calls into a module the platform
 doesn’t have — <code>std::fs</code> from a browser build, <code>std::dom</code> from a node
@@ -7397,7 +7802,7 @@ the two fixes.
 The path names a module file that doesn’t exist. <code>pkg::routes</code> means
 “<code>routes.vl</code> in this package’s source root” — check the file name and
 the package you’re in.
-→ <a href="#hello-vilan">Hello vilan</a></p>
+→ <a href="#hello-vilan">Hello Vilan</a></p>
 <p><strong>“module ‘…’ resolved to ‘…’ on disk, but it is imported as ‘…’”</strong>
 Your filesystem ignores case (NTFS, and macOS by default) and answered
 the import with a differently-cased file. Module names match byte for
@@ -7452,7 +7857,7 @@ no implicit conversions. An unsuffixed literal adapts to its peer
 (<code>stamp &lt; 3</code> is fine for an <code>i53</code> stamp); two differently-typed
 <em>variables</em> need a suffix or an <code>as_*</code> conversion. Related:
 <strong>“<code>bool</code> has no ordering”</strong> (compare with <code>==</code>/<code>!=</code>) and
-<strong>“<code>&amp;&amp;</code> takes <code>bool</code> operands”</strong> (vilan has no truthiness).
+<strong>“<code>&amp;&amp;</code> takes <code>bool</code> operands”</strong> (Vilan has no truthiness).
 → <a href="#values-and-types">Values and types</a></p>
 <p><strong>“type ‘…’ does not implement the <code>…</code> operator; add <code>impl … with …</code> providing <code>…</code>”</strong>
 An operator was used on a type without the matching trait impl — <code>+</code>
@@ -7529,13 +7934,13 @@ or, if you really need two owners, restructure with <code>Option</code> + <code>
 → <a href="#resources">Resources</a></p>
 <p><strong>“cannot move a resource field out of a live aggregate — … no partial moves …”</strong>
 <code>let x = s.db</code>, or passing / returning <code>s.db</code> by value, would move a
-resource out of a struct that is still alive — v1 has no partial moves.
+resource out of a struct that is still alive — there are no partial moves.
 Loan the field (<code>&amp;s.db</code>, <code>&amp;mut s.db</code>, <code>s.db.method(…)</code>), or make the field
 an <code>Option&lt;…&gt;</code> and <code>take()</code> it out.
 → <a href="#resources">Resources</a></p>
 <p><strong>“<code>…</code> is moved on one path through this branch but not another — …”</strong>
 An <code>if</code>/<code>match</code> moves the binding on some paths and not others, so its
-end-of-scope ownership isn’t static (v1 has no runtime drop flags). Move it
+end-of-scope ownership isn’t static (there are no runtime drop flags). Move it
 on <em>every</em> path, or on none — or hold it in an <code>Option</code> and <code>take()</code> on the
 path that consumes it. A diverging leg (one that <code>ret</code>s or <code>jump</code>s out) is
 exempt: it never reaches the merge.
@@ -7590,7 +7995,7 @@ instead.
 → <a href="#resources">Resources</a></p>
 <p><strong>“<code>…</code> cannot hold the resource <code>…</code> — a native container’s internals are host code …”</strong>
 <code>List</code>, <code>Map</code>, <code>Set</code>, and the external generics (<code>Shared</code>, <code>Task</code>,
-<code>Promise</code>, <code>Context</code>) can’t hold a resource in v1 — the move checker
+<code>Promise</code>, <code>Context</code>) can’t hold a resource — the move checker
 can’t see inside host storage. <code>Option</code> is the sanctioned resource
 container; or keep the resource in a struct field.
 → <a href="#resources">Resources</a></p>
@@ -7608,7 +8013,7 @@ uses the cooperative <code>Disposable</code> protocol, not <code>Drop</code>.)
 → <a href="#resources">Resources</a></p>
 <p><strong>“<code>drop</code> for <code>…</code> is async — teardown must be synchronous …”</strong>
 A <code>drop</code> body may not be <code>async</code>, nor await (call an async function): a
-destructor runs synchronously in v1. Cancel owned tasks through an
+destructor runs synchronously. Cancel owned tasks through an
 <code>OwnedNursery</code> — whose own <code>drop</code> cancels them — rather than awaiting them.
 Awaited teardown is a future design.
 → <a href="#resources">Resources</a></p>
@@ -7639,7 +8044,7 @@ spawned <code>async { … }</code> block. The transitive form (“this call pass
 async closure that reaches <code>…</code>”) points at the call that made the
 closure async and notes where it was forwarded.
 → <a href="#async">Async</a>, <a href="#reactive-state">Reactivity</a></p>
-<p><strong>“<code>…</code> is a host (<code>external</code>) function — it cannot await a vilan closure …”</strong>
+<p><strong>“<code>…</code> is a host (<code>external</code>) function — it cannot await a Vilan closure …”</strong>
 Host code can’t await your callback, so an <code>external</code> function’s
 value-returning closure parameters only accept synchronous closures
 (void-returning ones spawn, as everywhere). A parameter <em>declared</em>
@@ -7747,6 +8152,15 @@ parentheses, <code>if p == Point { … } { … }</code> leaves a bare <code>Poin
 condition’s operand, which reports <strong>“<code>Point</code> is a type, not a value”</strong>.
 Parenthesize the literal: <code>if p == (Point { x = 1 }) { … }</code>.
 → <a href="#spec-3--grammar">spec §3.8</a></p>
+<p><strong>“a string cannot span lines unless it is triple-quoted …”</strong>
+A <code>"…"</code> or <code>i"…"</code> ran into a line break before its closing quote. Either
+the quote is missing — that is the common case, and the error is reported
+on the string’s own line rather than wherever the next <code>"</code> happens to be
+— or the text really is multi-line, in which case write it <code>"""…"""</code>
+(<code>i"""…"""</code> with holes). A single line break inside a one-line string is
+<code>\n</code>. Nothing escapes a line break: a trailing <code>\</code> does not continue the
+literal onto the next line.
+→ <a href="#values-and-types">Values and types</a>, <a href="#spec-2--lexical-structure">spec §2.3</a></p>
 <p><strong>“<code>Name</code> is a type, not a value”</strong> (also <em>“a trait / a type parameter /
 a module, not a value”</em>)
 A type, trait, type parameter, or module name was used where a value is
@@ -7757,13 +8171,11 @@ static (<code>Point::new(…)</code>).
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="gotchas"><a class="header" href="#gotchas">Gotchas</a></h1>
 <p>A checklist of idioms that trip people up — each with the working shape.
-Grown as findings land (the backlog’s “idiom traps”, promoted here).</p>
+Grown as findings land.</p>
 <p>Arriving with an error message in hand? The <a href="#error-index">error index</a> is
 organized by message instead of by topic.</p>
 <h2 id="language"><a class="header" href="#language">Language</a></h2>
 <ul>
-<li><strong>Chained element access on a call result loses the element type.</strong>
-<code>shared.read()[i]</code> → bind, then index: <code>let list = shared.read(); list[i]</code>.</li>
 <li><strong><code>match</code> can’t be an operator operand.</strong>
 <code>(match x { … }) + 1</code> → bind the match to a local first.</li>
 <li><strong>A bare integer literal adapts to its peer; two typed variables
@@ -7862,7 +8274,7 @@ on node the process exits when it finishes. <a href="#async">Async</a>.</p>
 the owner is rebound, resized, moved, or dropped; a <a href="#claim">claim</a> is valid
 only while it has not. <a href="#spec-6--the-memory-model">The memory model</a>.</p>
 <p><strong>extern</strong> — a declaration binding a host (JavaScript) function, object,
-or property so vilan code can call it. <a href="#platforms">Platforms</a>.</p>
+or property so Vilan code can call it. <a href="#platforms">Platforms</a>.</p>
 <p><strong>frame</strong> — one encoded message on the wire. You only meet it when
 building custom transports. <a href="#stdrpc--reference">rpc reference</a>.</p>
 <p><strong>handle</strong> — a small copyable id into an <a href="#arena">arena</a>. Storable
@@ -7882,6 +8294,10 @@ receives a live copy of. The server writes; every client updates.
 <p><strong>monomorphization</strong> — how generics compile: each concrete use gets its
 own specialized code, so generic dispatch has no runtime cost.
 <a href="#data-and-traits">Data and traits</a>.</p>
+<p><strong>nursery</strong> — the structured way to spawn: <code>nursery(body)</code> joins every
+task spawned in the body’s dynamic extent before returning the body’s
+value, applies the first-observed error rule, and owns the cancellation
+signal std IO listens on. <a href="#async">Async</a>.</p>
 <p><strong>owner</strong> — the object that collects subscriptions and disposes them
 when its subtree dies. Created by the framework at
 <a href="#boundary">boundaries</a>; you rarely touch one directly.
@@ -7902,7 +8318,7 @@ types, <code>List</code>, <code>void</code>. Everything else is imported explici
 and is destroyed deterministically at scope end — a <code>Database</code>, an
 <code>OwnedNursery</code>. <a href="#resources">Resources</a>.</p>
 <p><strong>safe integer</strong> — an integer JavaScript’s 64-bit floats represent
-exactly: anything within ±2^53. vilan’s <code>i53</code>/<code>u53</code> are named for this
+exactly: anything within ±2^53. Vilan’s <code>i53</code>/<code>u53</code> are named for this
 window. <a href="#values-and-types">Values and types</a>.</p>
 <p><strong>service</strong> — a server struct whose <code>[rpc]</code> methods clients call and
 whose <code>[expose]</code>d signals clients <a href="#mirror">mirror</a>.
@@ -7915,10 +8331,6 @@ Gives you a <code>Task&lt;T&gt;</code>. <a href="#async">Async</a>.</p>
 same-task. A task’s failure is absorbed at the spawn — a later <code>await</code>
 receives it; an unobserved failure is reported, not crashed on.
 <a href="#async">Async</a>.</p>
-<p><strong>nursery</strong> — the structured way to spawn: <code>nursery(body)</code> joins every
-task spawned in the body’s dynamic extent before returning the body’s
-value, applies the first-observed error rule, and owns the cancellation
-signal std IO listens on. <a href="#async">Async</a>.</p>
 <p><strong>subscription</strong> — one live “call me on change” registration on a
 signal. Effects manage theirs through <a href="#owner">owners</a>; manual <code>sub</code>
 hands you the object to dispose. <a href="#reactive-state">Reactive state</a>.</p>
@@ -7988,7 +8400,7 @@ and options of Wire types, and anything with <code>[derive(Wire)]</code>.
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/vilan-993df79f.js"></script>
+        <script src="theme/vilan-f4d49cc4.js"></script>
 
         <script>
         window.addEventListener('load', function() {

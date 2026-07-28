@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -176,7 +176,8 @@
                     <main>
                         <h1 id="misc--reference"><a class="header" href="#misc--reference">Misc — reference</a></h1>
 <p>The small modules that don’t need a page of their own: <code>std::io</code>,
-<code>std::promise</code>, <code>std::context</code>, <code>std::crypto</code>, <code>std::jwt</code>, <code>std::asset</code>.</p>
+<code>std::task</code>, <code>std::promise</code>, <code>std::context</code>, <code>std::crypto</code>, <code>std::jwt</code>,
+<code>std::asset</code>.</p>
 <h2 id="stdio"><a class="header" href="#stdio">std::io</a></h2>
 <pre><code class="language-vilan fragment">fun print(message: any)                     // console.log
 fun panic(message: str)                     // abort with a message
@@ -279,8 +280,9 @@ fun random_uuid(): str
 fun equals_constant_time(a: Bytes, b: Bytes): bool   // timing-safe compare
 </code></pre>
 <p>WebCrypto-backed (async where the host is). For password hashing on the
-server, bind the host’s sync primitives as externs (the kolt pilot uses
-node’s <code>pbkdf2Sync</code>) — candidates for std promotion.</p>
+server, bind the host’s sync primitives as externs (the walkthrough
+example binds node’s <code>pbkdf2Sync</code> this way) — candidates for std
+promotion.</p>
 <h2 id="stdjwt"><a class="header" href="#stdjwt">std::jwt</a></h2>
 <p>HS512 JSON Web Tokens; claims are any <code>Wire</code> type:</p>
 <pre><code class="language-vilan fragment">async fun sign_hs512&lt;C: Wire&gt;(secret: Bytes, claims: C): str
@@ -347,7 +349,7 @@ CSS file (<code>emit("css", rule)</code>). A browser build with emissions produc
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

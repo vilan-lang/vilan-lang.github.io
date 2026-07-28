@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -224,6 +224,7 @@ impl ServerBuilder {
 }
 impl Server {
 	fun start(self)        // begin listening; holds the event loop
+	fun port(self): i32    // the bound port (see below)
 	fun url(self): str
 }
 
@@ -250,6 +251,21 @@ impl ResponseStream {
 	fun on_close(self, handler: || void)   // the client went away
 }
 </code></pre>
+<p><code>ServerBuilder::port(0)</code> asks the OS for a free port instead of guessing
+one — and the <code>Server</code> handed to <code>on_start</code> carries the port it actually
+bound, so <code>port()</code> and <code>url()</code> are right in either case:</p>
+<pre><code class="language-vilan norun">import std::print;
+import std::http::{ Response, Server };
+
+fun main() {
+	Server::builder()
+		.port(0)
+		.on_request(|request| Response::builder().body("hi").build())
+		.on_start(|server| print(i"listening on {server.url()} (port {server.port()})"))
+		.build()
+		.start();
+}
+</code></pre>
 <p>A <strong>streaming</strong> response holds the connection open: once the status and
 headers are written, <code>on_open</code> receives the live <code>ResponseStream</code> and
 writes chunks over time (SSE’s shape — a suspending <code>on_open</code> runs as
@@ -262,7 +278,7 @@ app you won’t touch any of this directly — <code>serve_service</code> wraps 
 	port: i32,
 	protocol: RpcProtocol,             // service.dispatcher().into_protocol(codec)
 	fallback: |Request| Response,      // plain-http requests
-	on_ready: || void,
+	on_ready: |Server| void,           // `server.port()` is the port actually bound
 )
 
 fun serve_connected(port, protocol, on_connection, fallback, on_ready)
@@ -336,7 +352,7 @@ fun scan(): str                  // read a line from stdin
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

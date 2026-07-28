@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -258,7 +258,7 @@ fun main() {
 </code></pre>
 <p>The <code>&amp;mut self</code> on <code>bump</code> matters: it means “mutate the actual receiver,
 not a copy”. Plain <code>self</code> receives a copy, like every other value in
-vilan. The <a href="memory-model.html">memory model</a> chapter makes this precise.</p>
+Vilan. The <a href="memory-model.html">memory model</a> chapter makes this precise.</p>
 <h2 id="generics-and-bounds"><a class="header" href="#generics-and-bounds">Generics and bounds</a></h2>
 <p>Type parameters work on functions, structs, enums, and impls. A bound
 constrains what the code may do with the parameter:</p>
@@ -344,6 +344,7 @@ write the boilerplate:</p>
 <tr><td><code>PartialEq</code></td><td>structural <code>==</code></td></tr>
 <tr><td><code>Debug</code></td><td><code>.debug()</code> — a developer-facing rendering</td></tr>
 <tr><td><code>Default</code></td><td><code>Default::default()</code> built from the fields’ defaults</td></tr>
+<tr><td><code>Hashable</code></td><td>usability as a <code>Map</code> key or <code>Set</code> member (<code>std::hash</code>)</td></tr>
 <tr><td><code>Json</code></td><td>JSON encode/decode (<code>std::json</code>)</td></tr>
 <tr><td><code>Wire</code></td><td>serialization for rpc payloads (<code>std::wire</code>)</td></tr>
 </tbody>
@@ -425,7 +426,7 @@ at the derive site when one isn’t.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

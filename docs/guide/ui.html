@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -177,7 +177,7 @@
                         <h1 id="building-ui"><a class="header" href="#building-ui">Building UI</a></h1>
 <p><code>std::ui</code> is a declarative view layer with no virtual DOM. A <code>View</code>
 describes a DOM element. Methods chain to build it. Where React re-runs
-components and diffs the result, vilan binds individual DOM properties to
+components and diffs the result, Vilan binds individual DOM properties to
 signals — when a signal changes, exactly that text node or attribute
 updates and nothing else runs.</p>
 <p>Available in browser builds (<code>target = "browser"</code> in <code>vilan.toml</code>, or
@@ -364,14 +364,15 @@ many plain function calls sit in between:</p>
 </code></pre>
 <p>Navigate away, and the page’s owner is disposed — every binding the page
 created dies with it. Delete row 2, and only row 2’s bindings die. This
-is why there is no unsubscribe code anywhere in a vilan app: the tree of
+is why there is no unsubscribe code anywhere in a Vilan app: the tree of
 boundaries <em>is</em> the cleanup logic, and the framework already placed
 them where subtrees end.</p>
 <h2 id="server-side-rendering"><a class="header" href="#server-side-rendering">Server-side rendering</a></h2>
-<p>The same component code runs on the server. On <code>@process</code> (a node build)
-<code>std::ui</code> builds an HTML <strong>string</strong> instead of live DOM, and <code>render(view)</code>
-serializes it — first paint and SEO, before any JavaScript (A7, <code>proposal/ssr.md</code>).
-A route handler calls your own <code>app()</code> and splices the markup into its HTML shell.</p>
+<p>The same component code runs on the server. On a node build <code>std::ui</code>
+builds an HTML <strong>string</strong> instead of live DOM, and <code>render(view)</code>
+serializes it — first paint and SEO, before any JavaScript. A route
+handler calls your own <code>app()</code> and splices the markup into its HTML
+shell. The <a href="ssr.html">server-side rendering guide</a> walks the whole loop.</p>
 <pre><code class="language-vilan">import std::ui::{ view, View, render };
 import std::reactive::Signal;
 import std::print;
@@ -470,7 +471,7 @@ framework already puts them there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Hello vilan - The vilan documentation</title>
+        <title>Hello Vilan - The vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,10 +174,28 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="hello-vilan"><a class="header" href="#hello-vilan">Hello vilan</a></h1>
-<p>vilan compiles to JavaScript. Your programs run on node (or deno, or bun)
-and in the browser. One tool, the <code>vilan</code> binary, does everything: build,
-run, check, format, test.</p>
+                        <h1 id="hello-vilan"><a class="header" href="#hello-vilan">Hello Vilan</a></h1>
+<p>Vilan compiles to JavaScript. Your programs run on node (or deno, or bun)
+and in the browser. One tool, the <code>vilan</code> binary, does everything:
+scaffold, build, run, check, format, test.</p>
+<h2 id="install-the-toolchain"><a class="header" href="#install-the-toolchain">Install the toolchain</a></h2>
+<p>You need two things: <a href="https://nodejs.org">node</a> (to <em>run</em> what you build)
+and the <code>vilan</code> binary itself. On Linux and macOS:</p>
+<pre><code class="language-sh">curl -fsSL https://github.com/vilan-lang/vilan/releases/latest/download/install.sh | sh
+</code></pre>
+<p>On Windows, in PowerShell:</p>
+<pre><code class="language-powershell">irm https://github.com/vilan-lang/vilan/releases/latest/download/install.ps1 | iex
+</code></pre>
+<p>Either way <code>vilan</code> (and <code>vilan-lsp</code>, the language server) lands in
+<code>~/.vilan/bin</code> — <code>%USERPROFILE%\.vilan\bin</code> on Windows. The unix script
+prints the PATH line to add; the PowerShell one edits your user PATH
+itself, so open a new terminal afterwards. <code>vilan --version</code> confirms it
+worked, and <code>vilan upgrade</code> updates it later.</p>
+<p>Homebrew (<code>brew install vilan-lang/vilan/vilan</code>) and building from source
+are the other two routes; the
+<a href="https://github.com/vilan-lang/vilan#getting-started">repository README</a>
+has both. Every command in this book assumes only that <code>vilan</code> is on your
+PATH.</p>
 <h2 id="a-first-program"><a class="header" href="#a-first-program">A first program</a></h2>
 <pre><code class="language-vilan">import std::print;
 
@@ -196,6 +214,39 @@ vilan check hello.vl    # just type-check — writes nothing
 is imported explicitly — even <code>print</code>. Your files will start with a few
 <code>import</code> lines, just like ES modules. Second, indentation is tabs by
 convention, and <code>vilan fmt</code> will format files for you.</p>
+<h2 id="start-a-project"><a class="header" href="#start-a-project">Start a project</a></h2>
+<p>A single file is fine for a first look. For anything you will come back
+to, scaffold a project: <code>vilan init</code> writes a manifest, sources that
+already compile, and a <code>.gitignore</code>.</p>
+<pre><code class="language-sh">vilan init my-app                       # pick a template at the prompt
+vilan init my-app --template fullstack  # or say which one outright
+cd my-app
+vilan run .
+</code></pre>
+<p>Three templates, for the three shapes that exist:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>--template</code></th><th>What you get</th></tr>
+</thead>
+<tbody>
+<tr><td><code>node</code></td><td>the smallest real package: an entry, a module beside it, a <code>*_test.vl</code></td></tr>
+<tr><td><code>browser</code></td><td>a reactive browser app — <code>index.html</code> beside the emitted bundle</td></tr>
+<tr><td><code>fullstack</code></td><td>one package, two entries: a browser client and a node server (<a href="#the-shape-of-a-full-stack-app">below</a>)</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>fullstack</code> is the default — a bare Enter at the prompt takes it — because
+it is the shape the examples and the walkthrough teach. Pass <code>--template</code>
+and there is no prompt at all, which is what a script wants (without a
+terminal to prompt on, <code>vilan init</code> says so and stops rather than
+hanging).</p>
+<p>With no name, <code>vilan init</code> scaffolds into the current directory, as long
+as that directory is not already a project. Nothing is ever overwritten,
+either way. The <code>[package] name</code> comes from the directory’s name, with
+anything a name cannot carry folded to <code>_</code> (<code>my-app</code> → <code>my_app</code>). No
+repository is created: you get a <code>.gitignore</code>, and <code>git init</code> stays
+yours.</p>
 <h2 id="the-cli"><a class="header" href="#the-cli">The CLI</a></h2>
 <div class="table-wrapper">
 <table>
@@ -203,6 +254,7 @@ convention, and <code>vilan fmt</code> will format files for you.</p>
 <tr><th>Command</th><th>What it does</th></tr>
 </thead>
 <tbody>
+<tr><td><code>vilan init [name]</code></td><td>scaffold a project; <code>--template</code> picks <code>node</code>, <code>browser</code>, or <code>fullstack</code></td></tr>
 <tr><td><code>vilan build [path]</code></td><td>compile to <code>&lt;file&gt;.js</code> (no path: use the nearest <code>vilan.toml</code>)</td></tr>
 <tr><td><code>vilan check [path]</code></td><td>type-check and report problems, write nothing</td></tr>
 <tr><td><code>vilan run [path] [args…]</code></td><td>build and run; extra args reach <code>process::args()</code></td></tr>
@@ -215,6 +267,10 @@ convention, and <code>vilan fmt</code> will format files for you.</p>
 whenever a source file changes. <code>--platform browser</code> builds for the
 browser instead of node (<code>--target</code> also works). <code>--stdout</code> prints the JS
 instead of writing a file.</p>
+<p>A <code>*_test.vl</code> lives beside the code it tests and compiles as a file <em>of</em>
+its package: it imports <code>pkg::</code> siblings and the package’s dependencies
+exactly the way the rest of the package does. Tests run on node, whatever
+the package’s <code>target</code> says.</p>
 <h2 id="projects-vilantoml"><a class="header" href="#projects-vilantoml">Projects: <code>vilan.toml</code></a></h2>
 <p>A single <code>.vl</code> file is fine for experiments. Real projects get a folder
 with a <code>vilan.toml</code> manifest. An application looks like this:</p>
@@ -243,7 +299,10 @@ work offline, and a moved tag cannot change what you already built.
 Nothing else fetches: the editor uses the cache when it’s there and
 never reaches the network.</p>
 <p>A workspace groups several packages so they build together with one
-<code>vilan build .</code> at the root:</p>
+<code>vilan build .</code> at the root. You need it less often than you might
+expect — a client + server app is <em>one</em> package with two entries (see
+<a href="#the-shape-of-a-full-stack-app">below</a>) — so reach for a workspace when
+members genuinely want their own manifests and dependency sets:</p>
 <pre><code class="language-toml">[project]
 packages = ["common", "client", "server"]
 
@@ -263,15 +322,16 @@ another package sees. A <code>path</code> written at the root is relative to the
 own <code>shapes = { path = "…" }</code> simply uses that one — there is no
 shadowing rule to remember, because inheritance only happens where you
 ask for it.</p>
-<p>By default the source root is the package directory and the entry file is
-<code>main.vl</code>. You can point elsewhere with <code>root = "src"</code> and
-<code>entry = "app.vl"</code> if you prefer.</p>
+<p>By default a package’s sources live in <code>src/</code> and the entry file is
+<code>src/main.vl</code> — that is where <code>vilan build</code> looks when the manifest says
+nothing. Point it elsewhere with <code>root = "."</code> (sources beside the
+manifest) or <code>entry = "app.vl"</code>.</p>
 <h2 id="imports"><a class="header" href="#imports">Imports</a></h2>
 <pre><code class="language-vilan fragment">import std::print;                          // one item
 import std::reactive::{ Signal, combine };  // several at once
 import std::option::Option::{ self, Some, None };  // a type plus its variants
 import pkg::routes::{ Route, parse };       // another file in YOUR package
-import common::{ Task, KoltClient };        // a dependency, by its name
+import common::{ Note, NotesClient };       // a dependency, by its name
 </code></pre>
 <p>There are three places an import can come from:</p>
 <ul>
@@ -304,8 +364,13 @@ target = "browser"
     server.vl     the node entry
     …             everything else, shared by whichever entry reaches it
 </code></pre>
-<p>Larger apps split into a <code>[project]</code> workspace of packages and libraries,
-as above. Either way, the compiler knows which standard-library modules
+<p>Start here — <code>vilan init my-app --template fullstack</code> writes exactly this
+layout, ready to run. It is the shape the examples use too: the
+<a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/walkthrough/">walkthrough app</a>,
+the <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/todo/">to-do app</a>,
+and the <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/ssr/">SSR example</a>
+are all one package with two entries. Larger apps split into a <code>[project]</code>
+workspace of packages and libraries, as above. Either way, the compiler knows which standard-library modules
 exist on which platform: if code the browser entry can <em>reach</em> calls into
 <code>std::db</code> (a server thing), you get a clear compile error naming the call
 chain — importing the module is fine, reaching it is what’s checked. The
@@ -363,7 +428,7 @@ chain — importing the module is fine, reaching it is what’s checked. The
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

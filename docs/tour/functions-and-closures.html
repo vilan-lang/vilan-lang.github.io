@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -198,7 +198,7 @@ fun main() {
 }
 </code></pre>
 <p>Notice there is no <code>return</code> on the last line. A bare expression at the
-end of a block is the block’s value. You’ll see this everywhere in vilan.
+end of a block is the block’s value. You’ll see this everywhere in Vilan.
 <code>if</code>, <code>match</code>, and plain blocks all work the same way.</p>
 <p>Generic functions take type parameters. Bounds say what the body is
 allowed to do with them:</p>
@@ -206,7 +206,7 @@ allowed to do with them:</p>
 </code></pre>
 <h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
 <p>A closure is an inline function value. Where JavaScript writes
-<code>x =&gt; x * 2</code>, vilan writes <code>|x| x * 2</code>. Parameter types are usually
+<code>x =&gt; x * 2</code>, Vilan writes <code>|x| x * 2</code>. Parameter types are usually
 inferred from where the closure is used. Annotate them when they aren’t:</p>
 <pre><code class="language-vilan">import std::print;
 
@@ -224,7 +224,7 @@ fun main() {
 <code>|| U</code>, and one that returns nothing is <code>|| void</code>. These appear as
 parameter types, in <code>let</code> annotations, and as struct fields.</p>
 <p>Closures capture their surroundings <strong>by value</strong> at the moment they are
-created. vilan copies, remember. When a closure needs to share mutable
+created. Vilan copies, remember. When a closure needs to share mutable
 state with its creator, they hold a <code>Shared</code> cell together. The
 <a href="memory-model.html">memory model</a> explains that pattern.</p>
 <h2 id="named-functions-as-closures"><a class="header" href="#named-functions-as-closures">Named functions as closures</a></h2>
@@ -243,7 +243,7 @@ fun main() {
 	print(loud.get());
 }
 </code></pre>
-<p>This works for plain vilan functions. It does not work for generic
+<p>This works for plain Vilan functions. It does not work for generic
 functions, methods, <code>async</code> functions, or externs. For those, write the
 small wrapping closure — the compiler will tell you when you hit one.</p>
 <h2 id="async-closures"><a class="header" href="#async-closures">Async closures</a></h2>
@@ -251,18 +251,21 @@ small wrapping closure — the compiler will tell you when you hit one.</p>
 async work.</p>
 <p>A closure type can carry an <code>async</code> marker: <code>async |T| U</code>. Calls through
 a value of that type are awaited automatically, the same way direct
-calls to async functions are (see <a href="async.html">Async</a>). The marker is
-allowed in exactly two places: parameter types and <code>let</code> annotations.</p>
-<pre><code class="language-vilan fragment">struct Draft&lt;T&gt; {
-	commit: |T| Option&lt;str&gt;,          // struct fields store the plain type
+calls to async functions are (see <a href="async.html">Async</a>). Write it anywhere
+a closure type is declared — a parameter, a <code>let</code> annotation, a struct
+field, a return type:</p>
+<pre><code class="language-vilan fragment">fun draft&lt;T&gt;(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;   // a parameter
+
+struct Poller {
+	tick: async || i32,               // a struct field
 }
-…
-let commit: async |T| Option&lt;str&gt; = self.commit;   // re-mark at a let
-let outcome = commit(value);                        // this call awaits
+
+let commit: async |T| Option&lt;str&gt; = stored;   // a let annotation
+let outcome = commit(value);                  // …and this call awaits
 </code></pre>
-<p>That “store plain, re-mark at a <code>let</code>” dance is the standard pattern for
-async callbacks kept in struct fields, because the marker doesn’t exist
-on field types yet.</p>
+<p>An unannotated <code>let</code> needs no marker at all: a binding that holds an
+async closure adopts its asyncness. <a href="async.html#async-closures">Async</a>
+covers the same seams from the async side.</p>
 <p>There is one more rule, and it works in your favor. Passing an async
 closure where a plain closure is expected is an error if the plain type
 returns a value — you would receive a promise pretending to be the
@@ -293,12 +296,6 @@ compiler rejects that shape outright. Second, a function that reads a
 context can’t be passed around as a plain value, because the context
 channel would be severed. Both produce clear errors when you hit them.</p>
 </blockquote>
-<h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
-<ul>
-<li>Chained element access on a call result (<code>read()[i]</code>) can lose the
-element type. Bind, then index. (Tuple <code>.0</code>/<code>.1</code> access isn’t
-implemented at all yet — destructure tuples instead.)</li>
-</ul>
 
                     </main>
 
@@ -351,7 +348,7 @@ implemented at all yet — destructure tuples instead.)</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

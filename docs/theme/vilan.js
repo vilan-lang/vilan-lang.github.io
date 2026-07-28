@@ -33,14 +33,14 @@
 		const PLAIN_STRING = {
 			className: "string",
 			begin: '"',
-			end: '"',
+			end: /"|$/,
 			contains: [{ begin: "\\\\." }],
 		};
 		// i"…{hole}…" — the holes carry expressions; render them as substitutions.
 		const INTERPOLATED = {
 			className: "string",
 			begin: 'i"',
-			end: '"',
+			end: /"|$/,
 			contains: [
 				{ begin: "\\\\." },
 				{ className: "subst", begin: "\\{", end: "\\}" },
@@ -50,6 +50,19 @@
 			className: "string",
 			begin: '"""',
 			end: '"""',
+		};
+		// i"""…{hole}…""" — the multiline form with holes (H7). Listed before both
+		// MULTILINE (which would not match at the `i`) and INTERPOLATED (which
+		// would end at the second of the three quotes). Only `\{` and `\}` are
+		// escapes here.
+		const MULTILINE_INTERPOLATED = {
+			className: "string",
+			begin: 'i"""',
+			end: '"""',
+			contains: [
+				{ begin: "\\\\[{}]" },
+				{ className: "subst", begin: "\\{", end: "\\}" },
+			],
 		};
 		const ATTRIBUTE = {
 			className: "meta",
@@ -70,6 +83,7 @@
 			contains: [
 				hljs.COMMENT("//", "$"),
 				ATTRIBUTE,
+				MULTILINE_INTERPOLATED,
 				MULTILINE,
 				INTERPOLATED,
 				PLAIN_STRING,

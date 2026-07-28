@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -180,7 +180,7 @@ JavaScript loads, runs, and fetches. That costs first paint and it costs SEO —
 crawler sees a blank page. Server-side rendering fixes both by doing the first
 render on the server: the page arrives already painted, and the client takes over
 from there.</p>
-<p>vilan’s model is <strong>render, then replace</strong>. There is no hydration — the client
+<p>Vilan’s model is <strong>render, then replace</strong>. There is no hydration — the client
 does not adopt the server’s DOM. It renders the same view fresh and swaps it in.</p>
 <ol>
 <li><strong>Render.</strong> The server calls your own view-building code against the process
@@ -197,9 +197,11 @@ truth.</li>
 </ol>
 <h2 id="one-component-both-legs"><a class="header" href="#one-component-both-legs">One component, both legs</a></h2>
 <p>The whole trick is a shared <code>fun app(): View</code>. It imports <code>std::ui</code>, which
-resolves <em>per platform</em>: the browser layer (live DOM) in the client build, the
-process layer (an HTML string tree) in the server build — the same source, no
-annotation. Put it in a <code>common</code> library both packages depend on.</p>
+resolves <em>per entry</em>: the browser layer (live DOM) in the client leg, the
+process layer (an HTML string tree) in the server leg — the same source, no
+annotation. Put it in a module beside the two entry files (one package, two
+entries — the <a href="../tour/platforms.html">full-stack shape</a>); in a workspace, put it
+in a <code>common</code> library both packages depend on instead.</p>
 <pre><code class="language-vilan">import std::ui::{ view, View, render };
 import std::reactive::Signal;
 import std::print;
@@ -232,7 +234,7 @@ fun app(): View {
 
 fun main() {
 	let client_js = fs::read_file_to_str("dist/client.js");
-	let shell = fs::read_file_to_str("server/src/app.html");
+	let shell = fs::read_file_to_str("src/app.html");
 	Server::builder()
 		.port(8791)
 		.on_request(|request| {
@@ -286,24 +288,33 @@ component that leans on an effect side-channel at build time renders stale on th
 server (effects don’t run there). Text and attribute values are escaped, so a
 hostile string is inert markup, not injected HTML.</p>
 <h2 id="the-double-fetch-honestly"><a class="header" href="#the-double-fetch-honestly">The double-fetch, honestly</a></h2>
-<p>v1 embeds no initial state. A data-backed app still fetches its data over rpc on
-boot exactly as a client-only app does — so the data is fetched once for the
-server render and again on the client. A change between the two shows as a content
-update when the client replaces (the honest behavior, not a mismatch error).</p>
+<p>Server-side rendering embeds no initial state today. A data-backed app
+still fetches its data over rpc on boot exactly as a client-only app does —
+so the data is fetched once for the server render and again on the client. A
+change between the two shows as a content update when the client replaces
+(the honest behavior, not a mismatch error).</p>
 <p>Serializing the initial store into the page and adopting it client-side — so the
-first client fetch is skipped — is a planned next slice (<code>proposal/ssr.md</code> §6c),
-held back because it introduces a cross-process state contract v1 does not need.
-The end state beyond that is resumability (A7b): the server serializes the
-reactive graph and handlers so the client executes <em>nothing</em> at boot. Render and
-replace is the fallback that remains under both.</p>
+first client fetch is skipped — is planned but not built, held back because it
+introduces a cross-process state contract this version does not need. Further
+out is <em>resumability</em>: the server serializes the reactive graph and the handlers
+too, so the client executes nothing at boot. Render-and-replace is the fallback
+that remains under both.</p>
 <h2 id="try-it"><a class="header" href="#try-it">Try it</a></h2>
-<p><code>examples/ssr</code> is the whole loop in three small packages — <code>common</code> (the shared
-<code>app()</code>), <code>client</code> (browser), and <code>server</code> (node):</p>
-<pre><code class="language-sh">vilan run examples/ssr
+<p>The repository carries the whole loop as a runnable example:
+<a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/ssr/"><code>vilan/examples/ssr/</code></a>
+— one package with two entries, <code>src/app.vl</code> (the shared <code>app()</code>),
+<code>src/client.vl</code> (browser), and <code>src/server.vl</code> (node). Clone it and run:</p>
+<pre><code class="language-sh">git clone https://github.com/vilan-lang/vilan
+cd vilan
+vilan run vilan/examples/ssr
 # open http://localhost:8791/ — view source shows the rendered markup
 </code></pre>
 <p>View the page source and you will see the list already in the HTML, before any
 script runs. Load it in a browser and the client boots and replaces it in place.</p>
+<p>To build the same thing from nothing instead, <code>vilan init my-app --template fullstack</code> gives you the one-package/two-entries scaffold this page assumes
+(see <a href="../tour/hello-vilan.html#start-a-project">Start a project</a>); add the
+shared <code>app()</code> module, <code>render</code> on the server leg, and the <code>&lt;!--ssr--&gt;</code> marker
+in the shell, as above.</p>
 
                     </main>
 
@@ -356,7 +367,7 @@ script runs. Load it in a browser and the client boots and replaces it in place.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

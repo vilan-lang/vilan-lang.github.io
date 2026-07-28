@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,6 +182,17 @@ default), <strong>deno</strong>, <strong>bun</strong>, or the <strong>browser</s
 can actually do. Call a server function from code a browser build can
 reach, and you get a clear compile error naming the call chain — not a
 runtime crash. That’s the whole idea of this chapter.</p>
+<h2 id="the-std-layers"><a class="header" href="#the-std-layers">The std layers</a></h2>
+<ul>
+<li><strong>Base</strong> — platform-neutral, available everywhere: collections,
+<code>Option</code>/<code>Result</code>, strings, numbers, <code>reactive</code>, <code>shared</code>, <code>time</code>,
+json/wire/binary, the rpc client machinery, <code>style</code>, <code>fetch</code>,
+<code>crypto</code>, and friends.</li>
+<li><strong>Browser layer</strong> — <code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>,
+<code>std::storage</code>. Browser builds only.</li>
+<li><strong>Process layer</strong> (node/deno/bun) — <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
+<code>std::process</code>, <code>std::rpc_server</code>. Server builds only.</li>
+</ul>
 <blockquote>
 <p><strong>Going deeper.</strong> The check is on <em>reachable code</em>, not on imports. A
 file may import <code>std::fs</code> and compile for the browser, as long as no
@@ -194,32 +205,12 @@ Module-level <code>let</code>s follow the same rule: a binding’s initializer r
 (and is checked, and is bundled) only if something reachable references
 it — a server-only global in a shared file costs the browser build
 nothing. <code>const</code> initializers run at build time and ship as plain
-values, so they never color anything.
-Where a team wants an explicit boundary, <code>[platform("browser")]</code> on a
-function declares the platforms it promises to run on — the compiler
-checks the promise on every compile (entry or not, whatever the build
-target), and a violation lands at the fence with its chain instead of
-at some distant entry in a dependent build. Patterns use the manifest
-layers’ vocabulary: <code>"node"</code>, <code>"browser"</code>, families like
-<code>"@process"</code>, or several at once for code that must stay neutral.
-The editor shows the same information as you write: violations appear
-as live diagnostics at the offending call, and hovering a function
-shows its inferred requirement and how it got it — e.g. <code>requires the `process` layer of `std` (via `save → write_file (std::fs)`)</code>.</p>
+values, so they never color anything.</p>
 </blockquote>
-<h2 id="the-std-layers"><a class="header" href="#the-std-layers">The std layers</a></h2>
-<ul>
-<li><strong>Base</strong> — platform-neutral, available everywhere: collections,
-<code>Option</code>/<code>Result</code>, strings, numbers, <code>reactive</code>, <code>shared</code>, <code>time</code>,
-json/wire/binary, the rpc client machinery, <code>style</code>, <code>fetch</code>,
-<code>crypto</code>, and friends.</li>
-<li><strong>Browser layer</strong> — <code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>,
-<code>std::storage</code>. Browser builds only.</li>
-<li><strong>Process layer</strong> (node/deno/bun) — <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
-<code>std::process</code>, <code>std::rpc_server</code>. Server builds only.</li>
-</ul>
 <h2 id="full-stack-packages"><a class="header" href="#full-stack-packages">Full-stack packages</a></h2>
 <p>A client + server app fits in <strong>one package</strong> with two entries — each
-<code>[entry.&lt;name&gt;]</code> names an entry file and the platform it builds for:</p>
+<code>[entry.&lt;name&gt;]</code> names an entry file and the platform it builds for.
+This is the default shape; reach past it only when you have a reason:</p>
 <pre><code class="language-toml">[package]
 name = "app"
 
@@ -244,9 +235,10 @@ node entry; <code>vilan check</code> checks all entries, always. Reachability do
 the sorting: the same <code>store.vl</code> may use <code>std::fs</code> freely, because only
 the server entry reaches into it — if client code ever calls that far,
 the build fails with the call chain.</p>
-<p>Larger apps can still split into a workspace of packages — a shared
-<code>[library]</code> for payload types, a browser package, a server package —
-and each member may declare its own entries:</p>
+<p>The advanced form, for larger apps, is a workspace of packages — a
+shared <code>[library]</code> for payload types, a browser package, a server
+package — where each member has its own manifest and dependency set, and
+may declare its own entries:</p>
 <pre><code>app/
   vilan.toml       [project] packages = ["common", "client", "server"]
   common/          [library] — payload types (base layer only)
@@ -257,6 +249,19 @@ and each member may declare its own entries:</p>
 compiler checks each against its own platform, including that <code>common</code>
 stays platform-neutral. Either shape, the service lives next to its
 resources (see <a href="../guide/services.html">Services</a>).</p>
+<blockquote>
+<p><strong>Going deeper.</strong> Where a team wants an explicit boundary,
+<code>[platform("browser")]</code> on a function declares the platforms it
+promises to run on — the compiler checks the promise on every compile
+(entry or not, whatever the build target), and a violation lands at the
+fence with its chain instead of at some distant entry in a dependent
+build. Patterns use the manifest layers’ vocabulary: <code>"node"</code>,
+<code>"browser"</code>, families like <code>"@process"</code>, or several at once for code
+that must stay neutral. The editor shows the same information as you
+write: violations appear as live diagnostics at the offending call, and
+hovering a function shows its inferred requirement and how it got it —
+e.g. <code>requires the `process` layer of `std` (via `save → write_file (std::fs)`)</code>.</p>
+</blockquote>
 <h2 id="externs--talking-to-the-host"><a class="header" href="#externs--talking-to-the-host">Externs — talking to the host</a></h2>
 <p>You’ll mostly consume host bindings through std. But when you need a
 node API or browser API that std doesn’t wrap yet, you can bind it
@@ -357,7 +362,7 @@ layered — most libraries never need this.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

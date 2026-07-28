@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -262,6 +262,72 @@ a value, copy it out (<code>*view</code>), edit, and <code>set</code> it back �
 edges/fields update independently.</li>
 <li>Traversal is re-<code>get</code> per step — the arena stays mutable while you walk.</li>
 </ul>
+<h3 id="handles-cross-the-wire"><a class="header" href="#handles-cross-the-wire">Handles cross the wire</a></h3>
+<p>A handle is two integers, so <code>Handle&lt;T&gt;</code> is <code>Wire</code>: it can sit in an rpc
+payload, and a server-side arena becomes the <strong>naming layer</strong> for clients —
+the stable entity reference they quote back (“update node X”). The <code>T</code> is
+phantom; only <code>{ index, generation }</code> travels, so a handle names entities
+whose type is not itself Wire.</p>
+<pre><code class="language-vilan">import std::print;
+import std::arena::{ Arena, Handle };
+import std::json::{ encode_json, decode_json };
+import std::result::Result::{ self, Ok, Err };
+import std::option::Option::{ self, Some, None };
+
+[derive(Wire)]
+struct Rename { node: Handle&lt;str&gt;, title: str }
+
+fun main() {
+	mut titles: Arena&lt;str&gt; = Arena::new();
+	let node = titles.insert("old");
+	// The client received `node` earlier and now quotes it back.
+	let request: Result&lt;Rename, str&gt; = decode_json(encode_json(Rename { node = node, title = "new" }));
+	match request {
+		Ok(let rename) =&gt; {
+			titles.set(rename.node, rename.title);
+			print(titles.get(rename.node).unwrap_or("gone"));
+		},
+		Err(let reason) =&gt; print(reason),
+	}
+}
+</code></pre>
+<p>The generational rule becomes the <strong>distributed staleness story</strong> for free: a
+client acting on an entity another client deleted gets the same clean <code>None</code>
+(and <code>set</code> returns <code>false</code>) as local code holding a stale handle. No phantom
+write, one rule from a local list to an rpc boundary.</p>
+<p>Scope the arena to the session. A handle is a name, and <code>(index, generation)</code>
+is guessable, so an arena shared across tenants hands every client names that
+mean something to the others. A <strong>per-session arena</strong> — created when the
+session is established, dropped with it — makes a handle from one session name
+nothing in another, by construction. Authorize the session; then look the
+handle up in that session’s arena.</p>
+<p>When one arena <em>is</em> shared and its handles must not be interchangeable,
+<code>Arena::branded()</code> adds the belt to that suspenders: its generation counters
+start at a random value instead of <code>0</code>, so a handle issued by one branded arena
+resolves to <code>None</code> in every other one rather than naming that arena’s slot of
+the same index.</p>
+<pre><code class="language-vilan">import std::print;
+import std::arena::{ Arena, Handle };
+import std::option::Option::{ self, Some, None };
+
+fun main() {
+	mut mine: Arena&lt;i32&gt; = Arena::branded();
+	mut theirs: Arena&lt;i32&gt; = Arena::branded();
+	let handle = mine.insert(7);
+	theirs.insert(9);
+	print(theirs.get(handle).unwrap_or(-1));   // -1 — a foreign name
+	print(mine.get(handle).unwrap_or(-1));     // 7
+}
+</code></pre>
+<p>Everything else is unchanged: branding only moves where the counters start, so
+removal, staleness and slot reuse behave exactly as above, and a brand mismatch
+is the same clean <code>None</code> (and <code>false</code> from <code>set</code>) as a stale handle — never a
+panic.</p>
+<p>A brand is a <strong>confusion guard, not an authorization check</strong>. It travels inside
+the handles it issues, so a client holding one valid handle can derive it. It
+stops one tenant’s names from meaning something to another and stops blind
+guessing; it does not make a handle unforgeable. Authorize the session first —
+then look the handle up in that session’s arena.</p>
 
                     </main>
 
@@ -314,7 +380,7 @@ edges/fields update independently.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 

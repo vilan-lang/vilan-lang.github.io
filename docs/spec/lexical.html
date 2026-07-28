@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8ee9966f.js";
+            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-f3347d90.js"></script>
+        <script src="../toc-d0617186.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -238,7 +238,8 @@ non-hex letter: <code>0xFFu8</code> is valid; <code>0xFFf</code> is a single hex
 not <code>0xFF</code> with suffix <code>f</code>.</p>
 <h3 id="strings"><a class="header" href="#strings">Strings</a></h3>
 <pre><code class="language-text">STRING           = '"' , { string_char } , '"' ;
-string_char      = "\" any_char | any_char_except_quote_backslash ;
+string_char      = "\" any_char_except_line_terminator
+                 | any_char_except_quote_backslash_or_line_terminator ;
 MULTILINE_STRING = '"""' , raw_text , '"""' ;
 </code></pre>
 <p>In a plain string a backslash escapes the next character; escape sequences
@@ -247,10 +248,16 @@ JavaScript string-escape semantics (<code>\n</code>, <code>\"</code>, <code>\\</
 string is <strong>raw</strong> (a backslash is a backslash) and runs to the first
 <code>"""</code>; the whitespace prefix of the line containing the closing delimiter
 is stripped from every line of the content.</p>
-<p>Both forms may span lines, and in both a source line break contributes a
-single <code>\n</code> to the value per the line-terminator rule above. An escaped
-<code>\r</code> is unaffected: it is written into the literal, not read off the end
-of a line.</p>
+<p>A single-quoted string <strong>must close on the line it opens</strong>. A raw line
+break inside <code>"…"</code> is an error, and so is a backslash immediately before
+one — nothing escapes a line terminator, because the literal has to close
+on its line either way. Multi-line text is written <code>"""…"""</code>; a single
+line break inside a one-line string is written <code>\n</code>. (The rule buys error
+locality: a forgotten closing quote is reported at its own line instead of
+running on to the next <code>"</code> anywhere below it.)</p>
+<p>In a multiline string a source line break contributes a single <code>\n</code> to the
+value per the line-terminator rule above. An escaped <code>\r</code> is unaffected:
+it is written into the literal, not read off the end of a line.</p>
 <h3 id="interpolated-strings"><a class="header" href="#interpolated-strings">Interpolated strings</a></h3>
 <p><code>i"…"</code> is an interpolated string: <code>{expr}</code> holes embed expressions; <code>\{</code>
 and <code>\}</code> are literal braces. The construct is defined by desugaring — an
@@ -263,10 +270,42 @@ delimit the hole; string literals inside a hole may still contain braces)
 and parsed as a single parenthesized expression. The result of the whole
 form is <code>str</code>; each part must therefore be valid as a <code>+</code> operand with
 <code>str</code> (§5’s operator dispatch).</p>
-<p>An interpolated string may also span lines — the multi-line
-<code>source(i"…")</code> form is how a macro writes the code it returns — and its
-literal fragments follow the same line-terminator rule: one <code>\n</code> per
-source line break.</p>
+<p><code>i"…"</code> obeys the single-line rule of its plain twin: a raw line break in
+its body — or a backslash before one — is the same error. Interpolated
+multi-line text is <code>i"""…"""</code>, which is how a macro writes the code it
+returns.</p>
+<h4 id="interpolated-multiline-strings"><a class="header" href="#interpolated-multiline-strings">Interpolated multiline strings</a></h4>
+<pre><code class="language-text">INTERPOLATED_MULTILINE = 'i' , '"""' , raw_text , '"""' ;
+</code></pre>
+<p><code>i"""…"""</code> is the multiline string with holes. Two rules apply, in this
+order:</p>
+<ol>
+<li><strong>Trimming, on the literal’s raw text.</strong> The layout rule of a plain
+<code>"""</code> applies unchanged and applies <em>first</em>: nothing may follow the
+opening delimiter on its line, the closing delimiter sits alone on its
+line, and the whitespace preceding it is the indentation prefix
+stripped from the start of every content line. Holes and <code>\{</code> / <code>\}</code>
+count as ordinary characters of that text, so a hole never disturbs its
+line’s indent accounting: a line opening with a hole is indented like
+any other, and a hole in the middle of a line has no effect on it. A
+hole may span lines; its continuation lines carry the prefix like every
+other line, and stripping is a no-op inside the hole, where whitespace
+is trivia.</li>
+<li><strong>Fragmenting, on the trimmed text.</strong> Exactly two escapes exist: <code>\{</code>
+and <code>\}</code>, each a literal brace. Nothing else is an escape — a backslash
+before any other character is a literal backslash and that character,
+the same near-rawness as a plain <code>"""</code> (<code>\n</code> is a backslash and an
+<code>n</code>). An unescaped <code>}</code> outside a hole is an error, as it is in <code>i"…"</code>.</li>
+</ol>
+<p>The body is raw and runs to the first <code>"""</code>, so a single <code>"</code> and a <code>""</code>
+pair are ordinary content. The value is a <code>str</code>, and — this being one of
+the two forms that may span lines — a source line break in it contributes
+one <code>\n</code>.</p>
+<pre><code class="language-vilan fragment">let report = i"""
+    {name} scored {score}.
+    Braces are written \{like this\}.
+    """
+</code></pre>
 <p><em>Implementation note: because a hole is re-lexed as ordinary tokens, a
 string literal inside a hole cannot use <code>\"</code> escapes — nested quoting
 inside holes is currently a parse error. Bind the value to a local first.</em></p>
@@ -344,7 +383,7 @@ context-free: no token depends on parse state.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-993df79f.js"></script>
+        <script src="../theme/vilan-f4d49cc4.js"></script>
 
 
 
