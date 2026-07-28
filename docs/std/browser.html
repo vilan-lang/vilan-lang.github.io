@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b99810ad.js";
+            window.path_to_searchindex_js = "../searchindex-1168814a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d0617186.js"></script>
@@ -183,6 +183,7 @@
 <pre><code class="language-vilan fragment">external struct Element;
 fun get_element_by_id(id: str): Element
 fun create_element(tag: str): Element
+fun create_element_ns(namespace: str, tag: str): Element   // createElementNS
 fun query_selector(selector: str): Element
 fun query_selector_all(selector: str): List&lt;Element&gt;
 
@@ -223,6 +224,13 @@ fun mount_root(id: str, body: (|| View) context owner_scope): Owner
 <p><code>mount_root</code> = fresh owner + turn boundary + attach; it returns the root
 owner (most apps let it live forever). <code>mount</code> is the attach half alone —
 use only when you already hold a boundary.</p>
+<p><code>view</code> knows the SVG vocabulary: an SVG tag name (<code>svg</code>, <code>path</code>, <code>rect</code>,
+<code>clipPath</code>, … — exact case) creates its element in the SVG namespace, so
+inline icons and diagrams render; on the server the <code>svg</code> root serializes
+with its <code>xmlns</code>. Tags that exist in both vocabularies (<code>a</code>, <code>title</code>,
+<code>style</code>, <code>script</code>) resolve to HTML. <code>class</code>/<code>styled</code> set the <code>class</code>
+attribute (not the <code>className</code> property), so styling works on SVG nodes
+too.</p>
 <h3 id="view-methods"><a class="header" href="#view-methods">View methods</a></h3>
 <div class="table-wrapper">
 <table>

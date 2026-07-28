@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b99810ad.js";
+            window.path_to_searchindex_js = "searchindex-1168814a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d0617186.js"></script>
@@ -485,7 +485,9 @@ yours.</p>
 <p>Flags you’ll actually use: <code>--watch</code> rebuilds (or re-runs, or re-checks)
 whenever a source file changes. <code>--platform browser</code> builds for the
 browser instead of node (<code>--target</code> also works). <code>--stdout</code> prints the JS
-instead of writing a file.</p>
+instead of writing a file. <code>--entry &lt;name&gt;</code> picks which entry <code>vilan run</code>
+drives in a multi-entry package (see <a href="#the-dev-loop">the dev loop</a>
+for the full selection rules).</p>
 <p>A <code>*_test.vl</code> lives beside the code it tests and compiles as a file <em>of</em>
 its package: it imports <code>pkg::</code> siblings and the package’s dependencies
 exactly the way the rest of the package does. Tests run on node, whatever
@@ -517,6 +519,11 @@ pinned = { git = "https://github.com/someone/other", rev = "9f2c1ab" }
 work offline, and a moved tag cannot change what you already built.
 Nothing else fetches: the editor uses the cache when it’s there and
 never reaches the network.</p>
+<p>Two more keys earn their keep once a project grows. <code>[build] run</code> names
+a command (or a list of them) to run before each build and each
+<code>--watch</code> round — an asset pipeline, a codegen sidecar. And
+<code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
+has several. Both are covered in <a href="#the-dev-loop">the dev loop</a>.</p>
 <p>A workspace groups several packages so they build together with one
 <code>vilan build .</code> at the root. You need it less often than you might
 expect — a client + server app is <em>one</em> package with two entries (see
@@ -2847,6 +2854,10 @@ directly: <code>get_element_by_id</code>, <code>query_selector</code>,
 <ul>
 <li><code>show</code> keeps bindings live while hidden — they keep firing. If the
 hidden content is expensive, use <code>when</code>.</li>
+<li>Inline SVG works — <code>view("svg").attr("viewBox", …).child(view("path")…)</code>
+creates real SVG-namespace elements, and the server render carries the
+<code>xmlns</code> — but <code>show</code> drives the HTML-only <code>hidden</code> property, which SVG
+ignores: toggle an SVG subtree with <code>when</code> (or a class) instead.</li>
 <li><code>bind_value</code> fights remote updates (every keystroke overwrites). For
 server-backed fields, use <code>bind_draft</code>.</li>
 <li>The <code>owner_scope</code> compile error means you built UI outside every
@@ -4861,7 +4872,9 @@ value.</p>
 <p>A timer starts on construction and settles exactly once, on a <strong>verdict</strong>:
 <code>true</code> if it fired, <code>false</code> if <code>cancel()</code> got there first. The verdict is
 remembered, so every waiter sees the same answer — one parked before it
-settled, one arriving long after — and asking a settled timer is immediate.</p>
+settled, one arriving long after — and asking a settled timer is immediate.
+<code>cancel()</code> is idempotent: cancelling twice, or cancelling a timer that
+already fired, does nothing.</p>
 <pre><code class="language-vilan">import std::print;
 import std::time::Timer;
 
@@ -5463,6 +5476,7 @@ transport or protocol bridge.</p>
 <pre><code class="language-vilan fragment">external struct Element;
 fun get_element_by_id(id: str): Element
 fun create_element(tag: str): Element
+fun create_element_ns(namespace: str, tag: str): Element   // createElementNS
 fun query_selector(selector: str): Element
 fun query_selector_all(selector: str): List&lt;Element&gt;
 
@@ -5503,6 +5517,13 @@ fun mount_root(id: str, body: (|| View) context owner_scope): Owner
 <p><code>mount_root</code> = fresh owner + turn boundary + attach; it returns the root
 owner (most apps let it live forever). <code>mount</code> is the attach half alone —
 use only when you already hold a boundary.</p>
+<p><code>view</code> knows the SVG vocabulary: an SVG tag name (<code>svg</code>, <code>path</code>, <code>rect</code>,
+<code>clipPath</code>, … — exact case) creates its element in the SVG namespace, so
+inline icons and diagrams render; on the server the <code>svg</code> root serializes
+with its <code>xmlns</code>. Tags that exist in both vocabularies (<code>a</code>, <code>title</code>,
+<code>style</code>, <code>script</code>) resolve to HTML. <code>class</code>/<code>styled</code> set the <code>class</code>
+attribute (not the <code>className</code> property), so styling works on SVG nodes
+too.</p>
 <h3 id="view-methods"><a class="header" href="#view-methods">View methods</a></h3>
 <div class="table-wrapper">
 <table>

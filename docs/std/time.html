@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b99810ad.js";
+            window.path_to_searchindex_js = "../searchindex-1168814a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d0617186.js"></script>
@@ -247,7 +247,9 @@ value.</p>
 <p>A timer starts on construction and settles exactly once, on a <strong>verdict</strong>:
 <code>true</code> if it fired, <code>false</code> if <code>cancel()</code> got there first. The verdict is
 remembered, so every waiter sees the same answer — one parked before it
-settled, one arriving long after — and asking a settled timer is immediate.</p>
+settled, one arriving long after — and asking a settled timer is immediate.
+<code>cancel()</code> is idempotent: cancelling twice, or cancelling a timer that
+already fired, does nothing.</p>
 <pre><code class="language-vilan">import std::print;
 import std::time::Timer;
 

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b99810ad.js";
+            window.path_to_searchindex_js = "../searchindex-1168814a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d0617186.js"></script>
@@ -266,7 +266,9 @@ yours.</p>
 <p>Flags you’ll actually use: <code>--watch</code> rebuilds (or re-runs, or re-checks)
 whenever a source file changes. <code>--platform browser</code> builds for the
 browser instead of node (<code>--target</code> also works). <code>--stdout</code> prints the JS
-instead of writing a file.</p>
+instead of writing a file. <code>--entry &lt;name&gt;</code> picks which entry <code>vilan run</code>
+drives in a multi-entry package (see <a href="../guide/dev-loop.html">the dev loop</a>
+for the full selection rules).</p>
 <p>A <code>*_test.vl</code> lives beside the code it tests and compiles as a file <em>of</em>
 its package: it imports <code>pkg::</code> siblings and the package’s dependencies
 exactly the way the rest of the package does. Tests run on node, whatever
@@ -298,6 +300,11 @@ pinned = { git = "https://github.com/someone/other", rev = "9f2c1ab" }
 work offline, and a moved tag cannot change what you already built.
 Nothing else fetches: the editor uses the cache when it’s there and
 never reaches the network.</p>
+<p>Two more keys earn their keep once a project grows. <code>[build] run</code> names
+a command (or a list of them) to run before each build and each
+<code>--watch</code> round — an asset pipeline, a codegen sidecar. And
+<code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
+has several. Both are covered in <a href="../guide/dev-loop.html">the dev loop</a>.</p>
 <p>A workspace groups several packages so they build together with one
 <code>vilan build .</code> at the root. You need it less often than you might
 expect — a client + server app is <em>one</em> package with two entries (see

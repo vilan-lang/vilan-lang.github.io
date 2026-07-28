@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b99810ad.js";
+            window.path_to_searchindex_js = "../searchindex-1168814a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d0617186.js"></script>
@@ -411,6 +411,10 @@ directly: <code>get_element_by_id</code>, <code>query_selector</code>,
 <ul>
 <li><code>show</code> keeps bindings live while hidden — they keep firing. If the
 hidden content is expensive, use <code>when</code>.</li>
+<li>Inline SVG works — <code>view("svg").attr("viewBox", …).child(view("path")…)</code>
+creates real SVG-namespace elements, and the server render carries the
+<code>xmlns</code> — but <code>show</code> drives the HTML-only <code>hidden</code> property, which SVG
+ignores: toggle an SVG subtree with <code>when</code> (or a class) instead.</li>
 <li><code>bind_value</code> fights remote updates (every keystroke overwrites). For
 server-backed fields, use <code>bind_draft</code>.</li>
 <li>The <code>owner_scope</code> compile error means you built UI outside every
