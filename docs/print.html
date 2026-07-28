@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-81ec9f1c.js";
+            window.path_to_searchindex_js = "searchindex-b99810ad.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-d0617186.js"></script>
@@ -2931,8 +2931,12 @@ inner style applies under that condition:</p>
 <p>Available: <code>.hover</code>, <code>.focus</code>, <code>.active</code>, <code>.disabled</code>, <code>.first</code>,
 <code>.last</code>, <code>.dark</code> (dark mode via <code>prefers-color-scheme</code>), and
 <code>.pseudo(name, inner)</code> for anything else. Breakpoints work the same way:
-<code>.sm(inner)</code>, <code>.md(inner)</code>, <code>.lg(inner)</code>, <code>.xl(inner)</code>, or
-<code>.media(min_width, inner)</code>.</p>
+<code>.sm(inner)</code> (640px), <code>.md(inner)</code> (768px), <code>.lg(inner)</code> (1024px),
+<code>.xl(inner)</code> (1280px), or <code>.media(min_width, inner)</code> — all <code>min-width</code>
+conditions, so chains are mobile-first: in
+<code>.sm(grid_cols(2)).lg(grid_cols(3))</code> the widest matching breakpoint wins
+(the stylesheet emits media rules in ascending min-width order, which is
+what makes that true).</p>
 <h2 id="dynamic-values"><a class="header" href="#dynamic-values">Dynamic values</a></h2>
 <p>Styles are static, so how does a progress bar grow? Through CSS custom
 properties. The style declares a variable, and the element binds the
@@ -5337,14 +5341,16 @@ fun last(self, inner: Style): Style       // :last-child
 fun dark(self, inner: Style): Style       // prefers-color-scheme: dark
 fun pseudo(self, name: str, inner: Style): Style
 
-fun sm(self, inner: Style): Style          // breakpoints (min-width)
-fun md(self, inner: Style): Style
+fun sm(self, inner: Style): Style          // breakpoints (min-width):
+fun md(self, inner: Style): Style          // 640px, 768px, 1024px, 1280px
 fun lg(self, inner: Style): Style
 fun xl(self, inner: Style): Style
 fun media(self, min_width: str, inner: Style): Style
 </code></pre>
 <p>A breakpoint cannot wrap an already-media-conditioned style (panics at
-compile-time evaluation).</p>
+compile-time evaluation). Media rules emit in ascending min-width order,
+so a chain like <code>.sm(x).lg(y)</code> is mobile-first — the widest matching
+breakpoint wins.</p>
 <h2 id="runtime-legal-operations"><a class="header" href="#runtime-legal-operations">Runtime-legal operations</a></h2>
 <p>Construction emits rules and therefore lives in <code>const</code>; these do not emit
 and work anywhere:</p>
@@ -6470,6 +6476,16 @@ fun main() {
 <strong>throughout</strong> the module regardless of declaration order (a function may
 call one declared later). Local <code>let</code> bindings are visible only after
 their declaration.</p>
+<p>A <code>let</code> may also redeclare a name <strong>within the same scope</strong>: the later
+binding shadows the earlier one from its own declaration point onward,
+while uses before that point keep the earlier binding (parameters and
+loop/pattern bindings are shadowable the same way). Visibility starts at
+the <strong>end</strong> of the declaring statement, so an initializer never reads the
+binding it declares: in <code>let x = x + 1;</code> the right-hand <code>x</code> is the
+previous <code>x</code> — an enclosing or earlier same-scope binding — and an error
+when none exists. Module-level bindings are the exception, as above: they
+are order-independent, one declaration per name, and a genuine
+initialization cycle is a compile error (§7 of the execution chapter).</p>
 <h2 id="45-type-position-vs-value-position"><a class="header" href="#45-type-position-vs-value-position">4.5 Type position vs value position</a></h2>
 <p>A name is resolved differently by position:</p>
 <ul>

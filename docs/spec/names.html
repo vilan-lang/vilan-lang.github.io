@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
+            window.path_to_searchindex_js = "../searchindex-b99810ad.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d0617186.js"></script>
@@ -245,6 +245,16 @@ fun main() {
 <strong>throughout</strong> the module regardless of declaration order (a function may
 call one declared later). Local <code>let</code> bindings are visible only after
 their declaration.</p>
+<p>A <code>let</code> may also redeclare a name <strong>within the same scope</strong>: the later
+binding shadows the earlier one from its own declaration point onward,
+while uses before that point keep the earlier binding (parameters and
+loop/pattern bindings are shadowable the same way). Visibility starts at
+the <strong>end</strong> of the declaring statement, so an initializer never reads the
+binding it declares: in <code>let x = x + 1;</code> the right-hand <code>x</code> is the
+previous <code>x</code> — an enclosing or earlier same-scope binding — and an error
+when none exists. Module-level bindings are the exception, as above: they
+are order-independent, one declaration per name, and a genuine
+initialization cycle is a compile error (§7 of the execution chapter).</p>
 <h2 id="45-type-position-vs-value-position"><a class="header" href="#45-type-position-vs-value-position">4.5 Type position vs value position</a></h2>
 <p>A name is resolved differently by position:</p>
 <ul>

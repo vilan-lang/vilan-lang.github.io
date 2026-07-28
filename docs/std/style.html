@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-81ec9f1c.js";
+            window.path_to_searchindex_js = "../searchindex-b99810ad.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-d0617186.js"></script>
@@ -265,14 +265,16 @@ fun last(self, inner: Style): Style       // :last-child
 fun dark(self, inner: Style): Style       // prefers-color-scheme: dark
 fun pseudo(self, name: str, inner: Style): Style
 
-fun sm(self, inner: Style): Style          // breakpoints (min-width)
-fun md(self, inner: Style): Style
+fun sm(self, inner: Style): Style          // breakpoints (min-width):
+fun md(self, inner: Style): Style          // 640px, 768px, 1024px, 1280px
 fun lg(self, inner: Style): Style
 fun xl(self, inner: Style): Style
 fun media(self, min_width: str, inner: Style): Style
 </code></pre>
 <p>A breakpoint cannot wrap an already-media-conditioned style (panics at
-compile-time evaluation).</p>
+compile-time evaluation). Media rules emit in ascending min-width order,
+so a chain like <code>.sm(x).lg(y)</code> is mobile-first — the widest matching
+breakpoint wins.</p>
 <h2 id="runtime-legal-operations"><a class="header" href="#runtime-legal-operations">Runtime-legal operations</a></h2>
 <p>Construction emits rules and therefore lives in <code>const</code>; these do not emit
 and work anywhere:</p>
