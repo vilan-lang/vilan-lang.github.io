@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Hello Vilan - The vilan documentation</title>
+        <title>Hello Vilan - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -175,11 +175,11 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="hello-vilan"><a class="header" href="#hello-vilan">Hello Vilan</a></h1>
-<p>Vilan compiles to JavaScript. Your programs run on node (or deno, or bun)
+<p>Vilan compiles to JavaScript. Your programs run on Node (or Deno, or Bun)
 and in the browser. One tool, the <code>vilan</code> binary, does everything:
 scaffold, build, run, check, format, test.</p>
 <h2 id="install-the-toolchain"><a class="header" href="#install-the-toolchain">Install the toolchain</a></h2>
-<p>You need two things: <a href="https://nodejs.org">node</a> (to <em>run</em> what you build)
+<p>You need two things: <a href="https://nodejs.org">Node</a> (to <em>run</em> what you build)
 and the <code>vilan</code> binary itself. On Linux and macOS:</p>
 <pre><code class="language-sh">curl -fsSL https://github.com/vilan-lang/vilan/releases/latest/download/install.sh | sh
 </code></pre>
@@ -187,7 +187,7 @@ and the <code>vilan</code> binary itself. On Linux and macOS:</p>
 <pre><code class="language-powershell">irm https://github.com/vilan-lang/vilan/releases/latest/download/install.ps1 | iex
 </code></pre>
 <p>Either way <code>vilan</code> (and <code>vilan-lsp</code>, the language server) lands in
-<code>~/.vilan/bin</code> — <code>%USERPROFILE%\.vilan\bin</code> on Windows. The unix script
+<code>~/.vilan/bin</code> (<code>%USERPROFILE%\.vilan\bin</code> on Windows). The unix script
 prints the PATH line to add; the PowerShell one edits your user PATH
 itself, so open a new terminal afterwards. <code>vilan --version</code> confirms it
 worked, and <code>vilan upgrade</code> updates it later.</p>
@@ -211,8 +211,8 @@ vilan check hello.vl    # just type-check — writes nothing
 <p><code>fun main</code> is the entrypoint. It runs automatically, so there is no
 <code>main()</code> call at the bottom of the file.</p>
 <p>Two small things you’ll notice compared to JS. First, the standard library
-is imported explicitly — even <code>print</code>. Your files will start with a few
-<code>import</code> lines, just like ES modules. Second, indentation is tabs by
+is imported explicitly, even <code>print</code>. Your files will start with a few
+<code>import</code> lines, like ES modules. Second, indentation is tabs by
 convention, and <code>vilan fmt</code> will format files for you.</p>
 <h2 id="start-a-project"><a class="header" href="#start-a-project">Start a project</a></h2>
 <p>A single file is fine for a first look. For anything you will come back
@@ -231,12 +231,12 @@ vilan run .
 </thead>
 <tbody>
 <tr><td><code>node</code></td><td>the smallest real package: an entry, a module beside it, a <code>*_test.vl</code></td></tr>
-<tr><td><code>browser</code></td><td>a reactive browser app — <code>index.html</code> beside the emitted bundle</td></tr>
-<tr><td><code>fullstack</code></td><td>one package, two entries: a browser client and a node server (<a href="#the-shape-of-a-full-stack-app">below</a>)</td></tr>
+<tr><td><code>browser</code></td><td>a reactive browser app: <code>index.html</code> beside the emitted bundle</td></tr>
+<tr><td><code>fullstack</code></td><td>one package, two entries: a browser client and a Node server (<a href="#the-shape-of-a-full-stack-app">below</a>)</td></tr>
 </tbody>
 </table>
 </div>
-<p><code>fullstack</code> is the default — a bare Enter at the prompt takes it — because
+<p><code>fullstack</code> is the default (a bare Enter at the prompt takes it) because
 it is the shape the examples and the walkthrough teach. Pass <code>--template</code>
 and there is no prompt at all, which is what a script wants (without a
 terminal to prompt on, <code>vilan init</code> says so and stops rather than
@@ -263,16 +263,16 @@ yours.</p>
 </tbody>
 </table>
 </div>
-<p>Flags you’ll actually use: <code>--watch</code> rebuilds (or re-runs, or re-checks)
+<p>Flags you’ll use most: <code>--watch</code> rebuilds (or re-runs, or re-checks)
 whenever a source file changes. <code>--platform browser</code> builds for the
-browser instead of node (<code>--target</code> also works). <code>--stdout</code> prints the JS
+browser instead of Node (<code>--target</code> also works). <code>--stdout</code> prints the JS
 instead of writing a file. <code>--entry &lt;name&gt;</code> picks which entry <code>vilan run</code>
 drives in a multi-entry package (see <a href="../guide/dev-loop.html">the dev loop</a>
 for the full selection rules). Every command and flag, including
 <code>vilan upgrade</code>: <a href="../appendix/cli.html">the CLI reference</a>.</p>
 <p>A <code>*_test.vl</code> lives beside the code it tests and compiles as a file <em>of</em>
 its package: it imports <code>pkg::</code> siblings and the package’s dependencies
-exactly the way the rest of the package does. Tests run on node, whatever
+exactly the way the rest of the package does. Tests run on Node, whatever
 the package’s <code>target</code> says.</p>
 <h2 id="projects-vilantoml"><a class="header" href="#projects-vilantoml">Projects: <code>vilan.toml</code></a></h2>
 <p>A single <code>.vl</code> file is fine for experiments. Real projects get a folder
@@ -290,27 +290,27 @@ imported by other packages:</p>
 name = "common"
 </code></pre>
 <p>A dependency can also live in a git repository, pinned to one exact
-point — a tag or a commit, never a branch:</p>
+point (a tag or a commit, never a branch):</p>
 <pre><code class="language-toml">[package.dependencies]
 shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
 pinned = { git = "https://github.com/someone/other", rev = "9f2c1ab" }
 </code></pre>
 <p>The repository must be a <code>[library]</code> with its <code>vilan.toml</code> at the root.
 <code>vilan build</code> (or <code>check</code>, or <code>run</code>) fetches it once into
-<code>~/.vilan/git-deps/</code> and reuses that checkout forever after — so builds
-work offline, and a moved tag cannot change what you already built.
+<code>~/.vilan/git-deps/</code> and reuses that checkout forever after, so builds
+work offline and a moved tag cannot change what you already built.
 Nothing else fetches: the editor uses the cache when it’s there and
 never reaches the network.</p>
-<p>Two more keys earn their keep once a project grows. <code>[build] run</code> names
-a command (or a list of them) to run before each build and each
-<code>--watch</code> round — an asset pipeline, a codegen sidecar. And
+<p>Two more keys matter once a project grows. <code>[build] run</code> names a
+command (or a list of them) to run before each build and each <code>--watch</code>
+round: an asset pipeline, a codegen sidecar. And
 <code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
 has several. Both are covered in <a href="../guide/dev-loop.html">the dev loop</a>.</p>
 <p>A workspace groups several packages so they build together with one
 <code>vilan build .</code> at the root. You need it less often than you might
-expect — a client + server app is <em>one</em> package with two entries (see
-<a href="#the-shape-of-a-full-stack-app">below</a>) — so reach for a workspace when
-members genuinely want their own manifests and dependency sets:</p>
+expect, since a client + server app is <em>one</em> package with two entries
+(see <a href="#the-shape-of-a-full-stack-app">below</a>). Reach for a workspace
+when members want their own manifests and dependency sets:</p>
 <pre><code class="language-toml">[project]
 packages = ["common", "client", "server"]
 
@@ -322,16 +322,15 @@ share, so the version lives in one file. A member takes one by name:</p>
 <pre><code class="language-toml">[package.dependencies]
 shapes = { project = true }
 </code></pre>
-<p>That is the whole form — <code>project = true</code> and nothing else, once per
+<p>That is the whole form: <code>project = true</code> and nothing else, once per
 dependency you want. It is opt-in on purpose: a member that stays silent
 gets nothing, so adding a dependency at the root can never change what
 another package sees. A <code>path</code> written at the root is relative to the
 <em>root</em>, since that is where you wrote it. And a member that declares its
-own <code>shapes = { path = "…" }</code> simply uses that one — there is no
-shadowing rule to remember, because inheritance only happens where you
-ask for it.</p>
+own <code>shapes = { path = "…" }</code> uses that one. There is no shadowing rule
+to remember, because inheritance only happens where you ask for it.</p>
 <p>By default a package’s sources live in <code>src/</code> and the entry file is
-<code>src/main.vl</code> — that is where <code>vilan build</code> looks when the manifest says
+<code>src/main.vl</code>; that is where <code>vilan build</code> looks when the manifest says
 nothing. Point it elsewhere with <code>root = "."</code> (sources beside the
 manifest) or <code>entry = "app.vl"</code>.</p>
 <h2 id="imports"><a class="header" href="#imports">Imports</a></h2>
@@ -345,18 +344,17 @@ import common::{ Note, NotesClient };       // a dependency, by its name
 <ul>
 <li><code>std::…</code> is the standard library.</li>
 <li><code>pkg::…</code> is your own package. <code>pkg::routes</code> means “the file <code>routes.vl</code>
-next to my entry file”. A module is just a file — there is no separate
+next to my entry file”. A module is a file; there is no separate
 module declaration.</li>
 <li>Anything else is a dependency, under the name you gave it in
 <code>vilan.toml</code>.</li>
 </ul>
-<p>The <code>{ self, Some, None }</code> form is worth remembering: it imports the
-<code>Option</code> type <em>and</em> its variants, so you can write <code>Some(x)</code> without
-qualifying it.</p>
+<p>The <code>{ self, Some, None }</code> form imports the <code>Option</code> type <em>and</em> its
+variants, so you can write <code>Some(x)</code> without qualifying it.</p>
 <h2 id="the-shape-of-a-full-stack-app"><a class="header" href="#the-shape-of-a-full-stack-app">The shape of a full-stack app</a></h2>
 <p>When you get to building a client + server app, the smallest layout is
-<strong>one package with two entries</strong> — the browser client and the node server
-build from the same source tree:</p>
+<strong>one package with two entries</strong>. The browser client and the Node
+server build from the same source tree:</p>
 <pre><code class="language-toml">[package]
 name = "app"
 
@@ -372,16 +370,17 @@ target = "browser"
     server.vl     the node entry
     …             everything else, shared by whichever entry reaches it
 </code></pre>
-<p>Start here — <code>vilan init my-app --template fullstack</code> writes exactly this
-layout, ready to run. It is the shape the examples use too: the
+<p>Start here: <code>vilan init my-app --template fullstack</code> writes exactly
+this layout, ready to run. It is the shape the examples use too: the
 <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/walkthrough/">walkthrough app</a>,
 the <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/todo/">to-do app</a>,
 and the <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/ssr/">SSR example</a>
-are all one package with two entries. Larger apps split into a <code>[project]</code>
-workspace of packages and libraries, as above. Either way, the compiler knows which standard-library modules
-exist on which platform: if code the browser entry can <em>reach</em> calls into
-<code>std::db</code> (a server thing), you get a clear compile error naming the call
-chain — importing the module is fine, reaching it is what’s checked. The
+are all one package with two entries. Larger apps split into a
+<code>[project]</code> workspace of packages and libraries, as above. Either way,
+the compiler knows which standard-library modules exist on which
+platform: if code the browser entry can <em>reach</em> calls into <code>std::db</code> (a
+server thing), you get a clear compile error naming the call chain.
+Importing the module is fine; reaching it is what’s checked. The
 <a href="platforms.html">platforms chapter</a> has the details, and the
 <a href="../guide/walkthrough.html">walkthrough</a> builds a whole app in this shape.</p>
 

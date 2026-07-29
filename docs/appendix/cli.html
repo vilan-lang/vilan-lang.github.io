@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The CLI - The vilan documentation</title>
+        <title>The CLI - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -178,8 +178,8 @@
 <p>The whole toolchain is one binary. <code>vilan &lt;command&gt; --help</code> prints each
 command’s flags; this page adds the behavior the one-line help can’t
 carry. One rule up front: <strong><code>vilan upgrade</code> is the only command that
-touches the network.</strong> Everything else — builds, dependency resolution,
-tests — works offline (git dependencies are fetched once by the first
+touches the network.</strong> Everything else (builds, dependency resolution,
+tests) works offline (git dependencies are fetched once by the first
 build that needs them, then served from the cache forever).</p>
 <p>For the guided on-ramp, see <a href="../tour/hello-vilan.html">Hello Vilan</a>; for
 <code>--watch</code>, HMR, and the manifest keys that shape the dev loop, see
@@ -189,7 +189,7 @@ build that needs them, then served from the cache forever).</p>
 a <code>.gitignore</code>. With <code>name</code>, creates that directory (it must not exist
 or must be empty); without, scaffolds into the current directory (which
 must not already hold a <code>vilan.toml</code>). It never overwrites a file, and
-it creates no git repository — <code>git init</code> stays yours.</p>
+it creates no git repository; <code>git init</code> stays yours.</p>
 <p><code>--template &lt;name&gt;</code> picks the shape; omitted, an interactive prompt asks
 (without a terminal that is a clean error, never a hang):</p>
 <div class="table-wrapper">
@@ -198,52 +198,52 @@ it creates no git repository — <code>git init</code> stays yours.</p>
 <tr><th>Template</th><th>What you get</th></tr>
 </thead>
 <tbody>
-<tr><td><code>node</code></td><td>a package that runs on node, with a sibling module and a test</td></tr>
+<tr><td><code>node</code></td><td>a package that runs on Node, with a sibling module and a test</td></tr>
 <tr><td><code>browser</code></td><td>a reactive browser app (a counter, an <code>index.html</code>)</td></tr>
-<tr><td><code>fullstack</code></td><td>one package, two entries — a browser client and a node server</td></tr>
+<tr><td><code>fullstack</code></td><td>one package, two entries: a browser client and a Node server</td></tr>
 </tbody>
 </table>
 </div>
-<p>The templates are compiled and run by vilan’s own test suite, so a
-scaffold that stops working fails vilan’s build before it reaches yours.</p>
+<p>The templates are compiled and run by Vilan’s own test suite, so a
+scaffold that stops working fails Vilan’s build before it reaches yours.</p>
 <h2 id="vilan-build-file"><a class="header" href="#vilan-build-file"><code>vilan build [file]</code></a></h2>
 <p>Compiles to JavaScript. The path may be a <code>.vl</code> file, a project
-directory, or omitted — then the nearest <code>vilan.toml</code> decides what to
+directory, or omitted; then the nearest <code>vilan.toml</code> decides what to
 build. A single-entry package writes <code>&lt;file&gt;.js</code> beside the entry; a
 multi-entry package writes <code>dist/&lt;name&gt;.js</code> per entry. Assets emitted at
 compile time (the styling system’s CSS) land beside the output.
 <code>[build] run</code> hooks execute first; a failing hook fails the build.</p>
 <ul>
-<li><code>--stdout</code> — print the JavaScript instead of writing a file.</li>
-<li><code>--platform &lt;p&gt;</code> — <code>node</code>, <code>deno</code>, <code>bun</code>, <code>browser</code>, or <code>none</code>;
+<li><code>--stdout</code>: print the JavaScript instead of writing a file.</li>
+<li><code>--platform &lt;p&gt;</code>: <code>node</code>, <code>deno</code>, <code>bun</code>, <code>browser</code>, or <code>none</code>;
 overrides the package’s <code>target</code> (<code>--target</code> is an accepted alias).
-<code>none</code> checks against no platform’s layers — the strictest reading.</li>
-<li><code>--watch</code> — rebuild whenever a watched source changes (Ctrl-C stops).</li>
-<li><code>-d, --debug</code> — also emit <code>.parse.out</code> / <code>.analyze.out</code> /
+<code>none</code> checks against no platform’s layers, the strictest reading.</li>
+<li><code>--watch</code>: rebuild whenever a watched source changes (Ctrl-C stops).</li>
+<li><code>-d, --debug</code>: also emit <code>.parse.out</code> / <code>.analyze.out</code> /
 <code>.callgraph.out</code> dumps, for poking at the compiler’s view of your code.</li>
-<li><code>--backend js</code> — the only backend today; the flag exists so a future
+<li><code>--backend js</code>: the only backend today; the flag exists so a future
 one has somewhere to live.</li>
 </ul>
 <h2 id="vilan-check-file"><a class="header" href="#vilan-check-file"><code>vilan check [file]</code></a></h2>
 <p><code>build</code> without the output: type-checks and reports diagnostics, writes
-nothing, and runs <strong>no</strong> <code>[build] run</code> hooks. Same path forms and flags
+nothing, and runs no <code>[build] run</code> hooks. Same path forms and flags
 (<code>--platform</code>, <code>--watch</code>, <code>-d</code>). In a multi-entry package it checks
 every entry, each under its own platform. Exit is non-zero when
 diagnostics were reported.</p>
 <h2 id="vilan-run-file-args"><a class="header" href="#vilan-run-file-args"><code>vilan run [file] [args…]</code></a></h2>
-<p>Builds and runs. Anything after the file is forwarded to the program —
-reach it with <code>process::args()</code>. Under <code>--watch</code> it rebuilds and
+<p>Builds and runs. Anything after the file is forwarded to the program.
+Reach it with <code>process::args()</code>. Under <code>--watch</code> it rebuilds and
 restarts on every save; in a project with a browser leg, hot module
-replacement is on by default — the page swaps changed code in place
+replacement is on by default: the page swaps changed code in place
 instead of reloading (see <a href="../guide/dev-loop.html">the dev loop</a>).</p>
 <ul>
-<li><code>--watch</code> — place it before the file, ahead of any program args.</li>
-<li><code>--no-hmr</code> — plain restart-the-server watching, no dev channel.</li>
-<li><code>--hmr-port &lt;port&gt;</code> — the <code>127.0.0.1</code> port for the HMR channel
+<li><code>--watch</code>: place it before the file, ahead of any program args.</li>
+<li><code>--no-hmr</code>: plain restart-the-server watching, no dev channel.</li>
+<li><code>--hmr-port &lt;port&gt;</code>: the <code>127.0.0.1</code> port for the HMR channel
 (<code>0</code> means an OS-assigned one).</li>
-<li><code>--entry &lt;name&gt;</code> — in a package (or workspace) with more than one
+<li><code>--entry &lt;name&gt;</code>: in a package (or workspace) with more than one
 runnable entry, which one to launch. The others still compile; they
-just don’t run. The manifest’s <code>default-entry</code> makes the flag
+don’t run. The manifest’s <code>default-entry</code> makes the flag
 unnecessary; with neither, the error names both ways to choose.</li>
 </ul>
 <h2 id="vilan-fmt-paths"><a class="header" href="#vilan-fmt-paths"><code>vilan fmt [paths…]</code></a></h2>
@@ -251,28 +251,28 @@ unnecessary; with neither, the error names both ways to choose.</li>
 is the current directory. Formatting is conservative and a fixed point:</p>
 <ul>
 <li>A statement over 100 columns whose expression is a method chain
-splits — subject on the statement’s line, one <code>.link(…)</code> per line
-below it — and the rule applies per line, recursively: a nested chain
+splits (subject on the statement’s line, one <code>.link(…)</code> per line
+below it), and the rule applies per line, recursively: a nested chain
 or list literal that still overflows splits one level further in. A
 chain that fits stays on (or collapses back to) one line.</li>
 <li>Parenthesized groups you wrote are kept, even where the grammar
-doesn’t need them — a redundant paren is usually there for clarity.</li>
+doesn’t need them: a redundant paren is usually there for clarity.</li>
 <li>Argument lists are never wrapped: layout hangs off a call’s last
 argument, so a long earlier argument leaves a long line.</li>
 <li>A file the formatter cannot yet print faithfully is left byte-for-byte
 untouched, never half-formatted.</li>
 </ul>
-<p><code>--check</code> reports the files that would change and exits 1 if any —
-the CI spelling. Nothing is rewritten.</p>
+<p><code>--check</code> reports the files that would change and exits 1 if any (the
+CI spelling). Nothing is rewritten.</p>
 <h2 id="vilan-test-path"><a class="header" href="#vilan-test-path"><code>vilan test [path]</code></a></h2>
-<p>Runs <code>*_test.vl</code> files — the given file, a directory of tests, or every
+<p>Runs <code>*_test.vl</code> files: the given file, a directory of tests, or every
 test in the project. A test file lives beside the code it tests and
 compiles as a file <em>of</em> its package: <code>pkg::</code> siblings and dependencies
 resolve exactly as they do for the rest of the package. Each test passes
 by exiting 0; a failed <code>assert</code> panics, which fails it. Tests run on
-node whatever the package’s <code>target</code> says. <code>--watch</code> re-runs on save.</p>
+Node whatever the package’s <code>target</code> says. <code>--watch</code> re-runs on save.</p>
 <h2 id="vilan-upgrade"><a class="header" href="#vilan-upgrade"><code>vilan upgrade</code></a></h2>
-<p>Replaces this binary — and <code>vilan-lsp</code> beside it — with the newest
+<p>Replaces this binary (and <code>vilan-lsp</code> beside it) with the newest
 release, downloading for your platform and swapping the pair atomically
 (<code>vilan-lsp</code> first, so the two are never newer-cli/older-lsp). The
 licenses and third-party notices travel along. <code>--check</code> reports whether

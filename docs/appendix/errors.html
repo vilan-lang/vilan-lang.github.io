@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Error index - The vilan documentation</title>
+        <title>Error index - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -182,18 +182,18 @@ parts that vary. Find yours with a page search.</p>
 topic rather than by message.)</p>
 <h2 id="names-and-imports"><a class="header" href="#names-and-imports">Names and imports</a></h2>
 <p><strong>“cannot find ‘…’ in this scope”</strong> · <strong>“cannot find type ‘…’”</strong>
-The name isn’t visible here. Usually a missing <code>import</code> — remember that
-everything, even <code>print</code>, is imported explicitly. If you did import it,
+The name isn’t visible here. Usually a missing <code>import</code>: everything,
+even <code>print</code>, is imported explicitly. If you did import it,
 check for a typo or a shadowing local.
 → <a href="../tour/hello-vilan.html">Hello Vilan</a>, <a href="../spec/names.html">spec §4</a></p>
-<p><strong>“<code>std</code> is a namespace, not a value — import the module first …”</strong>
+<p><strong>“<code>std</code> is a namespace, not a value; import the module first …”</strong>
 You wrote a qualified path like <code>std::math::min(1, 2)</code> inline. That
 spelling isn’t supported. Import the module, then qualify through its
 name: <code>import std::math;</code> and <code>math::min(1, 2)</code>.
 → <a href="../tour/hello-vilan.html">Hello Vilan</a></p>
 <p><strong>“<code>…</code> requires the <code>…</code> layer of <code>std</code> and cannot run on <code>…</code>”</strong>
 Code reachable from this build’s entry calls into a module the platform
-doesn’t have — <code>std::fs</code> from a browser build, <code>std::dom</code> from a node
+doesn’t have: <code>std::fs</code> from a browser build, <code>std::dom</code> from a Node
 build. The error lists the call chain from <code>main</code> to the crossing.
 Importing the module is not the problem (imports are free); reaching it
 is. Move the call behind the right entry, or check the package’s
@@ -202,25 +202,25 @@ is. Move the call behind the right entry, or check the package’s
 <p><strong>“<code>…</code> requires … and cannot run on <code>…</code> / reachable from <code>…</code>, fenced <code>[platform(…)]</code>”</strong>
 A function declared a platform fence and something it (transitively)
 reaches requires a layer one of the fenced platforms doesn’t serve. The
-chain shows the path from the fence. Fences check on every compile —
-narrowing the fence, or moving the colored call out from behind it, are
+chain shows the path from the fence. Fences check on every compile.
+Narrowing the fence, or moving the colored call out from behind it, are
 the two fixes.
 → <a href="../tour/platforms.html">Platforms</a></p>
 <p><strong>“cannot find module ‘…’ to import”</strong>
 The path names a module file that doesn’t exist. <code>pkg::routes</code> means
-“<code>routes.vl</code> in this package’s source root” — check the file name and
+“<code>routes.vl</code> in this package’s source root”. Check the file name and
 the package you’re in.
 → <a href="../tour/hello-vilan.html">Hello Vilan</a></p>
 <p><strong>“module ‘…’ resolved to ‘…’ on disk, but it is imported as ‘…’”</strong>
 Your filesystem ignores case (NTFS, and macOS by default) and answered
 the import with a differently-cased file. Module names match byte for
-byte (§4.2), so this would fail to build on a case-sensitive filesystem
-— rename the file or the import so the two agree.
+byte (§4.2), so this would fail to build on a case-sensitive
+filesystem. Rename the file or the import so the two agree.
 → <a href="../spec/names.html">Names, modules, and packages</a></p>
 <h2 id="types-and-generics"><a class="header" href="#types-and-generics">Types and generics</a></h2>
 <p><strong>“Expected …, but got … instead.”</strong>
 The general type mismatch. One special case surprises people: an <code>i53</code>
-mixed with a bare integer literal — the literal is <code>i32</code>, and there are
+mixed with a bare integer literal: the literal is <code>i32</code>, and there are
 no implicit conversions. Suffix it (<code>stamp + 1000i53</code>).
 → <a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“generic parameter ‘…’ is missing the bound ‘: …’ required by this call”</strong>
@@ -231,7 +231,7 @@ signature: <code>fun caller&lt;U: PartialEq&gt;(…)</code>.
 <p><strong>“cannot call method ‘…’ on …”</strong>
 The value’s type doesn’t have that method. If the type is a generic
 parameter, you probably need a bound. If it says something like
-<code>|i32| i32</code>, you’re calling a method on a closure — often a sign a
+<code>|i32| i32</code>, you’re calling a method on a closure, often a sign a
 different value was passed than you think.
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“‘…’ does not implement trait ‘…’: missing ‘…’”</strong>
@@ -242,10 +242,10 @@ demands a trait the type never implemented.
 A method an <code>impl … with Trait</code> provides must match the trait’s
 declaration, not just its name: the receiver convention (<code>self</code> / <code>&amp;self</code>
 / <code>&amp;mut self</code> / <code>own self</code>), the parameter count and each parameter’s
-convention and type, the return type, and — for a generic method — the
+convention and type, the return type, and, for a generic method, the
 type-parameter count. Types are compared with <code>Self</code> read as the impl’s
 subject and the trait’s generic parameters read as the <code>with</code>-clause
-arguments (<code>impl Meters with From&lt;Feet&gt;</code> expects <code>fun from(value: Feet): Meters</code>). Asyncness is not required to match — an async impl of a
+arguments (<code>impl Meters with From&lt;Feet&gt;</code> expects <code>fun from(value: Feet): Meters</code>). Asyncness is not required to match: an async impl of a
 synchronous trait method is allowed (dispatch is monomorphized, so callers
 await it regardless).
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
@@ -255,8 +255,8 @@ the feature: it’s what fires everywhere when you add a variant.
 → <a href="../tour/control-flow.html">Control flow</a></p>
 <p><strong>“struct ‘…’ has no field ‘…’”</strong> · <strong>“variant ‘…’ does not belong to the matched enum”</strong>
 A field or variant name is off. For the variant case inside <code>match</code>,
-remember patterns bind with <code>let</code> — a bare misspelled variant is an
-error here, never a silent catch-all.
+patterns bind with <code>let</code>: a bare misspelled variant is an error here,
+never a silent catch-all.
 → <a href="../tour/control-flow.html">Control flow</a></p>
 <p><strong>“<code>…</code> compares two values of the same type, but the operands are <code>…</code> and <code>…</code>”</strong>
 Comparisons follow the trait model (<code>==</code> is <code>PartialEq</code>, <code>&lt;</code> is
@@ -268,13 +268,13 @@ no implicit conversions. An unsuffixed literal adapts to its peer
 <strong>“<code>&amp;&amp;</code> takes <code>bool</code> operands”</strong> (Vilan has no truthiness).
 → <a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“type ‘…’ does not implement the <code>…</code> operator; add <code>impl … with …</code> providing <code>…</code>”</strong>
-An operator was used on a type without the matching trait impl — <code>+</code>
+An operator was used on a type without the matching trait impl: <code>+</code>
 needs <code>Add</code>, <code>==</code> needs <code>PartialEq</code>, <code>&lt;</code>/<code>&lt;=</code>/<code>&gt;</code>/<code>&gt;=</code> need
 <code>PartialOrd</code> (implement <code>partial_compare</code> once; the operators dispatch
 through it, and <code>lt</code>/<code>le</code>/<code>gt</code>/<code>ge</code> come free as defaults).
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“the literal <code>…</code> is out of range for <code>…</code> (…)”</strong>
-The number doesn’t fit the type. For <code>i53</code>/<code>u53</code> the range is ±2^53 —
+The number doesn’t fit the type. For <code>i53</code>/<code>u53</code> the range is ±2^53,
 JavaScript’s exact-integer window. Bigger integers take <code>BigInt</code> (<code>7n</code>).
 → <a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“unknown numeric suffix <code>…</code>”</strong>
@@ -282,14 +282,14 @@ The letters after the number aren’t a type. If it says <code>i64</code> or <co
 those were renamed to <code>i53</code>/<code>u53</code>.
 → <a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“type of … could not be resolved”</strong>
-Inference gave up somewhere upstream — this error is usually the <em>echo</em>
+Inference gave up somewhere upstream. This error is usually the <em>echo</em>
 of another one, so fix the first error in the list. When it appears
 alone, an annotation at the binding usually grounds it.
 → <a href="gotchas.html">gotchas</a></p>
 <h2 id="memory-and-mutation"><a class="header" href="#memory-and-mutation">Memory and mutation</a></h2>
 <p><strong>“cannot mutate immutable ‘…’”</strong>
-The binding was declared with <code>let</code>. Declare it <code>mut</code> — or, if you’re
-inside a method, take <code>&amp;mut self</code>.
+The binding was declared with <code>let</code>. Declare it <code>mut</code>, or take
+<code>&amp;mut self</code> if you’re inside a method.
 → <a href="../tour/memory-model.html">The memory model</a></p>
 <p><strong>“a view cannot escape its scope: it may not be returned, stored in a field, placed in a collection, or carried in an enum payload. …”</strong>
 Views (<code>&amp;x</code>, <code>&amp;mut x</code>) are short-lived by design: lend, use, done. To
@@ -299,15 +299,15 @@ keep a reference around, store a plain value, a <code>Handle</code> into an
 <p><strong>“cannot reassign ‘…’ while a view into it is live (rule 4 …)”</strong>
 Replacing the whole value would detach the view from live storage. Finish
 using the view first (its life ends with its block), or re-derive it after
-the replacement. Views anchor wherever they come from — <code>&amp;x</code>, a
+the replacement. Views anchor wherever they come from: <code>&amp;x</code>, a
 view-returning call (<code>list.at(0)</code>, <code>arena.get(h)</code>), or a <code>Some(let v)</code>
-capture of one — so the rule is the same for all three.
+capture of one. The rule is the same for all three.
 → <a href="../tour/memory-model.html">The memory model</a></p>
 <p><strong>“cannot mutate ‘…’ with ‘….(..)’ while a view into it is live (rule 4 …)”</strong>
 The call may advance the container’s <em>geometry</em> (grow, shrink, reallocate,
 swap an aggregate field) while a view points into it. Only
-geometry-advancing callees trigger this — a method that just writes fields
-or elements through <code>&amp;mut self</code> passes freely (the compiler infers which is
+geometry-advancing callees trigger this: a method that writes fields or
+elements through <code>&amp;mut self</code> passes freely (the compiler infers which is
 which). Do the mutation before taking the view, or after its block ends.
 → <a href="../tour/memory-model.html">The memory model</a></p>
 <p><strong>“cannot hold a view across ‘await’: ‘…’ is still live here. …”</strong>
@@ -324,178 +324,180 @@ with <code>let</code>; assigning through it (<code>v = …</code>) already write
 struct, enum, or tuple holding one is a resource too, inferred by
 containment (<code>Option&lt;Database&gt;</code> is a resource, <code>Option&lt;i32&gt;</code> is not). A
 resource <em>moves</em> on binding (<code>let b = a</code>), on <code>own</code>-passing, on return, and
-into a constructor; it is <em>loaned</em> — no ownership change — through <code>self</code>,
+into a constructor; it is <em>loaned</em> (no ownership change) through <code>self</code>,
 <code>&amp;</code>, and <code>&amp;mut</code>. The <code>Drop</code> destructor trait and its restrictions are below.
 At each scope end the compiler runs the destructor on the still-owned resource
-locals, in reverse declaration order — through <code>try</code>/<code>finally</code>, so <code>ret</code>,
-<code>jump</code>, and a thrown panic all run it on the way out; a resource without a
-<code>Drop</code> impl still has its fields destroyed. A module-level resource lives for
+locals, in reverse declaration order. Destruction goes through
+<code>try</code>/<code>finally</code>, so <code>ret</code>, <code>jump</code>, and a thrown panic all run it on the way
+out; a resource without a <code>Drop</code> impl still has its fields destroyed. A
+module-level resource lives for
 the process and never drops. A drop that panics while a panic is already
 unwinding replaces the in-flight error (JS <code>finally</code> semantics). The tutorial
 is <a href="../tour/resources.html">Resources</a>; the normative rules are spec
 <a href="../spec/memory.html">§6.8</a>.</p>
-<p><strong>“use of <code>…</code> after it was moved — a resource has a single owner”</strong>
+<p><strong>“use of <code>…</code> after it was moved: a resource has a single owner”</strong>
 The binding was moved (bound to another name, passed to an <code>own</code>
 parameter, returned, or matched by value) and then used again. The note
 points at the move. Loan it instead (<code>&amp;x</code> / <code>&amp;mut x</code>, or a method call),
 or, if you really need two owners, restructure with <code>Option</code> + <code>take</code>.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“cannot move a resource field out of a live aggregate — … no partial moves …”</strong>
+<p><strong>“cannot move a resource field out of a live aggregate: … no partial moves …”</strong>
 <code>let x = s.db</code>, or passing / returning <code>s.db</code> by value, would move a
-resource out of a struct that is still alive — there are no partial moves.
+resource out of a struct that is still alive: there are no partial moves.
 Loan the field (<code>&amp;s.db</code>, <code>&amp;mut s.db</code>, <code>s.db.method(…)</code>), or make the field
 an <code>Option&lt;…&gt;</code> and <code>take()</code> it out.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“<code>…</code> is moved on one path through this branch but not another — …”</strong>
+<p><strong>“<code>…</code> is moved on one path through this branch but not another: …”</strong>
 An <code>if</code>/<code>match</code> moves the binding on some paths and not others, so its
 end-of-scope ownership isn’t static (there are no runtime drop flags). Move it
-on <em>every</em> path, or on none — or hold it in an <code>Option</code> and <code>take()</code> on the
+on <em>every</em> path, on none, or hold it in an <code>Option</code> and <code>take()</code> on the
 path that consumes it. A diverging leg (one that <code>ret</code>s or <code>jump</code>s out) is
 exempt: it never reaches the merge.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“<code>…</code> is declared outside this loop and moved inside it — …”</strong>
+<p><strong>“<code>…</code> is declared outside this loop and moved inside it: …”</strong>
 Moving a binding from a loop body would move it again on the next
 iteration. Move a value declared <em>inside</em> the loop, or loan the outer one
 (<code>&amp;x</code> / <code>&amp;mut x</code>).
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“<code>…</code> is a module-level resource — it has process lifetime and cannot be moved …”</strong>
+<p><strong>“<code>…</code> is a module-level resource: it has process lifetime and cannot be moved …”</strong>
 A top-level <code>let</code> resource lives for the whole process and never drops (the
-serve-forever server’s <code>Database</code>). Consuming it — moving it into a local,
-passing it to an <code>own</code> parameter, or <code>drop(x)</code> — would hand a
+serve-forever server’s <code>Database</code>). Consuming it (moving it into a local,
+passing it to an <code>own</code> parameter, or <code>drop(x)</code>) would hand a
 process-lifetime resource to a droppable owner and close the shared handle
 out from under the rest of the program. Reach it by loan only: method calls,
 <code>&amp;x</code>, <code>&amp;mut x</code>. To own a database that closes at a scope’s end, open it in a
 local instead.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“a closure cannot capture the resource <code>…</code> — …”</strong>
+<p><strong>“a closure cannot capture the resource <code>…</code>; …”</strong>
 A closure or <code>async</code>/spawn body referenced a <em>local</em> or <em>parameter</em> resource
 from an enclosing scope; capturing it would give the closure a second owner.
 Pass a loan into the call, give ownership to the struct that owns the
-closure’s lifetime, or hoist the resource to <strong>module level</strong> — a module
+closure’s lifetime, or hoist the resource to module level: a module
 global is loan-only and process-lifetime, so a closure may reference it
 without becoming an owner. (A closure’s own <em>parameter</em> is per-call, not a
-capture — injected <code>context</code>-clause bodies are unaffected.)
+capture; injected <code>context</code>-clause bodies are unaffected.)
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“<code>…</code> is not move-clean when instantiated with a resource — …”</strong>
+<p><strong>“<code>…</code> is not move-clean when instantiated with a resource: …”</strong>
 A generic function or method was called with a resource type argument
-(<code>Option&lt;Database&gt;</code>, <code>wrap(db)</code>), and its body — checked with that type
-parameter treated as a resource — breaks the affine rules in one of three
+(<code>Option&lt;Database&gt;</code>, <code>wrap(db)</code>), and its body (checked with that type
+parameter treated as a resource) breaks the affine rules in one of three
 ways. It uses a value of the parameter’s type <strong>more than once</strong> (moves it
-on some paths but not all, or captures it in a closure) — a resource has a
-single owner; or an <strong><code>own</code> parameter of resource type is never moved out</strong>
-— because the generic body is shared across every instantiation, it cannot
-run a destructor, so an <code>own T</code> must be moved out on <em>every</em> path (returned,
-or handed to another owner), or the function must take a concrete type; or
-it <strong>passes such a value to <code>drop&lt;T&gt;</code></strong> — that erased body has no concrete
-destructor either, so the resource would leak (<code>drop(x)</code> on data is a fine
-no-op, which is why the data instantiation stays accepted — destroy at a
-concrete type, or move the value out to the caller). The error is spanned at
-the <strong>call</strong> (the instantiation), with a note into the generic’s body. A
+on some paths but not all, or captures it in a closure); a resource has a
+single owner. Or an <strong><code>own</code> parameter of resource type is never moved
+out</strong>: because the generic body is shared across every instantiation, it
+cannot run a destructor, so an <code>own T</code> must be moved out on <em>every</em> path
+(returned, or handed to another owner), or the function must take a
+concrete type. Or it <strong>passes such a value to <code>drop&lt;T&gt;</code></strong>: that erased
+body has no concrete destructor either, so the resource would leak
+(<code>drop(x)</code> on data is a fine no-op, which is why the data instantiation
+stays accepted; destroy at a concrete type, or move the value out to the
+caller). The error is spanned at the call (the instantiation), with a
+note into the generic’s body. A
 clean generic moves each such value exactly once (as <code>Option::unwrap(self): T</code> does), never copying, capturing, or forwarding it to the sink;
 <code>drop(concrete)</code> on a concrete resource <em>is</em> the destructor. Instantiating
 the same generic at a data type is unaffected.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“the resource <code>…</code> cannot be used where <code>any</code> is expected — …”</strong>
+<p><strong>“the resource <code>…</code> cannot be used where <code>any</code> is expected: …”</strong>
 <code>any</code> is a data sink, and a resource must keep its single owner: passing
 one to <code>print</code>, binding it to <code>let x: any</code>, or returning it as <code>any</code>
 would launder the discipline away. Debug-print the resource’s fields
 instead.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“<code>…</code> cannot hold the resource <code>…</code> — a native container’s internals are host code …”</strong>
+<p><strong>“<code>…</code> cannot hold the resource <code>…</code>: a native container’s internals are host code …”</strong>
 <code>List</code>, <code>Map</code>, <code>Set</code>, and the external generics (<code>Shared</code>, <code>Task</code>,
-<code>Promise</code>, <code>Context</code>) can’t hold a resource — the move checker
+<code>Promise</code>, <code>Context</code>) can’t hold a resource: the move checker
 can’t see inside host storage. <code>Option</code> is the sanctioned resource
 container; or keep the resource in a struct field.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> / <code>[derive(Hashable)]</code> / <code>[derive(PartialEq)]</code> type <code>…</code> is the resource <code>…</code> — …”</strong>
+<p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> / <code>[derive(Hashable)]</code> / <code>[derive(PartialEq)]</code> type <code>…</code> is the resource <code>…</code>: …”</strong>
 A resource is not plain data: it cannot be sent over the wire, hashed by
 value, or compared by copy. Drop it from the derived type, or carry a
 plain-data handle (an id, a key) in its place.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“<code>…</code> implements <code>Drop</code> but is not a resource — … declare it a <code>resource</code> …”</strong>
-<code>Drop</code> — the destruction hook — may be implemented only for a <code>resource</code>
-type. A destructor without move discipline is exactly the double-close bug:
+<p><strong>“<code>…</code> implements <code>Drop</code> but is not a resource: … declare it a <code>resource</code> …”</strong>
+<code>Drop</code> (the destruction hook) may be implemented only for a <code>resource</code>
+type. A destructor without move discipline is the double-close bug:
 copy the value and each copy would run <code>drop</code>. Declare the type <code>resource</code>
 so it moves instead of being copied. (Plain-data, framework-driven teardown
 uses the cooperative <code>Disposable</code> protocol, not <code>Drop</code>.)
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“<code>drop</code> for <code>…</code> is async — teardown must be synchronous …”</strong>
+<p><strong>“<code>drop</code> for <code>…</code> is async: teardown must be synchronous …”</strong>
 A <code>drop</code> body may not be <code>async</code>, nor await (call an async function): a
 destructor runs synchronously. Cancel owned tasks through an
-<code>OwnedNursery</code> — whose own <code>drop</code> cancels them — rather than awaiting them.
+<code>OwnedNursery</code> (whose own <code>drop</code> cancels them) rather than awaiting them.
 Awaited teardown is a future design.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“<code>drop</code> for <code>…</code> requires an ambient context — teardown must be context-free …”</strong>
-A <code>drop</code> body reached something that needs an ambient context — most often a
+<p><strong>“<code>drop</code> for <code>…</code> requires an ambient context: teardown must be context-free …”</strong>
+A <code>drop</code> body reached something that needs an ambient context, most often a
 <code>Signal</code> write, which threads the current turn as a hidden argument. A
 destructor’s call sites are scope exits, which thread no context, so it
 cannot receive one. Keep teardown context-free: hand turn-joining or
-signal-writing work to an owner that runs inside a turn, not to the
-destructor.
+signal-writing work to an owner that runs inside a turn.
 → <a href="../tour/resources.html">Resources</a></p>
 <h2 id="async"><a class="header" href="#async">Async</a></h2>
-<p><strong>“<code>…</code> receives an async closure, but its type awaits nothing — declare it <code>async || T</code> (or return void for spawn semantics)”</strong>
+<p><strong>“<code>…</code> receives an async closure, but its type awaits nothing; declare it <code>async || T</code> (or return void for spawn semantics)”</strong>
 A closure that suspends was stored into a struct field typed as a
 plain, value-returning closure (at the literal or a later assignment).
-Either the field should be <code>async |…| T</code>, or — if fire-and-forget is
-fine — its return type should be <code>void</code>. (A plain <em>parameter</em> no longer
-produces this error: it adapts — the callee instantiates an async copy
+Either the field should be <code>async |…| T</code>, or, if fire-and-forget is
+fine, its return type should be <code>void</code>. (A plain <em>parameter</em> no longer
+produces this error. It adapts: the callee instantiates an async copy
 that awaits the callback.)
 → <a href="../tour/async.html">Async</a>, <a href="../tour/functions-and-closures.html">Functions &amp; closures</a></p>
 <p><strong>“<code>…</code> requires a synchronous closure (<code>sync</code>): its completion is part of the declaring function’s synchronous protocol …”</strong>
-The parameter is a <code>sync</code> contract position — <code>Signal::map</code>,
-<code>set_with</code>, <code>turn</code>/<code>batch</code> bodies, the UI render callbacks — where the
+The parameter is a <code>sync</code> contract position (<code>Signal::map</code>,
+<code>set_with</code>, <code>turn</code>/<code>batch</code> bodies, the UI render callbacks) where the
 callback must finish inside a synchronous protocol, so it cannot adapt.
 Move the async work outside the callback: an explicit <code>turn(…)</code> whose
-awaiting body holds one turn across its awaits, <code>Draft</code>/<code>optimistic</code> for local-first commits, or a
-spawned <code>async { … }</code> block. The transitive form (“this call passes an
-async closure that reaches <code>…</code>”) points at the call that made the
-closure async and notes where it was forwarded.
+awaiting body holds one turn across its awaits, <code>Draft</code>/<code>optimistic</code>
+for local-first commits, or a spawned <code>async { … }</code> block. The
+transitive form (“this call passes an async closure that reaches <code>…</code>”)
+points at the call that made the closure async and notes where it was
+forwarded.
 → <a href="../tour/async.html">Async</a>, <a href="../guide/reactive.html">Reactivity</a></p>
-<p><strong>“<code>…</code> is a host (<code>external</code>) function — it cannot await a Vilan closure …”</strong>
+<p><strong>“<code>…</code> is a host (<code>external</code>) function: it cannot await a Vilan closure …”</strong>
 Host code can’t await your callback, so an <code>external</code> function’s
 value-returning closure parameters only accept synchronous closures
 (void-returning ones spawn, as everywhere). A parameter <em>declared</em>
-<code>async |…| T</code> is exempt — that is the host’s explicit contract to await
+<code>async |…| T</code> is exempt: that is the host’s explicit contract to await
 the closure itself.
 → <a href="../tour/async.html">Async</a></p>
 <p><strong>“an async closure cannot adapt a trait/generic-dispatched call …”</strong>
 Adaptation instantiates a statically-known callee, and a
-trait/generic-dispatched call doesn’t have one — the concrete method
+trait/generic-dispatched call doesn’t have one: the concrete method
 varies per instantiation. Bind the receiver concretely before the call,
 or declare the trait method’s parameter <code>async || T</code> so every impl
 takes the typed channel.
 → <a href="../tour/async.html">Async</a></p>
-<p><strong>“<code>…</code> returns an async closure, but its declared return type awaits nothing — declare it <code>async || T</code> (or return void for spawn semantics)”</strong>
+<p><strong>“<code>…</code> returns an async closure, but its declared return type awaits nothing; declare it <code>async || T</code> (or return void for spawn semantics)”</strong>
 The function’s declared return type is a plain, value-returning closure,
 but a <code>ret</code> (or the tail) hands back a closure that suspends. Mark the
-return type <code>async || T</code> so calls through the returned value await —
-<code>make()()</code> and <code>let go = make(); go()</code> both do — or return a
+return type <code>async || T</code> so calls through the returned value await
+(<code>make()()</code> and <code>let go = make(); go()</code> both do), or return a
 <code>void</code>-returning closure for spawn semantics.
 → <a href="../tour/async.html">Async</a></p>
-<p><strong>“the initializer of <code>…</code> calls <code>…</code>, which is async — a module-level binding cannot await”</strong>
+<p><strong>“the initializer of <code>…</code> calls <code>…</code>, which is async: a module-level binding cannot await”</strong>
 A top-level <code>let</code> runs when the module loads, and module initialization
-is synchronous — there is no enclosing function to become async, so the
+is synchronous: there is no enclosing function to become async, so the
 value would be a live promise wearing the wrong type. Wrap the work in
 a function and call it from <code>main</code>. The variant “the initializer of
 <code>…</code> runs a closure that awaits” is the same rule when the awaiting
-thing has no name — an adopted async closure applied directly, a
+thing has no name: an adopted async closure applied directly, a
 <code>run(value, body)</code> whose body suspends, or a <code>nursery</code> at top level.
 (Creating an async closure at top level is fine; it awaits nothing
 until called.)
 → <a href="../tour/async.html">Async</a></p>
 <p><strong>“<code>…</code> form an initialization cycle: module-level bindings initialize in dependency order, and a cycle has no such order”</strong>
 Module-level bindings initialize in dependency order (spec §7.1): each
-one runs after everything its initializer evaluates at load — the
+one runs after everything its initializer evaluates at load: the
 bindings it reads, plus whatever is read inside anything it <em>calls</em> on
 the way. A cycle among those evaluations has no valid order, so it is
-refused at compile time; the message names the round trip (<code>via A → B → A</code>) and each participant’s declaration. The self-referential form —
-“<code>…</code>’s initializer evaluates <code>…</code> itself, which has not initialized
-yet” — is the one-binding case of the same rule. Creating a closure
+refused at compile time; the message names the round trip (<code>via A → B → A</code>) and each participant’s declaration. The self-referential form
+(“<code>…</code>’s initializer evaluates <code>…</code> itself, which has not initialized
+yet”) is the one-binding case of the same rule. Creating a closure
 evaluates nothing, so two module-level closures may name each other
 freely; moving one of the cycle’s reads inside a closure is the usual
 fix. If the chain runs through a dispatched call, every implementation
-of that method participates — including one your program never
+of that method participates, including one your program never
 instantiates; the message says so when it applies.
 → <a href="../spec/execution.html">Execution</a></p>
 <p><strong>“<code>!</code> requires the nearest enclosing function to declare an <code>Option</code>/<code>Result</code>-compatible return type …”</strong>
@@ -507,11 +509,11 @@ closure or a UI handler, <code>match</code> instead.
 <p><strong>“context <code>owner_scope</code> is read here, but this code can be reached without an enclosing <code>run</code>”</strong>
 The most common first UI error: you built reactive state (an <code>effect</code>, a
 binding) outside every ownership boundary. Wrap the entry point in
-<code>mount_root</code> — or <code>run_with_owner</code> in a test.
+<code>mount_root</code>, or <code>run_with_owner</code> in a test.
 → <a href="../guide/ui.html">Building UI</a>, <a href="../guide/reactive.html">Reactive state</a></p>
 <p><strong>“<code>…</code> reads context <code>…</code>, so it can’t be used as a value”</strong>
 A function that reads an ambient context (like the current owner) can’t
-be passed around as a plain closure — the context channel would be
+be passed around as a plain closure: the context channel would be
 severed. Wrap it in a closure literal at the use site instead.
 → <a href="../tour/functions-and-closures.html">Functions &amp; closures</a></p>
 <p><strong>“an injected (<code>context</code>-typed) closure can only be called, forwarded …, or passed to <code>run</code>”</strong>
@@ -525,7 +527,7 @@ The call returns something that stops working if you drop it (a
 on purpose with <code>let _ = …</code>.
 → <a href="../guide/reactive.html">Reactive state</a></p>
 <h2 id="wire-and-rpc"><a class="header" href="#wire-and-rpc">Wire and rpc</a></h2>
-<p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> type <code>…</code> is <code>…</code>, which is not Wire — …”</strong>
+<p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> type <code>…</code> is <code>…</code>, which is not Wire: …”</strong>
 Something unserializable (a closure, a <code>Signal</code>) is inside a payload
 type. Wire types carry data only: scalars, <code>str</code>, <code>bool</code>,
 <code>List</code>/<code>Option</code> of Wire, and other Wire types.
@@ -533,12 +535,12 @@ type. Wire types carry data only: scalars, <code>str</code>, <code>bool</code>,
 <p><strong><code>RpcError::Contract</code> at connect time</strong>
 Client and server were built from different versions of the service.
 Rebuild both. During development, a <em>leaked old server</em> still holding
-the port is the usual culprit — <code>ss -tlnp | grep &lt;port&gt;</code> and kill it.
+the port is the usual culprit: <code>ss -tlnp | grep &lt;port&gt;</code> and kill it.
 → <a href="../guide/services.html">Services &amp; RPC</a>, <a href="gotchas.html">gotchas</a></p>
 <p><strong><code>RpcError::Transport("not connected")</code> / <code>("connection lost")</code></strong>
 The connection is down (fail-fast) or dropped mid-call (in-flight
 rejection). Nothing is retried automatically, because your rpc might
-not be safe to repeat. Retry at the app level if that’s correct — a
+not be safe to repeat. Retry at the app level if that’s correct; a
 draft’s next push already does.
 → <a href="../guide/services.html">Services &amp; RPC</a></p>
 <h2 id="compile-time-evaluation"><a class="header" href="#compile-time-evaluation">Compile-time evaluation</a></h2>
@@ -554,7 +556,7 @@ output (a closure, a host object). Fold values, not behavior.
 <h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
 <p><strong>A struct literal in a condition parses as the block</strong>
 Struct literals are ordinary operator operands (<code>Point { … } == q</code>
-compares), but condition positions exclude them — after <code>if Foo</code> or a
+compares), but condition positions exclude them: after <code>if Foo</code> or a
 <code>match</code> subject, the <code>{</code> is the block/arms, by design. Written without
 parentheses, <code>if p == Point { … } { … }</code> leaves a bare <code>Point</code> as the
 condition’s operand, which reports <strong>“<code>Point</code> is a type, not a value”</strong>.
@@ -562,9 +564,9 @@ Parenthesize the literal: <code>if p == (Point { x = 1 }) { … }</code>.
 → <a href="../spec/grammar.html">spec §3.8</a></p>
 <p><strong>“a string cannot span lines unless it is triple-quoted …”</strong>
 A <code>"…"</code> or <code>i"…"</code> ran into a line break before its closing quote. Either
-the quote is missing — that is the common case, and the error is reported
-on the string’s own line rather than wherever the next <code>"</code> happens to be
-— or the text really is multi-line, in which case write it <code>"""…"""</code>
+the quote is missing (the common case; the error is reported on the
+string’s own line rather than wherever the next <code>"</code> happens to be), or
+the text really is multi-line, in which case write it <code>"""…"""</code>
 (<code>i"""…"""</code> with holes). A single line break inside a one-line string is
 <code>\n</code>. Nothing escapes a line break: a trailing <code>\</code> does not continue the
 literal onto the next line.
@@ -572,7 +574,7 @@ literal onto the next line.
 <p><strong>“<code>Name</code> is a type, not a value”</strong> (also <em>“a trait / a type parameter /
 a module, not a value”</em>)
 A type, trait, type parameter, or module name was used where a value is
-expected (<code>let q = Point;</code>). A type names a kind, not a runtime value —
+expected (<code>let q = Point;</code>). A type names a kind, not a runtime value:
 construct it (<code>Point { … }</code>), name a variant (<code>Color::Red</code>), or call a
 static (<code>Point::new(…)</code>).
 → <a href="../spec/names.html">spec §4.2</a></p>

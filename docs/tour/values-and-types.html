@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Values and types - The vilan documentation</title>
+        <title>Values and types - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -198,19 +198,19 @@ thing. If that sounds strange coming from JavaScript, start with
 <a href="memory-model.html">the memory model</a> when you’re ready for the full story.</p>
 <h2 id="primitives"><a class="header" href="#primitives">Primitives</a></h2>
 <ul>
-<li><code>bool</code> — <code>true</code> and <code>false</code>.</li>
-<li><code>str</code> — immutable strings.</li>
+<li><code>bool</code>: <code>true</code> and <code>false</code>.</li>
+<li><code>str</code>: immutable strings.</li>
 <li>Signed integers <code>i8 i16 i32 i53</code> and unsigned <code>u8 u16 u32 u53</code>. A bare
 literal like <code>42</code> is <code>i32</code>. Other widths take a suffix: <code>0xFFu8</code>,
 <code>60000u16</code>, <code>9007199254740992i53</code>.</li>
 <li>Floats: <code>f64</code> (a bare <code>2.5</code>, or the <code>f</code> suffix) and <code>f32</code> (<code>2.5f32</code>).</li>
-<li><code>BigInt</code> — arbitrary precision, with the <code>n</code> suffix (<code>7n</code>).</li>
+<li><code>BigInt</code>: arbitrary precision, with the <code>n</code> suffix (<code>7n</code>).</li>
 </ul>
 <p>Why <code>i53</code> and not <code>i64</code>? Because Vilan runs on JavaScript, and JavaScript
 numbers are 64-bit floats. Every integer up to ±2^53 is exact in a float.
 Beyond that, precision silently disappears. Rather than offer an <code>i64</code>
-that quietly isn’t one, Vilan names the type for what it actually
-delivers. If you need more than 53 bits, use <code>BigInt</code>.</p>
+that quietly isn’t one, Vilan names the type for what it delivers. If
+you need more than 53 bits, use <code>BigInt</code>.</p>
 <p>The compiler checks every literal against its type’s range, so an
 out-of-range literal is a compile error rather than a wrong value.</p>
 <pre><code class="language-vilan">import std::print;
@@ -231,7 +231,7 @@ fun main() {
 <code>i53</code> and an <code>i32</code> in one expression is a compile error. Convert
 explicitly with the <code>as_*</code> methods, or suffix the literal.</li>
 </ul>
-<p>That second rule has one trap worth memorizing. If <code>stamp</code> is an <code>i53</code>,
+<p>That second rule has one trap. If <code>stamp</code> is an <code>i53</code>,
 write <code>stamp + 1000i53</code>, not <code>stamp + 1000</code>. The bare <code>1000</code> is an <code>i32</code>,
 and the mix won’t compile.</p>
 <blockquote>
@@ -239,7 +239,7 @@ and the mix won’t compile.</p>
 floats truncate toward zero, and integers fold two’s-complement into
 the target width, so <code>(-1).as_u8()</code> is <code>255</code>. Conversions on literals
 fold at compile time. Arithmetic that overflows a type’s range is
-undefined behavior — the compiler checks literals, not runtime math.
+undefined behavior: the compiler checks literals, not runtime math.
 Details in spec <a href="../spec/execution.html">§7.2a</a>.</p>
 </blockquote>
 <h2 id="strings-and-interpolation"><a class="header" href="#strings-and-interpolation">Strings and interpolation</a></h2>
@@ -259,7 +259,7 @@ on) is in the <a href="../std/strings.html">strings reference</a>.</p>
 <p>For text that spans lines, <code>"""…"""</code> is a <strong>raw</strong> multiline string:
 nothing follows the opening delimiter on its line, the closing delimiter
 sits alone on its line, and the whitespace before it is the indentation
-stripped from every line — so the literal can sit at the indentation of
+stripped from every line, so the literal can sit at the indentation of
 the code around it. Prefix it with <code>i</code> to get holes as well:</p>
 <pre><code class="language-vilan">import std::print;
 
@@ -277,12 +277,12 @@ fun main() {
 </code></pre>
 <p>The trimming is decided before the holes are: a line that opens with a
 hole is indented like any other line. Inside <code>i"""…"""</code> exactly two
-escapes exist — <code>\{</code> and <code>\}</code> — and everything else is raw, just as in
-the plain form.</p>
+escapes exist (<code>\{</code> and <code>\}</code>); everything else is raw, as in the plain
+form.</p>
 <p>The triple-quoted forms are the <em>only</em> ones that span lines. A <code>"…"</code> or
-<code>i"…"</code> must close on the line it opens; a raw line break inside one is an
-error that names both fixes — <code>"""…"""</code> for multi-line text, <code>\n</code> for a
-single break:</p>
+<code>i"…"</code> must close on the line it opens; a raw line break inside one is
+an error that names both fixes (<code>"""…"""</code> for multi-line text, <code>\n</code> for
+a single break):</p>
 <pre><code class="language-vilan fragment">let wrong = "first line
 second line";                          // error: a string cannot span lines
 let short = "first line\nsecond line"; // one break: write it `\n`
@@ -333,10 +333,10 @@ element type from.</p>
 really copies. If you’re used to passing an array around and mutating it
 from several places, that’s the habit to unlearn. The
 <a href="memory-model.html">memory model</a> chapter shows what to do instead.</p>
-<p>When the size is fixed and known, <code>[T; n]</code> is a <strong>fixed-length array</strong> — the
-length is part of the type, so it can’t grow or shrink, and <code>[i32; 3]</code> is a
-different type from <code>[i32; 4]</code>. Write <code>[value; n]</code> to fill <code>n</code> slots, or a
-plain literal under a <code>[T; n]</code> annotation:</p>
+<p>When the size is fixed and known, <code>[T; n]</code> is a <strong>fixed-length
+array</strong>: the length is part of the type, so it can’t grow or shrink,
+and <code>[i32; 3]</code> is a different type from <code>[i32; 4]</code>. Write <code>[value; n]</code>
+to fill <code>n</code> slots, or a plain literal under a <code>[T; n]</code> annotation:</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -354,12 +354,13 @@ fun main() {
 	print(sum);                    // 447
 }
 </code></pre>
-<p>Reach for <code>[T; n]</code> over <code>List&lt;T&gt;</code> when the count never changes — a color, a
-matrix row, a lookup table. Everything else (<code>push</code>, growing) is what <code>List</code>
-is for. <code>.len()</code> on an array is free: the length lives in the type, so the
-compiler folds it to the constant. And because the length is known,
-<code>let [r, g, b] = rgb;</code> destructures one — irrefutably, with the element
-count checked against the type (works in parameter position too).</p>
+<p>Reach for <code>[T; n]</code> over <code>List&lt;T&gt;</code> when the count never changes (a
+color, a matrix row, a lookup table). Everything else (<code>push</code>, growing)
+is what <code>List</code> is for. <code>.len()</code> on an array is free: the length lives
+in the type, so the compiler folds it to the constant. And because the
+length is known, <code>let [r, g, b] = rgb;</code> destructures one irrefutably,
+with the element count checked against the type (works in parameter
+position too).</p>
 <blockquote>
 <p><strong>Going deeper.</strong> <code>Map</code> and <code>Set</code> key <strong>by value</strong>. Scalar keys (<code>i32</code>,
 <code>str</code>) work directly; a struct, enum, or <code>List</code> key works once it derives

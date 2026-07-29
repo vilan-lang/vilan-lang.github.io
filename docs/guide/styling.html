@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Styling - The vilan documentation</title>
+        <title>Styling - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -179,8 +179,8 @@
 You build a <code>Style</code> value in code, the compiler evaluates it during the
 build and writes real CSS rules into your bundle’s <code>.css</code> file, and at
 runtime the style is nothing but a set of class names on an element.</p>
-<p>If you’ve used Tailwind, the feel is similar — small composable pieces, a
-spacing scale, color ramps — except the pieces are typed function calls,
+<p>If you’ve used Tailwind, the feel is similar (small composable pieces, a
+spacing scale, color ramps), except the pieces are typed function calls,
 so a typo is a compile error instead of a silently-ignored class.</p>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
 import std::style::{ style, space, Style, Color, Length, Display, FlexDirection };
@@ -203,7 +203,7 @@ fun main() {
 <ul>
 <li><code>style()</code> starts an empty style. Every method fills one property and
 returns the new style, so you chain.</li>
-<li>Styles are built inside <code>const</code> — that’s the compile-time evaluation
+<li>Styles are built inside <code>const</code>, the compile-time evaluation
 prefix (see <a href="../tour/macros-and-const.html">Macros &amp; const</a>). The rules
 are emitted during the build.</li>
 <li><code>view.styled(card)</code> puts the style’s classes on the element.</li>
@@ -211,7 +211,7 @@ are emitted during the build.</li>
 <p>At runtime you can still <em>select and combine</em> styles you already built.
 <code>a + b</code> merges two styles (per property, the right side wins), and
 picking one of two styles in an <code>if</code> is fine. What you can’t do is
-construct new rules at runtime — a bare <code>style()</code> chain outside <code>const</code>
+construct new rules at runtime: a bare <code>style()</code> chain outside <code>const</code>
 is a compile error. That restriction is what keeps the CSS static and
 the bundle predictable.</p>
 <pre><code class="language-vilan fragment">let button = const style().padding_x(space(3)).radius(space(1));
@@ -250,7 +250,7 @@ inner style applies under that condition:</p>
 <code>.last</code>, <code>.dark</code> (dark mode via <code>prefers-color-scheme</code>), and
 <code>.pseudo(name, inner)</code> for anything else. Breakpoints work the same way:
 <code>.sm(inner)</code> (640px), <code>.md(inner)</code> (768px), <code>.lg(inner)</code> (1024px),
-<code>.xl(inner)</code> (1280px), or <code>.media(min_width, inner)</code> — all <code>min-width</code>
+<code>.xl(inner)</code> (1280px), or <code>.media(min_width, inner)</code>. All are <code>min-width</code>
 conditions, so chains are mobile-first: in
 <code>.sm(grid_cols(2)).lg(grid_cols(3))</code> the widest matching breakpoint wins
 (the stylesheet emits media rules in ascending min-width order, which is
@@ -281,7 +281,7 @@ This one channel covers most “dynamic styling” needs; for the rest,
 <blockquote>
 <p><strong>Going deeper.</strong> Each property-under-a-condition becomes one atomic
 CSS rule with a generated class name, deduplicated across the whole
-build — two styles that both say <code>padding(space(4))</code> share one class.
+build: two styles that both say <code>padding(space(4))</code> share one class.
 <code>styled</code> sets <code>class_list()</code>, the space-joined class names. A
 breakpoint can’t wrap another media-conditioned style (you’ll get a
 compile-time panic saying so).</p>

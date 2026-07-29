@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Reactive state - The vilan documentation</title>
+        <title>Reactive state - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -177,8 +177,8 @@
                         <h1 id="reactive-state"><a class="header" href="#reactive-state">Reactive state</a></h1>
 <p><code>std::reactive</code> is Vilan’s state layer. If you’ve used signals in Solid or
 Preact, you’ll be at home immediately. If you’re coming from React, think
-of a signal as a piece of state that components subscribe to directly —
-there is no re-render, no dependency array, no memoization dance. When a
+of a signal as a piece of state that components subscribe to directly:
+there is no re-render, dependency array, or memoization dance. When a
 signal changes, exactly the code that watches it runs.</p>
 <p>Four ideas make up the layer, and this chapter takes them in order:</p>
 <ul>
@@ -245,7 +245,7 @@ fun main() {
 </code></pre>
 </li>
 <li>
-<p><code>combine((a, b, …))</code> gives a signal of the <strong>tuple</strong> of several
+<p><code>combine((a, b, …))</code> gives a signal of the tuple of several
 signals’ values. It fires when any of them changes. Takes two or more.</p>
 </li>
 <li>
@@ -268,8 +268,8 @@ fun main() {
 	print(full.get());
 }
 </code></pre>
-<p>A named function can stand in for the closure (<code>signal.map(parse)</code>) —
-see <a href="../tour/functions-and-closures.html">functions &amp; closures</a>.</p>
+<p>A named function can stand in for the closure (<code>signal.map(parse)</code>).
+See <a href="../tour/functions-and-closures.html">functions &amp; closures</a>.</p>
 <h2 id="reacting-effect-and-sub"><a class="header" href="#reacting-effect-and-sub">Reacting: <code>effect</code> and <code>sub</code></a></h2>
 <p>Two ways to run code on change. <strong>Use <code>effect</code> by default.</strong></p>
 <ul>
@@ -283,9 +283,9 @@ only on <em>later</em> changes, and you keep the <code>Subscription</code> and c
 </ul>
 <h2 id="ownership-who-cleans-up"><a class="header" href="#ownership-who-cleans-up">Ownership: who cleans up</a></h2>
 <p>Every effect is a subscription, and subscriptions must die when the
-thing that created them goes away — otherwise a page you navigated off
+thing that created them goes away. Otherwise a page you navigated off
 keeps reacting forever. That’s a memory leak in any reactive system.
-Vilan’s answer is <strong>owners</strong>, and the good news is that in normal app
+Vilan’s answer is <strong>owners</strong>, and in normal app
 code you never manage them: the UI layer creates owners exactly where
 subtrees can die (a mounted root, a list row, a conditional block), and
 every <code>effect</code> you create automatically registers with the nearest one.</p>
@@ -294,7 +294,7 @@ every <code>effect</code> you create automatically registers with the nearest on
 <li><code>Owner::new()</code> makes an owner; <code>owner.dispose()</code> disposes everything
 registered with it.</li>
 <li><code>run_with_owner(owner, || …)</code> runs a block with that owner ambient.
-Every <code>effect</code> inside — however deep in function calls — registers
+Every <code>effect</code> inside, however deep in function calls, registers
 into it.</li>
 <li><code>get_owner()</code> reads the ambient owner, e.g. to attach custom cleanup
 with <code>owner.defer(…)</code>.</li>
@@ -322,13 +322,13 @@ before your first line of UI code ran.</p>
 (<a href="../tour/functions-and-closures.html">functions &amp; closures</a>): the
 <code>owner_scope</code> context carries the current owner, and closure
 parameters marked <code>context owner_scope</code> receive it invisibly. <code>comp</code>
-runs a block under a fresh owner and returns <code>(result, owner)</code> — it’s
+runs a block under a fresh owner and returns <code>(result, owner)</code>; it’s
 the primitive under <code>mount_root</code>.</p>
 </blockquote>
 <h2 id="turns-when-changes-become-visible"><a class="header" href="#turns-when-changes-become-visible">Turns: when changes become visible</a></h2>
 <p>If an event handler sets five signals, you want watchers to see the
 final state once, not five intermediate states. Vilan batches writes
-into <strong>turns</strong>. Inside a turn, <code>set</code> just records. When the turn
+into <strong>turns</strong>. Inside a turn, <code>set</code> only records. When the turn
 settles, each affected watcher runs once with the final values:</p>
 <pre><code class="language-text">click ──▶ the handler runs inside a fresh turn
           │
@@ -355,12 +355,12 @@ flush()              // drain the ambient turn early
 <blockquote>
 <p><strong>Going deeper.</strong> Suspension is where the shapes differ. An explicit
 <code>turn</code> adapts to its body: a synchronous body settles when it ends
-(the atomic turn), and an awaiting body holds every notification —
-before the first await and in every continuation — until the whole
+(the atomic turn), and an awaiting body holds every notification
+(before the first await and in every continuation) until the whole
 body finishes, then settles once: a true transaction. A <em>boundary</em>
 turn around a fire-and-forget handler (a UI event) can’t wait for the
 handler’s continuations, so it settles at the end of each synchronous
-stretch — one wave per segment:</p>
+stretch, one wave per segment:</p>
 <pre><code class="language-text">handler:              |── writes ──|─── await ───|── writes ──|
 
 boundary turn:                   settle ▲              settle ▲
@@ -378,8 +378,8 @@ never observe half a wave.</p>
 server after”. They differ in what happens on failure, and the
 difference is the point:</p>
 <p><strong><code>optimistic(signal, value, commit)</code></strong> paints the value immediately,
-runs your async commit, and on failure <strong>rolls back</strong>. Use it for
-one-shot actions like a delete button — if the delete failed, the row
+runs your async commit, and on failure rolls back. Use it for
+one-shot actions like a delete button: if the delete failed, the row
 should come back.</p>
 <p><strong><code>draft(initial, commit)</code></strong> is for <em>editing</em>. It keeps the user’s text
 on failure (rolling back mid-typing would eat their input) and retries
@@ -396,7 +396,7 @@ draft.adopt(remote) // fold in a remote change
 </code></pre>
 <p>The commit closure returns <code>None</code> on success or <code>Some(reason)</code> on
 failure, so an rpc-calling closure drops straight in.</p>
-<p>The whole lifecycle in one picture — note that the input never waits on
+<p>The whole lifecycle in one picture. The input never waits on
 the wire, and every remote change funnels through <code>adopt</code>’s three rules:</p>
 <pre><code class="language-text">you type ──▶ local (Signal) ──▶ the input shows it INSTANTLY
                 │
@@ -430,7 +430,7 @@ fun main() {
 <blockquote>
 <p><strong>Going deeper.</strong> <code>push</code> is per-keystroke safe: a generation counter
 means a slow older commit that lands late is discarded rather than
-clobbering a newer one. <code>adopt</code> follows three rules — an <strong>echo</strong> of
+clobbering a newer one. <code>adopt</code> follows three rules: an <strong>echo</strong> of
 your own push changes nothing, a <strong>clean</strong> local adopts the remote
 edit, and a <strong>dirty</strong> local wins (last-write-wins: the remote value is
 remembered so your eventual push knowingly overwrites it). The

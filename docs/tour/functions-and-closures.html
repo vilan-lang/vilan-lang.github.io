@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Functions &amp; closures - The vilan documentation</title>
+        <title>Functions &amp; closures - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -245,15 +245,15 @@ fun main() {
 </code></pre>
 <p>This works for plain Vilan functions. It does not work for generic
 functions, methods, <code>async</code> functions, or externs. For those, write the
-small wrapping closure — the compiler will tell you when you hit one.</p>
+small wrapping closure. The compiler will tell you when you hit one.</p>
 <h2 id="async-closures"><a class="header" href="#async-closures">Async closures</a></h2>
 <p>You can skip this section until you start storing callbacks that do
 async work.</p>
 <p>A closure type can carry an <code>async</code> marker: <code>async |T| U</code>. Calls through
 a value of that type are awaited automatically, the same way direct
 calls to async functions are (see <a href="async.html">Async</a>). Write it anywhere
-a closure type is declared — a parameter, a <code>let</code> annotation, a struct
-field, a return type:</p>
+a closure type is declared (a parameter, a <code>let</code> annotation, a struct
+field, a return type):</p>
 <pre><code class="language-vilan fragment">fun draft&lt;T&gt;(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;   // a parameter
 
 struct Poller {
@@ -268,7 +268,7 @@ async closure adopts its asyncness. <a href="async.html#async-closures">Async</a
 covers the same seams from the async side.</p>
 <p>There is one more rule, and it works in your favor. Passing an async
 closure where a plain closure is expected is an error if the plain type
-returns a value — you would receive a promise pretending to be the
+returns a value: you would receive a promise pretending to be the
 value. But if the plain type returns <code>void</code>, it is allowed, and the call
 becomes fire-and-forget. This is why UI event handlers can await things
 freely without any ceremony.</p>
@@ -282,7 +282,9 @@ skim this on a first read.</p>
 <pre><code class="language-vilan fragment">fun mount_root(id: str, body: (sync || View) context owner_scope): Owner
 fun turn&lt;T&gt;(policy: FlushPolicy, body: (sync || T) context turn_scope): T
 </code></pre>
-<p>When you pass a closure literal into such a parameter, the ambient value
+<p>The <code>sync</code> marker in those signatures says the closure must stay
+synchronous; <a href="async.html#higher-order-functions-adapt">Async</a> explains it.
+When you pass a closure literal into such a parameter, the ambient value
 (the current <code>Owner</code>, the current <code>Turn</code>) is threaded to it at the call
 site, through any depth of ordinary function calls in between. This is
 the machinery behind “every <code>effect</code> registers with the nearest

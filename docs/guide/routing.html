@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Routing - The vilan documentation</title>
+        <title>Routing - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -274,8 +274,8 @@ coercion from <a href="../tour/functions-and-closures.html">the tour</a>.)</p>
 <h2 id="pages-swap-on-the-route"><a class="header" href="#pages-swap-on-the-route">Pages swap on the route</a></h2>
 <p><code>View.swap(route, render)</code> is the page container. When the route
 changes, it tears down the old page (disposing all its bindings) and
-builds the new one. When the route <em>doesn’t</em> change — say the user
-clicks a link to the page they’re on — nothing happens at all. That’s
+builds the new one. When the route <em>doesn’t</em> change (say the user
+clicks a link to the page they’re on), nothing happens at all. That’s
 why route enums derive <code>PartialEq</code>.</p>
 <p>Nesting works the way you’d hope: the workspace page can <code>swap</code> on its
 own <code>WorkspaceRoute</code> while the outer swap only rebuilds when the
@@ -309,7 +309,7 @@ handler does it:</p>
 </code></pre>
 <p>On the client side, a deep-linked page usually needs data that hasn’t
 synced yet. Mount it under <code>when(present)</code> so it appears when the data
-does — see <a href="services.html">Services &amp; RPC</a>.</p>
+does (see <a href="services.html">Services &amp; RPC</a>).</p>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
 <li>Keep <code>parse</code> and <code>href</code> next to each other and test them as a pair.

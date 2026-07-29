@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Misc - The vilan documentation</title>
+        <title>Misc - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -174,7 +174,7 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="misc--reference"><a class="header" href="#misc--reference">Misc — reference</a></h1>
+                        <h1 id="misc-reference"><a class="header" href="#misc-reference">Misc reference</a></h1>
 <p>The small modules that don’t need a page of their own: <code>std::io</code>,
 <code>std::task</code>, <code>std::promise</code>, <code>std::context</code>, <code>std::crypto</code>, <code>std::jwt</code>,
 <code>std::asset</code>.</p>
@@ -184,7 +184,7 @@ fun panic(message: str)                     // abort with a message
 fun assert(condition: bool, message: str)   // panic when false
 </code></pre>
 <p><code>panic</code> is for unreachable states (expected failures are <code>Result</code>). A
-<code>panic</code> arm in a <code>match</code> diverges — the other arms decide the match’s
+<code>panic</code> arm in a <code>match</code> diverges: the other arms decide the match’s
 type. <code>assert</code> is the <code>vilan test</code> failure mechanism.</p>
 <h2 id="stdtask"><a class="header" href="#stdtask">std::task</a></h2>
 <pre><code class="language-vilan fragment">external struct Task&lt;T&gt;;
@@ -219,7 +219,7 @@ refers to the same task. Every task absorbs its own failure: a later
 its spawn origin) instead of crashing the program. Keep the task instead
 of the results by spawning the <code>settle_all</code> itself:
 <code>let pending = async Task::settle_all(tasks);</code>.</p>
-<p><code>nursery(body)</code> joins every task spawned in the body’s dynamic extent —
+<p><code>nursery(body)</code> joins every task spawned in the body’s dynamic extent:
 the body’s value passes through, the first-observed failure re-raises
 with its spawn origin, and everything else is absorbed. <code>cancel()</code>
 aborts the nursery’s signal; <code>sleep</code> and <code>fetch</code> carry the ambient
@@ -229,16 +229,16 @@ and those rejections absorb as cancellation echoes. <code>Task::race</code> +
 Spec: <a href="../spec/execution.html">§7.7</a>. <code>ambient_signal()</code> bridges host
 APIs std doesn’t wrap.</p>
 <p><code>OwnedNursery</code> is the owner for background work no function-scoped
-<code>nursery</code> can hold — a task whose lifetime is an object’s, not a call’s.
+<code>nursery</code> can hold: a task whose lifetime is an object’s, not a call’s.
 It is a <code>resource</code>: it has a single owner, moves, and is destroyed
 deterministically. <code>new()</code> makes a detached owner; <code>enter(body)</code> runs
 <code>body</code> with the owner’s nursery ambient, so every task spawned inside
-registers with it — but, unlike <code>nursery</code>, <code>enter</code> does NOT join: it
+registers with it. Unlike <code>nursery</code>, <code>enter</code> does NOT join: it
 returns as soon as the body settles, leaving the tasks running.
 Dropping the owner (at scope end, or <code>drop(owner)</code>) cancels them, so
 in-flight bridged IO aborts. Because the owner’s nursery is never joined
 it runs <strong>detached</strong>: a child’s REAL failure reports to the console with
-its spawn origin — as a free-floating task would — instead of being
+its spawn origin (as a free-floating task would) instead of being
 absorbed for a join, and children do not cancel their siblings
 (ownership is lifetime, not fate-sharing). Cancellation echoes, from the
 owner’s <code>cancel</code> or drop, stay silent.</p>
@@ -250,10 +250,10 @@ impl Promise&lt;type T&gt; {
 </code></pre>
 <p>The raw host promise, for direct host interop: an
 <code>[extern(new, "Promise")]</code> constructor or a promise-returning host API
-is typed <code>Promise&lt;T&gt;</code>, and <code>await</code> unwraps it exactly like a task. Code
+is typed <code>Promise&lt;T&gt;</code>, and <code>await</code> unwraps it like a task. Code
 that only spawns never sees this type.</p>
 <h2 id="stdcontext"><a class="header" href="#stdcontext">std::context</a></h2>
-<p>Ambient values with dynamic extent — the machinery under <code>owner_scope</code> and
+<p>Ambient values with dynamic extent, the machinery under <code>owner_scope</code> and
 <code>turn_scope</code>:</p>
 <pre><code class="language-vilan fragment">impl Context&lt;type T&gt; {
 	fun new(): Context&lt;T&gt;
@@ -264,7 +264,7 @@ that only spawns never sees this type.</p>
 </code></pre>
 <ul>
 <li><code>get</code> is <strong>statically covered</strong>: the compiler proves every call path runs
-inside a <code>run</code> — an uncovered read is a compile error, not a runtime
+inside a <code>run</code>; an uncovered read is a compile error, not a runtime
 <code>None</code>.</li>
 <li>Closures capture their contexts <strong>at creation</strong>; parameters declare
 context needs with the <code>context</code> clause
@@ -281,8 +281,8 @@ fun equals_constant_time(a: Bytes, b: Bytes): bool   // timing-safe compare
 </code></pre>
 <p>WebCrypto-backed (async where the host is). For password hashing on the
 server, bind the host’s sync primitives as externs (the walkthrough
-example binds node’s <code>pbkdf2Sync</code> this way) — candidates for std
-promotion.</p>
+example binds Node’s <code>pbkdf2Sync</code> this way). These are candidates for
+std promotion.</p>
 <h2 id="stdjwt"><a class="header" href="#stdjwt">std::jwt</a></h2>
 <p>HS512 JSON Web Tokens; claims are any <code>Wire</code> type:</p>
 <pre><code class="language-vilan fragment">async fun sign_hs512&lt;C: Wire&gt;(secret: Bytes, claims: C): str
@@ -294,7 +294,7 @@ fun decode_claims&lt;C: Wire&gt;(segment: str): Option&lt;C&gt;   // decode WITH
 <h2 id="stdasset"><a class="header" href="#stdasset">std::asset</a></h2>
 <pre><code class="language-vilan fragment">fun emit(kind: str, line: str)   // compile-time only: append to a build asset
 </code></pre>
-<p>Callable only from <code>const</code> evaluation — it’s how <code>std::style</code> writes the
+<p>Callable only from <code>const</code> evaluation: it’s how <code>std::style</code> writes the
 CSS file (<code>emit("css", rule)</code>). A browser build with emissions produces
 <code>&lt;entry&gt;.css</code> beside <code>&lt;entry&gt;.js</code>.</p>
 

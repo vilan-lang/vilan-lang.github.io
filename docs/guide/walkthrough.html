@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>A full-stack walkthrough - The vilan documentation</title>
+        <title>A full-stack walkthrough - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -176,22 +176,25 @@
                     <main>
                         <h1 id="a-full-stack-walkthrough"><a class="header" href="#a-full-stack-walkthrough">A full-stack walkthrough</a></h1>
 <p>Every guide so far taught one layer. This chapter builds a whole app, so
-you can see the layers meet: <strong>Notes</strong> — sign in, a note list that syncs
-live between browser windows, and an editor that saves as you type.</p>
+you can see the layers meet. The app is <strong>Notes</strong>: sign in, a note list
+that syncs live between browser windows, and an editor that saves as you
+type.</p>
 <p>The finished app lives in the repo at
 <a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/walkthrough/"><code>vilan/examples/walkthrough/</code></a>, about 500
-lines in <strong>one package</strong>. Every snippet below is quoted from those files,
+lines in one package. Every snippet below is quoted from those files,
 and the test suite builds the app on every run, so this chapter can’t
-quietly rot. To run it, clone the repository and start it:</p>
+quietly rot. To run it, install the
+<a href="../tour/hello-vilan.html#install-the-toolchain">toolchain</a>, clone the
+repository, and start it:</p>
 <pre><code class="language-sh">git clone https://github.com/vilan-lang/vilan
 cd vilan/vilan/examples/walkthrough
 vilan run .             # builds both entries, starts the server
                         # → http://localhost:4600
 </code></pre>
-<p>(You can also read straight through without running anything — every
+<p>(You can also read straight through without running anything; every
 snippet below is reproduced in full.)</p>
 <p>Open two browser windows side by side. Sign in, add a note in one window,
-and watch it appear in the other. Open a note and type — the other window
+and watch it appear in the other. Open a note and type. The other window
 follows keystroke by keystroke.</p>
 <h2 id="the-shape"><a class="header" href="#the-shape">The shape</a></h2>
 <pre><code class="language-toml">[package]
@@ -215,8 +218,8 @@ target = "browser"
 </code></pre>
 <p>One package, two entries (<a href="../tour/platforms.html">Platforms</a> introduced
 this layout). There is no client/server directory split and no shared
-<code>common</code> package — every file is visible to both entries, and the
-compiler sorts out what may run where by <strong>what each entry reaches</strong>.
+<code>common</code> package. Every file is visible to both entries, and the
+compiler sorts out what may run where by what each entry reaches.
 <code>store.vl</code> uses SQLite freely because only the server entry calls into
 it; if client code ever reached that far, the build would fail with the
 call chain.</p>
@@ -225,12 +228,12 @@ call chain.</p>
         → the mirror updates every client → the UI re-renders one binding
 </code></pre>
 <p>Your own edit comes back to you the same way everyone else’s does. There
-is no “local state vs server state” bookkeeping — the mirror <em>is</em> the
+is no “local state vs server state” bookkeeping: the mirror <em>is</em> the
 state, and drafts smooth over the last inch (the input you’re typing in).</p>
 <h2 id="the-wire-types"><a class="header" href="#the-wire-types">The wire types</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/notes.vl"><code>src/notes.vl</code></a>
 declares the payloads both sides speak. This is most of the
-client/server contract — there is no schema file, no endpoint list, no
+client/server contract. There is no schema file, endpoint list, or
 client SDK to regenerate:</p>
 <pre><code class="language-vilan fragment">[derive(Wire, PartialEq, Debug)]
 struct Note {
@@ -241,8 +244,8 @@ struct Note {
 </code></pre>
 <h2 id="the-service-next-to-its-resources"><a class="header" href="#the-service-next-to-its-resources">The service: next to its resources</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/store.vl"><code>src/store.vl</code></a>
-is the heart of the app. Its database is <strong>module-level</strong> — opened once at
-startup, process-lifetime, closed only when the process ends:</p>
+is the heart of the app. Its database is <strong>module-level</strong>: opened once
+at startup, closed only when the process ends:</p>
 <pre><code class="language-vilan fragment">// Process lifetime: opened once, never dropped (a serve-forever server's
 // `Database` is exactly this). Every method reaches it by loan.
 let db: Database = open_database();
@@ -255,7 +258,7 @@ struct NotesStore {
 <p>Why module-level, and not a field on <code>NotesStore</code>? A <code>Database</code> is a
 <code>resource</code>: it has a single owner, it <em>moves</em> rather than copies, and it closes
 itself when its owner’s scope ends. A struct that owns a resource is itself a
-resource — and <code>[service]</code> generates a dispatcher that captures the store into
+resource. <code>[service]</code> generates a dispatcher that captures the store into
 one closure per <code>[rpc]</code> method, which a resource can’t be (a closure capturing a
 resource is the double-owner bug the class exists to prevent). So the long-lived
 database lives at module scope, and the store holds only the reactive state it
@@ -282,8 +285,9 @@ fun retitle_note(self, token: str, note_id: i32, title: str): i32 {
 <ul>
 <li><strong>A module-level resource is loan-only.</strong> <code>db.prepare(...)</code> and
 <code>session_user(db, ...)</code> borrow it; the compiler rejects taking ownership
-away — moving it (<code>let mine = db</code>) or <code>drop(db)</code> — because process-lifetime
-state has no scope to be handed off to. It simply lives for the whole run.</li>
+away, whether by moving it (<code>let mine = db</code>) or by <code>drop(db)</code>, because
+process-lifetime state has no scope to be handed off to. It lives for
+the whole run.</li>
 <li><strong>No injected hooks.</strong> The service used to be forced into a shared
 package that couldn’t name <code>Database</code>, so its methods called closures
 the server installed at boot. Platform coloring removed the need: the
@@ -325,7 +329,7 @@ is now the boring file, which is the point:</p>
 </code></pre>
 <p>The catch-all serves the shell for every unknown path. That’s what makes
 deep links like <code>/note/7</code> load (<a href="routing.html#deep-links-and-the-server">Routing</a>).
-The client bundle it ships is <code>dist/client.js</code> — <code>vilan build</code> compiles
+The client bundle it ships is <code>dist/client.js</code>. <code>vilan build</code> compiles
 browser entries first, so the file is always fresh by the time the
 server entry builds.</p>
 <h2 id="the-client-entry-four-signals-and-a-mount"><a class="header" href="#the-client-entry-four-signals-and-a-mount">The client entry: four signals and a mount</a></h2>
@@ -347,9 +351,9 @@ the whole wiring diagram:</p>
 </code></pre>
 <p>Read it as: mirror in, token from <code>localStorage</code> (a reload stays signed
 in), the typed route derived from the URL, connect, mount. <code>NotesClient</code>
-comes from <code>import pkg::store::NotesClient;</code> — the same module whose
-bodies run SQL on the server, of which this build sees only the stub.
-Everything after this line is just views reading those signals.</p>
+comes from <code>import pkg::store::NotesClient;</code>, the same module whose
+bodies run SQL on the server. This build sees only the stub.
+Everything after this line is views reading those signals.</p>
 <h2 id="routes"><a class="header" href="#routes">Routes</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/routes.vl"><code>src/routes.vl</code></a>
 is the enum-router pattern from <a href="routing.html">Routing</a>, at its smallest:</p>
@@ -369,7 +373,7 @@ has three layers, each one guide’s idea:</p>
 routed app <code>show</code>s once it isn’t. Signing in stores the token; signing
 out removes it and navigates home.</p>
 <p><strong>The list page.</strong> An add form bound to a local signal, and the list
-itself — one keyed <code>bind_each</code> over the mirror:</p>
+itself, one keyed <code>bind_each</code> over the mirror:</p>
 <pre><code class="language-vilan fragment">.child(view("ul").bind_each(notes, |note| note.id, |note| note_row(client, note, token)))
 </code></pre>
 <p>That single line is the live sync. When any client adds or deletes a
@@ -401,7 +405,7 @@ view("div")
 end to end: typing updates the input instantly, each keystroke commits
 through its rpc, the server broadcasts, and the <code>adopt</code> in the effect
 folds remote changes in. Your own echo changes nothing. Another
-session’s edit updates your field — unless you’re mid-edit, in which
+session’s edit updates your field unless you’re mid-edit, in which
 case your text wins until it commits. There is no Save button because
 there is nothing left for one to do.</p>
 <h2 id="things-to-try"><a class="header" href="#things-to-try">Things to try</a></h2>
@@ -415,9 +419,9 @@ the server: the banner clears and the mirror resyncs by itself.</li>
 did that, not the mirror.</li>
 <li><strong>Deep-link</strong> to a note (<code>/note/1</code>) in a fresh window: “loading…”
 flashes until the first sync, then the editor seeds.</li>
-<li><strong>Cross the platform line.</strong> Add <code>load_notes(self.db)</code> — or any
-<code>pkg::store</code> call — somewhere the client entry reaches, and rebuild:
-the error names the whole chain from <code>main</code> down to the SQL.</li>
+<li><strong>Cross the platform line.</strong> Add a call to <code>store::open_database()</code>
+(or any <code>pkg::store</code> function) somewhere the client entry reaches, and
+rebuild: the error names the whole chain from <code>main</code> down to the SQL.</li>
 </ul>
 <h2 id="where-each-idea-came-from"><a class="header" href="#where-each-idea-came-from">Where each idea came from</a></h2>
 <div class="table-wrapper">
@@ -437,10 +441,10 @@ the error names the whole chain from <code>main</code> down to the SQL.</li>
 </tbody>
 </table>
 </div>
-<p>From here, the honest next step is to change something: add a
+<p>From here, the next step is to change something: add a
 <code>created_at: Instant</code> to <code>Note</code> (the compiler will walk you through
 every place it matters), or add a second entity. The shape you’d follow
-is exactly the one above.</p>
+is the one above.</p>
 
                     </main>
 

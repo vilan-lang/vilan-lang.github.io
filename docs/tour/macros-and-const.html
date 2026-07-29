@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Macros &amp; const - The vilan documentation</title>
+        <title>Macros &amp; const - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -181,7 +181,7 @@ JavaScript carries only the results, never the computation.</p>
 <p>Most days you’ll use these indirectly: <code>[derive(…)]</code> is a macro, and
 <code>const style()</code> is how the styling system works. Writing your own comes
 up rarely, so treat the second half of this chapter as reference.</p>
-<h2 id="const--compute-it-at-compile-time"><a class="header" href="#const--compute-it-at-compile-time"><code>const</code> — compute it at compile time</a></h2>
+<h2 id="const-compute-it-at-compile-time"><a class="header" href="#const-compute-it-at-compile-time"><code>const</code>: compute it at compile time</a></h2>
 <p>Put <code>const</code> in front of an expression and the compiler evaluates it
 during the build, then writes the <em>result</em> into the output as a literal:</p>
 <pre><code class="language-vilan">import std::print;
@@ -205,7 +205,7 @@ fun main() {
 <p>Three rules to know:</p>
 <ul>
 <li><code>const</code> captures <strong>greedily</strong>: everything to the end of the expression
-folds. Parenthesize to narrow it — in
+folds. Parenthesize to narrow it: in
 <code>(const square(4)) + square(2)</code>, the second call runs at runtime.</li>
 <li>The expression can only use things the compiler can know: literals,
 imports, and immutable bindings whose own initializers are const.</li>
@@ -214,7 +214,7 @@ be a constant.</li>
 </ul>
 <p>The flagship user is styling: <code>const style()…</code> chains evaluate at build
 time and emit CSS. See the <a href="../guide/styling.html">styling guide</a>.</p>
-<h2 id="derive-macros--impls-from-a-types-shape"><a class="header" href="#derive-macros--impls-from-a-types-shape">Derive macros — impls from a type’s shape</a></h2>
+<h2 id="derive-macros-impls-from-a-types-shape"><a class="header" href="#derive-macros-impls-from-a-types-shape">Derive macros: impls from a type’s shape</a></h2>
 <p>You’ve already seen <code>[derive(PartialEq, Debug)]</code>. A derive is a macro: a
 function that runs at compile time, receives the type it annotates as
 <em>data</em>, and returns source code to splice into the program. You can
@@ -264,19 +264,19 @@ fun main() {
 <p>How to read that:</p>
 <ul>
 <li><code>macro fun</code> declares the macro. Its body is ordinary Vilan, but it
-compiles against <code>macro_std</code> — a small compile-time standard library
+compiles against <code>macro_std</code>, a small compile-time standard library
 with <code>source</code>, the <code>meta</code> types (<code>Item</code>, <code>StructItem</code>, …), and the
 basics. Its imports are its own; it can’t reach into your program.</li>
 <li>The macro receives the annotated item as data. <code>item.as_struct()</code>
 gives the struct’s name and fields.</li>
 <li>It returns <code>Source</code>: text, usually built with interpolation. The
-<code>i"""…"""</code> form is the one to reach for — the template is written as
+<code>i"""…"""</code> form is the one to reach for: the template is written as
 the generated code will read, indented with the macro around it (the
 closing delimiter’s indentation is stripped from every line). Literal
 braces in generated code are escaped as <code>\{</code> and <code>\}</code>; the holes’
 braces are not.</li>
 <li>The returned source is spliced in <em>before</em> type checking, so generated
-code is checked exactly like code you wrote by hand.</li>
+code is checked like code you wrote by hand.</li>
 </ul>
 <h2 id="macro----blocks"><a class="header" href="#macro----blocks"><code>macro { … }</code> blocks</a></h2>
 <p>An anonymous macro that expands on the spot. In item position it stamps
@@ -301,8 +301,9 @@ fun main() {
 	print(constant_0() + constant_1() + constant_2());
 }
 </code></pre>
-<p>For plain value folding, prefer <code>const</code> — reach for an expression-position
-macro block only when you’re generating <em>code</em>, not computing a value.</p>
+<p>For plain value folding, prefer <code>const</code>. Reach for an
+expression-position macro block only when you’re generating <em>code</em>, not
+computing a value.</p>
 <h2 id="choosing-the-right-tool"><a class="header" href="#choosing-the-right-tool">Choosing the right tool</a></h2>
 <div class="table-wrapper">
 <table>
@@ -322,7 +323,7 @@ macro block only when you’re generating <em>code</em>, not computing a value.<
 <p><strong>Going deeper.</strong> Macro expansion is fueled: a runaway macro is a
 compile error rather than a hung build, and the limits are tunable via
 <code>[macro] fuel</code> / <code>depth</code> in <code>vilan.toml</code>. Macros see one item at a
-time — there is no whole-program reflection. The <code>[service]</code>,
+time; there is no whole-program reflection. The <code>[service]</code>,
 <code>[rpc]</code>, and <code>[derive(Wire)]</code> attributes you meet in the guides are
 this same mechanism, shipped in std.</p>
 </blockquote>

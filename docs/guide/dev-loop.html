@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The dev loop - The vilan documentation</title>
+        <title>The dev loop - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -176,7 +176,7 @@
                     <main>
                         <h1 id="the-dev-loop"><a class="header" href="#the-dev-loop">The dev loop</a></h1>
 <p>You built an app in the <a href="walkthrough.html">walkthrough</a>. This chapter is about
-<em>iterating</em> on it — the edit-save-see loop. <code>vilan run --watch</code> on a
+<em>iterating</em> on it: the edit-save-see loop. <code>vilan run --watch</code> on a
 full-stack project closes that loop with <strong>hot module replacement (HMR)</strong>:
 save a source file and the running browser app updates in place, reactive
 state intact, without a full page reload.</p>
@@ -189,12 +189,12 @@ project directory:</p>
 <p>A project with a browser leg prints one extra line at startup:</p>
 <pre><code class="language-text">hmr: dev channel on 127.0.0.1:35917
 </code></pre>
-<p>That is the <strong>dev channel</strong> — a tiny local endpoint the browser connects back
+<p>That is the <strong>dev channel</strong>: a tiny local endpoint the browser connects back
 to. From then on every save rebuilds all legs and the channel tells the
-browser exactly what changed. Nothing new to learn and no separate <code>dev</code>
-command: <code>run --watch</code> already <em>means</em> “the dev loop”.</p>
+browser exactly what changed. There is no separate <code>dev</code> command:
+<code>run --watch</code> already <em>means</em> “the dev loop”.</p>
 <h2 id="what-each-edit-does"><a class="header" href="#what-each-edit-does">What each edit does</a></h2>
-<p>Change detection is by <strong>output bytes</strong>, not by guessing from the source: each
+<p>Change detection is by output bytes, not by guessing from the source: each
 save rebuilds every leg, and the <em>artifacts</em> are compared. That makes the
 verdict exact.</p>
 <div class="table-wrapper">
@@ -204,20 +204,20 @@ verdict exact.</p>
 </thead>
 <tbody>
 <tr><td><strong>Client code</strong></td><td>The browser bundle changes → a <strong>swap</strong>: the new bundle is evaluated in place, module state carried across (below). No reload.</td></tr>
-<tr><td><strong>A stylesheet only</strong></td><td>Just the CSS sidecar changed → the stylesheet is <strong>hot-swapped</strong>, no reload, no swap — the page doesn’t even flicker.</td></tr>
+<tr><td><strong>A stylesheet only</strong></td><td>Only the CSS sidecar changed → the stylesheet is <strong>hot-swapped</strong>, with no reload and no swap; the page doesn’t flicker.</td></tr>
 <tr><td><strong>Server code</strong></td><td>The server bundle changed → the <strong>Node process restarts</strong>. The browser stays connected; its live rpc mirror reconnects on its own (the same backoff that survives a server crash) and resyncs from the server’s current values.</td></tr>
-<tr><td><strong>Shared code</strong> (a module both entries reach, or a <code>common</code> library both legs use)</td><td>Both bundles change → the server restarts <strong>and</strong> the browser swaps. The fresh client dials the new contract, so a changed rpc shape never leaves a stale client talking to a new server.</td></tr>
-<tr><td><strong>A file with a mistake</strong></td><td>The compile error shows in the terminal <em>and</em> as an in-page <strong>overlay</strong> — the real file, line, and message — while the running app keeps its last good build. Fix it and the next good save clears the overlay and swaps normally.</td></tr>
+<tr><td><strong>Shared code</strong> (a module both entries reach, or a <code>common</code> library both legs use)</td><td>Both bundles change → the server restarts and the browser swaps. The fresh client dials the new contract, so a changed rpc shape never leaves a stale client talking to a new server.</td></tr>
+<tr><td><strong>A file with a mistake</strong></td><td>The compile error shows in the terminal <em>and</em> as an in-page <strong>overlay</strong> (the real file, line, and message) while the running app keeps its last good build. Fix it and the next good save clears the overlay and swaps normally.</td></tr>
 </tbody>
 </table>
 </div>
-<p>A server-only edit pushes <strong>nothing</strong> to the browser — the client is
-unaffected, so it isn’t disturbed. That the Node leg <em>restarts</em> rather than
-hot-swapping is deliberate: the process is cheap and a fresh start is always
-correct, so there is no server-side HMR to reason about.</p>
-<p>The error overlay carries the <strong>real diagnostics</strong> — the file, the <code>line:col</code>,
-the message, and any note — the same text your terminal shows, rendered over the
-page so the eyes already on the browser don’t miss it. The terminal stays
+<p>A server-only edit pushes nothing to the browser, so the client is
+undisturbed. That the Node leg <em>restarts</em> rather than hot-swapping is
+deliberate: the process is cheap and a fresh start is always correct, so
+there is no server-side HMR to reason about.</p>
+<p>The error overlay carries the real diagnostics (the file, the <code>line:col</code>,
+the message, and any note): the same text your terminal shows, rendered over
+the page so the eyes already on the browser don’t miss it. The terminal stays
 authoritative; the overlay is the copy, and the next successful save clears it.</p>
 <h2 id="what-carries-across-a-swap-and-what-resets"><a class="header" href="#what-carries-across-a-swap-and-what-resets">What carries across a swap, and what resets</a></h2>
 <p>A swap re-evaluates the whole client bundle. Two things survive it:</p>
@@ -225,9 +225,8 @@ authoritative; the overlay is the copy, and the next successful save clears it.<
 <li><strong>Module-level state.</strong> Every top-level binding is carried across by its
 key (<code>package::module::name</code>) and a fingerprint of its type. A plain-data
 binding carries its value; a module-level <code>Signal</code> or <code>Shared</code> carries its
-<em>payload</em> into a fresh cell. So <code>mut count</code> and a module-level list signal
-keep their live contents while you edit the view that renders them.</li>
-<li><strong>Everything the server holds.</strong> The server doesn’t swap — it restarts with
+<em>payload</em> into a fresh cell.</li>
+<li><strong>Everything the server holds.</strong> The server doesn’t swap: it restarts with
 its state in SQLite (or wherever it lives), and the client’s mirror resyncs.
 In a full-stack app that is <em>most</em> of your durable state, which is why the
 swap can afford to be simple about the rest.</li>
@@ -247,13 +246,13 @@ fun main() {
 	recent.set(["home"]);
 }
 </code></pre>
-<p>What resets is state minted <strong>inside functions during mount</strong> — an ephemeral
+<p>What resets is state minted inside functions during mount: an ephemeral
 signal created in a component, the focused element, scroll position,
 half-typed text not yet pushed. Fine-grained reactivity gives these no stable
 identity to reattach to, so a swap lets them go. A plain browser refresh is the
 always-available complete reset.</p>
 <p><strong>The initializer-edit rule.</strong> Editing a binding’s <em>initializer</em> without
-changing its <em>type</em> keeps the live value — the new initializer does <strong>not</strong>
+changing its <em>type</em> keeps the live value; the new initializer does not
 run:</p>
 <pre><code class="language-vilan fragment">mut counter = 0;      // edit this to `mut counter = 100`, save…
 // …and `counter` stays at whatever it had climbed to. During iteration the
@@ -263,22 +262,22 @@ run:</p>
 <p>Change the binding’s <em>type</em>, though, and the old value is the wrong shape:
 that binding fresh-initializes (a “fingerprint miss”), which is the correct
 answer, not a failure. To carry a value your edit reshapes anyway, or to carry
-something minted inside a function, reach for the manual channel —
+something minted inside a function, reach for the manual channel:
 <a href="../std/dev.html"><code>std::dev</code></a>’s <code>stash</code>/<code>take</code>.</p>
 <h2 id="escape-hatches"><a class="header" href="#escape-hatches">Escape hatches</a></h2>
 <ul>
-<li><strong><code>--no-hmr</code></strong> — turn HMR off and get the plain restart-the-whole-app watch
+<li><strong><code>--no-hmr</code></strong>: turn HMR off and get the plain restart-the-whole-app watch
 loop (exactly the pre-HMR behavior). Reach for it if a swap ever surprises
 you and you want the blunt instrument back.</li>
-<li><strong><code>--hmr-port &lt;port&gt;</code></strong> — the dev channel defaults to <code>35917</code>; change it if
+<li><strong><code>--hmr-port &lt;port&gt;</code></strong>: the dev channel defaults to <code>35917</code>; change it if
 that port is taken. <code>--hmr-port 0</code> asks the OS for any free port and the
 startup line reports the one it got.</li>
-<li><strong>A browser refresh</strong> is always a full, clean reset — seed state lives only
+<li><strong>A browser refresh</strong> is always a full, clean reset. Seed state lives only
 in the page’s heap, so reloading throws all of it away.</li>
 </ul>
 <h2 id="running-something-alongside-the-build"><a class="header" href="#running-something-alongside-the-build">Running something alongside the build</a></h2>
-<p>A project that needs a step Vilan doesn’t do — a Tailwind pass, an asset
-pipeline, a codegen sidecar — declares it in the manifest:</p>
+<p>A project that needs a step Vilan doesn’t do (a Tailwind pass, an asset
+pipeline, a codegen sidecar) declares it in the manifest:</p>
 <pre><code class="language-toml">[build]
 run = "npx tailwindcss -i src/app.css -o dist/app.css"
 </code></pre>
@@ -291,25 +290,25 @@ run = [
 </code></pre>
 <p>The rules are short:</p>
 <ul>
-<li>They run <strong>before</strong> each build — including every <code>--watch</code> round — because a
+<li>They run before each build, including every <code>--watch</code> round, because a
 hook exists to produce something the build then consumes.</li>
 <li>Each is a command line for your shell (<code>sh -c</code> / <code>cmd /C</code>), so pipes, globs
 and <code>&amp;&amp;</code> work; the working directory is the manifest’s own, so relative paths
 mean what they say in the file you wrote them in.</li>
-<li>A hook that exits non-zero <strong>fails the build</strong>, naming the command. Nothing
+<li>A hook that exits non-zero fails the build, naming the command. Nothing
 after it runs.</li>
 <li>Output goes straight to your terminal. (Under <code>vilan build --stdout</code>, which
-writes the emitted JS to stdout, a chatty hook shares that stream — redirect
+writes the emitted JS to stdout, a chatty hook shares that stream; redirect
 it in the command if you pipe the build.)</li>
 <li><code>vilan check</code> produces no artifacts, so it runs no hooks.</li>
 </ul>
 <h2 id="picking-which-server-to-run"><a class="header" href="#picking-which-server-to-run">Picking which server to run</a></h2>
-<p>You only need this section if your project has <strong>two or more</strong> runnable node
-legs — a <code>[project]</code> of several packages, or one package with several node
-<code>[entry.&lt;name&gt;]</code> sections. The usual one-package app has a single node entry,
-so <code>run</code> just runs it.</p>
+<p>You only need this section if your project has two or more runnable Node
+legs: a <code>[project]</code> of several packages, or one package with several Node
+<code>[entry.&lt;name&gt;]</code> sections. The usual one-package app has a single Node entry,
+so <code>run</code> runs it.</p>
 <p><code>run</code> (and <code>run --watch</code>) executes one Node leg. A project with a single <code>node</code>
-leg needs no help — that one runs. With two or more (say a <code>server</code> and a
+leg needs no help; that one runs. With two or more (say a <code>server</code> and a
 diagnostics <code>probe</code>), designate one in the manifest:</p>
 <pre><code class="language-toml"># one package, several entries
 [package]
@@ -321,19 +320,19 @@ default-entry = "server"
 packages = ["client", "server", "probe"]
 default-entry = "server"
 </code></pre>
-<p>Then <code>vilan run .</code> needs no flag. For a one-off — running the probe instead —
+<p>Then <code>vilan run .</code> needs no flag. For a one-off (running the probe instead),
 <code>--entry &lt;name&gt;</code> overrides the manifest:</p>
 <pre><code class="language-sh">vilan run --watch --entry probe .
 </code></pre>
 <p>With neither, <code>run</code> stops and lists the candidates:</p>
-<pre><code class="language-text">error: this workspace has more than one `node` package to run — pick one with --entry &lt;name&gt;, or designate one for good with `[project] default-entry` in vilan.toml: probe, server
+<pre><code class="language-text">error: this workspace has more than one `node` package to run; pick one with --entry &lt;name&gt;, or designate one for good with `[project] default-entry` in vilan.toml: probe, server
 </code></pre>
 <p>A <code>default-entry</code> that names nothing runnable is an error too, rather than a
-silent fallback — it names an <code>[entry.&lt;name&gt;]</code> section in the package shape, and
+silent fallback. It names an <code>[entry.&lt;name&gt;]</code> section in the package shape, and
 a member package’s <code>name</code> in the workspace shape.</p>
-<p>The non-selected Node legs still <strong>compile</strong> as part of the project — their
-bundles land in <code>dist/</code> and a shared edit still recompiles them — they just
-aren’t launched. Under <code>--watch</code> the browser legs hot-swap exactly as usual; the
+<p>The non-selected Node legs still compile as part of the project: their
+bundles land in <code>dist/</code> and a shared edit still recompiles them. They
+aren’t launched. Under <code>--watch</code> the browser legs hot-swap as usual; the
 chosen server restarts on its own edits, and a change to a leg that isn’t running
 does nothing visible (its <code>dist/</code> bundle refreshes, but nothing restarts).</p>
 <h2 id="the-css-link-idiom"><a class="header" href="#the-css-link-idiom">The CSS <code>&lt;link&gt;</code> idiom</a></h2>
@@ -341,14 +340,14 @@ does nothing visible (its <code>dist/</code> bundle refreshes, but nothing resta
 it needs the stylesheet to <em>be</em> a <code>&lt;link&gt;</code> to <code>dist/&lt;leg&gt;.css</code>:</p>
 <pre><code class="language-text">&lt;link rel="stylesheet" href="/client.css"&gt;
 </code></pre>
-<p>An app that inlines its CSS into the page instead gets a full <strong>swap</strong> on a
-style change rather than the flicker-free stylesheet reload — still correct
-(the byte-diff classifies inlined CSS as a bundle change), just not as
-surgical. The <code>&lt;link&gt;</code> form is the one to prefer for the tightest loop.</p>
+<p>An app that inlines its CSS into the page instead gets a full swap on a
+style change rather than the flicker-free stylesheet reload. That is still
+correct (the byte-diff classifies inlined CSS as a bundle change), but not
+as surgical. The <code>&lt;link&gt;</code> form is the one to prefer for the tightest loop.</p>
 <h2 id="cleaning-up-strays"><a class="header" href="#cleaning-up-strays">Cleaning up strays</a></h2>
 <p>The swap disposes the UI root and closes the live rpc socket for you. Anything
-<em>else</em> a bundle started outside the reactive system — a raw interval, a bare
-task — keeps running after a swap unless you register a cleanup. That, plus
+<em>else</em> a bundle started outside the reactive system (a raw interval, a bare
+task) keeps running after a swap unless you register a cleanup. That, plus
 the <code>stash</code>/<code>take</code> carryover channel and the <code>hmr_active</code> guard, is the whole
 of <a href="../std/dev.html"><code>std::dev</code></a>.</p>
 

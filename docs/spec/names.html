@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§4 Names, modules, and packages - The vilan documentation</title>
+        <title>§4 Names, modules, and packages - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -179,40 +179,40 @@
 <p>A module is one source file. Its top-level statements form its body; its
 declarations (<code>fun</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>impl</code>, module-level
 <code>let</code>, <code>mod</code> blocks) are its items. There is no separate module
-declaration — a file <code>routes.vl</code> in a package’s source root is the module
+declaration: a file <code>routes.vl</code> in a package’s source root is the module
 <code>routes</code> of that package.</p>
 <h2 id="42-the-three-namespaces"><a class="header" href="#42-the-three-namespaces">4.2 The three namespaces</a></h2>
 <p>A path’s first segment selects a namespace:</p>
 <ul>
-<li><code>std::name</code> — the standard library module <code>name</code>, resolved against the
+<li><code>std::name</code>: the standard library module <code>name</code>, resolved against the
 std package’s layers for the current platform (§11).</li>
-<li><code>pkg::name</code> — the module <code>name</code> of the <strong>importing file’s own
+<li><code>pkg::name</code>: the module <code>name</code> of the <strong>importing file’s own
 package</strong>.</li>
-<li><code>depname::name</code> — the module <code>name</code> of the dependency declared as
+<li><code>depname::name</code>: the module <code>name</code> of the dependency declared as
 <code>depname</code> in the package manifest.</li>
 </ul>
 <p>Within std itself, sibling modules are referenced as <code>pkg::…</code> (std is its
 own package). The namespaces are disjoint: resolution is scoped by the
 root segment, so a package is free to name a module <code>ui</code> or <code>json</code> even
-though std has one — <code>pkg::ui</code> is always the package’s own module,
+though std has one: <code>pkg::ui</code> is always the package’s own module,
 <code>std::ui</code> always std’s, and neither shadows the other. (Conversely,
 <code>pkg::</code> never reaches a std module.) A module name that resolves both as
 <code>name.vl</code> and <code>name/lib.vl</code> is an <strong>ambiguity error</strong>.</p>
 <p>A module name must match the on-disk directory entry <strong>byte for byte</strong>: a
 case-insensitive filesystem that answers <code>import foo</code> with <code>Foo.vl</code> is a
-<strong>diagnostic naming both spellings</strong>, not a resolution — so that a program
+<strong>diagnostic naming both spellings</strong>, not a resolution, so that a program
 compiles identically on case-sensitive and case-insensitive filesystems
 (<code>proposal/windows-support.md</code> §5). Every component of the resolved path
 carries the rule, so <code>foo/lib.vl</code> is reached by <code>import foo</code> only when the
 directory is spelled <code>foo</code>.</p>
 <h2 id="43-imports"><a class="header" href="#43-imports">4.3 Imports</a></h2>
-<p><code>import path</code> (§3.2) loads the target module (once per program — loading
+<p><code>import path</code> (§3.2) loads the target module (once per program: loading
 is idempotent and cycle-tolerant) and binds the imported items in the
 importing module’s scope:</p>
 <ul>
-<li><code>import std::print;</code> — binds the item <code>print</code>.</li>
-<li><code>import std::reactive::{ Signal, combine };</code> — binds each set member.</li>
-<li><code>import std::option::Option::{ self, Some, None };</code> — a path into a
+<li><code>import std::print;</code> binds the item <code>print</code>.</li>
+<li><code>import std::reactive::{ Signal, combine };</code> binds each set member.</li>
+<li><code>import std::option::Option::{ self, Some, None };</code> is a path into a
 TYPE: <code>self</code> binds the type itself; variant names bind the variants for
 unqualified use.</li>
 </ul>
@@ -220,7 +220,7 @@ unqualified use.</li>
 loading (variants, statics). <code>export statement</code> re-exports: importers of
 this module see the exported names as if declared here.</p>
 <p>Platform gating is not checked at the import: a module outside the
-current platform’s layers (e.g. <code>std::ui</code> in a node build) still loads,
+current platform’s layers (e.g. <code>std::ui</code> in a Node build) still loads,
 so its items type-check. The error is reported where platform-colored
 code becomes <strong>reachable</strong> from the build’s entry (§11).</p>
 <h2 id="44-scopes-and-shadowing"><a class="header" href="#44-scopes-and-shadowing">4.4 Scopes and shadowing</a></h2>
@@ -251,7 +251,7 @@ while uses before that point keep the earlier binding (parameters and
 loop/pattern bindings are shadowable the same way). Visibility starts at
 the <strong>end</strong> of the declaring statement, so an initializer never reads the
 binding it declares: in <code>let x = x + 1;</code> the right-hand <code>x</code> is the
-previous <code>x</code> — an enclosing or earlier same-scope binding — and an error
+previous <code>x</code> (an enclosing or earlier same-scope binding) and an error
 when none exists. Module-level bindings are the exception, as above: they
 are order-independent, one declaration per name, and a genuine
 initialization cycle is a compile error (§7 of the execution chapter).</p>
@@ -263,7 +263,7 @@ lookup prefers bindings that denote types; a value binding with the same
 name does not shadow a type there.</li>
 <li>In <strong>value position</strong>, lookup takes the nearest binding of any kind.</li>
 </ul>
-<p>Consequently a local variable named <code>Signal</code> does not break <code>let s: Signal&lt;i32&gt;</code> annotations in the same scope — but relying on this is poor
+<p>Consequently a local variable named <code>Signal</code> does not break <code>let s: Signal&lt;i32&gt;</code> annotations in the same scope, but relying on this is poor
 style.</p>
 <h2 id="46-statics-and-members"><a class="header" href="#46-statics-and-members">4.6 Statics and members</a></h2>
 <p><code>Type::member</code> (§3.6) resolves <code>member</code> in <code>Type</code>’s namespace: enum
@@ -275,8 +275,8 @@ impls (§5.7). Generic statics take their arguments at the path head:
 <h2 id="47-the-prelude"><a class="header" href="#47-the-prelude">4.7 The prelude</a></h2>
 <p>A small set of names is in scope without imports: the primitive types
 (<code>i32</code>, <code>str</code>, <code>bool</code>, …), <code>List</code>, <code>void</code>, and the boolean/<code>null</code>
-literals’ types. Everything else — including <code>Option</code>, <code>Result</code>, <code>print</code>
-— must be imported. (The exact prelude is the lang-item table, appendix
+literals’ types. Everything else (including <code>Option</code>, <code>Result</code>, <code>print</code>)
+must be imported. (The exact prelude is the lang-item table, appendix
 §A.4.)</p>
 
                     </main>

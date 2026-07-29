@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Platforms - The vilan documentation</title>
+        <title>Platforms - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -175,22 +175,22 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="platforms"><a class="header" href="#platforms">Platforms</a></h1>
-<p>One language, several runtimes. A package builds for <strong>node</strong> (the
-default), <strong>deno</strong>, <strong>bun</strong>, or the <strong>browser</strong> — set <code>target</code> in
+<p>One language, several runtimes. A package builds for <strong>Node</strong> (the
+default), <strong>Deno</strong>, <strong>Bun</strong>, or the <strong>browser</strong>: set <code>target</code> in
 <code>vilan.toml</code>, or pass <code>--platform</code> on the CLI.</p>
-<p>The standard library is layered so each build only uses what its platform
-can actually do. Call a server function from code a browser build can
-reach, and you get a clear compile error naming the call chain — not a
+<p>The standard library is layered so each build only uses what its
+platform can do. Call a server function from code a browser build can
+reach, and you get a clear compile error naming the call chain, not a
 runtime crash. That’s the whole idea of this chapter.</p>
 <h2 id="the-std-layers"><a class="header" href="#the-std-layers">The std layers</a></h2>
 <ul>
-<li><strong>Base</strong> — platform-neutral, available everywhere: collections,
+<li><strong>Base</strong>: platform-neutral, available everywhere (collections,
 <code>Option</code>/<code>Result</code>, strings, numbers, <code>reactive</code>, <code>shared</code>, <code>time</code>,
 json/wire/binary, the rpc client machinery, <code>style</code>, <code>fetch</code>,
-<code>crypto</code>, and friends.</li>
-<li><strong>Browser layer</strong> — <code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>,
+<code>crypto</code>, and friends).</li>
+<li><strong>Browser layer</strong>: <code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>,
 <code>std::storage</code>. Browser builds only.</li>
-<li><strong>Process layer</strong> (node/deno/bun) — <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
+<li><strong>Process layer</strong> (Node/Deno/Bun): <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
 <code>std::process</code>, <code>std::rpc_server</code>. Server builds only.</li>
 </ul>
 <blockquote>
@@ -198,17 +198,17 @@ json/wire/binary, the rpc client machinery, <code>style</code>, <code>fetch</cod
 file may import <code>std::fs</code> and compile for the browser, as long as no
 code the browser entry can reach actually calls into it. The compiler
 colors every function with the platforms it can run on (seeded by the
-std layers, flowing through calls — the same way <code>async</code> is inferred),
+std layers, flowing through calls, the same way <code>async</code> is inferred),
 and checks the colors only along paths that start at your <code>main</code>. When
 a path crosses onto the wrong platform, the error shows that path.
 Module-level <code>let</code>s follow the same rule: a binding’s initializer runs
 (and is checked, and is bundled) only if something reachable references
-it — a server-only global in a shared file costs the browser build
+it: a server-only global in a shared file costs the browser build
 nothing. <code>const</code> initializers run at build time and ship as plain
 values, so they never color anything.</p>
 </blockquote>
 <h2 id="full-stack-packages"><a class="header" href="#full-stack-packages">Full-stack packages</a></h2>
-<p>A client + server app fits in <strong>one package</strong> with two entries — each
+<p>A client + server app fits in <strong>one package</strong> with two entries: each
 <code>[entry.&lt;name&gt;]</code> names an entry file and the platform it builds for.
 This is the default shape; reach past it only when you have a reason:</p>
 <pre><code class="language-toml">[package]
@@ -231,14 +231,14 @@ target = "browser"
 <p><code>vilan build</code> compiles every entry for its own target into
 <code>dist/&lt;name&gt;.js</code> (browser entries first, so a server that ships bundles
 finds them fresh); <code>vilan run</code> builds everything and starts the one
-node entry; <code>vilan check</code> checks all entries, always. Reachability does
+Node entry; <code>vilan check</code> checks all entries, always. Reachability does
 the sorting: the same <code>store.vl</code> may use <code>std::fs</code> freely, because only
-the server entry reaches into it — if client code ever calls that far,
+the server entry reaches into it. If client code ever calls that far,
 the build fails with the call chain.</p>
-<p>The advanced form, for larger apps, is a workspace of packages — a
+<p>The advanced form, for larger apps, is a workspace of packages (a
 shared <code>[library]</code> for payload types, a browser package, a server
-package — where each member has its own manifest and dependency set, and
-may declare its own entries:</p>
+package), where each member has its own manifest and dependency set,
+and may declare its own entries:</p>
 <pre><code>app/
   vilan.toml       [project] packages = ["common", "client", "server"]
   common/          [library] — payload types (base layer only)
@@ -247,26 +247,26 @@ may declare its own entries:</p>
 </code></pre>
 <p><code>vilan build .</code> at the root builds every member the same way. The
 compiler checks each against its own platform, including that <code>common</code>
-stays platform-neutral. Either shape, the service lives next to its
+stays platform-neutral. In either shape, the service lives next to its
 resources (see <a href="../guide/services.html">Services</a>).</p>
 <blockquote>
 <p><strong>Going deeper.</strong> Where a team wants an explicit boundary,
 <code>[platform("browser")]</code> on a function declares the platforms it
-promises to run on — the compiler checks the promise on every compile
+promises to run on. The compiler checks the promise on every compile
 (entry or not, whatever the build target), and a violation lands at the
 fence with its chain instead of at some distant entry in a dependent
 build. Patterns use the manifest layers’ vocabulary: <code>"node"</code>,
 <code>"browser"</code>, families like <code>"@process"</code>, or several at once for code
 that must stay neutral. The editor shows the same information as you
 write: violations appear as live diagnostics at the offending call, and
-hovering a function shows its inferred requirement and how it got it —
+hovering a function shows its inferred requirement and how it got it,
 e.g. <code>requires the `process` layer of `std` (via `save → write_file (std::fs)`)</code>.</p>
 </blockquote>
-<h2 id="externs--talking-to-the-host"><a class="header" href="#externs--talking-to-the-host">Externs — talking to the host</a></h2>
+<h2 id="externs-talking-to-the-host"><a class="header" href="#externs-talking-to-the-host">Externs: talking to the host</a></h2>
 <p>You’ll mostly consume host bindings through std. But when you need a
-node API or browser API that std doesn’t wrap yet, you can bind it
-yourself with an extern declaration. This is exactly how std’s own
-bindings are written:</p>
+Node API or browser API that std doesn’t wrap yet, you can bind it
+yourself with an extern declaration. This is how std’s own bindings
+are written:</p>
 <pre><code class="language-vilan fragment">// A function from a host module (node:crypto):
 [extern("node:crypto", "randomBytes")]
 external fun random_bytes_sync(length: i32): HashBuffer;
@@ -300,15 +300,16 @@ async external fun sleep(ms: i32): void;
 nature). When a binding proves itself, consider promoting it into std
 rather than copying it between apps.</p>
 <h2 id="assets"><a class="header" href="#assets">Assets</a></h2>
-<p>Browser builds produce <code>&lt;entry&gt;.js</code>, plus <code>&lt;entry&gt;.css</code> when styles were
-emitted. Your server serves those two files and an HTML shell — the
-<a href="../guide/services.html">services guide</a> shows the standard fallback shape.</p>
+<p>Browser builds produce <code>&lt;entry&gt;.js</code>, plus <code>&lt;entry&gt;.css</code> when styles
+were emitted. Your server serves those two files and an HTML shell; the
+<a href="../guide/services.html">services guide</a> shows the standard fallback
+shape.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> Build assets come from <code>std::asset::emit(kind, content)</code>, callable only during <code>const</code> evaluation. The styling
 system’s <code>const style()</code> chains call it to write CSS rules. Libraries
 can also declare platform overlays of their own (a base root plus
 per-platform roots in <code>[library.layer]</code>), which is how std itself is
-layered — most libraries never need this.</p>
+layered; most libraries never need this.</p>
 </blockquote>
 
                     </main>

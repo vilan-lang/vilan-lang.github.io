@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Services &amp; RPC - The vilan documentation</title>
+        <title>Services &amp; RPC - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -186,8 +186,8 @@ handling without writing any protocol code.</p>
 <li><code>[expose]</code> on a <code>Signal&lt;T&gt;</code> field <strong>mirrors</strong> it: every connected
 client gets a live copy that updates when the server writes it.</li>
 </ul>
-<p>No REST endpoints, no fetch calls, no JSON shapes to keep in sync by
-hand. The compiler knows both sides.</p>
+<p>There are no REST endpoints, fetch calls, or JSON shapes to keep in
+sync by hand. The compiler knows both sides.</p>
 <p>Here’s a complete little server:</p>
 <pre><code class="language-vilan norun">import std::print;
 import std::reactive::Signal;
@@ -279,13 +279,13 @@ async fun main() {
 </code></pre>
 <p>In a real app the service lives in its own module, next to the
 resources its bodies use, and the client entry imports the generated
-<code>NotesClient</code> from it — see
+<code>NotesClient</code> from it. See
 <a href="#where-the-service-lives">Where the service lives</a> below for why the
 browser build may do that, and the <a href="walkthrough.html">walkthrough</a> for
 the full shape.</p>
 <h2 id="what-can-cross-the-wire-wire"><a class="header" href="#what-can-cross-the-wire-wire">What can cross the wire: <code>Wire</code></a></h2>
-<p>Everything that travels — rpc parameters, return types, mirrored
-payloads — must be serializable, which Vilan calls <strong>Wire</strong>. The scalars
+<p>Everything that travels (rpc parameters, return types, mirrored
+payloads) must be serializable, which Vilan calls <strong>Wire</strong>. The scalars
 are Wire (<code>bool</code>, the integers including <code>i53</code>, floats, <code>str</code>). <code>List</code>
 and <code>Option</code> of Wire types are Wire. And your own types opt in with a
 derive:</p>
@@ -302,9 +302,9 @@ exactly where you want to find out.</p>
 <code>binary_codec()</code> for a compact one. Client and server must use the same
 one.</p>
 <h2 id="naming-server-entities-handlet"><a class="header" href="#naming-server-entities-handlet">Naming server entities: <code>Handle&lt;T&gt;</code></a></h2>
-<p>Payloads carry <em>data</em>. When a client needs to talk about a <strong>thing the
-server owns</strong> — the node to update, the draft to commit, the route’s
-entity — it needs a name for it, and the name has to survive the round
+<p>Payloads carry <em>data</em>. When a client needs to talk about a thing the
+server owns (the node to update, the draft to commit, the route’s
+entity), it needs a name for it, and the name has to survive the round
 trip. That name is <code>Handle&lt;T&gt;</code> from <code>std::arena</code>, which is <code>Wire</code>:</p>
 <pre><code class="language-vilan fragment">[derive(Wire)]
 struct Rename { node: Handle&lt;Doc&gt;, title: str }
@@ -315,7 +315,7 @@ struct Docs {
 }
 </code></pre>
 <p>The server hands out handles; the client stores them and quotes them
-back. Only <code>{ index, generation }</code> travels — the <code>T</code> is phantom — so the
+back. Only <code>{ index, generation }</code> travels (the <code>T</code> is phantom), so the
 entity itself never has to be Wire, and never has to leave the server.</p>
 <p>The payoff is what happens when the entity is gone. The arena’s
 generation check answers a stale handle with <code>None</code>, so a client acting
@@ -329,10 +329,10 @@ something to the others. Create the arena when the session is
 established and drop it with the session: a handle from one session then
 names nothing in another, by construction. Authorize the session first;
 then look the handle up in that session’s arena.</p>
-<p>When the arena genuinely has to be shared, <code>Arena::branded()</code> numbers its
+<p>When the arena has to be shared, <code>Arena::branded()</code> numbers its
 generations from a random base instead of <code>0</code>, so its handles resolve to
 <code>None</code> in any other arena rather than naming the slot of the same index.
-Nothing else changes — staleness, reuse and the <code>None</code> answer are as
+Nothing else changes: staleness, reuse and the <code>None</code> answer are as
 before. Treat it as a confusion guard, not an authorization check: the
 brand rides inside the handles it issues, so a client with one valid
 handle can derive it. It keeps tenants’ names from colliding; the session
@@ -349,7 +349,7 @@ a stale client meets a redeployed server, the connect fails cleanly
 instead of calls corrupting halfway. This is the <strong>contract check</strong>.</li>
 <li>On the server, each handler runs inside a turn, so all the signal
 writes one rpc makes are broadcast as a single consistent update.</li>
-<li>Handler bodies can await — call another service, <code>sleep_for</code>, wait on
+<li>Handler bodies can await: call another service, <code>sleep_for</code>, wait on
 I/O. The reply is sent when the body finishes, and the turn holds
 across the awaits: writes before and after a suspension still
 coalesce into that same single update.</li>
@@ -381,10 +381,10 @@ on its own. Your code sees two things.</p>
 view("p").text("reconnecting…")
 	.show(state.map(|current| current == ConnectionState::Reconnecting))
 </code></pre>
-<p>Second, honest call failures. A call in flight when the connection drops
+<p>Second, explicit call failures. A call in flight when the connection drops
 rejects with “connection lost”. A call made while down fails immediately
 with “not connected”. Nothing is silently retried, because an rpc might
-not be safe to repeat. Retrying is the app’s decision — a draft’s next
+not be safe to repeat. Retrying is the app’s decision: a draft’s next
 push, or the user pressing the button again.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> The backoff dials at 250 ms doubling to a 4 s cap,
@@ -407,10 +407,10 @@ fun create_task(self, token: str, workspace_id: i32, name: str): i32 { … }
 connection-scoped identity via <code>std::context</code>. It isn’t built into the
 generated dispatch yet.</p>
 <h2 id="where-the-service-lives"><a class="header" href="#where-the-service-lives">Where the service lives</a></h2>
-<p>The service lives <strong>next to the resources its methods use</strong> — a
+<p>The service lives <strong>next to the resources its methods use</strong>: a
 database handle, the filesystem, other services. In a single-package
-app (one <code>[package]</code> with an <code>[entry.client]</code> and an <code>[entry.server]</code>
-— see <a href="../tour/platforms.html">Platforms</a>), that’s just a module both
+app (one <code>[package]</code> with an <code>[entry.client]</code> and an <code>[entry.server]</code>;
+see <a href="../tour/platforms.html">Platforms</a>), that’s a module both
 entries can see:</p>
 <pre><code class="language-vilan fragment">// src/store.vl — bodies use server std directly
 [service(TodoClient)]
@@ -421,11 +421,11 @@ import pkg::store::TodoClient;
 </code></pre>
 <p>In a multi-package workspace the same idea reads: the service sits in
 the server package, and the client package depends on it, importing
-just the generated client (<code>import server::store::TodoClient;</code>).</p>
+only the generated client (<code>import server::store::TodoClient;</code>).</p>
 <p>Either way, the browser build takes only the stub and the contract hash
 from that module; the method bodies and the dispatcher are
 server-colored and out of its reach. A shared <code>common</code> library is still
-a fine home for the payload types both sides speak — it’s just no
+a fine home for the payload types both sides speak; it’s no
 longer the only legal home for anything.</p>
 <h2 id="the-server-side"><a class="header" href="#the-server-side">The server side</a></h2>
 <pre><code class="language-vilan fragment">serve_service(
@@ -436,10 +436,10 @@ longer the only legal home for anything.</p>
 )
 </code></pre>
 <p><code>dispatcher()</code> is generated by <code>[service]</code>. The fallback answers every
-plain http request — serve <code>client.js</code> and <code>client.css</code>, and return the
+plain http request: serve <code>client.js</code> and <code>client.css</code>, and return the
 app shell for anything else so deep links work (see
 <a href="routing.html">Routing</a>). For custom per-connection state, drop down to
-<code>serve_connected</code> — see the <a href="../std/rpc.html">rpc reference</a>.</p>
+<code>serve_connected</code> (see the <a href="../std/rpc.html">rpc reference</a>).</p>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
 <li>Mysterious contract-mismatch failures while developing usually mean an

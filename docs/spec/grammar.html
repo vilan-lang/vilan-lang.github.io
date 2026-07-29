@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§3 Grammar - The vilan documentation</title>
+        <title>§3 Grammar - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -237,7 +237,7 @@ extern-attr = "[" "extern" "(" extern-args ")" "]" ;
 extern-args = STRING [ "," STRING ]           (* module/global binding *)
             | ("method"|"get"|"set") [ "," STRING ] ;
 </code></pre>
-<p>A <code>;</code> body is a signature-only declaration — legal for <code>external</code>
+<p>A <code>;</code> body is a signature-only declaration: legal for <code>external</code>
 functions and required trait methods. A parameter’s <strong>convention</strong> may
 come from the prefix (<code>own x</code>, <code>&amp;mut self</code>) or from a view type
 (<code>x: &amp;mut T</code>); the prefix wins if both are present (§6.3). The <code>borrows</code>
@@ -255,10 +255,10 @@ variant = NAME [ "(" [ type { "," type } [ "," ] ] ")" ]
 <p>A <code>;</code>-bodied struct is legal only for <code>external</code> structs (host types). An
 explicit variant discriminant (<code>= 0</code>, <code>= -1</code>) fixes the variant’s integer
 tag.</p>
-<p>The leading <code>resource</code> modifier marks a type declaration as a <em>resource</em> —
+<p>The leading <code>resource</code> modifier marks a type declaration as a <em>resource</em>:
 the owned-resource class, whose semantics are specified in the resources
 chapter (forthcoming; the modifier currently reserves the surface). It
-precedes <code>external</code>, so the full modifier order is <code>resource external struct</code>, and it is accepted only on <code>struct</code> and <code>enum</code> declarations —
+precedes <code>external</code>, so the full modifier order is <code>resource external struct</code>, and it is accepted only on <code>struct</code> and <code>enum</code> declarations;
 <code>resource</code> before any other item is a parse error.</p>
 <h3 id="impls-and-traits"><a class="header" href="#impls-and-traits">Impls and traits</a></h3>
 <pre><code class="language-text">impl  = "impl" type [ "with" type { "+" type } ] "{" { statement } "}" ;
@@ -268,7 +268,7 @@ trait = "trait" IDENT [ generic-params ] [ "with" type { "+" type } ]
 <p>An impl’s subject is a <strong>type pattern</strong>: <code>type X [: bounds]</code> binders
 anywhere inside it (<code>impl List&lt;type T&gt;</code>, <code>impl Option&lt;(type T, type U)&gt;</code>,
 bare <code>impl type T</code>) declare the impl’s generic parameters (§5.6). <code>with</code>
-lists the implemented trait(s) — an impl without <code>with</code> provides inherent
+lists the implemented trait(s). An impl without <code>with</code> provides inherent
 members. A trait’s <code>with</code> lists supertraits.</p>
 <h3 id="generic-parameters-and-arguments"><a class="header" href="#generic-parameters-and-arguments">Generic parameters and arguments</a></h3>
 <pre><code class="language-text">generic-params = "&lt;" generic-param { "," generic-param } [ "," ] "&gt;" ;
@@ -290,7 +290,7 @@ macro-fun        = "macro" function ;
 macro-invocation = "macro" IDENT "(" [ expr-span { "," expr-span } ] ")" ;
 macro-block      = "macro" block ;
 </code></pre>
-<p>A macro attribute’s arguments are captured as <strong>source spans</strong> — the
+<p>A macro attribute’s arguments are captured as <strong>source spans</strong>: the
 macro receives their text, not their values (§10). The built-in
 attribute names (<code>derive</code>, <code>service</code>, <code>extern</code>, <code>must_use</code>, <code>rpc</code>,
 <code>trait_only</code>, <code>doc</code>, <code>expose</code>) are not available as user macro-attribute
@@ -303,7 +303,7 @@ ret        = "ret" [ expression ] ;
 jump       = "jump" IDENT ;          (* break | continue *)
 </code></pre>
 <p><code>let</code> binds immutably, <code>mut</code> mutably; a tuple binder destructures
-(irrefutably — names and nested tuples only). Both the type and the
+(irrefutably: names and nested tuples only). Both the type and the
 initializer are syntactically optional. A <strong>place</strong> is a chain expression
 (§3.6) denoting a location: a local, a field chain, an index, or a place
 reached through a call (<code>a.write().count</code>); the optional leading <code>*</code>
@@ -319,7 +319,7 @@ match-expr = "match" secondary-expr "{" { match-leg [ "," ] } "}" ;
 match-leg  = pattern { "," pattern } [ "if" expression ] "=&gt;" expression ;
 </code></pre>
 <p>A block’s value is its trailing expression, or <code>void</code> if none. Conditions
-and <code>match</code>/<code>for</code> subjects are <strong>secondary expressions</strong> (§3.8) — struct
+and <code>match</code>/<code>for</code> subjects are <strong>secondary expressions</strong> (§3.8): struct
 initializers are excluded there, keeping <code>if Foo {</code> unambiguous. A
 match leg’s comma-separated patterns form an or-pattern; the optional
 <code>if</code> guard applies to the whole leg; the trailing comma after a leg is
@@ -352,7 +352,7 @@ follows (<code>List&lt;str&gt;::new()</code>); otherwise <code>&lt;</code> is a 
 fuses at most ONE call; a further <code>(args)</code> is a <strong>direct call</strong> on the
 chain’s result, calling a closure-typed value
 (<code>self.hook.read()(a, b)</code>). A <code>?.</code> link’s <strong>continuation</strong> extends
-through the following plain postfixes up to the next <code>?.</code> or <code>!</code> —
+through the following plain postfixes up to the next <code>?.</code> or <code>!</code>:
 <code>a?.b.c()!</code> lifts <code>b.c()</code> into the container, then try-asserts the
 result (§5.10).</p>
 <h2 id="37-operator-precedence"><a class="header" href="#37-operator-precedence">3.7 Operator precedence</a></h2>
@@ -399,7 +399,7 @@ closure-param = binder [ ":" type ] ;
 <ul>
 <li>A <strong>struct initializer</strong> is an operand of the operator/postfix chain
 (<code>Point { … } == q</code> compares; <code>Point { x = 1, y = 2 }.length()</code> folds
-the member chain) — except in <strong>condition positions</strong>: an <code>if</code>/<code>for</code>
+the member chain), except in <strong>condition positions</strong>: an <code>if</code>/<code>for</code>
 condition, a <code>for … in</code> iterable, and a <code>match</code> subject parse
 <code>condition-expr</code>, whose operands exclude struct initializers, so the
 <code>{</code> after <code>if Foo</code> is the block. Parenthesize a literal to use it in a
@@ -438,7 +438,7 @@ the types are significant.</p>
           [ "(" [ pattern { "," pattern } [ "," ] ] ")" ] ;  (* variant *)
 </code></pre>
 <p>Bindings inside patterns are written explicitly (<code>Some(let x)</code>), so a
-bare name is always a <strong>variant</strong> reference, never a fresh binding — the
+bare name is always a <strong>variant</strong> reference, never a fresh binding: the
 classic mistyped-variant trap is a resolution error instead of a silent
 catch-all. <code>bool</code> and <code>null</code> literals match as variants of their enums.
 The <code>let</code>/parameter binder grammar (names and tuples, §3.3) is the

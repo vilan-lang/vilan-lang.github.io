@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Gotchas - The vilan documentation</title>
+        <title>Gotchas - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -175,7 +175,7 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="gotchas"><a class="header" href="#gotchas">Gotchas</a></h1>
-<p>A checklist of idioms that trip people up — each with the working shape.
+<p>A checklist of idioms that trip people up, each with the working shape.
 Grown as findings land.</p>
 <p>Arriving with an error message in hand? The <a href="errors.html">error index</a> is
 organized by message instead of by topic.</p>
@@ -186,16 +186,16 @@ organized by message instead of by topic.</p>
 <li><strong>A bare integer literal adapts to its peer; two typed variables
 don’t.</strong> <code>stamp + 1000</code> and <code>stamp &lt; 1000</code> are fine on an <code>i53</code> (the
 literal takes the peer’s type), but mixing two differently-typed
-<em>variables</em> in a comparison is an error — there are no implicit
-conversions; convert with <code>as_*</code> or unify the declarations.</li>
+<em>variables</em> in a comparison is an error: there are no implicit
+conversions. Convert with <code>as_*</code> or unify the declarations.</li>
 </ul>
 <h2 id="reactive--ui"><a class="header" href="#reactive--ui">Reactive &amp; UI</a></h2>
 <ul>
-<li><strong><code>shared.read()</code> is a copy</strong> — <code>shared.read().push(x)</code> is lost; write
+<li><strong><code>shared.read()</code> is a copy.</strong> <code>shared.read().push(x)</code> is lost; write
 through the cell: <code>shared.write().push(x)</code>.</li>
 <li><strong>Mutate signal lists with <code>set_with</code></strong>, never by mutating a <code>get()</code>
 result (also a copy).</li>
-<li><strong><code>bind_value</code> fights remote updates</strong> — for server-backed fields use
+<li><strong><code>bind_value</code> fights remote updates.</strong> For server-backed fields use
 <code>bind_draft</code>.</li>
 <li><strong><code>show</code> keeps bindings live</strong> while hidden; use <code>when</code> to drop state and
 subscriptions.</li>
@@ -206,19 +206,19 @@ are guaranteed gone.</li>
 <h2 id="services--the-wire"><a class="header" href="#services--the-wire">Services &amp; the wire</a></h2>
 <ul>
 <li><strong>Contract-mismatch errors on connect usually mean a leaked old server</strong>
-still holding the port — <code>ss -tlnp | grep &lt;port&gt;</code>, kill by PID.</li>
-<li><strong><code>desc</code> is an SQL keyword</strong> — name the column <code>description</code> (any SQL
+still holding the port: <code>ss -tlnp | grep &lt;port&gt;</code>, kill by PID.</li>
+<li><strong><code>desc</code> is an SQL keyword.</strong> Name the column <code>description</code> (any SQL
 keyword as a column name fails in <code>CREATE TABLE</code>).</li>
 <li><strong>Value semantics cross the wire</strong>: a mirrored list is a fresh copy per
 update; mutate via rpcs, never by writing the client’s mirror signal.</li>
 </ul>
 <h2 id="process--testing"><a class="header" href="#process--testing">Process &amp; testing</a></h2>
 <ul>
-<li><strong>A completed node <code>main</code> exits the process</strong> — long-lived
+<li><strong>A completed Node <code>main</code> exits the process.</strong> Long-lived
 clients/servers must hold <code>main</code> open.</li>
-<li><strong><code>pkill -f &lt;pattern&gt;</code> can match your own shell’s command string</strong> — kill
+<li><strong><code>pkill -f &lt;pattern&gt;</code> can match your own shell’s command string.</strong> Kill
 by tracked PID.</li>
-<li><strong>Rebuild the debug binary before regenerating corpus goldens</strong> — a stale
+<li><strong>Rebuild the debug binary before regenerating corpus goldens.</strong> A stale
 binary silently writes wrong goldens.</li>
 </ul>
 

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Resources - The vilan documentation</title>
+        <title>Resources - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -184,7 +184,7 @@ A database handle that copied would close twice. A task owner that copied
 would cancel the wrong tasks. These are <strong>resources</strong>: values with a single
 owner, that <em>move</em> instead of copying, and that are torn down
 deterministically when their owner’s scope ends.</p>
-<p>You mark one with <code>resource</code>, and — if it needs cleanup — give it a <code>Drop</code>:</p>
+<p>You mark one with <code>resource</code> and, if it needs cleanup, give it a <code>Drop</code>:</p>
 <pre><code class="language-vilan">import std::print;
 import std::drop::Drop;
 
@@ -205,9 +205,9 @@ fun main() {
 }
 </code></pre>
 <p>That program prints <code>body</code>, then <code>dropped second</code>, then <code>dropped first</code>.
-Two things to notice: <code>drop</code> ran on its own at the end of <code>main</code>, with no
-call from you — and the two guards tore down in <strong>reverse</strong> order, the way a
-stack unwinds.</p>
+Two things to notice: <code>drop</code> ran on its own at the end of <code>main</code>, with
+no call from you, and the two guards tore down in <strong>reverse</strong> order,
+the way a stack unwinds.</p>
 <h2 id="moving-not-copying"><a class="header" href="#moving-not-copying">Moving, not copying</a></h2>
 <p>Binding a resource to a new name <em>moves</em> it. The old name is now empty, and
 using it is an error:</p>
@@ -220,8 +220,8 @@ one owner, so once you hand it over the old binding is spent. The same
 happens when you pass a resource to an <code>own</code> parameter, return it, or match
 it by value.</p>
 <h2 id="loaning-instead-of-moving"><a class="header" href="#loaning-instead-of-moving">Loaning instead of moving</a></h2>
-<p>Usually you don’t want to give a resource away — you want to <em>use</em> it and
-keep it. Lend a <strong>loan</strong> (a view, <code>&amp;</code> or <code>&amp;mut</code>), exactly as with ordinary
+<p>Usually you don’t want to give a resource away; you want to <em>use</em> it
+and keep it. Lend a <strong>loan</strong> (a view, <code>&amp;</code> or <code>&amp;mut</code>), as with ordinary
 values:</p>
 <pre><code class="language-vilan">import std::print;
 import std::drop::Drop;
@@ -242,14 +242,14 @@ fun main() {
 	print("done");
 }
 </code></pre>
-<p>A loan changes no ownership, so <code>g</code> is still yours after each call — the
+<p>A loan changes no ownership, so <code>g</code> is still yours after each call: the
 program prints <code>inspecting g</code> twice, then <code>done</code>, then <code>dropped g</code> when
 <code>main</code> ends. Method calls (<code>&amp;self</code>, <code>&amp;mut self</code>) are loans too; that is how
 a resource’s own methods reach it without consuming it.</p>
 <h2 id="teardown-happens-on-every-exit"><a class="header" href="#teardown-happens-on-every-exit">Teardown happens on every exit</a></h2>
 <p>Because teardown is tied to the owner’s scope, it runs however the scope
-ends — falling off the bottom, an early <code>ret</code>, a <code>jump</code> out of a loop, even
-a panic unwinding through. There are no drop flags and nothing to remember:
+ends: falling off the bottom, an early <code>ret</code>, a <code>jump</code> out of a loop,
+even a panic unwinding through. There are no drop flags and nothing to remember:
 if a binding still owns a resource when control leaves the scope, it drops.</p>
 <h2 id="tearing-down-early-dropx"><a class="header" href="#tearing-down-early-dropx">Tearing down early: <code>drop(x)</code></a></h2>
 <p>Sometimes you want a resource gone <em>before</em> its scope ends. Move it into
@@ -270,13 +270,13 @@ fun main() {
 }
 </code></pre>
 <p>This prints <code>dropped a</code>, <code>after drop(a)</code>, <code>dropped b</code>. <code>drop</code> takes its
-argument by move, so <code>a</code> is spent at that line — there is no <code>close()</code> to
-call and no way to use <code>a</code> afterward by mistake. (On plain data, <code>drop(x)</code>
-just means “I’m done with this”; it does nothing.)</p>
+argument by move, so <code>a</code> is spent at that line: there is no <code>close()</code>
+to call and no way to use <code>a</code> afterward by mistake. (On plain data,
+<code>drop(x)</code> means “I’m done with this”; it does nothing.)</p>
 <h2 id="conditional-teardown-optiontake"><a class="header" href="#conditional-teardown-optiontake">Conditional teardown: <code>Option.take</code></a></h2>
 <p>A resource can live in an <code>Option</code>, which is the one container that holds
-one. <code>take()</code> moves the resource out and leaves <code>None</code> behind — exactly what
-“tear it down only if it’s there” needs:</p>
+one. <code>take()</code> moves the resource out and leaves <code>None</code> behind, which is
+what “tear it down only if it’s there” needs:</p>
 <pre><code class="language-vilan">import std::print;
 import std::drop::{ Drop, drop };
 import std::option::Option::{ self, Some, None };
@@ -296,8 +296,9 @@ fun main() {
 }
 </code></pre>
 <p>After the <code>take</code>, <code>slot</code> is <code>None</code>, so nothing drops a second time at the
-end of <code>main</code>. <code>take</code> is also how a resource leaves a struct field — the one
-sanctioned way to move a resource out of something that is still alive.</p>
+end of <code>main</code>. <code>take</code> is also how a resource leaves a struct field: the
+one sanctioned way to move a resource out of something that is still
+alive.</p>
 <h2 id="a-real-resource-database"><a class="header" href="#a-real-resource-database">A real resource: <code>Database</code></a></h2>
 <p>The std <code>Database</code> is a resource: opening one gives you a handle that closes
 itself on drop. A short-lived database closes when its function returns; a
@@ -328,14 +329,14 @@ fun main() {
 }
 </code></pre>
 <p>Every function reaches <code>db</code> by loan (a method call is a loan), never by
-moving it. A module-level resource is loan-only for exactly this reason:
-moving or <code>drop</code>ing it would close the shared handle out from under the rest
-of the program, so the compiler rejects that. When you <em>do</em> want a database
-that closes at the end of a scope, open it in a local instead — or <code>drop(db)</code>
-to close it early.</p>
+moving it. A module-level resource is loan-only for this reason: moving
+or <code>drop</code>ing it would close the shared handle out from under the rest
+of the program, so the compiler rejects that. When you <em>do</em> want a
+database that closes at the end of a scope, open it in a local instead,
+or <code>drop(db)</code> to close it early.</p>
 <p>A <strong>closure</strong> may reach a module-level resource too. A closure that
-references <code>db</code> isn’t capturing an owner — it borrows the same
-process-lifetime storage, per call, exactly as a function does. This is what
+references <code>db</code> isn’t capturing an owner: it borrows the same
+process-lifetime storage, per call, as a function does. This is what
 gives the module-level idiom its reach: request handlers, injected hooks, and
 background tasks can all touch the database, as long as it lives at module
 level.</p>
@@ -377,8 +378,8 @@ fun main() {
 	print("enter returned without joining");
 }
 </code></pre>
-<p>Unlike a <code>nursery</code>, <code>enter</code> does not wait for the spawned work — it returns
-right away, and the tasks keep running under <code>owner</code>. When <code>owner</code> drops (at
+<p>Unlike a <code>nursery</code>, <code>enter</code> does not wait for the spawned work; it
+returns right away, and the tasks keep running under <code>owner</code>. When <code>owner</code> drops (at
 the end of <code>main</code>, or at an explicit <code>drop(owner)</code>), the tasks are cancelled.
 That is the whole point: the <em>owner’s</em> lifetime bounds the work, and the
 owner is an ordinary resource the scope rules already know how to tear down.</p>
@@ -386,13 +387,13 @@ owner is an ordinary resource the scope rules already know how to tear down.</p>
 <ul>
 <li><strong>“Why can’t I use it again?”</strong> You moved it. Loan it (<code>&amp;x</code> / <code>&amp;mut x</code>, or
 a method call) instead of binding, passing, or returning it by value.</li>
-<li><strong>A resource can’t go in a <code>List</code>, <code>Map</code>, or <code>Set</code></strong> — the compiler can’t
-see inside those. Use an <code>Option</code>, or a struct field.</li>
+<li><strong>A resource can’t go in a <code>List</code>, <code>Map</code>, or <code>Set</code></strong>: the compiler
+can’t see inside those. Use an <code>Option</code>, or a struct field.</li>
 <li><strong>A closure or spawn can’t capture a <em>local</em> resource.</strong> Pass a loan into
-the call, give the resource to a struct (or an <code>OwnedNursery</code>) that owns the
-closure’s lifetime, or keep it at <strong>module level</strong> — a module global is
-loan-only and process-lifetime, so a closure may reach it without becoming
-an owner.</li>
+the call, give the resource to a struct (or an <code>OwnedNursery</code>) that
+owns the closure’s lifetime, or keep it at module level: a module
+global is loan-only and process-lifetime, so a closure may reach it
+without becoming an owner.</li>
 <li><strong><code>Drop</code> is only for resources</strong>, must be exactly <code>fun drop(&amp;mut self)</code>,
 and must be synchronous and context-free (no <code>await</code>, no signal writes).
 Cancel owned tasks through an <code>OwnedNursery</code> rather than awaiting them.</li>

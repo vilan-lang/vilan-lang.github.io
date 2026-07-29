@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Collections - The vilan documentation</title>
+        <title>Collections - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -174,7 +174,7 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="collections--reference"><a class="header" href="#collections--reference">Collections — reference</a></h1>
+                        <h1 id="collections-reference"><a class="header" href="#collections-reference">Collections reference</a></h1>
 <p>The container types: <code>List</code> (built in), <code>std::map::Map</code>, <code>std::set::Set</code>,
 <code>std::range::Range</code>, and the <code>std::iterator</code> protocol underneath <code>for</code>.</p>
 <h2 id="listt"><a class="header" href="#listt"><code>List&lt;T&gt;</code></a></h2>
@@ -195,7 +195,7 @@ impl List&lt;type T: Add + Default&gt; { fun sum(self): T }
 impl List&lt;type T: Mul + Default&gt; { fun product(self): T }
 </code></pre>
 <p>Indexing is <code>list[i]</code>; iterate with <code>for item in list</code> (copies) or
-<code>for e in &amp;mut list</code> (in-place views — see the
+<code>for e in &amp;mut list</code> (in-place views; see the
 <a href="../tour/memory-model.html">memory model</a>).</p>
 <pre><code class="language-vilan">import std::print;
 
@@ -220,7 +220,7 @@ fun main() {
 }
 </code></pre>
 <p>Keys compare <strong>by value</strong>. Scalars work directly; a struct, enum, tuple, or
-<code>List</code> key works as long as it is <code>Hashable</code> — derive it:</p>
+<code>List</code> key works as long as it is <code>Hashable</code>. Derive it:</p>
 <pre><code class="language-vilan">import std::print;
 import std::map::Map;
 import std::hash::Hashable;
@@ -258,7 +258,7 @@ on insert, so mutating the original afterward can’t desync the map.</p>
 <p>Value-keyed like <code>Map</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
 iterates the elements in insertion order.</p>
 <h2 id="hashable"><a class="header" href="#hashable"><code>Hashable</code></a></h2>
-<p>A key’s value is turned into a <code>Hash</code> — a canonical key — by <code>key.hash()</code>.
+<p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>.
 <code>[derive(Hashable)]</code> implements it for a struct/enum whose fields are all
 <code>Hashable</code> (scalars, <code>str</code>, <code>bool</code>, <code>List</code>/<code>Option</code> of <code>Hashable</code>, or another
 derived type); a closure, <code>Set</code>, <code>Map</code>, or <code>Shared</code> field is rejected. You can
@@ -289,8 +289,8 @@ fun main() {
 trait Iterable&lt;T&gt; { fun iter(self): Iterator&lt;T&gt;; }
 Iterator::from_fn(fn: || Option&lt;T&gt;): IteratorFromFn&lt;T&gt;   // an iterator from a closure
 </code></pre>
-<p>Anything implementing <code>Iterator</code>/<code>Iterable</code> works in a <code>for</code> loop —
-<code>Range</code> is exactly this.</p>
+<p>Anything implementing <code>Iterator</code>/<code>Iterable</code> works in a <code>for</code> loop.
+<code>Range</code> is one such type.</p>
 
                     </main>
 

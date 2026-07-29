@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Building UI - The vilan documentation</title>
+        <title>Building UI - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -178,7 +178,7 @@
 <p><code>std::ui</code> is a declarative view layer with no virtual DOM. A <code>View</code>
 describes a DOM element. Methods chain to build it. Where React re-runs
 components and diffs the result, Vilan binds individual DOM properties to
-signals — when a signal changes, exactly that text node or attribute
+signals: when a signal changes, exactly that text node or attribute
 updates and nothing else runs.</p>
 <p>Available in browser builds (<code>target = "browser"</code> in <code>vilan.toml</code>, or
 <code>vilan build --target browser</code>).</p>
@@ -212,8 +212,9 @@ you need the DOM event itself (<code>prevent_default</code>, <code>key()</code>,
 <p>Every <code>bind_*</code> sets the property now and re-sets it whenever the signal
 changes. There is no render loop to trigger.</p>
 <h2 id="components-are-just-functions"><a class="header" href="#components-are-just-functions">Components are just functions</a></h2>
-<p>A “component” is a function that returns a <code>View</code>. No registration, no
-special types, no props system — parameters are the props:</p>
+<p>A “component” is a function that returns a <code>View</code>. There is no
+registration, special types, or props system; the parameters are the
+props:</p>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
 import std::reactive::Signal;
 
@@ -249,7 +250,7 @@ unsubscribe.</p>
 <h2 id="inputs"><a class="header" href="#inputs">Inputs</a></h2>
 <p>Two ways to wire an <code>&lt;input&gt;</code>, for two different situations:</p>
 <p><strong><code>bind_value(signal)</code></strong> is the simple two-way bind: the input shows the
-signal, typing writes it back. Use it for local state — a search box, a
+signal, typing writes it back. Use it for local state: a search box, a
 “new item” field.</p>
 <p><strong><code>bind_draft(draft)</code></strong> binds the input to a local-first
 <a href="reactive.html#optimistic-writes-and-local-first-drafts">draft</a> whose
@@ -282,11 +283,11 @@ fun main() {
 <code>Signal&lt;List&lt;T&gt;&gt;</code>. Rows are <strong>keyed</strong>, like React’s <code>key</code> prop, and the
 key does real work here:</p>
 <ul>
-<li>A row whose key survives a change is <strong>reused</strong>. Its element moves to
+<li>A row whose key survives a change is reused. Its element moves to
 the new position with its state and subscriptions intact.</li>
-<li>A row whose key survives but whose <em>value</em> changed re-renders just
+<li>A row whose key survives but whose <em>value</em> changed re-renders only
 that row (that’s why <code>T: PartialEq</code>).</li>
-<li>Removed rows are disposed properly — each row is its own owner, so a
+<li>Removed rows are disposed: each row is its own owner, so a
 row’s bindings die with the row.</li>
 </ul>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
@@ -325,7 +326,7 @@ not visible:</p>
 <tr><th></th><th>Content while off</th><th>State</th><th>Use for</th></tr>
 </thead>
 <tbody>
-<tr><td><code>.show(condition)</code></td><td>mounted, hidden</td><td><strong>preserved</strong></td><td>tabs, collapsibles — anything that should keep its input text</td></tr>
+<tr><td><code>.show(condition)</code></td><td>mounted, hidden</td><td>preserved</td><td>tabs, collapsibles, anything that should keep its input text</td></tr>
 <tr><td><code>.when(condition, body)</code></td><td>unmounted, disposed</td><td>dropped</td><td>content that shouldn’t exist while off (an editor for a missing record)</td></tr>
 <tr><td><code>.swap(source, render)</code></td><td>previous subtree disposed on change</td><td>per-value</td><td>pages on a route signal, any value-driven subtree</td></tr>
 </tbody>
@@ -340,11 +341,11 @@ not visible:</p>
 </code></pre>
 <p><code>when</code> and <code>swap</code> build their content under a fresh owner each time, so
 everything inside cleans up when the content goes away. <code>swap</code> re-renders
-only when the value actually <em>changes</em> (<code>T: PartialEq</code>), so navigating
+only when the value <em>changes</em> (<code>T: PartialEq</code>), so navigating
 to the page you’re already on does nothing.</p>
 <h2 id="the-ownership-picture"><a class="header" href="#the-ownership-picture">The ownership picture</a></h2>
 <p>Here is the whole cleanup model in one picture. Owners exist at the
-places marked <code>◆</code> — the boundaries where a subtree can die. Every
+places marked <code>◆</code>: the boundaries where a subtree can die. Every
 binding registers with the <em>nearest</em> boundary above it, no matter how
 many plain function calls sit in between:</p>
 <pre><code class="language-text">◆ mount_root("app", …)                the root owner — lives forever
@@ -362,15 +363,15 @@ many plain function calls sit in between:</p>
       └─ row(id = 2)
             └─ .on("click", …)         → dies with ROW 2's DOM node
 </code></pre>
-<p>Navigate away, and the page’s owner is disposed — every binding the page
+<p>Navigate away, and the page’s owner is disposed. Every binding the page
 created dies with it. Delete row 2, and only row 2’s bindings die. This
 is why there is no unsubscribe code anywhere in a Vilan app: the tree of
 boundaries <em>is</em> the cleanup logic, and the framework already placed
 them where subtrees end.</p>
 <h2 id="server-side-rendering"><a class="header" href="#server-side-rendering">Server-side rendering</a></h2>
-<p>The same component code runs on the server. On a node build <code>std::ui</code>
-builds an HTML <strong>string</strong> instead of live DOM, and <code>render(view)</code>
-serializes it — first paint and SEO, before any JavaScript. A route
+<p>The same component code runs on the server. On a Node build <code>std::ui</code>
+builds an HTML string instead of live DOM, and <code>render(view)</code>
+serializes it: first paint and SEO, before any JavaScript. A route
 handler calls your own <code>app()</code> and splices the markup into its HTML
 shell. The <a href="ssr.html">server-side rendering guide</a> walks the whole loop.</p>
 <pre><code class="language-vilan">import std::ui::{ view, View, render };
@@ -390,15 +391,15 @@ fun main() {
 <p>Two rules make one component serve both legs:</p>
 <ul>
 <li><strong>Bindings read once.</strong> <code>bind_text</code>, <code>bind_attr</code>, <code>bind_each</code>, <code>when</code>, and
-<code>swap</code> embed the signal’s value <em>at render time</em> — no subscription is created,
+<code>swap</code> embed the signal’s value <em>at render time</em>: no subscription is created,
 and nothing survives the request (create, serialize, discard). Build pure, bind
 reactive: a component that leans on effect side-channels at build time renders
 stale. Text and attribute values are escaped, so a hostile string is inert.</li>
 <li><strong>No <code>mount</code>/<code>mount_root</code> on the server.</strong> Mounting is a client entry, not a
 renderable view, so the natural factoring is a shared <code>fun app(): View</code> with a
 per-leg <code>main</code>: <code>mount_root("app", app)</code> in the browser, <code>render(app())</code> on the
-server. Event handlers (<code>on</code>) are accepted and discarded — a server-rendered
-<code>&lt;button&gt;</code> is just a button. <code>std::dom</code> stays browser-only, so a component
+server. Event handlers (<code>on</code>) are accepted and discarded; a server-rendered
+<code>&lt;button&gt;</code> is a plain button. <code>std::dom</code> stays browser-only, so a component
 reaching for raw DOM cannot SSR; the cross-platform error says so at the import.</li>
 </ul>
 <h2 id="escaping-to-the-dom"><a class="header" href="#escaping-to-the-dom">Escaping to the DOM</a></h2>
@@ -409,11 +410,11 @@ directly: <code>get_element_by_id</code>, <code>query_selector</code>,
 <a href="../std/browser.html">browser reference</a>.</p>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
-<li><code>show</code> keeps bindings live while hidden — they keep firing. If the
+<li><code>show</code> keeps bindings live while hidden, and they keep firing. If the
 hidden content is expensive, use <code>when</code>.</li>
-<li>Inline SVG works — <code>view("svg").attr("viewBox", …).child(view("path")…)</code>
+<li>Inline SVG works: <code>view("svg").attr("viewBox", …).child(view("path")…)</code>
 creates real SVG-namespace elements, and the server render carries the
-<code>xmlns</code> — but <code>show</code> drives the HTML-only <code>hidden</code> property, which SVG
+<code>xmlns</code>. But <code>show</code> drives the HTML-only <code>hidden</code> property, which SVG
 ignores: toggle an SVG subtree with <code>when</code> (or a class) instead.</li>
 <li><code>bind_value</code> fights remote updates (every keystroke overwrites). For
 server-backed fields, use <code>bind_draft</code>.</li>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>RPC - The vilan documentation</title>
+        <title>RPC - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -174,10 +174,10 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="stdrpc--reference"><a class="header" href="#stdrpc--reference">std::rpc — reference</a></h1>
+                        <h1 id="stdrpc-reference"><a class="header" href="#stdrpc-reference">std::rpc reference</a></h1>
 <p>Transports, the generated service surface, errors, and connection state.
 Concepts and usage: the <a href="../guide/services.html">services guide</a>. Most apps
-touch only the <strong>generated client</strong>, <code>RpcError</code>, and <code>ConnectionState</code> —
+touch only the <strong>generated client</strong>, <code>RpcError</code>, and <code>ConnectionState</code>;
 everything else here is the machinery those sit on.</p>
 <h2 id="the-generated-surface-service"><a class="header" href="#the-generated-surface-service">The generated surface (<code>[service]</code>)</a></h2>
 <p>For <code>[service(FooClient)] struct Foo</code> with <code>[rpc]</code> methods and <code>[expose]</code>
@@ -194,7 +194,7 @@ dispatcher.into_protocol(codec: Codec): RpcProtocol   // what serve_service take
 </code></pre>
 <p><code>connect</code> accepts a relative url (<code>"/"</code>) in the browser; it dials the same
 host over WebSocket, waits for the server’s announcement, and verifies the
-<strong>contract hash</strong> — a drifted server fails the connect with
+<strong>contract hash</strong>: a drifted server fails the connect with
 <code>RpcError::Contract</code>.</p>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
 <pre><code class="language-vilan fragment">[derive(Wire, Debug)]
@@ -206,7 +206,7 @@ enum RpcError {
 	Unauthorized,
 }
 </code></pre>
-<p>Infrastructure failures only — an <em>application</em> “not found” belongs in the
+<p>Infrastructure failures only: an <em>application</em> “not found” belongs in the
 rpc’s own return type (<code>Option&lt;Task&gt;</code>), not here.</p>
 <h2 id="connection-state"><a class="header" href="#connection-state">Connection state</a></h2>
 <pre><code class="language-vilan fragment">enum ConnectionState { Connected, Reconnecting, Closed }
@@ -220,7 +220,7 @@ calls reject with <code>Transport("connection lost")</code>, new calls fail fast
 <code>Transport("not connected")</code>; dial with backoff (250 ms doubling, 4 s cap,
 10 attempts); on success → contract re-check, mirrors re-attach and resync,
 <code>Connected</code>. Backoff exhausted → <code>Closed</code>. Nothing is ever silently
-retried — retry is the app’s decision.</p>
+retried; retry is the app’s decision.</p>
 <h2 id="transports"><a class="header" href="#transports">Transports</a></h2>
 <pre><code class="language-vilan fragment">trait Transport {
 	fun call(self, request: Frame): Task&lt;Result&lt;Frame, str&gt;&gt;;
@@ -232,7 +232,7 @@ retried — retry is the app’s decision.</p>
 <tr><th>Transport</th><th>Wire</th><th>Use</th></tr>
 </thead>
 <tbody>
-<tr><td><code>SocketTransport</code></td><td>WebSocket (reconnecting)</td><td>what <code>connect</code> gives you — the production client transport</td></tr>
+<tr><td><code>SocketTransport</code></td><td>WebSocket (reconnecting)</td><td>what <code>connect</code> gives you, the production client transport</td></tr>
 <tr><td><code>HttpTransport</code></td><td>one POST per call</td><td>stateless calls, no mirrors</td></tr>
 <tr><td><code>LocalTransport</code></td><td>in-process</td><td>tests: client and service in one process</td></tr>
 </tbody>
@@ -260,7 +260,7 @@ impl SocketDuplex {
 (mirror attach/detach) + rpc dispatch, with <code>fallback</code> answering ordinary
 http. Each handler runs in a turn (<code>AtEnd</code>). For custom per-connection
 state (connection-scoped auth, an app-written attach), use
-<code>serve_connected(port, protocol, on_connection, fallback, on_ready)</code> — the
+<code>serve_connected(port, protocol, on_connection, fallback, on_ready)</code>, the
 same server with the session hook exposed.</p>
 <h2 id="envelope--codec-layer"><a class="header" href="#envelope--codec-layer">Envelope &amp; codec layer</a></h2>
 <p><code>Frame</code> is the codec-agnostic unit (<code>std::wire</code>); <code>encode_request</code> /

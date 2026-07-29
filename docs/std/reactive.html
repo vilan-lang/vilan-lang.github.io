@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Reactive - The vilan documentation</title>
+        <title>Reactive - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -174,7 +174,7 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="stdreactive--reference"><a class="header" href="#stdreactive--reference">std::reactive — reference</a></h1>
+                        <h1 id="stdreactive-reference"><a class="header" href="#stdreactive-reference">std::reactive reference</a></h1>
 <p>Signals, effects, ownership, turns, and the higher-level cells. Concepts and
 usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <p>Import what you use:</p>
@@ -228,7 +228,7 @@ impl Signal&lt;Signal&lt;type U&gt;&gt; {
 outside any turn it notifies immediately.</li>
 <li><code>map</code>’s result is a live derived signal; its internal subscription is
 unowned (lives as long as the source).</li>
-<li><code>effect</code> requires an ambient owner — calling it outside every owner is a
+<li><code>effect</code> requires an ambient owner; calling it outside every owner is a
 compile error (context coverage). It fires once immediately.</li>
 <li><code>sub</code> does <strong>not</strong> fire immediately, and its <code>Subscription</code> is yours to
 dispose (or hand to <code>owner.take</code>).</li>
@@ -273,7 +273,7 @@ fun run_with_owner&lt;T&gt;(owner: Owner, body: (sync || T) context owner_scope)
 fun comp&lt;T&gt;(body: (sync || T) context owner_scope): (T, Owner)     // fresh owner + result
 </code></pre>
 <p><code>body</code> parameters marked <code>context owner_scope</code> receive the ambient owner
-implicitly — your component functions thread ownership without mentioning it.
+implicitly: your component functions thread ownership without mentioning it.
 Establish owners at <strong>disposal boundaries</strong> (places where a subtree can die),
 not per object; in UI code the framework’s boundaries (<code>mount_root</code>,
 <code>bind_each</code> rows, <code>when</code>/<code>swap</code> bodies) already do this.</p>
@@ -288,8 +288,8 @@ fun flush()                                             // drain the ambient tur
 <p>Inside a turn, signal writes are recorded and each subscriber runs once with
 final values when the turn settles. The body is asyncness-polymorphic (spec
 §7.4): a synchronous body settles at the end of its synchronous extent, and
-an awaiting body holds every notification until it fully completes — a
-transaction. Framework boundaries establish turns for you: UI event handlers
+an awaiting body holds every notification until it fully completes (a
+transaction). Framework boundaries establish turns for you: UI event handlers
 and <code>mount_root</code> (<code>AtSuspension</code>), RPC service handlers (<code>AtEnd</code>). Writes
 landing after a settle (from spawned work) drain in per-segment microtasks.</p>
 <h2 id="optimistic"><a class="header" href="#optimistic">optimistic</a></h2>
@@ -297,7 +297,7 @@ landing after a settle (from spawned work) drain in per-segment microtasks.</p>
 </code></pre>
 <p>Paint <code>value</code> into <code>signal</code> now, await <code>commit</code>, then reconcile: the
 confirmed value on <code>Ok</code>, the previous value <strong>rolled back</strong> on <code>Err</code>. Returns
-the outcome for error UX. For continuous editing, use <code>draft</code> instead —
+the outcome for error UX. For continuous editing, use <code>draft</code> instead:
 rollback is wrong mid-typing.</p>
 <h2 id="draft--local-first-cells"><a class="header" href="#draft--local-first-cells">Draft — local-first cells</a></h2>
 <pre><code class="language-vilan fragment">enum DraftState {
@@ -324,7 +324,7 @@ impl Draft&lt;type T: PartialEq&gt; {
 parameter is <code>async</code>-typed so an RPC-calling closure flows in directly; a
 plain synchronous closure works too.</li>
 <li><code>push</code> is per-keystroke-safe: local-first (never waits on the wire), and a
-generation counter ensures only the <strong>newest</strong> push settles <code>state</code> —
+generation counter ensures only the <strong>newest</strong> push settles <code>state</code>:
 a slow older commit landing late is discarded.</li>
 <li><code>adopt</code> rules: value equal to the last synced value (an <strong>echo</strong> of your
 own push) → no-op; <strong>clean</strong> local (no unpushed edits) → adopt into
@@ -333,8 +333,8 @@ the eventual push knowingly overwrites (last-write-wins).</li>
 <li>On failure, <code>state</code> carries the reason and <code>local</code> keeps the user’s text;
 the next <code>push</code> retries naturally.</li>
 </ul>
-<p>UI wiring: <code>View.bind_draft(draft)</code> — see the <a href="browser.html">browser reference</a>.</p>
-<h2 id="reconcile--keyed-list-diffing"><a class="header" href="#reconcile--keyed-list-diffing">reconcile — keyed list diffing</a></h2>
+<p>UI wiring: <code>View.bind_draft(draft)</code>; see the <a href="browser.html">browser reference</a>.</p>
+<h2 id="reconcile-keyed-list-diffing"><a class="header" href="#reconcile-keyed-list-diffing">reconcile: keyed list diffing</a></h2>
 <pre><code class="language-vilan fragment">enum RowStep {
 	Keep(i32),     // reuse old row at index (moved into the new order)
 	Refresh(i32),  // same key, changed value: rebuild, dispose old index

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§6 The memory model - The vilan documentation</title>
+        <title>§6 The memory model - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -176,8 +176,8 @@
                     <main>
                         <h1 id="spec-6--the-memory-model"><a class="header" href="#spec-6--the-memory-model">Spec §6 — The memory model</a></h1>
 <p>Values are copied (§6.1); sharing is asked for explicitly. Every explicit
-sharing mechanism — views, projections, <code>Shared</code>, <code>Arena</code>/<code>Handle</code>, and the
-resource class (§6.8) — is a <em>claim</em> on an owner, and all of them obey the
+sharing mechanism (views, projections, <code>Shared</code>, <code>Arena</code>/<code>Handle</code>, and the
+resource class, §6.8) is a <em>claim</em> on an owner, and all of them obey the
 one law stated in §6.0. The numbered sections that follow are that law’s
 projections: the four rules (design:
 <code>proposal/memory-management-rev-1.md</code>), the escape hatches, and resources
@@ -189,7 +189,7 @@ remainder is future work, marked below.</p>
 sections after it are its projections.</p>
 <p>An <strong>owner</strong> is any value with independent existence: a binding, a
 container, an arena slot, a counted cell, a resource. Every owner has an
-<strong>epoch</strong> — an abstract counter that advances on a fixed set of <strong>events</strong>,
+<strong>epoch</strong>: an abstract counter that advances on a fixed set of <strong>events</strong>,
 determined by the owner’s shape:</p>
 <div class="table-wrapper">
 <table>
@@ -209,22 +209,22 @@ determined by the owner’s shape:</p>
 (§6.3), an <code>Arena</code> <code>Handle</code>, a <code>Weak</code>, a loan of a resource. In the
 abstract a claim is the triple <em>(owner identity, path, epoch at capture)</em>.</p>
 <p><strong>The law: a claim is valid while its owner’s epoch is unchanged.</strong> Nothing
-else is forbidden — aliasing is permitted, and writing through an alias is
+else is forbidden: aliasing is permitted, and writing through an alias is
 permitted (§6.4 declines exclusivity); only <em>using</em> a claim whose owner’s
 epoch has advanced is illegal. A <strong>suspension point</strong> (<code>await</code>) is the
 degenerate event: while a function is suspended, other turns run, so every
-owner’s epoch must be assumed to advance — <code>await</code> bumps the world (§6.6).</p>
+owner’s epoch must be assumed to advance. <code>await</code> bumps the world (§6.6).</p>
 <p>A claim’s validity is established at exactly one of two times, giving <strong>two
 enforcement regimes</strong>:</p>
 <ul>
-<li><strong>Static discharge — views (§6.3).</strong> The compiler proves that no event
+<li><strong>Static discharge: views (§6.3).</strong> The compiler proves that no event
 occurs between a view’s capture and its last use. The proof needs a
 <em>surveyable interval</em>, which is why views are second-class: lexical
 liveness (declaration to block end) is the interval the compiler can
-audit. Because the proof is total, the access is infallible and free —
+audit. Because the proof is total, the access is infallible and free:
 a view compiles to a bare <code>(base, key)</code> and checks nothing at runtime.</li>
-<li><strong>Dynamic carry — handles.</strong> When a claim outlives every surveyable
-interval — stored in a field, kept across <code>await</code>, held between turns —
+<li><strong>Dynamic carry: handles.</strong> When a claim outlives every surveyable
+interval (stored in a field, kept across <code>await</code>, held between turns),
 it carries its epoch as data (a <code>Handle</code>’s generation) and every access
 re-establishes validity by comparison, answering <code>Option&lt;&amp;T&gt;</code>. The check
 runs at use time, so access is <em>failable, and the failability is in the
@@ -242,14 +242,14 @@ with it.</li>
 <tr><td>invalidation</td><td>rule 4 (§6.4): reassignment, mutating call</td><td>generation mismatch → <code>None</code></td></tr>
 <tr><td>suspension</td><td>no view across <code>await</code> (§6.6)</td><td>handles cross freely; the next access re-validates</td></tr>
 <tr><td>death</td><td>resources: use-after-move; drops placed statically (§6.8)</td><td>a stale handle / <code>Weak</code> → <code>None</code></td></tr>
-<tr><td>exclusivity</td><td>declined — aliased views and content writes are legal</td><td>traps only on <em>invalidating</em> overlap (§6.7)</td></tr>
+<tr><td>exclusivity</td><td>declined: aliased views and content writes are legal</td><td>traps only on <em>invalidating</em> overlap (§6.7)</td></tr>
 </tbody>
 </table>
 </div>
 <p>Reading down the columns: the left is what the compiler proves when
 liveness is lexical; the right is the identical relation carried as data
 when the claim must outlive the compiler’s sight. Sections 6.1–6.8 place
-each mechanism in a cell — rules 1–2 (§6.1–§6.2) govern owners that carry
+each mechanism in a cell: rules 1–2 (§6.1–§6.2) govern owners that carry
 no claims; rule 3 (§6.3) is the static column’s interval requirement; rule
 4 (§6.4) is the static invalidation cell; <code>borrows</code> (§6.5) makes a claim’s
 origin explicit; the escape hatches (§6.7) are the dynamic column; and
@@ -258,7 +258,7 @@ compile-time twin of a stale handle’s <code>None</code>.</p>
 <h2 id="61-rule-1--values-are-copied-copies-are-semantic"><a class="header" href="#61-rule-1--values-are-copied-copies-are-semantic">6.1 Rule 1 — values are copied; copies are semantic</a></h2>
 <p>Every binding, assignment, argument pass, field initialization, and
 return <strong>copies</strong> the value. After <code>mut b = a</code>, mutating <code>b</code> never
-affects <code>a</code> — for primitives, structs, enums, tuples, lists, and every
+affects <code>a</code>, for primitives, structs, enums, tuples, lists, and every
 other value type alike:</p>
 <pre><code class="language-vilan">import std::print;
 
@@ -273,14 +273,14 @@ fun main() {
 </code></pre>
 <h2 id="62-rule-2--elision-is-an-optimization-never-observable"><a class="header" href="#62-rule-2--elision-is-an-optimization-never-observable">6.2 Rule 2 — elision is an optimization, never observable</a></h2>
 <p>An implementation may skip a copy (reuse the storage) when no conforming
-program can tell — e.g. when the source is never used again. Elision must
+program can tell, e.g. when the source is never used again. Elision must
 not change any program’s output; a live view of the source counts as a
 use. (This rule licenses the JS backend to alias under the hood; it
 grants programs nothing.)</p>
 <h2 id="63-rule-3--references-are-second-class-views"><a class="header" href="#63-rule-3--references-are-second-class-views">6.3 Rule 3 — references are second-class views</a></h2>
 <p><code>&amp;place</code> / <code>&amp;mut place</code> create a <strong>view</strong>: an alias of a place, readonly
 or writable. Views are values of view type (<code>&amp;T</code>, <code>&amp;mut T</code>) but are
-deliberately second-class — a view may not outlive the thing it views:</p>
+deliberately second-class; a view may not outlive the thing it views:</p>
 <ul>
 <li>A view may be a <strong>parameter</strong> (the caller’s place is lent for the
 call), a <strong>short-lived local</strong>, or a <strong>return projecting a parameter</strong>
@@ -293,12 +293,12 @@ or a <code>Signal</code>/<code>Shared</code> payload; may not be returned except
 the place; may not cross an <code>await</code> (§6.6).</li>
 </ul>
 <p>Mutating through a view writes the viewed place; reading its value
-requires an explicit <code>*</code>. A view in <strong>value position</strong> — passed where a
+requires an explicit <code>*</code>. A view in <strong>value position</strong> (passed where a
 value is expected, used as an operator’s operand, or bound to a value
-type — is a compile error, never a silent coercion to the pointee (so the
+type) is a compile error, never a silent coercion to the pointee (so the
 <code>(base, key)</code> representation of a scalar view can’t leak); write <code>*v</code> to
 copy the value out. Iteration by view (<code>for e in &amp;mut list</code>) binds each
-element as a view — assignment and field writes go through; <code>*e</code> reads the
+element as a view: assignment and field writes go through; <code>*e</code> reads the
 element. The parameter conventions:</p>
 <div class="table-wrapper">
 <table>
@@ -306,7 +306,7 @@ element. The parameter conventions:</p>
 <tr><th>Convention</th><th>Written</th><th>Meaning</th></tr>
 </thead>
 <tbody>
-<tr><td>bare</td><td><code>x: T</code></td><td>by value (a copy — rule 1)</td></tr>
+<tr><td>bare</td><td><code>x: T</code></td><td>by value (a copy, rule 1)</td></tr>
 <tr><td>own</td><td><code>own x: T</code></td><td>by value, explicitly (documentation of intent)</td></tr>
 <tr><td>ref</td><td><code>&amp;x</code> / <code>x: &amp;T</code></td><td>readonly view</td></tr>
 <tr><td>ref mut</td><td><code>&amp;mut x</code> / <code>x: &amp;mut T</code></td><td>writable view</td></tr>
@@ -319,23 +319,23 @@ view (replacing the aggregate that contains the place, removing the
 element it points into, resizing past it) are forbidden. The compiler
 enforces the statically-decidable half in full: reassigning the viewed
 root (or an enclosing place), and any call that may advance the root’s
-<em>geometry</em> — the callee’s inferred <code>bumps</code> verdict per parameter, so a
+<em>geometry</em>: the callee’s inferred <code>bumps</code> verdict per parameter, so a
 content-stable <code>&amp;mut</code> callee (one that only writes fields or elements
 through the parameter) passes freely. Views anchor at their origin roots
 wherever they arise: a direct <code>&amp;place</code>, a view-returning call (the
 callee’s <code>borrows</code> positions mapped through the arguments), or a
-wrapped-view <code>match</code> capture — a projection returned through a call is
+wrapped-view <code>match</code> capture. A projection returned through a call is
 policed exactly like the <code>&amp;place</code> it came from.</p>
 <p><em>Implementation note: the dynamic remainder (aliasing reached through
 calls, container-internal invalidation) is tracked future work. When it
 lands it enforces the <strong>same event set</strong> as the static rule above (§6.0’s
 design invariant): a trap fires on a reassignment, a geometry change, or a
-death under a live claim — never on a mere overlap of content writes, which
+death under a live claim, never on a mere overlap of content writes, which
 the static rule deliberately permits (aliased views, and writing through
 them, are legal). <code>Shared.read()/write()</code> are the cell-level form of this
 dynamic check (§6.7).</em></p>
 <h2 id="65-projections-borrows"><a class="header" href="#65-projections-borrows">6.5 Projections: <code>borrows</code></a></h2>
-<p>A function may return a view <strong>into one of its parameters</strong> — the one
+<p>A function may return a view <strong>into one of its parameters</strong>: the one
 sanctioned escape from rule 3’s return ban. The projected parameter is
 named by a <code>borrows</code> clause, which is <strong>inferred</strong> when the body makes it
 evident (a method returning a view of <code>self</code> needs no clause):</p>
@@ -349,19 +349,19 @@ Returning a view of a <strong>local</strong> is always an error (it would dangle
 <p>The clause is a <em>set</em>: a function whose branches return a view of
 different parameters projects them all (<code>borrows a, b</code>), and the call
 result anchors at every corresponding argument. Hover shows the inferred
-clause on any projection, alongside its sibling effect <strong><code>bumps</code></strong> — the
+clause on any projection, alongside its sibling effect <strong><code>bumps</code></strong>: the
 per-<code>&amp;mut</code>-parameter <em>geometry verdict</em> §6.4’s call rule fires on. A
 <code>&amp;mut</code> parameter the body only writes fields or elements through is
 <strong>content-stable</strong> (absent from the clause; the owner’s epoch holds); one
 the body may resize, insert into, remove from, or whole-reassign through
 <strong>bumps</strong>. Both effects are inferred, never written (the explicit
-<code>borrows</code> clause remains legal); an unknowable callee — a bodiless trait
-signature, an untabled host function — is treated as bumping and, when
+<code>borrows</code> clause remains legal); an unknowable callee (a bodiless trait
+signature, an untabled host function) is treated as bumping and, when
 view-typed, as projecting every argument: the conservative direction.</p>
 <p><code>Option&lt;&amp;T&gt;</code> is permitted as a return type for “a view, maybe” (map
 lookups); the <code>Some</code> payload obeys the same anchoring. An <code>Option&lt;&amp;mut T&gt;</code>
 may also be built <strong>inline as a transient</strong> and matched in the same
-expression — <code>match Some(&amp;mut a) { Some(let v) =&gt; … }</code>, including the
+expression: <code>match Some(&amp;mut a) { Some(let v) =&gt; … }</code>, including the
 conditional form <code>match if c { Some(&amp;mut x) } else { None } { … }</code> and
 forwarding a bare view parameter (<code>match Some(p) { … }</code> for <code>p: &amp;mut T</code>).
 Because the transient never outlives the <code>match</code> that consumes it, its
@@ -385,12 +385,12 @@ closure values.</p>
 <h2 id="67-library-escape-hatches-informative"><a class="header" href="#67-library-escape-hatches-informative">6.7 Library escape hatches (informative)</a></h2>
 <p><code>Shared&lt;T&gt;</code> (one shared cell; <code>read()</code> copies, <code>write()</code> yields a
 statement-scoped view of the contents) and <code>Arena&lt;T&gt;</code>/<code>Handle&lt;T&gt;</code> (stable,
-generation-checked identities — handles are plain values, storable where
+generation-checked identities: handles are plain values, storable where
 views are not) are std types built on these rules, not extensions of them.
 They are §6.0’s <strong>dynamic regime</strong>: a <code>Handle</code>’s generation is its owner’s
 epoch carried as data, and <code>Arena.get</code> answers <code>Option&lt;&amp;T&gt;</code>. When the
 counted tier (§6.8) gives <code>Shared</code> a runtime check, that check enforces the
-same event set as rule 4 — a reassignment, geometry change, or death of the
+same event set as rule 4: a reassignment, geometry change, or death of the
 cell under another live view traps, while overlapping writes through the
 cell do not (the reconciled trap law of §6.0; a <code>write</code> view is <em>not</em>
 exclusive). See <a href="../std/cells.html">cells</a>.</p>
@@ -398,10 +398,10 @@ exclusive). See <a href="../std/cells.html">cells</a>.</p>
 <p><em>(Design: <code>proposal/destruction.md</code>.)</em> Rule 1 copies values, and a
 droppable value cannot survive copying: a copied file handle double-closes,
 a copied refcount miscounts. Destruction is therefore not bolted onto the
-data world — the world is partitioned. <strong>Data</strong> is everything above: copied
+data world: the world is partitioned. <strong>Data</strong> is everything above: copied
 on binding, elided at last use, reclaimed by the host. A <strong>resource</strong> is a
-small, explicitly-rooted class with <em>affine</em> discipline — one owner at a
-time, no copies — whose owner’s scope end runs its destructor. This section
+small, explicitly-rooted class with <em>affine</em> discipline (one owner at a
+time, no copies) whose owner’s scope end runs its destructor. This section
 is the static <strong>death</strong> cell of §6.0: a resource’s move ends the source
 binding’s epoch, and <code>drop</code> is its final event.</p>
 <p>The class is two tiers. <strong>Tier 1</strong>, specified here and enforced on JS, is
@@ -413,8 +413,8 @@ references above.</p>
 <ul>
 <li><strong><code>resource</code> is a declaration modifier</strong>, written in <code>external</code>’s
 position: <code>resource struct S</code>, <code>resource external struct D</code>, <code>resource enum E</code>.</li>
-<li><strong>Containment infers.</strong> An aggregate — struct, enum, tuple, or fixed
-array <code>[R; n]</code> — with a resource field, payload, element, or member type
+<li><strong>Containment infers.</strong> An aggregate (struct, enum, tuple, or fixed
+array <code>[R; n]</code>) with a resource field, payload, element, or member type
 <em>is</em> a resource, recursively (the <code>Wire</code>/<code>Hashable</code> all-fields machinery
 with the polarity flipped: any resource member marks the whole). Declaring
 <code>resource</code> on such a type is allowed and checked; omitting it never hides
@@ -432,44 +432,44 @@ impl on a data type is an error steering to add <code>resource</code>.</li>
 existing second-class view (<code>self</code> / <code>&amp;</code> / <code>&amp;mut</code> conventions, §6.3), which
 changes no ownership and is policed by rule 4.</p>
 <ul>
-<li><strong>R1 — binding moves.</strong> <code>let b = a;</code> transfers ownership; any later use of
+<li><strong>R1: binding moves.</strong> <code>let b = a;</code> transfers ownership; any later use of
 <code>a</code> is a compile error naming the move site. No copies ever fire for a
 resource.</li>
-<li><strong>R2 — overwrite drops.</strong> Assigning onto a binding that still owns a
+<li><strong>R2: overwrite drops.</strong> Assigning onto a binding that still owns a
 resource drops the old value first, then moves the new one in.</li>
-<li><strong>R3 — parameters.</strong> <code>self</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans, unchanged; <code>own x</code> is a move — and for a resource <em>only</em> a move: an <code>own</code> argument that is
+<li><strong>R3: parameters.</strong> <code>self</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans, unchanged; <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
 not the binding’s last use is an error (where a data <code>own</code> would silently
 copy).</li>
-<li><strong>R4 — returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
+<li><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
 diverging leg is exempt).</li>
-<li><strong>R5 — fields.</strong> A struct literal moves resources in. A resource field is
+<li><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
 read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>); moving it out of a
-live aggregate is rejected — v1 has no partial moves. The sanctioned
+live aggregate is rejected; v1 has no partial moves. The sanctioned
 partial move is <code>Option</code> (below).</li>
-<li><strong>R6 — match consumes.</strong> Matching a resource <em>by value</em> consumes the
+<li><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
 subject; pattern captures move the payloads into the arm. Matching a loan
 (<code>match &amp;self.state</code>) inspects without consuming.</li>
-<li><strong>R7 — no conditional moves.</strong> A binding must be moved on every path
+<li><strong>R7: no conditional moves.</strong> A binding must be moved on every path
 through a scope or on none; moving it on one path only is an error. This
-keeps end-of-scope ownership static — there are no runtime drop flags in
+keeps end-of-scope ownership static: there are no runtime drop flags in
 v1.</li>
-<li><strong>R8 — no moves in repeatable interiors.</strong> Moving a binding declared
+<li><strong>R8: no moves in repeatable interiors.</strong> Moving a binding declared
 outside a loop from inside its body is an error (the move would repeat).</li>
-<li><strong>R9 — closures and spawns cannot capture resources.</strong> Capturing one would
+<li><strong>R9: closures and spawns cannot capture resources.</strong> Capturing one would
 give the closure a second owner. Injected <code>context</code>-clause bodies receive
-resource <em>parameters</em> as loans — parameters are per-call, not captures —
+resource <em>parameters</em> as loans (parameters are per-call, not captures),
 so <code>nursery(|n| ..)</code>-shaped APIs are unaffected. A closure referencing a
 <strong>module-level</strong> resource is likewise exempt: a module global is loan-only
 and lives for the process (see <em>Module-level resources never drop</em>, below),
-so the closure can never own it and no second owner is created — the
+so the closure can never own it and no second owner is created: the
 reference is a per-call loan, exactly like a parameter. Captures of a
 <strong>local</strong> or a <strong>parameter</strong> stay rejected.</li>
-<li><strong>R10 — no resource elements in the native containers.</strong> <code>List</code> / <code>Map</code> /
+<li><strong>R10: no resource elements in the native containers.</strong> <code>List</code> / <code>Map</code> /
 <code>Set</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
-reject resource type arguments in v1 — their internals are host code the
+reject resource type arguments in v1: their internals are host code the
 move checker cannot see. <code>Option</code> is the sanctioned container (it is a
 Vilan enum, checkable under R11).</li>
-<li><strong>R11 — generics must be move-clean per instantiation.</strong> Instantiating a
+<li><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a
 type parameter with a resource type re-checks the instantiated body under
 the affine rules (T := the resource): every T-typed value is used at most
 once as a move, with no captures and no copies. <code>Option::unwrap(self): T</code>
@@ -477,7 +477,7 @@ passes; a body that reads its parameter twice fails <strong>at the instantiation
 site</strong>, not inside std. For an <code>own T</code> parameter the rule tightens to
 <em>exactly</em> once (a generic body is emitted once and so cannot run an
 instantiation-conditional destructor; zero moves would leak).</li>
-<li><strong>R12 — no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
+<li><strong>R12: no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
 is an error (<code>print(db)</code> included): <code>any</code> is a data sink, and the
 discipline must not launder away. Debug-print the fields instead.</li>
 </ul>
@@ -488,20 +488,20 @@ discipline must not launder away. Debug-print the fields instead.</li>
 </code></pre>
 <p>The body cleans up through the <code>&amp;mut self</code> loan; the compiler destroys the
 fields <em>afterward</em>, in reverse field order. <code>&amp;mut self</code> is the exact and
-only accepted shape — a by-value <code>self</code> could move the value out and keep it
+only accepted shape: a by-value <code>self</code> could move the value out and keep it
 alive (resurrection), a <code>&amp;self</code> receiver cannot run the mutating teardown,
 an extra parameter cannot be supplied by an inserted call, and a
 value-returning body is rejected. Two further restrictions are enforced:</p>
 <ul>
-<li><strong><code>drop</code> is synchronous.</strong> An <code>async</code> or awaiting <code>drop</code> body is rejected
-— teardown runs synchronously in v1. (Cancel owned tasks through an
+<li><strong><code>drop</code> is synchronous.</strong> An <code>async</code> or awaiting <code>drop</code> body is
+rejected: teardown runs synchronously in v1. (Cancel owned tasks through an
 <code>OwnedNursery</code>, whose own <code>drop</code> cancels them.)</li>
 <li><strong><code>drop</code> is context-free.</strong> A <code>drop</code> body that requires an ambient context
 (for example, one that writes a <code>Signal</code>, which threads the turn as a
 hidden context argument) is rejected: a destructor’s call sites are scope
 exits, which thread no context.</li>
 </ul>
-<p>A resource without a <code>Drop</code> impl is legal — containment alone still enforces
+<p>A resource without a <code>Drop</code> impl is legal: containment alone still enforces
 moves and destroys the resource’s fields. <code>Drop</code> is distinct from the
 cooperative <code>Disposable</code> protocol, which is the data-world teardown hook
 (subscriptions, owners) and is capture-based (exactly why it is not a
@@ -510,7 +510,7 @@ resource mechanism).</p>
 <p>At the owner’s scope end, still-owned resource locals drop in <strong>reverse
 declaration order</strong>. A value’s own <code>drop</code> body runs <strong>before its fields</strong>,
 and the fields drop in reverse field order; an enum’s payload drops with the
-value. <strong>Every exit runs drops</strong> — fall-through, <code>ret</code>, <code>jump break</code>, <code>jump continue</code> (out of the scopes they leave), and panic unwinding — because a
+value. <strong>Every exit runs drops</strong>: fall-through, <code>ret</code>, <code>jump break</code>, <code>jump continue</code> (out of the scopes they leave), and panic unwinding, because a
 resource-owning scope lowers to a <code>try</code>/<code>finally</code> and every exit flows
 through the <code>finally</code>. Concrete <code>own</code> resource <em>parameters</em> drop at scope
 end like locals (a generic <code>own T</code> is required to move out instead, per
@@ -524,7 +524,7 @@ is rejected; method calls and <code>&amp;</code> / <code>&amp;mut</code> passing
 <li><strong>Panic during unwind.</strong> A <code>drop</code> that panics while a panic is already
 unwinding replaces the in-flight error (JS <code>finally</code> semantics; a native
 backend would abort).</li>
-<li><strong>Across <code>await</code>.</strong> Owning a resource across a suspension is legal —
+<li><strong>Across <code>await</code>.</strong> Owning a resource across a suspension is legal:
 frames own their locals, and §6.6’s no-view-across-<code>await</code> restriction is
 about <em>loans</em>, not ownership. Under cancellation a bridged operation
 rejects, the frame unwinds, and drops run.</li>
@@ -551,19 +551,19 @@ useful for data too.</p>
 of waiting for the owner’s scope to close. The call is rewritten at each
 site by the concrete argument type: for a resource it lowers to that type’s
 destructor; for plain data it is a no-op that consumes the argument for its
-effects. There is no public <code>close()</code> to keep in sync with a destructor —
+effects. There is no public <code>close()</code> to keep in sync with a destructor;
 <code>drop(x)</code> is the early form. Inside a generic body a <code>drop(x)</code> on a value of
 a still-abstract type <code>T</code> has no concrete destructor (a generic body is
 emitted once, erased), so R11 rejects it <strong>under a resource instantiation</strong>
-(“the erased body cannot destroy a <code>T</code> — move it out to the caller”); a data
+(“whose erased body has no concrete destructor; destroy at a concrete type, or move the value out to the caller”); a data
 instantiation keeps the legitimate no-op consume.</p>
 <h3 id="ownednursery"><a class="header" href="#ownednursery"><code>OwnedNursery</code></a></h3>
 <p><code>OwnedNursery</code> (<code>std::task</code>) is the resource-owner for object-lifetime
 background work that no function-scoped <code>nursery</code> can hold. It wraps a
-<code>Nursery</code> (which stays data — the ambient handle; <code>Context&lt;R&gt;</code> is
+<code>Nursery</code> (which stays data, the ambient handle; <code>Context&lt;R&gt;</code> is
 R10-rejected, so ownership lives only in the wrapper). <code>enter(body)</code> runs
-<code>body</code> with the owner’s nursery established as ambient — every task spawned
-in the body’s dynamic extent registers with the owner — but, unlike
+<code>body</code> with the owner’s nursery established as ambient (every task spawned
+in the body’s dynamic extent registers with the owner) but, unlike
 <code>nursery</code>, does <em>not</em> join: it returns the body’s value as soon as the body
 settles, leaving the spawned tasks running under the owner. Its <code>Drop</code>
 cancels the owned nursery, so dropping the owner (at scope end or via
@@ -571,15 +571,15 @@ cancels the owned nursery, so dropping the owner (at scope end or via
 <p>Its nursery runs in <strong>detached mode</strong>: because nothing ever joins the owned
 children, a child failure that is not a cancellation echo takes the
 free-task reporting path (console, with the spawn origin) rather than being
-stored for a join, and a child does not cancel its siblings — ownership is
+stored for a join, and a child does not cancel its siblings: ownership is
 lifetime, not fate-sharing. Cancellation echoes stay silent.</p>
 <h3 id="services-and-resources"><a class="header" href="#services-and-resources">Services and resources</a></h3>
 <p>A <code>[service]</code> struct that owns a resource field is itself a resource by
 containment, and its generated dispatcher builds per-<code>[rpc]</code> handler
-closures that capture <code>self</code> — which R9 forbids. R9’s module-level exemption
+closures that capture <code>self</code>, which R9 forbids. R9’s module-level exemption
 does not apply here: <code>self</code> is a local store value, not a module global, so
 the capture is a genuine second owner. This collision is <strong>by design</strong>: the
-sanctioned shape is the module-level idiom — hoist the resource (a
+sanctioned shape is the module-level idiom: hoist the resource (a
 <code>Database</code>) to a module-level <code>let</code>, and let the store hold only its reactive
 state (plain data) and reach the resource by loan. The module-level resource
 is process-lifetime and never drops, and reachability keeps its initializer
@@ -588,8 +588,8 @@ out of the client bundle.</p>
 <p>The following are recorded limits the model does not promise, not bugs:</p>
 <ul>
 <li><strong>A never-settling await leaks its frame’s drops.</strong> An <em>unbridged</em> await
-that never resolves (nothing cancels it) leaves its frame — and the
-resources the frame owns — undropped. This is structured concurrency’s
+that never resolves (nothing cancels it) leaves its frame, and the
+resources the frame owns, undropped. This is structured concurrency’s
 concern, not the memory model’s.</li>
 <li><strong>R11/R12 diagnostic residues</strong> (completeness, not soundness). The
 per-instantiation move scan descends into <em>direct</em> lexical closures only,
@@ -597,10 +597,10 @@ so a double move of <code>T</code> inside a <em>nested</em> closure is not separ
 flagged (its capture is still caught); dispatched (trait-typed-receiver)
 callees are not re-discovered by R11’s scan or R12’s <code>any</code>-coercion check,
 matching the standing convention that convention checks skip dispatched
-callees — R11’s per-instantiation re-check is the net under that residue.
+callees; R11’s per-instantiation re-check is the net under that residue.
 A cross-file instantiation may anchor its <em>primary</em> span imprecisely (the
 body note carries the correct source). A module-<em>initializer</em> global →
-global move is not scanned — benign, since module globals never drop.</li>
+global move is not scanned (benign, since module globals never drop).</li>
 </ul>
 
                     </main>

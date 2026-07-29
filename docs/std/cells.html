@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Cells - The vilan documentation</title>
+        <title>Cells - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -174,12 +174,12 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="cells--reference"><a class="header" href="#cells--reference">Cells — reference</a></h1>
+                        <h1 id="cells-reference"><a class="header" href="#cells-reference">Cells reference</a></h1>
 <p>The two sharing tools: <code>std::shared::Shared</code> (one shared mutable cell) and
 <code>std::arena::Arena</code> (stable identities for graphs). When to reach for
 which: <a href="../tour/memory-model.html">the memory model</a>.</p>
 <h2 id="sharedt"><a class="header" href="#sharedt"><code>Shared&lt;T&gt;</code></a></h2>
-<p>A heap cell two places can hold at once — the escape hatch from
+<p>A heap cell two places can hold at once: the escape hatch from
 value-semantics copying.</p>
 <pre><code class="language-vilan fragment">impl Shared&lt;type T&gt; {
 	fun new(value: T): Shared&lt;T&gt;
@@ -202,16 +202,16 @@ fun main() {
 </code></pre>
 <ul>
 <li><code>read()</code> copies: mutating the result is lost
-(<code>shared.read().push(x)</code> — the classic trap). Mutate through <code>write()</code>.</li>
-<li><code>write()</code> returns a view — use it within the same statement
+(<code>shared.read().push(x)</code>, the classic trap). Mutate through <code>write()</code>.</li>
+<li><code>write()</code> returns a view. Use it within the same statement
 (<code>cell.write() = v</code>, <code>cell.write().push(item)</code>); it obeys the usual view
 rules (no storing, no holding across <code>await</code>).</li>
-<li>Copying the <code>Shared</code> value itself copies the <em>handle</em> — both handles see
+<li>Copying the <code>Shared</code> value itself copies the <em>handle</em>: both handles see
 one cell. That’s the point.</li>
 </ul>
 <h2 id="arenat--handlet"><a class="header" href="#arenat--handlet"><code>Arena&lt;T&gt;</code> + <code>Handle&lt;T&gt;</code></a></h2>
 <p>A <strong>generational arena</strong>: insert values, get back small copyable
-<code>Handle&lt;T&gt;</code> keys. Handles are plain values — storable in struct fields and
+<code>Handle&lt;T&gt;</code> keys. Handles are plain values, storable in struct fields and
 lists (which views are not), so nodes can reference each other:</p>
 <pre><code class="language-vilan fragment">struct Handle&lt;T&gt; { … }   // slot index + generation; copy freely
 
@@ -258,13 +258,13 @@ slot bumps a generation counter, so a stale handle <code>get</code>s <code>None<
 of aliasing the new occupant.</li>
 <li><code>get</code> returns a <strong>view</strong> (<code>Option&lt;&amp;T&gt;</code>), second-class like any other: read
 through it, but it may not outlive an arena mutation or be stored. To change
-a value, copy it out (<code>*view</code>), edit, and <code>set</code> it back — or design nodes so
+a value, copy it out (<code>*view</code>), edit, and <code>set</code> it back, or design nodes so
 edges/fields update independently.</li>
-<li>Traversal is re-<code>get</code> per step — the arena stays mutable while you walk.</li>
+<li>Traversal is re-<code>get</code> per step, so the arena stays mutable while you walk.</li>
 </ul>
 <h3 id="handles-cross-the-wire"><a class="header" href="#handles-cross-the-wire">Handles cross the wire</a></h3>
 <p>A handle is two integers, so <code>Handle&lt;T&gt;</code> is <code>Wire</code>: it can sit in an rpc
-payload, and a server-side arena becomes the <strong>naming layer</strong> for clients —
+payload, and a server-side arena becomes the <strong>naming layer</strong> for clients:
 the stable entity reference they quote back (“update node X”). The <code>T</code> is
 phantom; only <code>{ index, generation }</code> travels, so a handle names entities
 whose type is not itself Wire.</p>
@@ -291,16 +291,16 @@ fun main() {
 	}
 }
 </code></pre>
-<p>The generational rule becomes the <strong>distributed staleness story</strong> for free: a
+<p>The generational rule becomes the distributed staleness story for free: a
 client acting on an entity another client deleted gets the same clean <code>None</code>
 (and <code>set</code> returns <code>false</code>) as local code holding a stale handle. No phantom
 write, one rule from a local list to an rpc boundary.</p>
 <p>Scope the arena to the session. A handle is a name, and <code>(index, generation)</code>
 is guessable, so an arena shared across tenants hands every client names that
-mean something to the others. A <strong>per-session arena</strong> — created when the
-session is established, dropped with it — makes a handle from one session name
-nothing in another, by construction. Authorize the session; then look the
-handle up in that session’s arena.</p>
+mean something to the others. A <strong>per-session arena</strong> (created when the
+session is established, dropped with it) makes a handle from one session
+name nothing in another, by construction. Authorize the session; then look
+the handle up in that session’s arena.</p>
 <p>When one arena <em>is</em> shared and its handles must not be interchangeable,
 <code>Arena::branded()</code> adds the belt to that suspenders: its generation counters
 start at a random value instead of <code>0</code>, so a handle issued by one branded arena
@@ -321,13 +321,13 @@ fun main() {
 </code></pre>
 <p>Everything else is unchanged: branding only moves where the counters start, so
 removal, staleness and slot reuse behave exactly as above, and a brand mismatch
-is the same clean <code>None</code> (and <code>false</code> from <code>set</code>) as a stale handle — never a
+is the same clean <code>None</code> (and <code>false</code> from <code>set</code>) as a stale handle, never a
 panic.</p>
 <p>A brand is a <strong>confusion guard, not an authorization check</strong>. It travels inside
 the handles it issues, so a client holding one valid handle can derive it. It
 stops one tenant’s names from meaning something to another and stops blind
-guessing; it does not make a handle unforgeable. Authorize the session first —
-then look the handle up in that session’s arena.</p>
+guessing; it does not make a handle unforgeable. Authorize the session
+first, then look the handle up in that session’s arena.</p>
 
                     </main>
 

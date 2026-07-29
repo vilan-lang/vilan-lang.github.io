@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§7 Execution &amp; async - The vilan documentation</title>
+        <title>§7 Execution &amp; async - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -179,27 +179,27 @@
 <p>A program’s entry module executes its top-level statements in order. A
 function named <code>main</code> at the entry module’s top level is the
 <strong>entrypoint</strong>: it is invoked automatically after the top-level
-statements. (An explicit top-level <code>main();</code> call is redundant — the
+statements. (An explicit top-level <code>main();</code> call is redundant; the
 program still runs <code>main</code> once.)</p>
 <p><strong>Module-level bindings initialize before <code>main</code>, in dependency order.</strong>
 A binding’s initializer runs after the initializer of every binding it
 <strong>evaluates at load time</strong>: the bindings its own initializer reads, and
 everything read inside whatever it calls while initializing. <em>Creating</em> a
-closure evaluates nothing — a closure body runs only when something calls
+closure evaluates nothing: a closure body runs only when something calls
 it, so the bindings it mentions order nothing (two module-level closures
 may name each other freely). Textual position carries no meaning: a
 binding may read one declared below it, in the same file or another,
 exactly as a function may call one declared later (§4.4). A <strong>cycle</strong> in
-that relation is a compile error, since no order satisfies it — including
+that relation is a compile error, since no order satisfies it, including
 the one-binding cycle of an initializer that reads itself. A <code>const</code>
 initializer evaluates during compilation (§9), so it evaluates nothing at
 load time and waits for nothing; a binding that reads <em>it</em> still
 initializes after it.</p>
 <p>Where the relation leaves two bindings unordered, the one whose module
 loaded first initializes first. Modules load in a canonical order: the
-standard library’s first, then the dependency packages’ — each package
+standard library’s first, then the dependency packages’ (each package
 after the packages it depends on, in an order the dependency graph fixes
-rather than the manifest’s listing — then the program’s own; within one
+rather than the manifest’s listing), then the program’s own; within one
 package, modules load by name. Each package’s root module follows, in
 that same package order, and the entry file is last. Within one file,
 bindings initialize in declaration order. Nothing here depends on how a
@@ -208,13 +208,13 @@ inside a <code>{ .. }</code> list, cannot change what a program does.</p>
 <p>Only a binding something reachable from <code>main</code> references initializes at
 all (§11.2’s reachability rule): an unreferenced binding’s initializer
 never runs, so load-time side effects are not a promise.</p>
-<p>On process platforms (node/deno/bun), the process <strong>exits when no live
-work remains</strong>: after <code>main</code> completes, only live host handles — a
-running timer, an open socket, a listening server — keep it alive, per
+<p>On process platforms (Node/Deno/Bun), the process <strong>exits when no live
+work remains</strong>: after <code>main</code> completes, only live host handles (a
+running timer, an open socket, a listening server) keep it alive, per
 the host event loop. Pending tasks holding such a handle run to
 completion; pending work that holds none is abandoned at exit. A
-program must therefore not rely on a dropped spawn completing (join it
-— §7.7 — to guarantee that), and a long-lived program must keep <code>main</code>
+program must therefore not rely on a dropped spawn completing (join it,
+§7.7, to guarantee that), and a long-lived program must keep <code>main</code>
 open (a listening server does so inherently; a socket-holding client
 must await something that ends with the app). On the browser platform,
 <code>main</code>’s completion leaves installed handlers and subscriptions live.</p>
@@ -233,8 +233,8 @@ pattern matches).</p>
 <p>Arithmetic whose mathematical result exceeds the operand type’s range is
 <strong>undefined behavior</strong>: a conforming program does not overflow, and an
 implementation may produce any value for one that does (the JS backend
-yields f64 artifacts — precision loss for the wide types, out-of-range
-magnitudes for the narrow ones — without trapping). Literals are
+yields f64 artifacts without trapping: precision loss for the wide
+types, out-of-range magnitudes for the narrow ones). Literals are
 range-checked at compile time (§2.3); runtime operations are not. An
 opt-in checked family (<code>add_safe</code>, …) is recorded future work; <code>BigInt</code>
 is the answer where the range itself is the problem.</p>
@@ -248,26 +248,26 @@ call to an async function (including async externs), an explicit
 <li>A <strong>direct call</strong> to an async function is implicitly awaited: the
 caller receives the plain declared value, and the caller becomes
 async (asyncness propagates through the call graph).</li>
-<li>A call <strong>through a closure value</strong> is never inferred async by itself
-— there is no static callee. The closure <em>type</em> carries the marker
-instead (§7.4).</li>
+<li>A call <strong>through a closure value</strong> is never inferred async by
+itself: there is no static callee. The closure <em>type</em> carries the
+marker instead (§7.4).</li>
 </ol>
 <p>The explicit forms:</p>
 <ul>
-<li><code>async expr</code> — <strong>spawn</strong>: evaluate <code>expr</code>’s suspending computation
+<li><code>async expr</code> (<strong>spawn</strong>): evaluate <code>expr</code>’s suspending computation
 concurrently; the spawn expression itself does not suspend and yields
 <code>Task&lt;T&gt;</code> where <code>T</code> is <code>expr</code>’s type (the task handle is opaque, and
 copying it refers to the same task). <code>async { … }</code> spawns a block.</li>
-<li><code>await expr</code> — suspend until the <code>Task&lt;T&gt;</code> (or raw host <code>Promise&lt;T&gt;</code>)
+<li><code>await expr</code>: suspend until the <code>Task&lt;T&gt;</code> (or raw host <code>Promise&lt;T&gt;</code>)
 operand settles; yields <code>T</code>.</li>
 </ul>
 <p>A spawned computation runs to its first suspension synchronously, then
 interleaves with its spawner per the host event loop. Dropping a task
-abandons nothing — the computation still runs; only its result is
+abandons nothing: the computation still runs; only its result is
 discarded. A task’s failure is <strong>absorbed at the spawn</strong>: it is
 delivered to whichever <code>await</code> observes the task, and a failed task
 that is never observed is reported to the host console with its spawn
-origin — it does not terminate the program.</p>
+origin; it does not terminate the program.</p>
 <pre><code class="language-vilan">import std::print;
 import std::time::{ sleep_for, Duration };
 
@@ -289,25 +289,25 @@ awaited (suspension points in the caller). The marker is legal on
 <strong>function return types</strong>; calls through a marked field read
 (<code>(self.hook)()</code>) and through a returned value (<code>make()()</code>, or via a
 binding) await like any other. An <strong>unannotated binding adopts</strong>
-asyncness from any value it holds — its initializer or any <code>mut</code>
-rebind — so a <code>let f = || { …await… };</code> needs no marker at all.</p>
+asyncness from any value it holds (its initializer or any <code>mut</code>
+rebind), so a <code>let f = || { …await… };</code> needs no marker at all.</p>
 <p>A synchronous closure flowing into an async-typed position is fine
 (awaiting a non-promise yields it unchanged).</p>
 <p><code>sync |T| U</code> on a <strong>parameter</strong> declares the opposite contract: the
 callback completes inside the declaring function’s synchronous
 protocol, and an async closure argument is an error. (<code>sync</code> is a
-contextual keyword — it only means the contract directly before a
+contextual keyword; it only means the contract directly before a
 closure type.) <code>std::reactive</code>’s recompute positions (<code>Signal::map</code>,
 <code>set_with</code>, <code>turn</code>/<code>batch</code> bodies, the UI render callbacks) are <code>sync</code>.</p>
 <p><strong>Adaptation.</strong> A <strong>plain</strong>, value-returning closure parameter is
 <em>asyncness-polymorphic</em>: each call instantiates the function with the
-actual asyncness of its closure arguments —</p>
+actual asyncness of its closure arguments:</p>
 <ul>
 <li>an async argument instantiates an <strong>async instance</strong>: calls through
 the parameter are awaited <strong>sequentially</strong> (each callback settles
 before the next begins; effects are ordered exactly as the sync body
 orders them), the instance is async, and the caller awaits it;</li>
-<li>sync arguments select the untouched plain instance — no awaits, no
+<li>sync arguments select the untouched plain instance: no awaits, no
 coloring, identical emission.</li>
 </ul>
 <p>An async adapted instance traverses a <strong>snapshot</strong> of any value it
@@ -316,30 +316,30 @@ work, which must not tear the traversal. Adaptation follows a closure
 through plain parameters transitively (<code>helper(xs, f)</code> forwarding <code>f</code>
 into <code>map</code> adapts both), and never crosses these boundaries:</p>
 <ul>
-<li>a <code>sync</code> parameter (error, including transitively — the diagnostic
+<li>a <code>sync</code> parameter (error, including transitively; the diagnostic
 names the call that made the closure async);</li>
-<li>a host (<code>external</code>) function’s value-returning closure parameter —
+<li>a host (<code>external</code>) function’s value-returning closure parameter:
 host code cannot await a Vilan closure;</li>
-<li>a trait/generic-dispatched call — there is no statically-known callee
+<li>a trait/generic-dispatched call: there is no statically-known callee
 to instantiate (bind the receiver concretely, or declare the trait
 parameter <code>async</code>);</li>
-<li>a module-level initializer — it cannot await (§7.6’s J.3 rule).</li>
+<li>a module-level initializer: it cannot await (§7.6’s J.3 rule).</li>
 </ul>
 <p><strong>The divergence rule</strong> (the remaining stores). An async closure flowing
 where a plain closure type is declared on a struct <strong>field</strong> or a
 function’s declared <strong>return type</strong> is:</p>
 <ul>
-<li>an <strong>error</strong> when that closure returns a value — the reader would
+<li>an <strong>error</strong> when that closure returns a value: the reader would
 receive a live promise typed as <code>T</code>; declare the field or return type
 <code>async |…| T</code> instead;</li>
-<li><strong>legal</strong> when it returns <code>void</code> — <em>spawn semantics</em>: the call fires
+<li><strong>legal</strong> when it returns <code>void</code> (<em>spawn semantics</em>): the call fires
 the closure and nobody awaits it. This is what allows UI event
 handlers and other void callbacks to suspend freely, and it applies
 to parameters as well (a void parameter spawns rather than adapts).</li>
 </ul>
 <h2 id="75-suspension-and-state"><a class="header" href="#75-suspension-and-state">7.5 Suspension and state</a></h2>
 <p>At every suspension point the enclosing function’s live state is
-captured and restored on resumption — with one carve-out: <strong>views may
+captured and restored on resumption, with one carve-out: <strong>views may
 not be live across a suspension</strong> (§6.6). Ambient context values (§8)
 are captured at closure creation and are therefore stable
 across suspensions by construction.</p>
@@ -355,20 +355,20 @@ entrypoint contract of §7.1, and the module-level initialization order
 it fixes; <code>print</code> writing one line per call to the host console; panics
 rejecting/aborting with the given message; left-to-right evaluation per
 §7.2; truncating integer division and two’s-complement <code>as_*</code> folds
-(overflow excepted — §7.2a); and <code>i53</code> exactness over the wire across
-its whole range. Everything else about the emitted code — names,
-formatting, module layout beyond that order, the <code>[build]</code> knobs — is
+(overflow excepted, §7.2a); and <code>i53</code> exactness over the wire across
+its whole range. Everything else about the emitted code (names,
+formatting, module layout beyond that order, the <code>[build]</code> knobs) is
 implementation-defined.</p>
 <h2 id="77-nurseries"><a class="header" href="#77-nurseries">7.7 Nurseries</a></h2>
 <p><code>std::task::nursery(body)</code> runs <code>body</code> with a <strong>nursery</strong> established
-for its <strong>dynamic extent</strong> — the body’s execution and everything it
+for its <strong>dynamic extent</strong>: the body’s execution and everything it
 calls, under the ambient-value rules of §8 (in particular, closures
 capture the extent at creation). Within the extent, every spawn
 (§7.3’s <code>async expr</code>) <strong>registers</strong> its task with the nursery; spawns
 outside any nursery are unaffected. There is no implicit root nursery:
 a program’s free spawns keep §7.3’s unstructured behavior.</p>
 <p><strong>Join.</strong> The <code>nursery</code> call returns the body’s value, and returns only
-when the body and every registered task have settled — including tasks
+when the body and every registered task have settled, including tasks
 registered while draining (a running task’s own spawns register with
 the same nursery). The call is async (its callers await it), and the
 body parameter is a plain closure parameter, so an awaiting body
@@ -381,16 +381,16 @@ selects an adapted instance per §7.4.</p>
 origin (the spawning function’s name) in its message.</li>
 </ul>
 <p>On the first failure the nursery cancels (below). Every other
-registered task is <strong>absorbed</strong>: observed — so it neither becomes a
-host unhandled rejection nor triggers §7.3’s unobserved-failure report
-— with its result discarded.</p>
+registered task is <strong>absorbed</strong>: observed (so it neither becomes a
+host unhandled rejection nor triggers §7.3’s unobserved-failure
+report) with its result discarded.</p>
 <p><strong>Cancellation</strong> is cooperative. Each nursery owns a host abort signal,
 fired by the body handle’s <code>cancel()</code> or by the first failure; a
 nursery created inside another’s extent chains to its parent’s signal
 at creation. The standard library’s IO primitives pass the ambient
 nursery’s signal to the host operation, so cancellation rejects
-in-flight IO promptly; those rejections — and any rejection classified
-as a host abort — are <strong>cancellation echoes</strong>: absorbed at the join,
+in-flight IO promptly; those rejections, and any rejection classified
+as a host abort, are <strong>cancellation echoes</strong>: absorbed at the join,
 never selected as the failure. Execution is never preempted: code runs
 until its next cancellable suspension (<code>is_cancelled()</code> is the check
 for compute loops). After an explicit <code>cancel()</code> the body continues and

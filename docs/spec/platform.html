@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§11 The platform model &amp; manifests - The vilan documentation</title>
+        <title>§11 The platform model &amp; manifests - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -183,17 +183,17 @@ capability its platform lacks.</p>
 <h2 id="111-layers"><a class="header" href="#111-layers">11.1 Layers</a></h2>
 <p>The standard library is layered:</p>
 <ul>
-<li>the <strong>base</strong> layer — platform-neutral, available everywhere;</li>
+<li>the <strong>base</strong> layer: platform-neutral, available everywhere;</li>
 <li>the <strong>browser</strong> layer (<code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>,
-<code>std::storage</code>) — browser builds only;</li>
+<code>std::storage</code>): browser builds only;</li>
 <li>the <strong>process</strong> layer (<code>std::fs</code>, <code>std::http</code>, <code>std::db</code>,
-<code>std::process</code>, <code>std::rpc_server</code>) — <code>@process</code> builds only.</li>
+<code>std::process</code>, <code>std::rpc_server</code>): <code>@process</code> builds only.</li>
 </ul>
 <p>A library may declare the same shape for itself (<code>[library.layer]</code>,
 §11.4): a neutral root plus per-platform overlay roots.</p>
 <h2 id="112-coloring-and-the-reachability-check"><a class="header" href="#112-coloring-and-the-reachability-check">11.2 Coloring and the reachability check</a></h2>
-<p>Every function is <strong>colored</strong> with the platform requirement it implies
-— seeded by the layer its externs and std calls live in, flowing
+<p>Every function is <strong>colored</strong> with the platform requirement it
+implies: seeded by the layer its externs and std calls live in, flowing
 callee-to-caller through the call graph (the same inference shape as
 asyncness, §7.3), including through generic instantiations: a generic
 function’s requirement is judged <strong>per instantiation</strong>, so <code>save&lt;T&gt;</code>
@@ -213,50 +213,50 @@ several) on a function declares the platforms it promises to run on.
 The promise is checked on <strong>every</strong> compile, whatever the build’s
 entries: if code the fenced function reaches requires a layer one of
 the fenced platforms lacks, the error lands <strong>at the fence</strong> with the
-offending chain — not at some distant entry in a dependent build.
+offending chain, not at some distant entry in a dependent build.
 Fences add no runtime behavior; they are checked declarations.</p>
 <h2 id="114-manifests-vilantoml"><a class="header" href="#114-manifests-vilantoml">11.4 Manifests (<code>vilan.toml</code>)</a></h2>
 <p>The manifest declares what a directory builds. Sections:</p>
 <ul>
-<li><strong><code>[package]</code></strong> — an application or plain package: <code>name</code>,
+<li><strong><code>[package]</code></strong>: an application or plain package: <code>name</code>,
 <code>description</code>, <code>root</code> (source root; default <code>src/</code>), <code>entry</code> (the
 entry file, when there is exactly one), <code>target</code> (a platform;
 default <code>node</code>), and <code>dependencies</code> (name → <code>{ path = "…" }</code> for a
 local directory, or <code>{ git = "…", tag | rev = "…" }</code> for a <code>[library]</code>
-repository pinned to exactly one of a tag or a commit — registry
+repository pinned to exactly one of a tag or a commit; registry
 dependencies are future work).</li>
-<li><strong><code>[entry.&lt;name&gt;]</code></strong> — one build entry per table: <code>path</code> (default
+<li><strong><code>[entry.&lt;name&gt;]</code></strong>: one build entry per table: <code>path</code> (default
 <code>&lt;root&gt;/&lt;name&gt;.vl</code>) and <code>target</code> (default <code>node</code>). A package with
 entries builds each for its own platform; reachability (§11.2) is
 what lets one source tree serve several. <code>[package] default-entry</code>
 names the entry <code>vilan run</code> executes when several are runnable.</li>
-<li><strong><code>[library]</code></strong> — a dependency-only package: <code>name</code>, <code>description</code>,
+<li><strong><code>[library]</code></strong>: a dependency-only package: <code>name</code>, <code>description</code>,
 <code>root</code>, <code>dependencies</code>, and <strong><code>[library.layer.&lt;name&gt;]</code></strong> overlays
 (<code>root</code>, <code>platform = ["…"]</code>) for per-platform sources.</li>
-<li><strong><code>[project]</code></strong> — a workspace: <code>packages = ["member", …]</code> (paths);
+<li><strong><code>[project]</code></strong>: a workspace: <code>packages = ["member", …]</code> (paths);
 building the project builds every member against its own manifest.
 <code>default-entry</code> names the member <code>vilan run</code> executes when several
 are runnable.
 Its own <code>dependencies</code> are declared once for the members to share: a
 member writes <code>dep = { project = true }</code> to take that declaration
 (paths in it resolve against the <strong>project root</strong>). Inheritance is
-per dependency and opt-in — nothing is inherited implicitly — and
+per dependency and opt-in (nothing is inherited implicitly), and
 <code>project = true</code> combines with no other key.</li>
-<li><strong><code>[build]</code></strong> — <code>run</code>, plus codegen options: <code>preset</code> (<code>"debug"</code> |
+<li><strong><code>[build]</code></strong>: <code>run</code>, plus codegen options: <code>preset</code> (<code>"debug"</code> |
 <code>"release"</code>) and the per-feature overrides <code>indent</code>, <code>spaces</code>,
 <code>debug-names</code>. Build options never change program semantics (§7.6),
-only the emitted text. <code>run</code> is a command line — or a list of them —
+only the emitted text. <code>run</code> is a command line (or a list of them)
 executed through the host shell <strong>before</strong> each build (each <code>--watch</code>
 round included), in the manifest’s directory, in order; a non-zero
 exit fails the build. <code>vilan check</code> builds nothing and runs none.</li>
-<li><strong><code>[macro]</code></strong> — the compile-time interpreter budget: <code>fuel</code> (steps
+<li><strong><code>[macro]</code></strong>: the compile-time interpreter budget: <code>fuel</code> (steps
 per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
 </ul>
 <h2 id="115-build-products"><a class="header" href="#115-build-products">11.5 Build products</a></h2>
 <p>Each entry emits <code>dist/&lt;name&gt;.js</code> for its platform (browser entries
 first, so a server that ships bundles finds them fresh), plus
 <code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).
-<code>vilan run</code> builds all entries and starts one <code>@process</code> entry — the
+<code>vilan run</code> builds all entries and starts one <code>@process</code> entry: the
 only one, the designated <code>default-entry</code>, or the one <code>--entry</code> names;
 <code>vilan check</code> checks every entry, always. The emitted text beyond
 §7.6’s guarantees is implementation-defined.</p>

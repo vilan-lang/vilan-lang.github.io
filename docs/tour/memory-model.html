@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The memory model - The vilan documentation</title>
+        <title>The memory model - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -264,7 +264,7 @@ never touches a
 moment.</strong> A view can be a parameter or a short-lived local. It cannot be
 stored in a struct field, put in a list, returned into long-lived state,
 or held across an <code>await</code>. Lend, use, done. That confinement is what
-makes views safe without a whole lifetime system — if you’ve heard Rust
+makes views safe without a whole lifetime system. If you’ve heard Rust
 horror stories, this is the part Vilan deliberately keeps small.</p>
 <p>Views also make loops that mutate in place. A plain <code>for x in list</code>
 copies each element; <code>for e in &amp;mut list</code> gives you writable views
@@ -285,19 +285,19 @@ through to the list.</p>
 <p><strong>Going deeper.</strong> A method may return a view that projects its
 receiver, like <code>fun get(&amp;mut self, i: i32): &amp;mut T</code>. The compiler
 infers which parameter the view borrows from, and the returned view
-obeys the same short-lived rules at the call site — anchored to what it
-projects, so a <code>list.push(..)</code> while a view from <code>list.at(0)</code> is live
+obeys the same short-lived rules at the call site, anchored to what
+it projects: a <code>list.push(..)</code> while a view from <code>list.at(0)</code> is live
 is the same compile error a direct <code>&amp;mut list[0]</code> would raise.
 <code>Option&lt;&amp;T&gt;</code> covers “a view, maybe” (map lookups). The compiler is
 precise about <em>which</em> mutations invalidate: only calls that may change
-a container’s geometry (grow, shrink, reallocate — inferred per method)
-conflict with a live view; a method that just writes fields or elements
+a container’s geometry (grow, shrink, reallocate; inferred per method)
+conflict with a live view; a method that only writes fields or elements
 through <code>&amp;mut self</code> passes freely. Hover a function to see both
 inferred effects (<code>borrows</code>, <code>bumps</code>). Spec §6 has the precise rules.</p>
 </blockquote>
 <h2 id="sharedt-one-cell-many-holders"><a class="header" href="#sharedt-one-cell-many-holders"><code>Shared&lt;T&gt;</code>: one cell, many holders</a></h2>
-<p>When two places genuinely need to see the same mutable state — a closure
-and its creator, most commonly — reach for <code>Shared&lt;T&gt;</code>. It’s a small
+<p>When two places need to see the same mutable state (a closure and its
+creator, most commonly), reach for <code>Shared&lt;T&gt;</code>. It’s a small
 heap cell. Copying the <code>Shared</code> value copies the <em>handle</em>, and both
 handles point at one cell. That’s the point:</p>
 <pre><code class="language-vilan">import std::print;
@@ -321,8 +321,8 @@ mutate through, within the same statement.</li>
 <li>The trap: <code>shared.read().push(x)</code> mutates the copy and is lost. Write
 through the cell: <code>shared.write().push(x)</code>.</li>
 </ul>
-<p>If you’re reaching for <code>Shared</code> just to “avoid a copy” on a hot path,
-don’t — values are cheap, and the compiler already elides copies it can
+<p>If you’re reaching for <code>Shared</code> to “avoid a copy” on a hot path,
+don’t: values are cheap, and the compiler already elides copies it can
 prove away.</p>
 <h2 id="arena--handle-graphs-and-cycles"><a class="header" href="#arena--handle-graphs-and-cycles"><code>Arena</code> + <code>Handle</code>: graphs and cycles</a></h2>
 <p>Values copy, and views can’t be stored. So how do you build a tree with
@@ -351,8 +351,8 @@ pointing at the new occupant. The full API is in the
 <p>One rule ties this chapter to the <a href="async.html">async model</a>: <strong>a view may
 not be held across an <code>await</code>.</strong> While your function is suspended, other
 code runs and may change or replace whatever the view pointed into. The
-compiler rejects the shape. The fix is always the same — re-derive after
-the suspension:</p>
+compiler rejects the shape. The fix is always the same: re-derive after
+the suspension.</p>
 <pre><code class="language-vilan fragment">let row = &amp;mut rows[i];
 send(row.id);            // suspends —
 row.text = "sent";       // ✗ rejected: view held across await

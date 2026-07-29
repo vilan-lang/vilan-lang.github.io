@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§9 Const evaluation - The vilan documentation</title>
+        <title>§9 Const evaluation - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -183,10 +183,10 @@ that execute Vilan code at build time.</p>
 <h2 id="91-the-const-expression"><a class="header" href="#91-the-const-expression">9.1 The <code>const</code> expression</a></h2>
 <p><code>const</code> is a prefix operator over an expression. It captures
 <strong>greedily</strong>: everything to the end of the surrounding expression folds
-(<code>const 1 + 2 * 3</code> folds <code>7</code>); parenthesize to narrow the extent —
+(<code>const 1 + 2 * 3</code> folds <code>7</code>); parenthesize to narrow the extent:
 in <code>(const square(4)) + square(2)</code> the second call runs at runtime.</p>
 <p>A <code>const</code> expression may appear anywhere an expression may, including
-module-level initializers — where it is also the way to run <em>logic</em> at
+module-level initializers, where it is also the way to run <em>logic</em> at
 load position without runtime cost: a <code>const</code> initializer ships as a
 plain value, participates in no platform coloring (§11.2), and cannot
 violate the initializer rules of §7.4 (nothing of it remains to run at
@@ -201,20 +201,20 @@ order applies unchanged);</li>
 const-evaluable.</li>
 </ul>
 <p><strong>Host capabilities do not exist at compile time.</strong> A call that
-requires the host — the clock, the filesystem, network, randomness, any
-<code>external</code> function without a compile-time definition — is a compile
+requires the host (the clock, the filesystem, network, randomness, any
+<code>external</code> function without a compile-time definition) is a compile
 error inside <code>const</code> (“<code>now()</code> is not const-evaluable”), not a deferred
 runtime call: the answer would not be a constant.</p>
 <p>The one deliberate exception is <code>std::asset::emit(kind, content)</code>,
 callable <strong>only</strong> during const evaluation: it declares a build asset
 (the styling system’s CSS, for example) that the build writes beside
-the output. Asset emission is deterministic — same inputs, same files.</p>
+the output. Asset emission is deterministic: same inputs, same files.</p>
 <h2 id="93-failure-and-resource-limits"><a class="header" href="#93-failure-and-resource-limits">9.3 Failure and resource limits</a></h2>
 <p>Const evaluation is total by construction of the budget: each run is
 bounded by the interpreter’s <strong>fuel</strong> (steps) and <strong>depth</strong> (nesting),
 shared with macro expansion and configured by the manifest’s <code>[macro]</code>
 section (§11.4). Exhausting either, or panicking during evaluation, is
-a compile error carrying the const expression’s span — a runaway
+a compile error carrying the const expression’s span. A runaway
 <code>const</code> fails the build; it cannot hang it.</p>
 <h2 id="94-results"><a class="header" href="#94-results">9.4 Results</a></h2>
 <p>The result of a <code>const</code> expression is spliced as a literal of its

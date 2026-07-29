@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Networking - The vilan documentation</title>
+        <title>Networking - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -174,7 +174,7 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="networking--reference"><a class="header" href="#networking--reference">Networking — reference</a></h1>
+                        <h1 id="networking-reference"><a class="header" href="#networking-reference">Networking reference</a></h1>
 <p>Client HTTP (<code>std::fetch</code>) and websocket framing (<code>std::ws</code>). The rpc
 transports that ride these: the <a href="rpc.html">rpc reference</a>.</p>
 <h2 id="stdfetch"><a class="header" href="#stdfetch">std::fetch</a></h2>
@@ -207,13 +207,13 @@ fun main() {
 }
 </code></pre>
 <p>Streaming a body chunk by chunk: <code>response.body_stream().reader()</code> +
-<code>read_chunk()</code> (<code>finished()</code>/<code>payload()</code> per chunk) — the SSE fallback
+<code>read_chunk()</code> (<code>finished()</code>/<code>payload()</code> per chunk). The SSE fallback
 transport uses this.</p>
-<p>Note <code>fetch</code> is base-layer: it works in the browser <em>and</em> on node. For
+<p><code>fetch</code> is base-layer: it works in the browser <em>and</em> on Node. For
 talking to your own Vilan service, prefer the generated rpc client over
 hand-rolled fetch calls.</p>
 <h2 id="stdws"><a class="header" href="#stdws">std::ws</a></h2>
-<p>Websocket <strong>framing</strong> — building and parsing raw frames. This is
+<p>Websocket <strong>framing</strong>: building and parsing raw frames. This is
 server-side plumbing (<code>std::rpc_server</code> uses it to speak websocket on a
 plain TCP socket); browser clients get sockets from the host via the rpc
 transport instead.</p>

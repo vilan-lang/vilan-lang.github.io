@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§8 Contexts - The vilan documentation</title>
+        <title>§8 Contexts - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -178,7 +178,7 @@
 <p>A <strong>context</strong> is a dynamically-scoped value: established for the dynamic
 extent of a body, readable from anything that runs within that extent,
 invisible outside it. Contexts are Vilan’s answer to ambient parameters
-— the current reactive owner, the current turn, the enclosing nursery —
+(the current reactive owner, the current turn, the enclosing nursery)
 without global mutable state and without threading a parameter by hand
 through every signature.</p>
 <p>Contexts are <strong>compiled away</strong>. The implementation threads each
@@ -187,17 +187,17 @@ closures that transitively read it; there is no runtime storage, no
 async-local machinery, and a program that never creates a context pays
 nothing. Everything in this chapter is checked at compile time.</p>
 <h2 id="81-the-model"><a class="header" href="#81-the-model">8.1 The model</a></h2>
-<p><code>std::context::Context&lt;T&gt;</code> is the handle (appendix §A.4 — a lang item:
+<p><code>std::context::Context&lt;T&gt;</code> is the handle (appendix §A.4, a lang item:
 the compiler keys on its operations). A context is created once, at
 module level, and referred to by that name:</p>
 <pre><code class="language-vilan fragment">let flavor: Context&lt;i32&gt; = Context::new();
 </code></pre>
 <ul>
-<li><code>flavor.run(value, body)</code> — establish: <code>value</code> is the context’s value
+<li><code>flavor.run(value, body)</code> (establish): <code>value</code> is the context’s value
 for the <strong>dynamic extent</strong> of <code>body</code> (the closure’s execution and
 everything it calls, transitively). <code>run</code> yields <code>body</code>’s value.</li>
-<li><code>flavor.get()</code> — the <strong>strict</strong> read: yields the established <code>T</code>.</li>
-<li><code>flavor.get_safe()</code> — the <strong>safe</strong> read: yields <code>Option&lt;T&gt;</code> —
+<li><code>flavor.get()</code> (the <strong>strict</strong> read): yields the established <code>T</code>.</li>
+<li><code>flavor.get_safe()</code> (the <strong>safe</strong> read): yields <code>Option&lt;T&gt;</code>,
 <code>Some(value)</code> under an enclosing <code>run</code>, <code>None</code> otherwise.</li>
 </ul>
 <p><code>Context::new</code>, <code>run</code>, <code>get</code>, and <code>get_safe</code> are intrinsics: the
@@ -205,7 +205,7 @@ threading pass rewrites their call sites away. They must be applied
 directly to the context’s <strong>name</strong> (a receiver that is not a named
 context is rejected). A context is not otherwise useful as a value:
 moving one through a parameter or a field severs the link between its
-<code>run</code>s and its reads — the reads can then never be covered. <code>run</code>’s
+<code>run</code>s and its reads; the reads can then never be covered. <code>run</code>’s
 body argument must be a closure literal (or an injected closure value,
 §8.5).</p>
 <p><code>Context&lt;T&gt;</code>’s value type is inferred from its first <code>run</code>, exactly as
@@ -244,36 +244,36 @@ supply <code>None</code>. Code reachable without a <code>run</code> carries the 
 <p>Strictness is a property of <em>code regions</em>, propagated caller-ward: a
 function that (transitively) reaches a strict read is strict; a
 function whose only demands are safe reads is safe. One function may be
-strict for one context and safe for another — each context threads
+strict for one context and safe for another. Each context threads
 independently.</p>
 <h2 id="83-coverage"><a class="header" href="#83-coverage">8.3 Coverage</a></h2>
-<p>For every strict read, the compiler checks — over the whole call graph
-— that the reading code cannot be entered without the value. It is a
+<p>For every strict read, the compiler checks, over the whole call graph,
+that the reading code cannot be entered without the value. It is a
 compile error (“context <code>…</code> is read here, but this code can be reached
 without an enclosing <code>run</code>”) when a strict read is reachable from:</p>
 <ul>
 <li>the program’s top level or the entrypoint <code>main</code> (the uncovered
-roots — <code>main</code> is semantically the outermost, run-less extent);</li>
+roots: <code>main</code> is semantically the outermost, run-less extent);</li>
 <li>a module-level initializer;</li>
 <li>any caller chain that does not pass through a <code>run</code> of that context.</li>
 </ul>
 <p>Trait/generic-dispatched calls are covered conservatively: a dispatch
 site is treated as reaching every candidate implementation (and the
 trait default), so a needy candidate demands coverage of the caller
-even if another candidate would have been selected. Dead code —
-a function with no callers at all — is exempt (it cannot run
+even if another candidate would have been selected. Dead code,
+a function with no callers at all, is exempt (it cannot run
 uncovered); a function called only from top level, or taken as a
 value, is not.</p>
 <p>A function that reads a context <strong>cannot be used as a value</strong>
 (“<code>…</code> reads context <code>…</code>, so it can’t be used as a value”): an indirect
 call would bypass the hidden parameter. Wrap it in a closure literal at
-the use site — the closure captures the channel correctly (§8.4).</p>
+the use site: the closure captures the channel correctly (§8.4).</p>
 <p>Safe reads never fence. In uncovered positions they read <code>None</code>; this
 is what lets library code ask “is there an ambient X?” from anywhere
-(the standard library’s spawn registration does exactly this — §7.7).</p>
+(the standard library’s spawn registration does exactly this, §7.7).</p>
 <h2 id="84-closures-capture-at-creation"><a class="header" href="#84-closures-capture-at-creation">8.4 Closures capture at creation</a></h2>
 <p>A closure created inside a covered region <strong>captures the context value
-at its creation site</strong>, and the capture is what its body reads —
+at its creation site</strong>, and the capture is what its body reads,
 regardless of where the closure is later called:</p>
 <pre><code class="language-vilan">import std::print;
 import std::context::Context;
@@ -295,7 +295,7 @@ extent and creation sites decide.)</p>
 <h2 id="85-injected-closures-the-context-clause"><a class="header" href="#85-injected-closures-the-context-clause">8.5 Injected closures: the <code>context</code> clause</a></h2>
 <p>Capture-at-creation has one structural consequence: a closure literal
 passed <strong>to</strong> an establishing function is created <em>before</em> the extent
-exists, so it would capture the caller’s (often absent) value — exactly
+exists, so it would capture the caller’s (often absent) value: exactly
 wrong for helpers like <code>nursery(body)</code> or <code>run_with_owner(owner, body)</code>
 whose entire purpose is to run the body under a fresh value.</p>
 <p>A <strong><code>context</code> clause</strong> on a closure type solves this by <em>deferring</em> the
@@ -318,8 +318,8 @@ written inline).</li>
 <p>Because the binding is deferred, an injected value may only flow where
 the threading can follow it: it can be <strong>called</strong>, <strong>forwarded</strong> to a
 parameter with the same clause, or passed as <strong><code>run</code>’s body</strong>. Any
-other use — storing it in a field, returning it, putting it in a
-collection — is a compile error (“an injected (<code>context</code>-typed) closure
+other use (storing it in a field, returning it, putting it in a
+collection) is a compile error (“an injected (<code>context</code>-typed) closure
 can only be called, forwarded …, or passed to <code>run</code>”).</p>
 <p>A clause may name several contexts (<code>context (a, b)</code>); the clause must
 name context bindings, and it composes with the closure-type markers of
@@ -330,7 +330,7 @@ name context bindings, and it composes with the closure-type markers of
 is stable across every suspension of the extent by construction. An
 awaiting <code>run</code> body holds its value across its whole chain.</li>
 <li><strong>Spawns</strong> (§7.7): every spawn site is an implicit <em>safe</em> read of the
-standard library’s ambient nursery — inside a nursery’s extent the
+standard library’s ambient nursery: inside a nursery’s extent the
 value is present and the task registers; outside, the read is absent
 and the spawn stays free-floating.</li>
 <li><strong>Platforms</strong>: the threading pass runs before emission for every
@@ -339,9 +339,9 @@ target; contexts work identically on process and browser platforms
 </ul>
 <h2 id="87-the-standard-librarys-ambient-values-informative"><a class="header" href="#87-the-standard-librarys-ambient-values-informative">8.7 The standard library’s ambient values (informative)</a></h2>
 <p><code>std</code> builds its ambient machinery on this one mechanism: <code>owner_scope</code>
-(the reactive disposal owner — <code>run_with_owner</code>, <code>comp</code>),
-<code>turn_scope</code> (the current write-batching turn — <code>turn</code>, <code>batch</code>), and
-<code>ambient_nursery</code> (<code>std::task</code> — nursery registration and the
+(the reactive disposal owner: <code>run_with_owner</code>, <code>comp</code>),
+<code>turn_scope</code> (the current write-batching turn: <code>turn</code>, <code>batch</code>), and
+<code>ambient_nursery</code> (<code>std::task</code>: nursery registration and the
 cancellation signal). Their semantics are library contracts, not
 language rules; they are specified by their reference pages.</p>
 

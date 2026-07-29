@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Style - The vilan documentation</title>
+        <title>Style - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -174,7 +174,7 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="stdstyle--reference"><a class="header" href="#stdstyle--reference">std::style — reference</a></h1>
+                        <h1 id="stdstyle-reference"><a class="header" href="#stdstyle-reference">std::style reference</a></h1>
 <p>Typed, compile-time atomic styles. Concepts and the emission model: the
 <a href="../guide/styling.html">styling guide</a>.</p>
 <pre><code class="language-vilan fragment">import std::style::{
@@ -273,7 +273,7 @@ fun media(self, min_width: str, inner: Style): Style
 </code></pre>
 <p>A breakpoint cannot wrap an already-media-conditioned style (panics at
 compile-time evaluation). Media rules emit in ascending min-width order,
-so a chain like <code>.sm(x).lg(y)</code> is mobile-first — the widest matching
+so a chain like <code>.sm(x).lg(y)</code> is mobile-first: the widest matching
 breakpoint wins.</p>
 <h2 id="runtime-legal-operations"><a class="header" href="#runtime-legal-operations">Runtime-legal operations</a></h2>
 <p>Construction emits rules and therefore lives in <code>const</code>; these do not emit

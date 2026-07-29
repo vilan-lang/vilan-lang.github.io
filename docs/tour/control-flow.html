@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Control flow - The vilan documentation</title>
+        <title>Control flow - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -217,9 +217,9 @@ pattern as a boolean:</p>
 </code></pre>
 <p>One edge to know: a <code>match</code> can’t sit directly inside a larger operator
 expression. Bind it to a local first.</p>
-<p>Arms that never produce a value — a <code>ret</code>, a <code>panic</code>, a
-<code>jump break</code>/<code>continue</code> — simply don’t participate in the match’s type.
-The other arms decide it:</p>
+<p>Arms that never produce a value (a <code>ret</code>, a <code>panic</code>, a
+<code>jump break</code>/<code>continue</code>) don’t participate in the match’s type. The
+other arms decide it:</p>
 <pre><code class="language-vilan fragment">let value = match slot {
 	Some(let text) =&gt; text,     // the match is a str
 	None =&gt; panic("missing"),   // this arm diverges; no annotation needed
@@ -263,15 +263,15 @@ them in place. That’s a <a href="memory-model.html">memory model</a> topic.</p
 <h2 id="option-and-result"><a class="header" href="#option-and-result">Option and Result</a></h2>
 <p>Vilan has no <code>null</code> and no exceptions. Instead:</p>
 <ul>
-<li>A value that might be absent is an <code>Option&lt;T&gt;</code> — either <code>Some(value)</code>
+<li>A value that might be absent is an <code>Option&lt;T&gt;</code>: either <code>Some(value)</code>
 or <code>None</code>.</li>
-<li>An operation that might fail is a <code>Result&lt;T, E&gt;</code> — either <code>Ok(value)</code>
+<li>An operation that might fail is a <code>Result&lt;T, E&gt;</code>: either <code>Ok(value)</code>
 or <code>Err(error)</code>.</li>
 </ul>
 <p>Both are plain enums with a rich set of helper methods (<code>unwrap_or</code>,
-<code>map</code>, <code>is_some</code>, and friends — the
-<a href="../std/option-result.html">full list</a>). You can always just <code>match</code> on
-them. Two operators make the common patterns short.</p>
+<code>map</code>, <code>is_some</code>, and friends; the
+<a href="../std/option-result.html">full list</a>). You can always <code>match</code> on them.
+Two operators make the common patterns short.</p>
 <p><strong><code>!</code> unwraps, or propagates the failure.</strong> Think of it as “give me the
 value, and if there isn’t one, return the failure from this function”:</p>
 <pre><code class="language-vilan">import std::print;
@@ -300,8 +300,9 @@ fun main() {
 </code></pre>
 <p>This is what <code>try</code>/<code>catch</code> becomes: failures travel up through return
 types, visibly, and the caller decides what to do.</p>
-<p><code>!</code> returns the failure <strong>as-is</strong>, so the value’s error type must already
-be the function’s — Vilan doesn’t convert it behind your back. When the
+<p><code>!</code> returns the failure <strong>as-is</strong>, so the value’s error type must
+already be the function’s: Vilan doesn’t convert it behind your back.
+When the
 types differ, convert at the value, before the <code>!</code>: <code>.map_err(…)</code> changes
 a <code>Result</code>’s error, and <code>.ok_or(err)</code> turns an <code>Option</code>’s <code>None</code> into an
 <code>Err</code> you supply.</p>
@@ -330,7 +331,7 @@ fun main() {
 }
 </code></pre>
 <p><strong><code>?.</code> reaches inside the container.</strong> It looks like optional chaining
-from JS, and on <code>Option</code> it plays the same role — with the compiler
+from JS, and on <code>Option</code> it plays the same role, with the compiler
 checking it:</p>
 <pre><code class="language-vilan">import std::print;
 import std::option::Option::{ self, Some, None };
@@ -356,7 +357,7 @@ fun main() {
 and wrap it back up; if it’s <code>None</code>, stay <code>None</code>. It works on <code>Result</code>
 too, passing an <code>Err</code> through untouched.</p>
 <p><strong>A bare <code>?</code> lifts a whole expression.</strong> Where <code>?.</code> continues a member
-chain, a <code>?</code> on its own lifts the rest of the surrounding expression —
+chain, a <code>?</code> on its own lifts the rest of the surrounding expression,
 operators included:</p>
 <pre><code class="language-vilan">import std::print;
 import std::option::Option::{ self, Some, None };
@@ -370,13 +371,13 @@ fun main() {
 	print((price? + missing?).unwrap_or(-1));   // -1
 }
 </code></pre>
-<p>With two <code>?</code>s the region is good only when every receiver is — and it
+<p>With two <code>?</code>s the region is good only when every receiver is. It
 short-circuits left to right, so a receiver right of a <code>None</code>/<code>Err</code>
 never evaluates (like <code>&amp;&amp;</code>). On <code>Result</code>, the first <code>Err</code> wins and
 passes through unchanged, which also means every <code>Result</code> receiver in
 one expression must carry the same error type (convert first with
-<code>.map_err(…)</code>). The lift stops at natural boundaries: a call argument,
-a struct field, parentheses — <code>describe(status?)</code> is an error rather
+<code>.map_err(…)</code>). The lift stops at natural boundaries (a call argument,
+a struct field, parentheses): <code>describe(status?)</code> is an error rather
 than something spooky, and <code>(a? + 1) * 2</code> seals the lift inside the
 parens. A <code>?</code> in an <code>if</code> condition is rejected too: the condition
 would become an <code>Option&lt;bool&gt;</code>, so <code>match</code> on the lifted value
@@ -388,12 +389,12 @@ instead.</p>
 two-outcome type can implement them and join in. A <code>?.</code> continuation
 that itself produces the container flattens instead of nesting, so
 <code>find(key)?.shelf()</code> on an <code>Option</code>-returning method stays a single
-<code>Option</code>. (A bare <code>?</code> lifts the std pair only for now — a user <code>Lift</code>
+<code>Option</code>. (A bare <code>?</code> lifts the std pair only for now; a user <code>Lift</code>
 container lifts through <code>?.</code> chains.)</p>
 </blockquote>
 <h2 id="panics-and-asserts"><a class="header" href="#panics-and-asserts">Panics and asserts</a></h2>
 <p><code>panic(message)</code> stops the program with a message. Use it for states
-that should be impossible, not for expected failures — those are
+that should be impossible, not for expected failures; those are
 <code>Result</code>s. <code>assert(condition, message)</code> panics when the condition is
 false, and it’s how <code>vilan test</code> decides a test failed.</p>
 

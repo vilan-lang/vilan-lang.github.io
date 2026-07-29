@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Async - The vilan documentation</title>
+        <title>Async - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -180,7 +180,7 @@
 </blockquote>
 <p>If you know async/await in JavaScript, here is the whole model in one
 line: Vilan keeps the machinery and deletes the keywords. Calling an
-async function just gives you the value. You don’t write <code>await</code>, you
+async function gives you the value. You don’t write <code>await</code>, you
 don’t mark functions <code>async</code>, and you never see <code>Promise&lt;T&gt;</code> in a return
 type. The compiler figures out which functions suspend and awaits the
 calls for you.</p>
@@ -204,7 +204,7 @@ the call graph on its own, the way it always wanted to.</p>
 express: <em>not</em> waiting.</p>
 <ul>
 <li><code>async expr</code> <strong>spawns</strong>: start the work, don’t wait for it. It gives
-you a <code>Task&lt;T&gt;</code> — a handle to the running work.</li>
+you a <code>Task&lt;T&gt;</code>, a handle to the running work.</li>
 <li><code>async { … }</code> spawns a block.</li>
 <li><code>await task</code> collects a task you spawned earlier.</li>
 </ul>
@@ -224,20 +224,20 @@ fun main() {
 </code></pre>
 <p>So in JS you mark the async case and waiting is explicit. In Vilan you
 mark the <em>concurrent</em> case and waiting is the default. Fire-and-forget
-is just spawning and dropping the task: <code>let _done = async save(entry);</code>. To wait on many at once, <code>Task::settle_all(tasks)</code> from
+is spawning and dropping the task: <code>let _done = async save(entry);</code>. To wait on many at once, <code>Task::settle_all(tasks)</code> from
 <code>std::task</code>.</p>
 <p>A task’s failure can’t crash the program from the outside: if the
 spawned work panics, a later <code>await</code> receives the panic, and a task
-nobody ever awaits reports the error to the console — with the name of
-the function that spawned it — and execution continues.</p>
+nobody ever awaits reports the error to the console (with the name of
+the function that spawned it) and execution continues.</p>
 <h2 id="async-closures"><a class="header" href="#async-closures">Async closures</a></h2>
 <p>This section matters once you store async callbacks. Until then, skim.</p>
 <p>A call through a closure <em>value</em> can’t be seen by the compiler’s
 asyncness inference (there’s no fixed callee to look at). Two things
-close the gap: the type carries the marker — <code>async |T| U</code>, written at
-any contract position — and unannotated bindings <em>adopt</em> asyncness from
-the closure they hold. Calls through either are awaited implicitly,
-like direct calls.</p>
+close the gap: the type carries the marker (<code>async |T| U</code>, written at
+any contract position), and unannotated bindings <em>adopt</em> asyncness
+from the closure they hold. Calls through either are awaited
+implicitly, like direct calls.</p>
 <pre><code class="language-vilan fragment">// 1. An async-friendly callback parameter — sync closures pass fine too
 //    (awaiting a plain value just resolves):
 fun draft&lt;T: PartialEq&gt;(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;
@@ -253,15 +253,15 @@ fun make(): async || i32
 </code></pre>
 <p>The marker is accepted at parameters, <code>let</code> annotations, struct fields,
 and function return types. An unannotated <code>let</code> (or a <code>mut</code>, through
-every rebind) holding an async closure needs no marker at all — the
+every rebind) holding an async closure needs no marker at all: the
 binding adopts the closure’s asyncness.
 <a href="functions-and-closures.html">Functions &amp; closures</a> covers the same seams
 from the closure side.</p>
 <h3 id="higher-order-functions-adapt"><a class="header" href="#higher-order-functions-adapt">Higher-order functions adapt</a></h3>
 <p>A plain, value-returning closure <strong>parameter</strong> does something better
 than refuse: it <em>adapts</em>. Passing an async closure instantiates an
-async copy of the function — its calls through the parameter are
-awaited — while every sync call site keeps the untouched original.
+async copy of the function (its calls through the parameter are
+awaited), while every sync call site keeps the untouched original.
 <code>map</code> is one function, not two:</p>
 <pre><code class="language-vilan norun">import std::print;
 import std::time::sleep;
@@ -278,7 +278,7 @@ fun main() {
 }
 </code></pre>
 <p>The contract is <strong>sequential</strong>: each callback settles before the next
-begins — a 100-element <code>map</code> whose callback takes a second takes a
+begins, so a 100-element <code>map</code> whose callback takes a second takes a
 hundred seconds. When the elements are independent, opt into
 concurrency by starting them all first:</p>
 <pre><code class="language-vilan norun">import std::print;
@@ -296,8 +296,8 @@ fun main() {
 	print(lens);
 }
 </code></pre>
-<p>An adapting function traverses a <em>snapshot</em> of its receiver — the list
-as of the call — so work interleaved during the awaits can’t tear the
+<p>An adapting function traverses a <em>snapshot</em> of its receiver (the list
+as of the call), so work interleaved during the awaits can’t tear the
 iteration. Adaptation follows the closure through plain parameters
 (<code>fun helper(xs, f) { xs.map(f) }</code> adapts end-to-end), but it cannot
 cross a host (<code>external</code>) boundary or a trait/generic dispatch, and it
@@ -315,7 +315,7 @@ flowing where a plain closure type is declared on a struct <strong>field</strong
 a function’s declared <strong>return type</strong> is a compile error if that
 closure returns a value, because the reader would receive a promise
 disguised as the value (declare the field or return <code>async || T</code>
-instead). If it returns <code>void</code>, it’s allowed anywhere — the call just
+instead). If it returns <code>void</code>, it’s allowed anywhere; the call
 becomes fire-and-forget. That’s why UI event handlers can await freely
 with no ceremony.</p>
 <h2 id="nurseries-structured-spawning"><a class="header" href="#nurseries-structured-spawning">Nurseries: structured spawning</a></h2>
@@ -346,7 +346,7 @@ fun main() {
 <p>The contract:</p>
 <ul>
 <li><strong>Everything joins.</strong> <code>nursery(body)</code> returns only when the body <em>and
-every task spawned in its dynamic extent</em> have settled — spawns made
+every task spawned in its dynamic extent</em> have settled: spawns made
 by the body, by functions it calls, and by the tasks themselves
 (grandchildren). No plumbing: the extent is ambient, like a context.</li>
 <li><strong>The value passes through.</strong> The nursery’s value is the body’s
@@ -355,7 +355,7 @@ value. Spawns outside any nursery keep their free-floating behavior.</li>
 that failure is the nursery’s; otherwise the earliest-settled task
 failure is, re-raised from the <code>nursery</code> call with the name of the
 function that spawned the task. Either way the other tasks are
-observed and their failures discarded — a losing task can never crash
+observed and their failures discarded; a losing task can never crash
 the program later.</li>
 </ul>
 <h3 id="cancellation"><a class="header" href="#cancellation">Cancellation</a></h3>
@@ -381,8 +381,8 @@ fun main() {
 }
 </code></pre>
 <p><code>n.cancel()</code> fires the nursery’s host <code>AbortSignal</code>. std’s IO carries
-that signal automatically — a <code>sleep</code> or an in-flight <code>fetch</code> inside
-the extent rejects promptly instead of running out — and those
+that signal automatically (a <code>sleep</code> or an in-flight <code>fetch</code> inside
+the extent rejects promptly instead of running out), and those
 cancellation rejections are <em>echoes</em>, absorbed at the join rather than
 treated as failures. The first real failure cancels the same way, so
 one task’s error stops its siblings’ work early. Details:</p>
@@ -391,7 +391,7 @@ one task’s error stops its siblings’ work early. Details:</p>
 (cancellable) suspension. Pure-compute loops can poll
 <code>n.is_cancelled()</code> between chunks.</li>
 <li>Code after <code>n.cancel()</code> in the body still runs, and the body’s value
-is still returned — cancel kills the <em>children</em>, not the body. (If
+is still returned: cancel kills the <em>children</em>, not the body. (If
 the body itself is suspended on IO when cancellation lands, that IO
 rejects and the cancellation becomes the nursery’s outcome.)</li>
 <li>Nurseries nest: an outer cancel reaches every inner nursery’s IO.</li>
@@ -404,7 +404,7 @@ for it; keep bare spawns for genuine fire-and-forget.</p>
 <p>From <code>std::time</code>: <code>sleep_for(duration)</code> and <code>sleep(millis)</code> suspend.
 <code>Duration::millis/seconds/minutes/hours/days</code> build durations. <code>now()</code>
 reads the clock.</p>
-<p>A <code>Timer</code> is a delay you keep hold of — it starts on construction, and
+<p>A <code>Timer</code> is a delay you keep hold of. It starts on construction, and
 you either wait for its verdict or call it off:</p>
 <pre><code class="language-vilan">import std::print;
 import std::time::Timer;
@@ -425,15 +425,15 @@ A <code>Task&lt;T&gt;</code> appears only where you spawned and kept one.</li>
 <li><strong>No hidden concurrency.</strong> Everything waits, in order, unless you
 spawn. Same single-threaded event loop as JS underneath.</li>
 <li><strong>No views across a suspension.</strong> A <code>&amp;</code>/<code>&amp;mut</code> view held across an
-await is rejected. Re-derive after — see
+await is rejected. Re-derive after; see
 <a href="memory-model.html">the memory model</a>.</li>
 </ul>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
-<li>On node, <strong>the process exits when nothing is left to do</strong>: once
+<li>On Node, <strong>the process exits when nothing is left to do</strong>: once
 <code>main</code> finishes, only live host handles (a running timer, a socket, a
 listening server) keep it alive. A dropped task that is merely
-<em>pending</em> — awaiting something that will never wake — is silently
+<em>pending</em> (awaiting something that will never wake) is silently
 abandoned at exit, and whether a spawn outlives <code>main</code> depends on
 what it holds. Joining spawns in a nursery makes the question moot; a
 long-lived client must keep <code>main</code> open by awaiting something that

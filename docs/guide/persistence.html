@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Persistence and the server - The vilan documentation</title>
+        <title>Persistence and the server - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -178,10 +178,10 @@
 <p>This chapter covers the server half of a full-stack app: SQLite via
 <code>std::db</code>, http serving via <code>std::http</code>, files via <code>std::fs</code>, and the
 process itself via <code>std::process</code>. These modules live in the process
-layer, so they’re available in node/deno/bun builds. The rpc layer that
+layer, so they’re available in Node/Deno/Bun builds. The rpc layer that
 sits on top is <a href="services.html">Services &amp; RPC</a>.</p>
 <h2 id="sqlite-stddb"><a class="header" href="#sqlite-stddb">SQLite: <code>std::db</code></a></h2>
-<p>Vilan ships with an embedded SQLite binding (node’s built-in SQLite
+<p>Vilan ships with an embedded SQLite binding (Node’s built-in SQLite
 underneath). There is no ORM and no query builder. You write SQL, with
 <code>?</code> placeholders for values:</p>
 <pre><code class="language-vilan norun">import std::print;
@@ -223,7 +223,7 @@ you a throwaway in-memory database, handy in tests.</li>
 and returns the last insert id, <code>.first(params)</code> fetches an
 <code>Option&lt;Row&gt;</code>, and <code>.all(params)</code> fetches a <code>List&lt;Row&gt;</code>.</li>
 <li>Rows read by column name: <code>text</code>, <code>integer</code> (i32), <code>big_integer</code>
-(i53 — use it for epoch-millis timestamps, which outgrow i32),
+(i53; use it for epoch-millis timestamps, which outgrow i32),
 <code>real</code> (f64), and <code>is_null</code>.</li>
 </ul>
 <p>Two habits to keep:</p>
@@ -231,7 +231,7 @@ and returns the last insert id, <code>.first(params)</code> fetches an
 <li>Values always go through <code>?</code> placeholders. Never interpolate them into
 the SQL string.</li>
 <li>Don’t name a column with an SQL keyword. <code>desc</code> is the one that bites
-in practice — spell it <code>description</code>.</li>
+in practice: spell it <code>description</code>.</li>
 </ul>
 <p>The API is synchronous, which fits rpc handlers (the dispatch path is
 synchronous too), and there is no connection pool to manage.</p>
@@ -288,7 +288,7 @@ fun scan(): str                // a line from stdin
 <p>One behavior to plan around: <strong>the process exits when <code>main</code> finishes.</strong>
 A server stays alive because <code>start()</code> holds the event loop open. A
 long-lived <em>client</em> process (a probe holding a socket, say) has to keep
-<code>main</code> open itself — await something that ends with the app, or
+<code>main</code> open itself: await something that ends with the app, or
 <code>sleep_for</code> a long duration.</p>
 <h2 id="putting-it-together"><a class="header" href="#putting-it-together">Putting it together</a></h2>
 <p>The boot sequence of a full-stack server, in order:</p>
@@ -297,7 +297,7 @@ long-lived <em>client</em> process (a probe holding a socket, say) has to keep
 (<code>CREATE TABLE IF NOT EXISTS …</code>).</li>
 <li>Load the mirrored state from SQLite into the service’s signals.</li>
 <li>Wire the service’s handlers to statements. Write SQL first, then
-update the signal — the mirror broadcasts the signal.</li>
+update the signal (the mirror broadcasts the signal).</li>
 <li><code>fs::read_file_to_str</code> the client bundle and shell.</li>
 <li><code>serve_service(port, protocol, fallback, on_ready)</code>.</li>
 </ol>

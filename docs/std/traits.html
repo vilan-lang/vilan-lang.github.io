@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Core traits - The vilan documentation</title>
+        <title>Core traits - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -174,7 +174,7 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="core-traits--reference"><a class="header" href="#core-traits--reference">Core traits — reference</a></h1>
+                        <h1 id="core-traits-reference"><a class="header" href="#core-traits-reference">Core traits reference</a></h1>
 <p>The traits behind the operators and the derive set: <code>std::compare</code>,
 <code>std::default</code>, <code>std::operators</code>.</p>
 <h2 id="stdcompare"><a class="header" href="#stdcompare">std::compare</a></h2>
@@ -204,7 +204,7 @@ trait Ord with Eq + PartialOrd {
 <ul>
 <li><code>==</code>/<code>!=</code> dispatch through <code>PartialEq</code>; <code>&lt;</code>/<code>&lt;=</code>/<code>&gt;</code>/<code>&gt;=</code> through
 <code>PartialOrd</code>. Numbers, <code>str</code>, and <code>bool</code> implement them in std.</li>
-<li>For your own types, <code>[derive(PartialEq)]</code> gives structural equality —
+<li>For your own types, <code>[derive(PartialEq)]</code> gives structural equality,
 the usual path. Implement <code>PartialOrd</code>/<code>Ord</code> by hand when ordering is
 meaningful (<code>Instant</code> does this in std).</li>
 <li>The <code>B = Self</code> parameter allows cross-type comparison impls; you’ll
@@ -218,7 +218,7 @@ rarely need it.</li>
 <p>Zero for numbers, <code>""</code> for <code>str</code>, <code>false</code> for <code>bool</code>.
 <code>[derive(Default)]</code> composes fields’ defaults. Used as a bound by helpers
 like <code>unwrap_or_default</code> and <code>List.sum</code>.</p>
-<h2 id="stdoperators--the-operator-traits"><a class="header" href="#stdoperators--the-operator-traits">std::operators — the operator traits</a></h2>
+<h2 id="stdoperators-the-operator-traits"><a class="header" href="#stdoperators-the-operator-traits">std::operators: the operator traits</a></h2>
 <p>Each operator dispatches through a trait; implement the trait, get the
 operator:</p>
 <div class="table-wrapper">
@@ -235,7 +235,7 @@ operator:</p>
 </tbody>
 </table>
 </div>
-<p>The <code>B = Self</code> parameter types the right-hand side — mixed-operand impls
+<p>The <code>B = Self</code> parameter types the right-hand side; mixed-operand impls
 are how std’s <code>Instant + Duration</code> works:</p>
 <pre><code class="language-vilan">import std::print;
 import std::operators::Add;
@@ -256,9 +256,9 @@ fun main() {
 	print((morning + rise).degrees);
 }
 </code></pre>
-<p>Compound assignment (<code>+=</code>, <code>/=</code>, …) rides the same impls. Note: the
+<p>Compound assignment (<code>+=</code>, <code>/=</code>, …) rides the same impls. The
 operator’s result type is <code>Self</code> (the left operand’s type).</p>
-<h2 id="stdoperators--try-and-lift"><a class="header" href="#stdoperators--try-and-lift">std::operators — <code>Try</code> and <code>Lift</code></a></h2>
+<h2 id="stdoperators-try-and-lift"><a class="header" href="#stdoperators-try-and-lift">std::operators: <code>Try</code> and <code>Lift</code></a></h2>
 <p>The machinery behind <code>!</code> and <code>?.</code>
 (<a href="../tour/control-flow.html">control flow</a>):</p>
 <pre><code class="language-vilan fragment">enum Verdict&lt;T, B&gt; { Good(T), Bad(B) }

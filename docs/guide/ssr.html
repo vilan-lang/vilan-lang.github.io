@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Server-side rendering - The vilan documentation</title>
+        <title>Server-side rendering - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -176,31 +176,31 @@
                     <main>
                         <h1 id="server-side-rendering"><a class="header" href="#server-side-rendering">Server-side rendering</a></h1>
 <p>A single-page app ships an empty <code>&lt;div id="app"&gt;</code> and paints nothing until its
-JavaScript loads, runs, and fetches. That costs first paint and it costs SEO — a
+JavaScript loads, runs, and fetches. That costs first paint and it costs SEO: a
 crawler sees a blank page. Server-side rendering fixes both by doing the first
 render on the server: the page arrives already painted, and the client takes over
 from there.</p>
-<p>Vilan’s model is <strong>render, then replace</strong>. There is no hydration — the client
+<p>Vilan’s model is <strong>render, then replace</strong>. There is no hydration: the client
 does not adopt the server’s DOM. It renders the same view fresh and swaps it in.</p>
 <ol>
 <li><strong>Render.</strong> The server calls your own view-building code against the process
-layer’s <code>std::ui</code>, which builds an HTML <strong>string</strong> instead of live DOM.
+layer’s <code>std::ui</code>, which builds an HTML string instead of live DOM.
 <code>render(view)</code> serializes it.</li>
 <li><strong>Serve.</strong> The handler splices that markup into an HTML shell and serves the
-page. The user (and the crawler) sees the full content — first paint and SEO
-are done, before a line of JavaScript runs.</li>
+page. The user (and the crawler) sees the full content: first paint and SEO
+are done before a line of JavaScript runs.</li>
 <li><strong>Replace.</strong> On boot the client builds the same view as live DOM and <code>mount</code>
-<strong>clears the container first</strong>, replacing the server markup with the live tree.
+clears the container first, replacing the server markup with the live tree.
 Since the same component produced both, the swap is imperceptible when the data
-matches; when it moved between render and boot, the replace simply shows the
+matches; when it moved between render and boot, the replace shows the
 truth.</li>
 </ol>
 <h2 id="one-component-both-legs"><a class="header" href="#one-component-both-legs">One component, both legs</a></h2>
-<p>The whole trick is a shared <code>fun app(): View</code>. It imports <code>std::ui</code>, which
+<p>Both legs share one <code>fun app(): View</code>. It imports <code>std::ui</code>, which
 resolves <em>per entry</em>: the browser layer (live DOM) in the client leg, the
-process layer (an HTML string tree) in the server leg — the same source, no
+process layer (an HTML string tree) in the server leg. The same source, no
 annotation. Put it in a module beside the two entry files (one package, two
-entries — the <a href="../tour/platforms.html">full-stack shape</a>); in a workspace, put it
+entries: the <a href="../tour/platforms.html">full-stack shape</a>); in a workspace, put it
 in a <code>common</code> library both packages depend on instead.</p>
 <pre><code class="language-vilan">import std::ui::{ view, View, render };
 import std::reactive::Signal;
@@ -223,7 +223,7 @@ fun main() {
 <h2 id="on-the-server-render-and-splice"><a class="header" href="#on-the-server-render-and-splice">On the server: render and splice</a></h2>
 <p>The server reads the client bundle and an HTML shell from disk, then serves. The
 shell has a marker where the app goes; the handler replaces it with the render.
-The splice is plain user code — one <code>str::replace</code>, no framework:</p>
+The splice is plain user code (one <code>str::replace</code>, no framework):</p>
 <pre><code class="language-vilan norun">import std::fs;
 import std::http::{ Server, Request, Response };
 import std::ui::{ view, View, render };
@@ -255,7 +255,7 @@ fun main() {
 </code></pre>
 <h2 id="on-the-client-mount-replaces"><a class="header" href="#on-the-client-mount-replaces">On the client: mount replaces</a></h2>
 <p>The client entry is the shared <code>app()</code> and one <code>mount_root</code>. There is no server
-mount — mounting is a client entry, not a renderable view, which is exactly why
+mount: mounting is a client entry, not a renderable view, which is why
 the natural factoring is a shared <code>fun app(): View</code> with a per-leg <code>main</code>.</p>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
 import std::reactive::Signal;
@@ -275,10 +275,10 @@ fun main() {
 <p><code>mount</code>/<code>mount_root</code> call <code>replaceChildren()</code> before appending, so the live tree
 <em>replaces</em> the server-rendered nodes rather than stacking on top of them. For an
 ordinary client-only app the container was empty, so the clear is a no-op; on an
-SSR page it discards the server DOM and mounts fresh. No adoption, no node
-addressing, no reconciliation.</p>
+SSR page it discards the server DOM and mounts fresh. The client never adopts
+server nodes, addresses them, or reconciles against them.</p>
 <h2 id="build-pure-bind-reactive"><a class="header" href="#build-pure-bind-reactive">Build pure, bind reactive</a></h2>
-<p>The server render creates, serializes, and discards — no effects attach, no
+<p>The server render creates, serializes, and discards: no effects attach, no
 subscriptions survive the request. So the bindings <strong>read once</strong>: <code>bind_text</code>,
 <code>bind_attr</code>, <code>bind_each</code>, <code>when</code>, and <code>swap</code> embed the signal’s value <em>at render
 time</em>. That is the value served, and it is the value the client re-derives.</p>
@@ -287,23 +287,25 @@ its structure from signals and binds them renders correctly on both legs. A
 component that leans on an effect side-channel at build time renders stale on the
 server (effects don’t run there). Text and attribute values are escaped, so a
 hostile string is inert markup, not injected HTML.</p>
-<h2 id="the-double-fetch-honestly"><a class="header" href="#the-double-fetch-honestly">The double-fetch, honestly</a></h2>
+<h2 id="the-double-fetch"><a class="header" href="#the-double-fetch">The double-fetch</a></h2>
 <p>Server-side rendering embeds no initial state today. A data-backed app
-still fetches its data over rpc on boot exactly as a client-only app does —
+still fetches its data over rpc on boot exactly as a client-only app does,
 so the data is fetched once for the server render and again on the client. A
-change between the two shows as a content update when the client replaces
-(the honest behavior, not a mismatch error).</p>
-<p>Serializing the initial store into the page and adopting it client-side — so the
-first client fetch is skipped — is planned but not built, held back because it
+change between the two shows as a content update when the client replaces,
+not a mismatch error.</p>
+<p>Serializing the initial store into the page and adopting it client-side (so the
+first client fetch is skipped) is planned but not built, held back because it
 introduces a cross-process state contract this version does not need. Further
 out is <em>resumability</em>: the server serializes the reactive graph and the handlers
 too, so the client executes nothing at boot. Render-and-replace is the fallback
 that remains under both.</p>
 <h2 id="try-it"><a class="header" href="#try-it">Try it</a></h2>
-<p>The repository carries the whole loop as a runnable example:
-<a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/ssr/"><code>vilan/examples/ssr/</code></a>
-— one package with two entries, <code>src/app.vl</code> (the shared <code>app()</code>),
-<code>src/client.vl</code> (browser), and <code>src/server.vl</code> (node). Clone it and run:</p>
+<p>The repository carries the whole loop as a runnable example,
+<a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/ssr/"><code>vilan/examples/ssr/</code></a>:
+one package with two entries, <code>src/app.vl</code> (the shared <code>app()</code>),
+<code>src/client.vl</code> (browser), and <code>src/server.vl</code> (Node). With the
+<a href="../tour/hello-vilan.html#install-the-toolchain">toolchain</a> installed,
+clone it and run:</p>
 <pre><code class="language-sh">git clone https://github.com/vilan-lang/vilan
 cd vilan
 vilan run vilan/examples/ssr

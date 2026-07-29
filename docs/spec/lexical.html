@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§2 Lexical structure - The vilan documentation</title>
+        <title>§2 Lexical structure - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -180,8 +180,8 @@
 file consisting only of trivia lexes to an empty token stream (and parses
 as an empty module).</p>
 <p><strong>Line terminators.</strong> A line terminator is <code>\n</code>, and the two-character
-sequence <code>\r\n</code> is <strong>one</strong> line terminator. Text built from source — the
-value of any string literal — is built from the normalized text, so a
+sequence <code>\r\n</code> is <strong>one</strong> line terminator. Text built from source (the
+value of any string literal) is built from the normalized text, so a
 literal spanning lines carries <code>\n</code> per source line break and never
 <code>\r\n</code>, whatever the file’s on-disk encoding. A lone <code>\r</code> (no following
 <code>\n</code>) is not a line terminator: between tokens it is ordinary whitespace,
@@ -189,7 +189,7 @@ and inside a string literal it is an ordinary character, preserved. A
 leading U+FEFF byte-order mark is an encoding marker rather than source
 text: it is ignored, and positions are counted from the byte after it. A
 U+FEFF anywhere else is content. Together these make a program’s meaning
-independent of how an editor saved it — the same source is the same
+independent of how an editor saved it: the same source is the same
 program on every platform. (See <code>proposal/windows-support.md</code> §2; the
 canonical on-disk form is LF with no BOM, and <code>vilan fmt</code> writes it.)</p>
 <h2 id="21-comments"><a class="header" href="#21-comments">2.1 Comments</a></h2>
@@ -198,7 +198,7 @@ block comments.</p>
 <h2 id="22-identifiers-and-keywords"><a class="header" href="#22-identifiers-and-keywords">2.2 Identifiers and keywords</a></h2>
 <pre><code class="language-text">IDENT = ascii_letter | "_" , { ascii_letter | digit | "_" } ;
 </code></pre>
-<p>Identifiers are ASCII. The following words are <strong>reserved</strong> — they lex as
+<p>Identifiers are ASCII. The following words are <strong>reserved</strong>; they lex as
 keyword tokens and are never <code>IDENT</code>:</p>
 <pre><code class="language-text">async  await  borrows  const  else    enum   export  external
 for    fun    if       impl  import  in     is      jump
@@ -221,17 +221,17 @@ hex     = "0x" , hexdigit , { hexdigit } , [ SUFFIX ] ;
 SUFFIX  = IDENT   (* immediately adjacent, no space *)
 </code></pre>
 <p>The suffix names the literal’s type: <code>i8 i16 i32 u8 u16 u32</code> (that
-two’s-complement width), <code>i53</code>/<code>u53</code> (the wide integers — see below),
+two’s-complement width), <code>i53</code>/<code>u53</code> (the wide integers; see below),
 <code>f</code> (<code>f64</code>), <code>f32</code>, <code>f64</code>, <code>n</code> (<code>BigInt</code>). An <strong>unknown suffix is a
 compile error</strong> (the retired <code>i64</code>/<code>u64</code> suffixes get a rename hint). An
 unsuffixed integer literal is <code>i32</code>; an unsuffixed fractional literal is
 <code>f64</code>. Every integer literal is <strong>range-checked</strong> against its type at
 compile time.</p>
-<p><code>i53</code> spans the symmetric range ±2^53 and <code>u53</code> spans [0, 2^53] — the
+<p><code>i53</code> spans the symmetric range ±2^53 and <code>u53</code> spans [0, 2^53]: the
 window in which every integer is exactly representable in an IEEE-754
 double (the backing representation). The names deliberately follow
 JavaScript’s safe-integer convention (53 bits of integer precision)
-rather than the two’s-complement <code>iN</code> convention; there is no <code>i64</code> —
+rather than the two’s-complement <code>iN</code> convention. There is no <code>i64</code>;
 integers beyond the window take <code>BigInt</code>.</p>
 <p>In a hex literal the digit run is maximal, so a suffix must begin with a
 non-hex letter: <code>0xFFu8</code> is valid; <code>0xFFf</code> is a single hex number <code>0xFFF</code>,
@@ -250,7 +250,7 @@ string is <strong>raw</strong> (a backslash is a backslash) and runs to the firs
 is stripped from every line of the content.</p>
 <p>A single-quoted string <strong>must close on the line it opens</strong>. A raw line
 break inside <code>"…"</code> is an error, and so is a backslash immediately before
-one — nothing escapes a line terminator, because the literal has to close
+one: nothing escapes a line terminator, because the literal has to close
 on its line either way. Multi-line text is written <code>"""…"""</code>; a single
 line break inside a one-line string is written <code>\n</code>. (The rule buys error
 locality: a forgotten closing quote is reported at its own line instead of
@@ -260,7 +260,7 @@ value per the line-terminator rule above. An escaped <code>\r</code> is unaffect
 it is written into the literal, not read off the end of a line.</p>
 <h3 id="interpolated-strings"><a class="header" href="#interpolated-strings">Interpolated strings</a></h3>
 <p><code>i"…"</code> is an interpolated string: <code>{expr}</code> holes embed expressions; <code>\{</code>
-and <code>\}</code> are literal braces. The construct is defined by desugaring — an
+and <code>\}</code> are literal braces. The construct is defined by desugaring. An
 interpolated string is exactly equivalent to a parenthesized
 concatenation:</p>
 <pre><code class="language-text">i"Hello, {name}!"   ≡   ("" + "Hello, " + (name) + "!")
@@ -271,7 +271,7 @@ and parsed as a single parenthesized expression. The result of the whole
 form is <code>str</code>; each part must therefore be valid as a <code>+</code> operand with
 <code>str</code> (§5’s operator dispatch).</p>
 <p><code>i"…"</code> obeys the single-line rule of its plain twin: a raw line break in
-its body — or a backslash before one — is the same error. Interpolated
+its body (or a backslash before one) is the same error. Interpolated
 multi-line text is <code>i"""…"""</code>, which is how a macro writes the code it
 returns.</p>
 <h4 id="interpolated-multiline-strings"><a class="header" href="#interpolated-multiline-strings">Interpolated multiline strings</a></h4>
@@ -292,14 +292,14 @@ hole may span lines; its continuation lines carry the prefix like every
 other line, and stripping is a no-op inside the hole, where whitespace
 is trivia.</li>
 <li><strong>Fragmenting, on the trimmed text.</strong> Exactly two escapes exist: <code>\{</code>
-and <code>\}</code>, each a literal brace. Nothing else is an escape — a backslash
+and <code>\}</code>, each a literal brace. Nothing else is an escape: a backslash
 before any other character is a literal backslash and that character,
 the same near-rawness as a plain <code>"""</code> (<code>\n</code> is a backslash and an
 <code>n</code>). An unescaped <code>}</code> outside a hole is an error, as it is in <code>i"…"</code>.</li>
 </ol>
 <p>The body is raw and runs to the first <code>"""</code>, so a single <code>"</code> and a <code>""</code>
-pair are ordinary content. The value is a <code>str</code>, and — this being one of
-the two forms that may span lines — a source line break in it contributes
+pair are ordinary content. The value is a <code>str</code>, and (this being one of
+the two forms that may span lines) a source line break in it contributes
 one <code>\n</code>.</p>
 <pre><code class="language-vilan fragment">let report = i"""
     {name} scored {score}.
@@ -307,19 +307,19 @@ one <code>\n</code>.</p>
     """
 </code></pre>
 <p><em>Implementation note: because a hole is re-lexed as ordinary tokens, a
-string literal inside a hole cannot use <code>\"</code> escapes — nested quoting
+string literal inside a hole cannot use <code>\"</code> escapes; nested quoting
 inside holes is currently a parse error. Bind the value to a local first.</em></p>
 <h3 id="other-literals"><a class="header" href="#other-literals">Other literals</a></h3>
 <p><code>true</code>, <code>false</code> (type <code>bool</code>); <code>null</code> (the host-boundary null, §5.2);
-<code>void</code> (the unit value — a contextual identifier, not a keyword).</p>
+<code>void</code> (the unit value; a contextual identifier, not a keyword).</p>
 <h2 id="24-operators-and-punctuation"><a class="header" href="#24-operators-and-punctuation">2.4 Operators and punctuation</a></h2>
 <p>Two token classes:</p>
 <ul>
-<li><strong>Operator tokens</strong> — a maximal run of the characters <code>- : ! * / + = | &amp; ^ ? %</code>, plus the arrow <code>=&gt;</code> (lexed as one token). Maximal munch means
+<li><strong>Operator tokens</strong>: a maximal run of the characters <code>- : ! * / + = | &amp; ^ ? %</code>, plus the arrow <code>=&gt;</code> (lexed as one token). Maximal munch means
 <code>==</code>, <code>!=</code>, <code>+=</code>, <code>::</code>, <code>?.</code>’s <code>?</code>, <code>&amp;&amp;</code>, <code>||</code> each lex as single
 operator tokens; conversely <code>a+-b</code> lexes as <code>a</code>, <code>+-</code>, <code>b</code> and is a parse
 error.</li>
-<li><strong>Control tokens</strong> — the single characters <code>( ) [ ] { } &lt; &gt; ; , .</code>.</li>
+<li><strong>Control tokens</strong>: the single characters <code>( ) [ ] { } &lt; &gt; ; , .</code>.</li>
 </ul>
 <p><code>&lt;</code> and <code>&gt;</code> are control tokens (they delimit generics), not operator
 characters. Consequently <code>&lt;=</code>/<code>&gt;=</code> lex as <code>&lt;</code>/<code>&gt;</code> followed by <code>=</code>, and the

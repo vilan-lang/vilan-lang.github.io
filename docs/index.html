@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Welcome - The vilan documentation</title>
+        <title>Welcome - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
@@ -184,33 +184,33 @@ gets a program running in a couple of minutes. Everything in this book
 assumes only that the <code>vilan</code> command is on your PATH.</p>
 <h2 id="parts"><a class="header" href="#parts">Parts</a></h2>
 <ul>
-<li><strong><a href="tour/">Tour</a></strong> — the language itself, taught informally. Start with
+<li><strong><a href="tour/">Tour</a></strong>: the language itself, taught informally. Start with
 <a href="tour/coming-from-javascript.html">Coming from JavaScript</a> if that’s your
 background, then read in order. Come back any time you need a syntax
 reminder. Nothing in the tour assumes you know the other parts.</li>
-<li><strong><a href="guide/">Guides</a></strong> — the frameworks, task by task: reactive state,
+<li><strong><a href="guide/">Guides</a></strong>: the frameworks, task by task. Reactive state,
 building UI, styling, routing, talking to a server. Each guide reads
 front to back and links into the reference for exact signatures.</li>
-<li><strong><a href="std/">std reference</a></strong> — the standard library, signatures first.
+<li><strong><a href="std/">std reference</a></strong>: the standard library, signatures first.
 Go here to answer “what were the parameters again?”.</li>
-<li><strong><a href="spec/">Specification</a></strong> — the formal definition: grammar, type
+<li><strong><a href="spec/">Specification</a></strong>: the formal definition. Grammar, type
 rules, the memory model, execution. This is the advanced tier. The tour
 teaches; the spec defines; where they disagree, the spec wins.</li>
-<li><strong><a href="appendix/">Appendix</a></strong> — the <a href="appendix/errors.html">error index</a> (“you saw this message, go here”), the <a href="appendix/gotchas.html">gotchas checklist</a>, and the <a href="appendix/glossary.html">glossary</a>.</li>
+<li><strong><a href="appendix/">Appendix</a></strong>: the <a href="appendix/errors.html">error index</a> (“you saw this message, go here”), the <a href="appendix/gotchas.html">gotchas checklist</a>, and the <a href="appendix/glossary.html">glossary</a>.</li>
 </ul>
 <h2 id="where-this-book-lives"><a class="header" href="#where-this-book-lives">Where this book lives</a></h2>
-<p>The published copy is at <a href="https://vilan-lang.org/docs/">https://vilan-lang.org/docs/</a> — search
-and a sidebar included, always built from the latest <code>main</code>. That is the
-copy to link to and the one most readers want.</p>
+<p>The published copy is at <a href="https://vilan-lang.org/docs/">https://vilan-lang.org/docs/</a>, with search and
+a sidebar, always built from the latest <code>main</code>. That is the copy to link
+to and the one most readers want.</p>
 <p>The source is markdown in the
 <a href="https://github.com/vilan-lang/vilan">repository</a> under <code>vilan/docs/</code>, so
 everything also reads fine as plain files. If you have the repository
 checked out, <code>cargo install mdbook</code> once and then <code>mdbook serve vilan/docs</code> gives you the same site locally with live reload.</p>
 <h2 id="conventions"><a class="header" href="#conventions">Conventions</a></h2>
 <ul>
-<li>Examples are complete programs unless explicitly labelled a fragment —
+<li>Examples are complete programs unless explicitly labelled a fragment:
 copy, <code>vilan build</code>, run.</li>
-<li><strong>Every example compiles as part of the test suite</strong> (<code>cargo test --test docs</code>): a fenced <code>```vilan</code> block must compile for the node target,
+<li><strong>Every example compiles as part of the test suite</strong> (<code>cargo test --test docs</code>): a fenced <code>```vilan</code> block must compile for the Node target,
 <code>```vilan,browser</code> for the browser target, <code>```vilan,norun</code> compiles
 but needs external services to actually run, and <code>```vilan,fragment</code> is
 prose-only (used sparingly, always labelled).</li>
@@ -253,7 +253,7 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><td><a href="guide/services.html">Services &amp; RPC</a></td><td><code>[service]</code>/<code>[rpc]</code>/<code>[expose]</code>, Wire, mirrors, reconnection, the server side</td></tr>
 <tr><td><a href="guide/persistence.html">Persistence &amp; the server</a></td><td><code>std::db</code> (SQLite), the http server, files, the process</td></tr>
 <tr><td><a href="guide/ssr.html">Server-side rendering</a></td><td>render-and-replace, one component on both legs, the HTML shell</td></tr>
-<tr><td><a href="guide/walkthrough.html">A full-stack walkthrough</a></td><td>the Notes app end to end — every layer meeting, quoted from a real, tested example</td></tr>
+<tr><td><a href="guide/walkthrough.html">A full-stack walkthrough</a></td><td>the Notes app end to end: every layer meeting, quoted from a real, tested example</td></tr>
 <tr><td><a href="guide/dev-loop.html">The dev loop</a></td><td><code>run --watch</code>, hot module replacement, what carries across a swap</td></tr>
 </tbody>
 </table>
@@ -276,9 +276,9 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><td><a href="std/net.html">net</a></td><td>fetch, ws</td></tr>
 <tr><td><a href="std/reactive.html">reactive</a></td><td>the full <code>std::reactive</code> API</td></tr>
 <tr><td><a href="std/style.html">style</a></td><td>the full <code>std::style</code> API</td></tr>
-<tr><td><a href="std/rpc.html">rpc</a></td><td><code>std::rpc</code> — transports, clients, frames</td></tr>
+<tr><td><a href="std/rpc.html">rpc</a></td><td><code>std::rpc</code>: transports, clients, frames</td></tr>
 <tr><td><a href="std/browser.html">browser</a></td><td><code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>, <code>std::storage</code></td></tr>
-<tr><td><a href="std/dev.html">dev / HMR</a></td><td><code>std::dev</code> — <code>stash</code>/<code>take</code>, <code>on_teardown</code>, <code>hmr_active</code></td></tr>
+<tr><td><a href="std/dev.html">dev / HMR</a></td><td><code>std::dev</code>: <code>stash</code>/<code>take</code>, <code>on_teardown</code>, <code>hmr_active</code></td></tr>
 <tr><td><a href="std/process.html">process</a></td><td>db, http, fs, process, rpc_server</td></tr>
 <tr><td><a href="std/misc.html">misc</a></td><td>io, task, promise, context, crypto, jwt, asset</td></tr>
 </tbody>

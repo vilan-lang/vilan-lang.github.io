@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§5 The type system - The vilan documentation</title>
+        <title>§5 The type system - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-caf4d5db.js";
+            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -137,7 +137,7 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">The vilan documentation</h1>
+                    <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
@@ -178,32 +178,32 @@
 <h2 id="51-types"><a class="header" href="#51-types">5.1 Types</a></h2>
 <p>The type forms (grammar §3.9) denote:</p>
 <ul>
-<li><strong>Nominal types</strong> — structs and enums, possibly generic
+<li><strong>Nominal types</strong>: structs and enums, possibly generic
 (<code>Task</code>, <code>Option&lt;i32&gt;</code>, <code>Map&lt;str, List&lt;i32&gt;&gt;</code>). Two nominal types are
-equal iff they name the same declaration and their arguments are equal
-— there is no structural typing of nominals.</li>
-<li><strong>Primitives</strong> — <code>bool</code>, <code>str</code>, <code>i8 i16 i32 i53 u8 u16 u32 u53</code>,
+equal iff they name the same declaration and their arguments are
+equal. There is no structural typing of nominals.</li>
+<li><strong>Primitives</strong>: <code>bool</code>, <code>str</code>, <code>i8 i16 i32 i53 u8 u16 u32 u53</code>,
 <code>f32 f64</code>, <code>BigInt</code>. Declared in std as external structs; nominally
 distinct (no implicit numeric conversions, §5.8).</li>
-<li><strong>Tuples</strong> — <code>(T, U, …)</code>; structural: equal iff element-wise equal.
+<li><strong>Tuples</strong>: <code>(T, U, …)</code>; structural: equal iff element-wise equal.
 <code>()</code> and one-element tuples do not exist as distinct types (<code>(T)</code> is
 <code>T</code>; the unit is <code>void</code>).</li>
-<li><strong>Closure types</strong> — <code>|T, U| R</code>, <code>|| R</code>, <code>|| void</code>; structural in their
+<li><strong>Closure types</strong>: <code>|T, U| R</code>, <code>|| R</code>, <code>|| void</code>; structural in their
 parameter and return types. An <code>async</code> closure type (§7.4) and a
 <code>context</code>-claused type (§8.5) are distinct from their plain
 counterparts.</li>
-<li><strong>View types</strong> — <code>&amp;T</code>, <code>&amp;mut T</code> (§6). Views are second-class: these
+<li><strong>View types</strong>: <code>&amp;T</code>, <code>&amp;mut T</code> (§6). Views are second-class: these
 types appear in parameter and return positions and in short-lived
 locals only.</li>
-<li><strong><code>void</code></strong> — the unit: one value, also written <code>void</code>.</li>
-<li><strong><code>any</code></strong> — the dynamic top type, produced at host boundaries; it
+<li><strong><code>void</code></strong>: the unit; one value, also written <code>void</code>.</li>
+<li><strong><code>any</code></strong>: the dynamic top type, produced at host boundaries; it
 unifies with every type (absorbing).</li>
-<li><strong><code>Never</code></strong> — the type of diverging expressions (<code>panic(..)</code>, <code>ret ..</code>,
+<li><strong><code>Never</code></strong>: the type of diverging expressions (<code>panic(..)</code>, <code>ret ..</code>,
 <code>jump break</code>/<code>continue</code>). Never unifies by <em>yielding</em>: a diverging
 match leg or if branch doesn’t constrain the construct’s type, and a
-<code>Never</code> value satisfies any expected type. Internal — not written in
+<code>Never</code> value satisfies any expected type. Internal; not written in
 source.</li>
-<li><strong>Generics</strong> — a bound type parameter in scope (<code>T</code>) is a type; it is
+<li><strong>Generics</strong>: a bound type parameter in scope (<code>T</code>) is a type; it is
 abstract within its binder’s body.</li>
 </ul>
 <h2 id="52-null"><a class="header" href="#52-null">5.2 <code>null</code></a></h2>
@@ -227,12 +227,12 @@ impl Signal&lt;Signal&lt;type U&gt;&gt; { … }       // only for nested signals
 impl type T: Display { … }              // blanket: every T that is Display
 </code></pre>
 <p>An impl applies to a concrete type when the pattern matches it and every
-binder’s bounds hold. Members may be functions (with or without <code>self</code>)
-— a function without <code>self</code> is a <strong>static</strong>, reached as
+binder’s bounds hold. Members may be functions (with or without
+<code>self</code>). A function without <code>self</code> is a <strong>static</strong>, reached as
 <code>Subject::name(…)</code>.</p>
 <p><em>Implementation note (soundness gap, tracked): a conditional impl’s
 bounds are not yet re-checked when the impl is selected through a
-GENERIC bound — <code>List&lt;B&gt;</code> can satisfy a <code>Marker</code> bound via
+GENERIC bound: <code>List&lt;B&gt;</code> can satisfy a <code>Marker</code> bound via
 <code>impl List&lt;type T: Marker&gt;</code> even when <code>B</code> lacks <code>Marker</code>. Derive-based
 checks (<code>Wire</code>, <code>Json</code>) therefore verify field trees syntactically rather
 than through trait bounds.</em></p>
@@ -241,7 +241,7 @@ than through trait bounds.</em></p>
 bodies). <code>trait X with Y</code> makes <code>Y</code> a supertrait: implementing <code>X</code>
 requires <code>Y</code>. A trait’s generic parameters may carry defaults
 (<code>trait PartialEq&lt;B = Self&gt;</code>); <code>Self</code> in a trait body denotes the
-implementing type. Traits are used as <strong>bounds</strong>; a trait is not a type —
+implementing type. Traits are used as <strong>bounds</strong>; a trait is not a type:
 <code>let x: Display</code> is a compile error (no trait objects).</p>
 <p>Trait members resolve on a value when exactly one visible impl provides
 the name; a trait default is inherited by impls that don’t override it.</p>
@@ -258,7 +258,7 @@ of a generic parameter with a concrete (or caller-generic) type
 <li>A generic mentioned only in the return type is bound by unifying the
 declared return type against the call’s expected type
 (<code>let c: Cell&lt;i32&gt; = Cell::fresh()</code> binds <code>T := i32</code>). Only the
-<strong>callee’s own</strong> binders participate — a caller-side generic
+<strong>callee’s own</strong> binders participate; a caller-side generic
 introduced by substitution is never re-bound against the expectation.</li>
 <li>After binding, every bound’s satisfaction is checked; an unsatisfied
 bound is an error naming the parameter and bound.</li>
@@ -289,7 +289,7 @@ arithmetic traits, <code>Self</code>). Compound assignment <code>x op= e</code> 
 <p>There are <strong>no implicit conversions</strong> between numeric types; use the
 <code>as_*</code> methods (value-converting, Rust-<code>as</code> semantics). There is <strong>one
 implicit coercion</strong>: a reference to a plain named function coerces to a
-matching closure type —</p>
+matching closure type:</p>
 <pre><code class="language-vilan fragment">let transform: |str| i32 = measure;    // fun measure(text: str): i32
 words.map(measure);
 </code></pre>
@@ -303,7 +303,7 @@ wrapping closure.</p>
 <p>A generic parameter with a <strong>tuple bound</strong> ranges over tuples:
 <code>T: (2..)</code> (arity ≥ 2), <code>T: (..: Display)</code> (every element <code>Display</code>).
 A <strong>mapped type</strong> <code>(U in T: F&lt;U&gt;)</code> denotes the tuple obtained by mapping
-each element <code>U</code> of <code>T</code> to <code>F&lt;U&gt;</code> — <code>combine</code>’s signature is the
+each element <code>U</code> of <code>T</code> to <code>F&lt;U&gt;</code>; <code>combine</code>’s signature is the
 canonical use:</p>
 <pre><code class="language-vilan fragment">fun combine&lt;T: (2..)&gt;(sources: (U in T: Signal&lt;U&gt;)): Signal&lt;T&gt;
 </code></pre>
@@ -313,7 +313,7 @@ form.</p>
 bounds: the bound value must be a tuple, its arity must fall inside the
 declared range (endpoints inclusive), and every element must satisfy the
 element bound. A generic parameter forwarded into a tuple-bounded
-position satisfies it only through its own declared tuple bound — a
+position satisfies it only through its own declared tuple bound: a
 contained arity range whose element bound names the same trait or a
 subtrait. <em><code>keyof</code> and spread parameters are recorded future work.</em></p>
 <p><strong>Positional access</strong> <code>t.0</code>, <code>t.1</code> (chaining as <code>t.0.1</code>) types as that
@@ -323,16 +323,16 @@ yields its region as a value (destructuring reads the same layout).</p>
 <h2 id="510--and-"><a class="header" href="#510--and-">5.10 <code>!</code> and <code>?.</code></a></h2>
 <p>Both dispatch through lang-item traits and desugar per expression:</p>
 <ul>
-<li><code>e!</code> — <strong>try-assert</strong>. With <code>v = e</code> of a type implementing
+<li><code>e!</code>: <strong>try-assert</strong>. With <code>v = e</code> of a type implementing
 <code>Try&lt;T, B&gt;</code>: if <code>v.verdict()</code> is <code>Good(t)</code>, the value is <code>t</code>;
 if <code>Bad(b)</code>, the enclosing function returns
 <code>R::from_bad(b)</code> where <code>R</code> is its declared return type (which must
 implement <code>Try&lt;_, B&gt;</code> compatibly). <code>Option</code> and <code>Result</code> implement
 <code>Try</code> in std.</li>
-<li><code>e?.m…</code> — <strong>lift</strong>. With <code>v = e</code> of a container type implementing
+<li><code>e?.m…</code>: <strong>lift</strong>. With <code>v = e</code> of a container type implementing
 <code>Lift</code> + <code>Try</code>: if <code>v</code> is good with value <code>t</code>, the continuation
 (<code>.m</code> and the following plain postfixes, §3.6) applies to <code>t</code>; the
-result re-wraps in the container — unless the continuation itself
+result re-wraps in the container, unless the continuation itself
 yields the container type, in which case it is returned as-is
 (flattening). If <code>v</code> is bad, the container passes through unchanged.</li>
 </ul>
@@ -353,7 +353,7 @@ fun main() {
 <li>An unsatisfied bound at a call (<code>generic parameter 'T' is missing the bound …</code>).</li>
 <li>A <code>match</code> whose VALUE legs’ types don’t unify. Diverging legs
 (<code>ret</code>, <code>panic</code>, <code>jump</code>) are <code>Never</code> and don’t participate (§5.1).</li>
-<li>An <code>i53</code>/<code>i32</code> operand mix (no implicit widening — suffix the
+<li>An <code>i53</code>/<code>i32</code> operand mix (no implicit widening; suffix the
 literal).</li>
 </ul>
 <p><em>Implementation note (tracked gaps): a closure bound to a local and
