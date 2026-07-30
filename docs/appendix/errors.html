@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-4a4f8eef.js";
+            window.path_to_searchindex_js = "../searchindex-5afa73ac.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -245,9 +245,16 @@ declaration, not just its name: the receiver convention (<code>self</code> / <co
 convention and type, the return type, and, for a generic method, the
 type-parameter count. Types are compared with <code>Self</code> read as the impl’s
 subject and the trait’s generic parameters read as the <code>with</code>-clause
-arguments (<code>impl Meters with From&lt;Feet&gt;</code> expects <code>fun from(value: Feet): Meters</code>). Asyncness is not required to match: an async impl of a
-synchronous trait method is allowed (dispatch is monomorphized, so callers
-await it regardless).
+arguments (<code>impl Meters with From&lt;Feet&gt;</code> expects <code>fun from(value: Feet): Meters</code>). When the trait’s parameter has a <code>Self</code> default and you supply
+no argument, it reads as the subject: <code>impl Meters with Add</code> expects
+<code>fun add(self, b: Meters): Meters</code>, while <code>impl Meters with Add&lt;Feet&gt;</code>
+expects <code>fun add(self, b: Feet): Meters</code> — the argument changes, the
+<code>Self</code> return does not. A generic method’s own type parameters are held
+to the trait’s promise too: declaring <code>fun go&lt;T&gt;(&amp;self, x: T)</code> and then
+implementing <code>fun go&lt;T&gt;(&amp;self, x: str)</code> narrows what the trait promised
+to accept, and is rejected. Asyncness is not required to match: an async
+impl of a synchronous trait method is allowed (dispatch is monomorphized,
+so callers await it regardless).
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“match is not exhaustive: missing …”</strong> · <strong>“match is not exhaustive: add a catch-all <code>_</code> leg”</strong>
 Some variants have no arm. Handle them or add <code>_ =&gt; …</code>. This error is
