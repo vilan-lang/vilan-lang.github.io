@@ -33,6 +33,75 @@ function __map_values(map) {
 function __shared_new(value) {
 	return { v: value };
 }
+class __Task {
+	constructor(run, origin, nursery) {
+		this.origin = origin;
+		this.observed = false;
+		this.nursery = nursery;
+		this.owned = !!nursery;
+		this.rejected = false;
+		this.error = undefined;
+		this.promise = run();
+		this.promise.then(null, (error) => {
+			this.rejected = true;
+			this.error = error;
+			if (this.owned && !__nursery_is_cancel(error)) this.nursery.__fail(this);
+			if (!this.observed && !this.owned) {
+				globalThis.setTimeout(() => {
+					if (!this.observed) console.error("unhandled task error (spawned in " + this.origin + "): " + String(error));
+				}, 0);
+			}
+		});
+		if (nursery) nursery.children.push(this);
+	}
+	then(onFulfilled, onRejected) {
+		this.observed = true;
+		return this.promise.then(onFulfilled, onRejected);
+	}
+}
+function __task(run, origin, nursery) {
+	return new __Task(run, origin, nursery);
+}
+class __Timer {
+	constructor(ms) {
+		this.settled = false;
+		this.verdict = false;
+		this.waiters = [];
+		this.id = setTimeout(() => this.__settle(true), ms);
+	}
+	__settle(verdict) {
+		if (this.settled) return;
+		this.settled = true;
+		this.verdict = verdict;
+		const waiters = this.waiters;
+		this.waiters = [];
+		for (const wake of waiters) wake(verdict);
+	}
+	cancel() {
+		if (this.settled) return;
+		clearTimeout(this.id);
+		this.__settle(false);
+	}
+	wait(signal) {
+		if (this.settled) return Promise.resolve(this.verdict);
+		const sig = signal && signal[0] === 0 ? signal[1] : undefined;
+		return new Promise((resolve, reject) => {
+			if (sig && sig.aborted) {
+				reject(sig.reason);
+				return;
+			}
+			this.waiters.push(resolve);
+			if (sig) sig.addEventListener("abort", () => {
+				const parked = this.waiters.indexOf(resolve);
+				if (parked >= 0) this.waiters.splice(parked, 1);
+				reject(sig.reason);
+			}, { once: true });
+		});
+	}
+}
+function __timer(ms) {
+	return new __Timer(ms);
+}
 function hash(self) {
 	return __hash(self);
 }
@@ -82,7 +151,7 @@ function drain(turn) {
 		turn[1].v = false;
 	}
 }
-function dispose(self, $ab) {
+function dispose(self, $ah) {
 	let kept = [  ];
 	for (const subscriber of self[0].v) {
 		if (subscriber[0] !== self[1]) {
@@ -90,10 +159,10 @@ function dispose(self, $ab) {
 		}
 	}
 	self[0].v = kept;
-	const $ac = $ab;
-	let $ad = null;
-	if ($ac[0] === 0) {
-		const turn = $ac[1];
+	const $ai = $ah;
+	let $aj = null;
+	if ($ai[0] === 0) {
+		const turn = $ai[1];
 		let kept_pending = [  ];
 		for (const subscriber2 of turn[0].v) {
 			if (subscriber2[0] !== self[1]) {
@@ -101,11 +170,11 @@ function dispose(self, $ab) {
 			}
 		}
 		turn[0].v = kept_pending;
-		$ad = undefined;
+		$aj = undefined;
 	} else {
-		$ad = undefined;
+		$aj = undefined;
 	}
-	return $ad;
+	return $aj;
 }
 function new3() {
 	return [ __shared_new([  ]) ];
@@ -119,91 +188,111 @@ function dispose2(self) {
 	}
 	self[0].v = [  ];
 }
-function get_owner($W) {
-	return $W;
+function get_owner($ac) {
+	return $ac;
 }
-function view(tag) {
+function after(ms) {
+	return [ __timer(ms) ];
+}
+async function wait(self, $y) {
+	return await (self[0].wait(ambient_signal($y)));
+}
+function cancel(self) {
+	self[0].cancel();
+}
+function ambient_signal($z) {
+	const $A = $z;
 	let $B = null;
-	if (is_svg_tag(tag)) {
-		$B = [ document.createElementNS("http://www.w3.org/2000/svg", tag) ];
+	if ($A[0] === 0) {
+		const n = $A[1];
+		$B = [ 0, n.signal_of() ];
 	} else {
-		$B = [ document.createElement(tag) ];
+		$B = [ 1 ];
 	}
 	return $B;
 }
-function is_svg_tag(tag) {
-	const $z = tag;
-	let $A = null;
-	if ($z === "svg") {
-		$A = true;
-	} else if ($z === "path") {
-		$A = true;
-	} else if ($z === "circle") {
-		$A = true;
-	} else if ($z === "ellipse") {
-		$A = true;
-	} else if ($z === "rect") {
-		$A = true;
-	} else if ($z === "line") {
-		$A = true;
-	} else if ($z === "polyline") {
-		$A = true;
-	} else if ($z === "polygon") {
-		$A = true;
-	} else if ($z === "g") {
-		$A = true;
-	} else if ($z === "defs") {
-		$A = true;
-	} else if ($z === "use") {
-		$A = true;
-	} else if ($z === "symbol") {
-		$A = true;
-	} else if ($z === "marker") {
-		$A = true;
-	} else if ($z === "pattern") {
-		$A = true;
-	} else if ($z === "mask") {
-		$A = true;
-	} else if ($z === "clipPath") {
-		$A = true;
-	} else if ($z === "linearGradient") {
-		$A = true;
-	} else if ($z === "radialGradient") {
-		$A = true;
-	} else if ($z === "stop") {
-		$A = true;
-	} else if ($z === "text") {
-		$A = true;
-	} else if ($z === "tspan") {
-		$A = true;
-	} else if ($z === "textPath") {
-		$A = true;
-	} else if ($z === "filter") {
-		$A = true;
-	} else if ($z === "foreignObject") {
-		$A = true;
-	} else if ($z === "feGaussianBlur") {
-		$A = true;
-	} else if ($z === "feColorMatrix") {
-		$A = true;
-	} else if ($z === "feOffset") {
-		$A = true;
-	} else if ($z === "feMerge") {
-		$A = true;
-	} else if ($z === "feMergeNode") {
-		$A = true;
-	} else if ($z === "feFlood") {
-		$A = true;
-	} else if ($z === "feComposite") {
-		$A = true;
-	} else if ($z === "feBlend") {
-		$A = true;
-	} else if ($z === "feDropShadow") {
-		$A = true;
+function view(tag) {
+	let $H = null;
+	if (is_svg_tag(tag)) {
+		$H = [ document.createElementNS("http://www.w3.org/2000/svg", tag) ];
 	} else {
-		$A = false;
+		$H = [ document.createElement(tag) ];
 	}
-	return $A;
+	return $H;
+}
+function is_svg_tag(tag) {
+	const $F = tag;
+	let $G = null;
+	if ($F === "svg") {
+		$G = true;
+	} else if ($F === "path") {
+		$G = true;
+	} else if ($F === "circle") {
+		$G = true;
+	} else if ($F === "ellipse") {
+		$G = true;
+	} else if ($F === "rect") {
+		$G = true;
+	} else if ($F === "line") {
+		$G = true;
+	} else if ($F === "polyline") {
+		$G = true;
+	} else if ($F === "polygon") {
+		$G = true;
+	} else if ($F === "g") {
+		$G = true;
+	} else if ($F === "defs") {
+		$G = true;
+	} else if ($F === "use") {
+		$G = true;
+	} else if ($F === "symbol") {
+		$G = true;
+	} else if ($F === "marker") {
+		$G = true;
+	} else if ($F === "pattern") {
+		$G = true;
+	} else if ($F === "mask") {
+		$G = true;
+	} else if ($F === "clipPath") {
+		$G = true;
+	} else if ($F === "linearGradient") {
+		$G = true;
+	} else if ($F === "radialGradient") {
+		$G = true;
+	} else if ($F === "stop") {
+		$G = true;
+	} else if ($F === "text") {
+		$G = true;
+	} else if ($F === "tspan") {
+		$G = true;
+	} else if ($F === "textPath") {
+		$G = true;
+	} else if ($F === "filter") {
+		$G = true;
+	} else if ($F === "foreignObject") {
+		$G = true;
+	} else if ($F === "feGaussianBlur") {
+		$G = true;
+	} else if ($F === "feColorMatrix") {
+		$G = true;
+	} else if ($F === "feOffset") {
+		$G = true;
+	} else if ($F === "feMerge") {
+		$G = true;
+	} else if ($F === "feMergeNode") {
+		$G = true;
+	} else if ($F === "feFlood") {
+		$G = true;
+	} else if ($F === "feComposite") {
+		$G = true;
+	} else if ($F === "feBlend") {
+		$G = true;
+	} else if ($F === "feDropShadow") {
+		$G = true;
+	} else {
+		$G = false;
+	}
+	return $G;
 }
 function text(self, content) {
 	self[0].textContent = content;
@@ -215,7 +304,7 @@ function styled(self, style) {
 }
 function style_var(self, name, source) {
 	const element = __clone(self[0]);
-	$E(source, (value) => {
+	$R(source, (value) => {
 		return element.style.setProperty(name, value);
 	});
 	return self;
@@ -226,8 +315,8 @@ function attr(self, name, value) {
 }
 function on(self, event, handler) {
 	self[0].addEventListener(event, () => {
-		return $P([ 1 ], ($O) => {
-			return handler($O);
+		return $V([ 1 ], ($U) => {
+			return handler($U);
 		});
 	});
 	return self;
@@ -236,20 +325,20 @@ function child(self, child2) {
 	self[0].appendChild(child2[0]);
 	return self;
 }
-function bind_text(self, source, $ai, $aj) {
+function bind_text(self, source, $ak, $al) {
 	const element = __clone(self[0]);
-	$ak(source, (value) => {
+	$am(source, (value) => {
 		element.textContent = value;
 		return;
-	}, $ai, $aj);
+	}, $ak, $al);
 	return self;
 }
-function show(self, condition, $R, $S) {
+function show(self, condition, $X, $Y) {
 	const element = __clone(self[0]);
-	$T(condition, (visible) => {
+	$Z(condition, (visible) => {
 		element.hidden = !(visible);
 		return;
-	}, $R, $S);
+	}, $X, $Y);
 	return self;
 }
 function mount(id, view2) {
@@ -258,11 +347,11 @@ function mount(id, view2) {
 	element.appendChild(view2[0]);
 }
 function mount_root(id, body) {
-	const $aY = $aX([ 1 ], ($aV) => {
-		return $aW(body);
+	const $bb = $ba([ 1 ], ($aY) => {
+		return $aZ(body);
 	});
-	const built = $aY[0];
-	const root = $aY[1];
+	const built = $bb[0];
+	const root = $bb[1];
 	mount(id, built);
 	if (__hmr_active()) {
 		const element = document.getElementById(id);
@@ -281,10 +370,10 @@ function on_teardown(cleanup) {
 }
 function class_list(self) {
 	let out = "";
-	for (const entry of $C(self[0])) {
-		const $D = entry;
-		const class2 = $D[0];
-		const _declaration = $D[1];
+	for (const entry of $P(self[0])) {
+		const $Q = entry;
+		const class2 = $Q[0];
+		const _declaration = $Q[1];
 		if (out === "") {
 			out = class2;
 		} else {
@@ -295,76 +384,73 @@ function class_list(self) {
 }
 function add(self, b) {
 	let rules = __clone(self[0]);
-	for (const key of $G(b[0])) {
-		const $K = $H(b[0], key);
-		let $L = null;
-		if ($K[0] === 0) {
-			const entry = $K[1];
-			$L = $M(rules, key, entry);
+	for (const key of $I(b[0])) {
+		const $M = $J(b[0], key);
+		let $N = null;
+		if ($M[0] === 0) {
+			const entry = $M[1];
+			$N = $O(rules, key, entry);
 		} else {
-			$L = undefined;
+			$N = undefined;
 		}
-		$L;
+		$N;
 	}
 	return [ rules ];
 }
+function template_option(value, label) {
+	return text(attr(view("option"), "value", value), label);
+}
 function severity_tag(row) {
-	const $au = row[1];
-	let $av = null;
-	if ($au === "error") {
-		$av = text(styled(view("span"), diag_error), "error");
+	const $ax = row[1];
+	let $ay = null;
+	if ($ax === "error") {
+		$ay = text(styled(view("span"), diag_error), "error");
 	} else {
-		$av = text(styled(view("span"), diag_warning), "warning");
+		$ay = text(styled(view("span"), diag_warning), "warning");
 	}
-	return $av;
+	return $ay;
 }
 function diagnostic_row(row) {
 	const head = child(child(child(view("div"), severity_tag(row)), text(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " ")), text(view("span"), row[5]));
-	const $aw = row[6];
-	let $ax = null;
-	if ($aw === "") {
-		$ax = head;
+	const $az = row[6];
+	let $aA = null;
+	if ($az === "") {
+		$aA = head;
 	} else {
-		$ax = child(child(view("div"), head), text(styled(view("div"), diag_note), "  note: " + row[6]));
+		$aA = child(child(view("div"), head), text(styled(view("div"), diag_note), "  note: " + row[6]));
 	}
-	return $ax;
+	return $aA;
 }
 function console_row(row) {
-	const $aO = row[1];
-	let $aP = null;
-	if ($aO === "error") {
-		$aP = text(styled(view("div"), console_error), row[2]);
+	const $aR = row[1];
+	let $aS = null;
+	if ($aR === "error") {
+		$aS = text(styled(view("div"), console_error), row[2]);
 	} else {
-		$aP = text(view("div"), row[2]);
+		$aS = text(view("div"), row[2]);
 	}
-	return $aP;
+	return $aS;
 }
-function playground_page(status2, diagnostics2, console_lines2, can_format2, run2, format2, share2, pick2, $x, $y) {
-	return child(child(styled(view("div"), shell), top_bar($a("1"))), child(child(child(styled(view("main"), add(wide_column, workbench)), text(styled(view("h1"), pane_label), "Playground \u{2014} vilan in the browser")), child(child(child(child(child(child(child(styled(view("div"), controls), on(text(styled(view("button"), run_button), "Run"), "click", ($N) => {
+function playground_page(status2, diagnostics2, console_lines2, can_format2, share_label2, run2, format2, share2, $D, $E) {
+	return child(child(styled(view("div"), add(shell, page_fill)), top_bar($a("1"))), child(child(child(styled(view("main"), add(wide_column, workbench)), text(styled(view("h1"), pane_label), "Playground: vilan in the browser")), child(child(child(child(styled(view("div"), controls), on(text(styled(view("button"), run_button), "Run"), "click", ($T) => {
 		return run2();
-	})), show(on(text(styled(view("button"), example_button), "Format"), "click", ($Q) => {
+	})), show(on(text(styled(view("button"), example_button), "Format"), "click", ($W) => {
 		return format2();
-	}), can_format2, $x, $y)), on(text(styled(view("button"), example_button), "Share"), "click", ($ae) => {
+	}), can_format2, $D, $E)), on(bind_text(styled(view("button"), example_button), share_label2, $D, $E), "click", ($an) => {
 		return share2();
-	})), on(text(styled(view("button"), example_button), "Counter"), "click", ($af) => {
-		return pick2("counter");
-	})), on(text(styled(view("button"), example_button), "Hello"), "click", ($ag) => {
-		return pick2("hello");
-	})), on(text(styled(view("button"), example_button), "Styles"), "click", ($ah) => {
-		return pick2("styles");
-	})), bind_text(styled(view("p"), status_line), status2, $x, $y))), child(child(styled(view("div"), panes), child(child(child(child(styled(view("div"), pane), text(styled(view("p"), pane_label), "Program")), attr(styled(view("div"), editor_host), "id", "editor")), text(styled(view("p"), pane_label), "Diagnostics")), child(child(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Nothing to report."), $al(diagnostics2, (rows) => {
+	})), bind_text(attr(styled(view("p"), status_line), "role", "status"), status2, $D, $E))), child(child(styled(view("div"), panes), child(child(child(child(styled(view("div"), pane), child(child(styled(view("div"), pane_head), text(styled(view("p"), pane_label), "Program")), child(child(child(child(attr(attr(styled(view("select"), template_select), "id", "template"), "aria-label", "Load an example"), text(attr(attr(attr(view("option"), "value", ""), "disabled", "true"), "hidden", "true"), "Examples")), template_option("counter", "Counter: reactive state")), template_option("hello", "Hello: mount and print")), template_option("styles", "Styles: compile-time CSS")))), attr(attr(styled(view("div"), editor_host), "id", "editor"), "aria-label", "Program editor")), text(styled(view("p"), pane_label), "Diagnostics")), child(child(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Nothing to report."), $ao(diagnostics2, (rows) => {
 		return rows.length === 0;
-	}, $x), $x, $y)), $ay(view("div"), diagnostics2, (row) => {
+	}, $D), $D, $E)), $aB(view("div"), diagnostics2, (row) => {
 		return row[0];
-	}, (row, $at) => {
+	}, (row, $aw) => {
 		return diagnostic_row(row);
-	}, $x, $y)))), child(child(child(child(styled(view("div"), pane), text(styled(view("p"), pane_label), "Result")), attr(styled(view("div"), runner_host), "id", "runner")), text(styled(view("p"), pane_label), "Console")), child(child(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Program output lands here."), $aL(console_lines2, (rows) => {
+	}, $D, $E)))), child(child(child(child(styled(view("div"), pane), text(styled(view("p"), pane_label), "Result")), attr(attr(styled(view("div"), runner_host), "id", "runner"), "aria-label", "Program result")), text(styled(view("p"), pane_label), "Console")), child(child(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Program output lands here."), $aO(console_lines2, (rows) => {
 		return rows.length === 0;
-	}, $x), $x, $y)), $aQ(view("div"), console_lines2, (row) => {
+	}, $D), $D, $E)), $aT(view("div"), console_lines2, (row) => {
 		return row[0];
-	}, (row, $aN) => {
+	}, (row, $aQ) => {
 		return console_row(row);
-	}, $x, $y))))));
+	}, $D, $E))))));
 }
 function eq(self, other) {
 	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2] && self[3] === other[3] && self[4] === other[4] && self[5] === other[5] && self[6] === other[6];
@@ -466,113 +552,113 @@ function $r(self, value, $f) {
 	}
 	return $t;
 }
-function $C(self) {
-	let result = [  ];
-	for (const entry of __map_values(self[0])) {
-		result.push(entry[1]);
-	}
-	return result;
-}
-function $F(self) {
-	return self[0].v;
-}
-function $E(self, observer) {
-	const id = fresh_id();
-	self[1].v.push([ id, () => {
-		observer($F(self));
-		return;
-	} ]);
-	observer($F(self));
-	return [ self[1], id ];
-}
-function $G(self) {
+function $I(self) {
 	let result = [  ];
 	for (const entry of __map_values(self[0])) {
 		result.push(entry[0]);
 	}
 	return result;
 }
-function $H(self, key) {
-	const $I = __map_get(self[0], hash(key));
-	let $J = null;
-	if ($I[0] === 0) {
-		const entry = $I[1];
-		$J = [ 0, entry[1] ];
+function $J(self, key) {
+	const $K = __map_get(self[0], hash(key));
+	let $L = null;
+	if ($K[0] === 0) {
+		const entry = $K[1];
+		$L = [ 0, entry[1] ];
 	} else {
-		$J = [ 1 ];
+		$L = [ 1 ];
 	}
-	return $J;
+	return $L;
 }
-function $M(self, key, value) {
+function $O(self, key, value) {
 	self[0].set(hash(key), [ key, value ]);
 }
-function $P(policy, body) {
+function $P(self) {
+	let result = [  ];
+	for (const entry of __map_values(self[0])) {
+		result.push(entry[1]);
+	}
+	return result;
+}
+function $S(self) {
+	return self[0].v;
+}
+function $R(self, observer) {
+	const id = fresh_id();
+	self[1].v.push([ id, () => {
+		observer($S(self));
+		return;
+	} ]);
+	observer($S(self));
+	return [ self[1], id ];
+}
+function $V(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
 	fresh[2].v = true;
 	return result;
 }
-function $Y(self) {
+function $ae(self) {
 	return self[0].v;
 }
-function $X(self, observer) {
+function $ad(self, observer) {
 	const id = fresh_id();
 	self[1].v.push([ id, () => {
-		observer($Y(self));
+		observer($ae(self));
 		return;
 	} ]);
-	observer($Y(self));
+	observer($ae(self));
 	return [ self[1], id ];
 }
-function $Z(self, item, $aa) {
+function $af(self, item, $ag) {
 	self[0].v.push(() => {
-		dispose(item, $aa);
+		dispose(item, $ag);
 		return;
 	});
 	return item;
 }
-function $T(self, observer, $U, $V) {
-	$Z(get_owner($V), $X(self, observer), $U);
+function $Z(self, observer, $aa, $ab) {
+	$af(get_owner($ab), $ad(self, observer), $aa);
 }
-function $ak(self, observer, $U, $V) {
-	$Z(get_owner($V), $E(self, observer), $U);
+function $am(self, observer, $aa, $ab) {
+	$af(get_owner($ab), $R(self, observer), $aa);
 }
-function $an(self) {
+function $aq(self) {
 	return self[0].v;
 }
-function $ao(self, value, $f) {
+function $ar(self, value, $f) {
 	self[0].v = value;
-	const $ap = $f;
-	let $aq = null;
-	if ($ap[0] === 0) {
-		const turn = $ap[1];
-		$aq = enqueue(turn, self[1].v);
+	const $as = $f;
+	let $at = null;
+	if ($as[0] === 0) {
+		const turn = $as[1];
+		$at = enqueue(turn, self[1].v);
 	} else {
-		const $ar = $j(draining_turns.v);
-		let $as = null;
-		if ($ar[0] === 0) {
-			const draining = $ar[1];
-			$as = enqueue(draining, self[1].v);
+		const $au = $j(draining_turns.v);
+		let $av = null;
+		if ($au[0] === 0) {
+			const draining = $au[1];
+			$av = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$as = undefined;
+			$av = undefined;
 		}
-		$aq = $as;
+		$at = $av;
 	}
-	return $aq;
+	return $at;
 }
-function $al(self, transform, $am) {
-	const derived = $d(transform($an(self)));
+function $ao(self, transform, $ap) {
+	const derived = $d(transform($aq(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$ao(derived, transform($an(self)), $am);
+		$ar(derived, transform($aq(self)), $ap);
 		return;
 	} ]);
 	return derived;
 }
-function $aB(old_keys, old_items, items, key_of) {
+function $aE(old_keys, old_items, items, key_of) {
 	let claimed = [  ];
 	for (const _ of old_keys) {
 		claimed.push(false);
@@ -585,13 +671,13 @@ function $aB(old_keys, old_items, items, key_of) {
 		while (index < old_keys.length) {
 			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
 				__at_put(claimed, index, true);
-				let $aC = null;
+				let $aF = null;
 				if (eq(__at(old_items, index), item)) {
-					$aC = [ 0, index ];
+					$aF = [ 0, index ];
 				} else {
-					$aC = [ 1, index ];
+					$aF = [ 1, index ];
 				}
-				step = $aC;
+				step = $aF;
 				break;
 			}
 			index = index + 1;
@@ -608,38 +694,38 @@ function $aB(old_keys, old_items, items, key_of) {
 	}
 	return [ steps, removed ];
 }
-function $aG(owner, body) {
+function $aJ(owner, body) {
 	return body(owner);
 }
-function $aK(self) {
+function $aN(self) {
 	return self[0].v;
 }
-function $aJ(self, observer) {
+function $aM(self, observer) {
 	const id = fresh_id();
 	self[1].v.push([ id, () => {
-		observer($aK(self));
+		observer($aN(self));
 		return;
 	} ]);
-	observer($aK(self));
+	observer($aN(self));
 	return [ self[1], id ];
 }
-function $aI(self, observer, $U, $V) {
-	$Z(get_owner($V), $aJ(self, observer), $U);
+function $aL(self, observer, $aa, $ab) {
+	$af(get_owner($ab), $aM(self, observer), $aa);
 }
-function $ay(self, source, key, render, $az, $aA) {
+function $aB(self, source, key, render, $aC, $aD) {
 	const element = __clone(self[0]);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
 	const row_views = __shared_new([  ]);
 	const row_owners = __shared_new([  ]);
-	defer(get_owner($aA), () => {
+	defer(get_owner($aD), () => {
 		for (const owner of row_owners.v) {
 			dispose2(owner);
 		}
 		return;
 	});
-	$aI(source, (list) => {
-		const plan = $aB(row_keys.v, row_items.v, list, key);
+	$aL(source, (list) => {
+		const plan = $aE(row_keys.v, row_items.v, list, key);
 		const previous_views = row_views.v;
 		const previous_owners = row_owners.v;
 		for (const index of plan[1]) {
@@ -651,32 +737,32 @@ function $ay(self, source, key, render, $az, $aA) {
 		let position = 0;
 		for (const step of plan[0]) {
 			const item = __at(list, position);
-			const $aD = step;
-			let $aE = null;
-			if ($aD[0] === 0) {
-				const index2 = $aD[1];
+			const $aG = step;
+			let $aH = null;
+			if ($aG[0] === 0) {
+				const index2 = $aG[1];
 				next_views.push(__at(previous_views, index2));
 				next_owners.push(__at(previous_owners, index2));
-				$aE = undefined;
-			} else if ($aD[0] === 1) {
-				const index3 = $aD[1];
+				$aH = undefined;
+			} else if ($aG[0] === 1) {
+				const index3 = $aG[1];
 				dispose2(__at(previous_owners, index3));
 				__at(previous_views, index3)[0].remove();
 				const owner = new3();
-				next_views.push($aG(owner, ($aF) => {
-					return render(item, $aF);
+				next_views.push($aJ(owner, ($aI) => {
+					return render(item, $aI);
 				}));
 				next_owners.push(owner);
-				$aE = undefined;
+				$aH = undefined;
 			} else {
 				const owner2 = new3();
-				next_views.push($aG(owner2, ($aH) => {
-					return render(item, $aH);
+				next_views.push($aJ(owner2, ($aK) => {
+					return render(item, $aK);
 				}));
 				next_owners.push(owner2);
-				$aE = undefined;
+				$aH = undefined;
 			}
-			$aE;
+			$aH;
 			position = position + 1;
 		}
 		for (const row of next_views) {
@@ -691,21 +777,21 @@ function $ay(self, source, key, render, $az, $aA) {
 		row_views.v = next_views;
 		row_owners.v = next_owners;
 		return;
-	}, $az, $aA);
+	}, $aC, $aD);
 	return self;
 }
-function $aM(self) {
+function $aP(self) {
 	return self[0].v;
 }
-function $aL(self, transform, $am) {
-	const derived = $d(transform($aM(self)));
+function $aO(self, transform, $ap) {
+	const derived = $d(transform($aP(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$ao(derived, transform($aM(self)), $am);
+		$ar(derived, transform($aP(self)), $ap);
 		return;
 	} ]);
 	return derived;
 }
-function $aR(old_keys, old_items, items, key_of) {
+function $aU(old_keys, old_items, items, key_of) {
 	let claimed = [  ];
 	for (const _ of old_keys) {
 		claimed.push(false);
@@ -718,13 +804,13 @@ function $aR(old_keys, old_items, items, key_of) {
 		while (index < old_keys.length) {
 			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
 				__at_put(claimed, index, true);
-				let $aS = null;
+				let $aV = null;
 				if (eq2(__at(old_items, index), item)) {
-					$aS = [ 0, index ];
+					$aV = [ 0, index ];
 				} else {
-					$aS = [ 1, index ];
+					$aV = [ 1, index ];
 				}
-				step = $aS;
+				step = $aV;
 				break;
 			}
 			index = index + 1;
@@ -741,20 +827,20 @@ function $aR(old_keys, old_items, items, key_of) {
 	}
 	return [ steps, removed ];
 }
-function $aQ(self, source, key, render, $az, $aA) {
+function $aT(self, source, key, render, $aC, $aD) {
 	const element = __clone(self[0]);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
 	const row_views = __shared_new([  ]);
 	const row_owners = __shared_new([  ]);
-	defer(get_owner($aA), () => {
+	defer(get_owner($aD), () => {
 		for (const owner of row_owners.v) {
 			dispose2(owner);
 		}
 		return;
 	});
-	$aI(source, (list) => {
-		const plan = $aR(row_keys.v, row_items.v, list, key);
+	$aL(source, (list) => {
+		const plan = $aU(row_keys.v, row_items.v, list, key);
 		const previous_views = row_views.v;
 		const previous_owners = row_owners.v;
 		for (const index of plan[1]) {
@@ -766,32 +852,32 @@ function $aQ(self, source, key, render, $az, $aA) {
 		let position = 0;
 		for (const step of plan[0]) {
 			const item = __at(list, position);
-			const $aT = step;
-			let $aU = null;
-			if ($aT[0] === 0) {
-				const index2 = $aT[1];
+			const $aW = step;
+			let $aX = null;
+			if ($aW[0] === 0) {
+				const index2 = $aW[1];
 				next_views.push(__at(previous_views, index2));
 				next_owners.push(__at(previous_owners, index2));
-				$aU = undefined;
-			} else if ($aT[0] === 1) {
-				const index3 = $aT[1];
+				$aX = undefined;
+			} else if ($aW[0] === 1) {
+				const index3 = $aW[1];
 				dispose2(__at(previous_owners, index3));
 				__at(previous_views, index3)[0].remove();
 				const owner = new3();
-				next_views.push($aG(owner, ($aF) => {
-					return render(item, $aF);
+				next_views.push($aJ(owner, ($aI) => {
+					return render(item, $aI);
 				}));
 				next_owners.push(owner);
-				$aU = undefined;
+				$aX = undefined;
 			} else {
 				const owner2 = new3();
-				next_views.push($aG(owner2, ($aH) => {
-					return render(item, $aH);
+				next_views.push($aJ(owner2, ($aK) => {
+					return render(item, $aK);
 				}));
 				next_owners.push(owner2);
-				$aU = undefined;
+				$aX = undefined;
 			}
-			$aU;
+			$aX;
 			position = position + 1;
 		}
 		for (const row of next_views) {
@@ -806,109 +892,112 @@ function $aQ(self, source, key, render, $az, $aA) {
 		row_views.v = next_views;
 		row_owners.v = next_owners;
 		return;
-	}, $az, $aA);
+	}, $aC, $aD);
 	return self;
 }
-function $aW(body) {
+function $aZ(body) {
 	const scope = new3();
 	const result = body(scope);
 	return [ result, scope ];
 }
-function $aX(policy, body) {
+function $ba(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
 	fresh[2].v = true;
 	return result;
 }
-function $ba(self, value, $f) {
+function $bd(self, value, $f) {
 	self[0].v = value;
-	const $bb = $f;
-	let $bc = null;
-	if ($bb[0] === 0) {
-		const turn = $bb[1];
-		$bc = enqueue(turn, self[1].v);
+	const $be = $f;
+	let $bf = null;
+	if ($be[0] === 0) {
+		const turn = $be[1];
+		$bf = enqueue(turn, self[1].v);
 	} else {
-		const $bd = $j(draining_turns.v);
-		let $be = null;
-		if ($bd[0] === 0) {
-			const draining = $bd[1];
-			$be = enqueue(draining, self[1].v);
+		const $bg = $j(draining_turns.v);
+		let $bh = null;
+		if ($bg[0] === 0) {
+			const draining = $bg[1];
+			$bh = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$be = undefined;
+			$bh = undefined;
 		}
-		$bc = $be;
+		$bf = $bh;
 	}
-	return $bc;
+	return $bf;
 }
-function $bf(self, value, $f) {
+function $bi(self, value, $f) {
 	self[0].v = value;
-	const $bg = $f;
-	let $bh = null;
-	if ($bg[0] === 0) {
-		const turn = $bg[1];
-		$bh = enqueue(turn, self[1].v);
+	const $bj = $f;
+	let $bk = null;
+	if ($bj[0] === 0) {
+		const turn = $bj[1];
+		$bk = enqueue(turn, self[1].v);
 	} else {
-		const $bi = $j(draining_turns.v);
-		let $bj = null;
-		if ($bi[0] === 0) {
-			const draining = $bi[1];
-			$bj = enqueue(draining, self[1].v);
+		const $bl = $j(draining_turns.v);
+		let $bm = null;
+		if ($bl[0] === 0) {
+			const draining = $bl[1];
+			$bm = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$bj = undefined;
+			$bm = undefined;
 		}
-		$bh = $bj;
+		$bk = $bm;
 	}
-	return $bh;
+	return $bk;
 }
-function $bm(self) {
+function $bp(self) {
 	return self[0].v;
 }
-function $bn(self, value, $f) {
+function $bq(self, value, $f) {
 	self[0].v = value;
-	const $bo = $f;
-	let $bp = null;
-	if ($bo[0] === 0) {
-		const turn = $bo[1];
-		$bp = enqueue(turn, self[1].v);
+	const $br = $f;
+	let $bs = null;
+	if ($br[0] === 0) {
+		const turn = $br[1];
+		$bs = enqueue(turn, self[1].v);
 	} else {
-		const $bq = $j(draining_turns.v);
-		let $br = null;
-		if ($bq[0] === 0) {
-			const draining = $bq[1];
-			$br = enqueue(draining, self[1].v);
+		const $bt = $j(draining_turns.v);
+		let $bu = null;
+		if ($bt[0] === 0) {
+			const draining = $bt[1];
+			$bu = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$br = undefined;
+			$bu = undefined;
 		}
-		$bp = $br;
+		$bs = $bu;
 	}
-	return $bp;
+	return $bs;
 }
-function $bk(self, transform, $bl) {
-	$bn(self, transform($bm(self)), $bl);
+function $bn(self, transform, $bo) {
+	$bq(self, transform($bp(self)), $bo);
 }
 const next_subscriber_id = __shared_new(0);
 const draining_turns = __shared_new([  ]);
 const wide_column = [ [ new Map([ [ "::max-width", [ "::max-width", [ "s1eewcz2", "max-width:1880px" ] ] ], [ "::margin-left", [ "::margin-left", [ "s10oplpw", "margin-left:auto" ] ] ], [ "::margin-right", [ "::margin-right", [ "sp4tc1m", "margin-right:auto" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vtg8d6", "padding-left:32px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t4hls", "padding-right:32px" ] ] ] ]) ] ];
-const workbench = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::gap", [ "::gap", [ "s8myyrk", "gap:var(--space-4)" ] ] ], [ "::padding-top", [ "::padding-top", [ "stbzxs0", "padding-top:var(--space-6)" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s1sgiyn8", "padding-bottom:var(--space-6)" ] ] ] ]) ] ];
-const panes = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::gap", [ "::gap", [ "s8myyrk", "gap:var(--space-4)" ] ] ], [ "1024px::flex-direction", [ "1024px::flex-direction", [ "s1a4afps", "flex-direction:row" ] ] ] ]) ] ];
+const page_fill = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::min-height", [ "::min-height", [ "sw3dlhu", "min-height:100vh" ] ] ] ]) ] ];
+const workbench = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::gap", [ "::gap", [ "s8myyrk", "gap:var(--space-4)" ] ] ], [ "::padding-top", [ "::padding-top", [ "stbzxs0", "padding-top:var(--space-6)" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s1sgiyn8", "padding-bottom:var(--space-6)" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sivwxlf", "min-height:0" ] ] ], [ "::width", [ "::width", [ "s178flj9", "width:100%" ] ] ], [ "::box-sizing", [ "::box-sizing", [ "s9fgd5j", "box-sizing:border-box" ] ] ] ]) ] ];
+const panes = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::gap", [ "::gap", [ "s8myyrk", "gap:var(--space-4)" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sivwxlf", "min-height:0" ] ] ], [ "1024px::flex-direction", [ "1024px::flex-direction", [ "s1a4afps", "flex-direction:row" ] ] ] ]) ] ];
 const pane = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::gap", [ "::gap", [ "s8myyqn", "gap:var(--space-3)" ] ] ], [ "::min-width", [ "::min-width", [ "sitgfdt", "min-width:0" ] ] ], [ "::flex", [ "::flex", [ "s4sfhb", "flex:1 1 0" ] ] ] ]) ] ];
-const pane_label = [ [ new Map([ [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::opacity", [ "::opacity", [ "s3a4et", "opacity:0.6" ] ] ], [ "::font-size", [ "::font-size", [ "sayk1zs", "font-size:12px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "s1odj214", "letter-spacing:0.14em" ] ] ], [ "::text-transform", [ "::text-transform", [ "s1s2tj83", "text-transform:uppercase" ] ] ] ]) ] ];
-const editor_host = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::height", [ "::height", [ "s1wqfokf", "height:420px" ] ] ] ]) ] ];
-const runner_host = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::height", [ "::height", [ "s1wqfokf", "height:420px" ] ] ], [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ] ]) ] ];
+const pane_label = [ [ new Map([ [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::opacity", [ "::opacity", [ "s3a4et", "opacity:0.6" ] ] ], [ "::font-size", [ "::font-size", [ "sayk1zs", "font-size:12px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "s1odj214", "letter-spacing:0.14em" ] ] ], [ "::text-transform", [ "::text-transform", [ "s1s2tj83", "text-transform:uppercase" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
+const editor_host = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sw4tyxs", "min-height:320px" ] ] ] ]) ] ];
+const runner_host = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sw4tyxs", "min-height:320px" ] ] ], [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ] ]) ] ];
 const controls = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ "szotvx1", "flex-wrap:wrap" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::gap", [ "::gap", [ "s8myyqn", "gap:var(--space-3)" ] ] ] ]) ] ];
-const run_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1qm4s0m", "background-color:#EB682E" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::border", [ "::border", [ "s1mnphwb", "border:none" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding", [ "::padding", [ "s1d0a46f", "padding:8px 20px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk3oa", "font-size:14px" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "szyotuk", "opacity:0.9" ] ] ] ]) ] ];
-const example_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding", [ "::padding", [ "s1ihgui1", "padding:7px 14px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::opacity", [ "::opacity", [ "s30a1nw", "opacity:0.85" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "srapg3a", "opacity:1" ] ] ] ]) ] ];
+const run_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1qm4s0m", "background-color:#EB682E" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::border", [ "::border", [ "s1mnphwb", "border:none" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding", [ "::padding", [ "s1d0a46f", "padding:8px 20px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk3oa", "font-size:14px" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "szyotuk", "opacity:0.9" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
+const example_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding", [ "::padding", [ "s1ihgui1", "padding:7px 14px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::opacity", [ "::opacity", [ "s30a1nw", "opacity:0.85" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "srapg3a", "opacity:1" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
 const status_line = [ [ new Map([ [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::opacity", [ "::opacity", [ "s3a4eu", "opacity:0.7" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::margin-left", [ "::margin-left", [ "s10oplpw", "margin-left:auto" ] ] ] ]) ] ];
+const pane_head = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::justify-content", [ "::justify-content", [ "s1yv3ji6", "justify-content:space-between" ] ] ] ]) ] ];
+const template_select = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding", [ "::padding", [ "s1nyo5tw", "padding:6px 10px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::opacity", [ "::opacity", [ "s30a1nw", "opacity:0.85" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "srapg3a", "opacity:1" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
 const report_pre = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::padding", [ "::padding", [ "s1ufvr2", "padding:var(--space-4)" ] ] ], [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::overflow", [ "::overflow", [ "s19aluk0", "overflow:auto" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::line-height", [ "::line-height", [ "s9bu6v4", "line-height:1.6" ] ] ], [ "::font-family", [ "::font-family", [ "s13ygf9q", "font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ], [ "::white-space", [ "::white-space", [ "s41qynl", "white-space:pre-wrap" ] ] ], [ "::min-height", [ "::min-height", [ "sonk3zu", "min-height:96px" ] ] ], [ "::max-height", [ "::max-height", [ "s1sw9ehx", "max-height:240px" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ] ]) ] ];
 const diag_error = [ [ new Map([ [ "::color", [ "::color", [ "s1j2narg", "color:#EB682E" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzhdq", "font-weight:700" ] ] ] ]) ] ];
 const diag_warning = [ [ new Map([ [ "::color", [ "::color", [ "s1itpo6m", "color:#E5AFD9" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzhdq", "font-weight:700" ] ] ] ]) ] ];
@@ -930,18 +1019,19 @@ const status = $a("Loading the compiler\u{2026}");
 const diagnostics = $b([  ]);
 const console_lines = $c([  ]);
 const can_format = $d(false);
+const share_label = $a("Share");
 const next_row_id = __shared_new(0);
 const run = () => {
 	if (VilanPlayground.compile(VilanPlayground.value())) {
 		$e(status, "Compiling\u{2026}", [ 1 ]);
 	} else {
-		$e(status, "Compiler busy \u{2014} queued.", [ 1 ]);
+		$e(status, "Compiler busy; queued.", [ 1 ]);
 	}
 	return;
 };
 const format = () => {
 	if (!(VilanPlayground.format())) {
-		$e(status, "Compiler busy \u{2014} try again.", [ 1 ]);
+		$e(status, "Compiler busy; try again.", [ 1 ]);
 	}
 	return;
 };
@@ -952,33 +1042,82 @@ const pick = (name) => {
 	VilanPlayground.setDoc(VilanPlayground.example(name));
 	$m(diagnostics, [  ], [ 1 ]);
 	$r(console_lines, [  ], [ 1 ]);
-	VilanPlayground.clearProgram();
+	run();
 	return;
 };
-mount_root("app", ($w) => {
-	return playground_page(status, diagnostics, console_lines, can_format, run, format, share, pick, [ 1 ], $w);
+const compiler_ready = __shared_new(false);
+const doc_ready = __shared_new(false);
+const ran_on_arrival = __shared_new(false);
+const run_on_arrival = () => {
+	if (compiler_ready.v && doc_ready.v && !(ran_on_arrival.v)) {
+		ran_on_arrival.v = true;
+		run();
+	}
+	return;
+};
+const share_revert = __shared_new([ 1 ]);
+const flash_share = (label) => {
+	$e(share_label, label, [ 1 ]);
+	const $w = share_revert.v;
+	let $x = null;
+	if ($w[0] === 0) {
+		const timer = $w[1];
+		$x = cancel(timer);
+	} else {
+		$x = undefined;
+	}
+	$x;
+	const timer2 = after(1600);
+	share_revert.v = [ 0, timer2 ];
+	__task(async () => {
+		if (await (wait(timer2, [ 1 ]))) {
+			$e(share_label, "Share", [ 1 ]);
+		}
+		return;
+	}, "main");
+	return;
+};
+mount_root("app", ($C) => {
+	return playground_page(status, diagnostics, console_lines, can_format, share_label, run, format, share, [ 1 ], $C);
 });
 VilanPlayground.init("#editor", VilanPlayground.example("counter"));
 VilanPlayground.startCompiler((event) => {
 	const kind = event.kind;
-	let $aZ = null;
+	let $bc = null;
 	if (kind === "ready") {
-		$ao(can_format, event.canFormat, [ 1 ]);
-		$e(status, "Ready \u{2014} vilan " + event.version, [ 1 ]);
+		$ar(can_format, event.canFormat, [ 1 ]);
+		$e(status, "Ready (vilan " + event.version + ")", [ 1 ]);
+		compiler_ready.v = true;
+		run_on_arrival();
+	} else if (kind === "doc") {
+		doc_ready.v = true;
+		run_on_arrival();
+	} else if (kind === "command") {
+		const command = event.command;
+		if (command === "run") {
+			run();
+		} else if (command === "format") {
+			format();
+		} else if (command === "pick") {
+			pick(event.name);
+		}
+		$bc = undefined;
 	} else if (kind === "formatted") {
 		if (event.changed) {
 			$e(status, "Formatted.", [ 1 ]);
 		} else {
 			$e(status, "Format made no changes.", [ 1 ]);
 		}
-		$aZ = undefined;
+		$bc = undefined;
 	} else if (kind === "shared") {
 		if (event.copied) {
 			$e(status, "Link copied to the clipboard.", [ 1 ]);
+			flash_share("Copied!");
 		} else {
 			$e(status, "Link ready in the address bar.", [ 1 ]);
+			flash_share("Link ready");
 		}
-		$aZ = undefined;
+		$bc = undefined;
 	} else if (kind === "result") {
 		let rows = [  ];
 		let id = next_row_id.v;
@@ -987,26 +1126,26 @@ VilanPlayground.startCompiler((event) => {
 			id = id + 1;
 		}
 		next_row_id.v = id;
-		$ba(diagnostics, rows, [ 1 ]);
-		$bf(console_lines, [  ], [ 1 ]);
+		$bd(diagnostics, rows, [ 1 ]);
+		$bi(console_lines, [  ], [ 1 ]);
 		if (event.ok) {
-			$e(status, "Compiled \u{2014} vilan " + event.version, [ 1 ]);
+			$e(status, "Compiled (vilan " + event.version + ")", [ 1 ]);
 			VilanPlayground.runProgram(event.js, event.css);
 		} else {
 			$e(status, "Build failed; see the diagnostics.", [ 1 ]);
 			VilanPlayground.clearProgram();
 		}
-		$aZ = undefined;
+		$bc = undefined;
 	} else if (kind === "crash") {
 		$e(status, "The compiler crashed on this input; it has been restarted. Please report the program that did it.", [ 1 ]);
 	}
-	return $aZ;
+	return $bc;
 });
 window.addEventListener("message", (host_event) => {
 	const message = host_event.data;
 	const kind = message.kind;
 	if (kind === "log" || kind === "error") {
-		$bk(console_lines, (lines) => {
+		$bn(console_lines, (lines) => {
 			let next = __clone(lines);
 			if (next.length < console_cap) {
 				const id = next_row_id.v;
@@ -1015,7 +1154,7 @@ window.addEventListener("message", (host_event) => {
 			} else if (next.length === console_cap) {
 				const id2 = next_row_id.v;
 				next_row_id.v = id2 + 1;
-				next.push([ id2, "error", "\u{2014} output truncated \u{2014}" ]);
+				next.push([ id2, "error", "[output truncated]" ]);
 			}
 			return next;
 		}, [ 1 ]);
