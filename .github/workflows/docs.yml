@@ -45,6 +45,26 @@ jobs:
           rm -rf docs
           mv toolchain/vilan/docs/book docs
           rm -rf toolchain
+      - name: Generate the book's sitemap
+        # SUMMARY.md decides which pages exist, so the sitemap is generated
+        # from what mdBook actually built rather than kept by hand. Left out:
+        # print.html and toc.html (both carry mdBook's own noindex) and
+        # 404.html (not a page). No lastmod, deliberately: this workflow also
+        # runs on a daily cron and commits only when the book changed, and a
+        # build-date lastmod would make every single run a change.
+        run: |
+          {
+            echo '<?xml version="1.0" encoding="UTF-8"?>'
+            echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            find docs -name '*.html' \
+              ! -name print.html ! -name toc.html ! -name 404.html \
+              | sed -e 's|^docs/|https://vilan-lang.org/docs/|' \
+                    -e 's|/index\.html$|/|' \
+              | sort \
+              | sed -e 's|.*|  <url><loc>&</loc></url>|'
+            echo '</urlset>'
+          } > docs/sitemap.xml
+          echo "::notice::the book's sitemap lists $(grep -c '<url>' docs/sitemap.xml) pages"
       - name: Commit if the book changed
         run: |
           git add -A docs

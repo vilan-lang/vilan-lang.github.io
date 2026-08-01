@@ -1,0 +1,3 @@
+# Session worktrees live under .claude/, same as in the vilan and website
+# repos. Nothing here is part of the published site.
+.claude/
