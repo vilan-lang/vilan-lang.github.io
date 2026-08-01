@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="dark">
+	<meta name="theme-color" content="#120004">
+	<title>Vilan Playground — run vilan in your browser</title>
+	<meta name="description" content="Write and run Vilan in your browser: the compiler itself runs client-side as WebAssembly — no install, no server.">
+	<link rel="icon" href="https://vilan-lang.org/favicon.ico" sizes="48x48">
+	<link rel="icon" href="https://vilan-lang.org/assets/icon-192.png" type="image/png" sizes="192x192">
+	<link rel="apple-touch-icon" href="https://vilan-lang.org/assets/apple-touch-icon.png">
+	<meta property="og:title" content="Vilan Playground">
+	<meta property="og:description" content="Write and run Vilan in your browser: the compiler itself runs client-side as WebAssembly — no install, no server.">
+	<meta property="og:image" content="https://vilan-lang.org/assets/social_card.png">
+	<meta property="og:url" content="https://vilan-lang.org/playground/">
+	<meta property="og:type" content="website">
+	<meta name="twitter:card" content="summary_large_image">
+	<link rel="stylesheet" href="/playground/playground.css">
+	<style>
+		/* Self-hosted webfonts (OFL) — the same faces the landing page loads,
+		   so navigating between the two costs no new fetches. */
+		@font-face {
+			font-family: "Inter";
+			font-style: normal;
+			font-weight: 100 900;
+			font-display: swap;
+			src: url(https://vilan-lang.org/assets/fonts/inter-latin.woff2) format("woff2");
+		}
+		@font-face {
+			font-family: "Vilan Display";
+			font-style: normal;
+			font-weight: 600;
+			font-display: swap;
+			src: url(https://vilan-lang.org/assets/fonts/vilan-display-600-latin.woff2) format("woff2");
+		}
+		html, body { margin: 0; height: 100%; background: #120004; }
+		::selection { background: #F9DFE7; color: #120004; }
+		/* The editor host is a plain div until CodeMirror mounts; the widget
+		   and the per-Run iframe both fill whatever box the page gives them. */
+		#editor .cm-editor { height: 100%; }
+		#runner iframe { border: 0; width: 100%; height: 100%; background: #fff; }
+		@media (prefers-reduced-motion: reduce) {
+			* { animation: none !important; }
+		}
+	</style>
+</head>
+<body>
+	<div id="app"><div class="s1dcp4lt s1jjwgph sondrfd s1om2gx7 sayk3oa snq8cl8"><nav class="s1onro1c s80ttlx si5ywm6 s10uy5mh s143oef3 shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 s1jjwgph s3a4ev svrgm1f s1iy45h3 srapg3a" href="/"><img class="s1iy45h3 svfmjlf" src="https://vilan-lang.org/assets/mark.svg" alt="" height="18"><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="s1jjwgph s3a4ev svrgm1f s1iy45h3 srapg3a" href="#install">Install</a><a class="s1jjwgph s3a4ev svrgm1f s1iy45h3 srapg3a" href="/docs/tour/hello-vilan.html">Learn</a><a class="s1jjwgph s3a4ev svrgm1f s1iy45h3 srapg3a" href="/docs/">Docs</a></div></div></nav><main class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1atdsbb s8myyrk stbzxs0 s1sgiyn8"><h1 class="s1tlfgp4 s3a4et sayk1zs s1odj214 s1s2tj83">Playground — vilan in the browser</h1><div class="sbiovxm szotvx1 s1rpzmas s8myyqn"><button class="s1qm4s0m s1jjwgph skjzgjh s1mnphwb s1r3y9ro s1d0a46f s1onu0uk s19qv9u6 sayk3oa szyotuk">Run</button><button class="s1dnzynr s1jjwgph spit95n s1r3y9ro s1ihgui1 s1onu0uk s19qv9u6 sayk2u1 s30a1nw srapg3a">Counter</button><button class="s1dnzynr s1jjwgph spit95n s1r3y9ro s1ihgui1 s1onu0uk s19qv9u6 sayk2u1 s30a1nw srapg3a">Hello</button><button class="s1dnzynr s1jjwgph spit95n s1r3y9ro s1ihgui1 s1onu0uk s19qv9u6 sayk2u1 s30a1nw srapg3a">Styles</button><p class="s1tlfgp4 s3a4eu sayk2u1 s10oplpw">Loading the compiler…</p></div><div class="sbiovxm s1atdsbb s8myyrk s1a4afps"><div class="sbiovxm s1atdsbb s8myyqn sitgfdt s4sfhb"><p class="s1tlfgp4 s3a4et sayk1zs s1odj214 s1s2tj83">Program</p><div class="s1dnzynr s1r3y9sl spit95n syp1ckj s1wqfokf" id="editor"></div><p class="s1tlfgp4 s3a4et sayk1zs s1odj214 s1s2tj83">Diagnostics</p><pre class="s1dnzynr s1r3y9sl s1ufvr2 s1tlfgp4 s19aluk0 sayk2u1 s9bu6v4 s13ygf9q s41qynl sonk3zu s1sw9ehx spit95n"><div class="s30a1k8">Nothing to report.</div><div></div></pre></div><div class="sbiovxm s1atdsbb s8myyqn sitgfdt s4sfhb"><p class="s1tlfgp4 s3a4et sayk1zs s1odj214 s1s2tj83">Result</p><div class="s1dnzynr s1r3y9sl spit95n syp1ckj s1wqfokf sbiovxm" id="runner"></div><p class="s1tlfgp4 s3a4et sayk1zs s1odj214 s1s2tj83">Console</p><pre class="s1dnzynr s1r3y9sl s1ufvr2 s1tlfgp4 s19aluk0 sayk2u1 s9bu6v4 s13ygf9q s41qynl sonk3zu s1sw9ehx spit95n"><div class="s30a1k8">Program output lands here.</div><div></div></pre></div></div></main></div></div>
+	<!-- The vendored editor bundle (CodeMirror 6 + the worker and iframe
+	     machinery) and the generated example table load as plain scripts, so
+	     both globals exist before the module entry below runs. -->
+	<script src="/playground/examples.js"></script>
+	<script src="/playground/editor.js"></script>
+	<script type="module" src="/playground/playground.js"></script>
+</body>
+</html>
