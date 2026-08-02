@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-52f5a681.js";
+            window.path_to_searchindex_js = "searchindex-573f600f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-91647468.js"></script>
@@ -2784,9 +2784,12 @@ element with that id. It also establishes the root <strong>owner</strong>, which
 why you never think about cleanup: every binding you create, at any
 depth of function calls, registers with the nearest owner automatically
 (the <a href="#reactive-state">reactive guide</a> explains owners).</p>
-<p>If you build UI outside any root you’ll get a compile error mentioning
-<code>owner_scope</code>. It means “wrap this in <code>mount_root</code>” (or
-<code>run_with_owner</code> in a test).</p>
+<p>If you create a reactive binding — a <code>bind_*</code>, a <code>Signal</code> in a slot, a
+<code>when</code>/<code>swap</code>/<code>bind_each</code> — outside any root, you’ll get a compile
+error mentioning <code>owner_scope</code>. It means “wrap this in <code>mount_root</code>”
+(or <code>run_with_owner</code> in a test). Purely static structure needs no
+boundary: <code>mount("app", view("div").child(view("p").text("hi")))</code> is
+fine, because nothing in it subscribes.</p>
 <h2 id="events-run-in-turns"><a class="header" href="#events-run-in-turns">Events run in turns</a></h2>
 <p>Each event dispatch runs your handler inside a fresh <strong>turn</strong>: all the
 signal writes one click causes are batched, and watchers see the final
