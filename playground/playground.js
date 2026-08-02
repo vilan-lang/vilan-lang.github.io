@@ -151,7 +151,7 @@ function drain(turn) {
 		turn[1].v = false;
 	}
 }
-function dispose(self, $am) {
+function dispose(self, $au) {
 	let kept = [  ];
 	for (const subscriber of self[0].v) {
 		if (subscriber[0] !== self[1]) {
@@ -159,10 +159,10 @@ function dispose(self, $am) {
 		}
 	}
 	self[0].v = kept;
-	const $an = $am;
-	let $ao = null;
-	if ($an[0] === 0) {
-		const turn = $an[1];
+	const $av = $au;
+	let $aw = null;
+	if ($av[0] === 0) {
+		const turn = $av[1];
 		let kept_pending = [  ];
 		for (const subscriber2 of turn[0].v) {
 			if (subscriber2[0] !== self[1]) {
@@ -170,11 +170,11 @@ function dispose(self, $am) {
 			}
 		}
 		turn[0].v = kept_pending;
-		$ao = undefined;
+		$aw = undefined;
 	} else {
-		$ao = undefined;
+		$aw = undefined;
 	}
-	return $ao;
+	return $aw;
 }
 function new3() {
 	return [ __shared_new([  ]) ];
@@ -188,8 +188,8 @@ function dispose2(self) {
 	}
 	self[0].v = [  ];
 }
-function get_owner($aj) {
-	return $aj;
+function get_owner($ar) {
+	return $ar;
 }
 function after(ms) {
 	return [ __timer(ms) ];
@@ -304,42 +304,40 @@ function styled(self, style) {
 }
 function style_var(self, name, source) {
 	const element = __clone(self[0]);
-	$Y(source, (value) => {
+	$aa(source, (value) => {
 		return element.style.setProperty(name, value);
 	});
 	return self;
 }
-function attr(self, name, value) {
-	self[0].setAttribute(name, value);
-	return self;
-}
 function on(self, event, handler) {
 	self[0].addEventListener(event, () => {
-		return $ar([ 1 ], ($aq) => {
-			return handler($aq);
+		return $az([ 1 ], ($ay) => {
+			return handler($ay);
 		});
 	});
 	return self;
 }
-function child(self, child2) {
-	self[0].appendChild(child2[0]);
-	return self;
-}
-function bind_text(self, source, $ae, $af) {
+function bind_text(self, source, $am, $an) {
 	const element = __clone(self[0]);
-	$ag(source, (value) => {
+	$ao(source, (value) => {
 		element.textContent = value;
 		return;
-	}, $ae, $af);
+	}, $am, $an);
 	return self;
 }
-function show(self, condition, $as, $at) {
+function show(self, condition, $aA, $aB) {
 	const element = __clone(self[0]);
-	$au(condition, (visible) => {
+	$aC(condition, (visible) => {
 		element.hidden = !(visible);
 		return;
-	}, $as, $at);
+	}, $aA, $aB);
 	return self;
+}
+function place(self, parent) {
+	parent[0].appendChild(self[0]);
+}
+function apply(self, parent, name) {
+	parent[0].setAttribute(name, self);
 }
 function mount(id, view2) {
 	const element = document.getElementById(id);
@@ -347,11 +345,11 @@ function mount(id, view2) {
 	element.appendChild(view2[0]);
 }
 function mount_root(id, body) {
-	const $bl = $bk([ 1 ], ($bi) => {
-		return $bj(body);
+	const $bx = $bw([ 1 ], ($bu) => {
+		return $bv(body);
 	});
-	const built = $bl[0];
-	const root = $bl[1];
+	const built = $bx[0];
+	const root = $bx[1];
 	mount(id, built);
 	if (__hmr_active()) {
 		const element = document.getElementById(id);
@@ -397,69 +395,69 @@ function add(self, b) {
 	}
 	return [ rules ];
 }
-function template_option(value, label) {
-	return text(attr(view("option"), "value", value), label);
+function template_option(value, label, $aF, $aG) {
+	return text($ac(view("option"), "value", value, $aF, $aG), label);
 }
 function severity_tag(row) {
-	const $aH = row[1];
-	let $aI = null;
-	if ($aH === "error") {
-		$aI = text(styled(view("span"), diag_error), "error");
+	const $aT = row[1];
+	let $aU = null;
+	if ($aT === "error") {
+		$aU = text(styled(view("span"), diag_error), "error");
 	} else {
-		$aI = text(styled(view("span"), diag_warning), "warning");
+		$aU = text(styled(view("span"), diag_warning), "warning");
 	}
-	return $aI;
+	return $aU;
 }
-function diagnostic_row(row) {
-	const head = child(child(child(view("div"), severity_tag(row)), text(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " ")), text(view("span"), row[5]));
-	const $aJ = row[6];
-	let $aK = null;
-	if ($aJ === "") {
-		$aK = head;
+function diagnostic_row(row, $aR, $aS) {
+	const head = $af($af($af(view("div"), severity_tag(row), $aR, $aS), text(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " "), $aR, $aS), text(view("span"), row[5]), $aR, $aS);
+	const $aV = row[6];
+	let $aW = null;
+	if ($aV === "") {
+		$aW = head;
 	} else {
-		$aK = child(child(view("div"), head), text(styled(view("div"), diag_note), "  note: " + row[6]));
+		$aW = $af($af(view("div"), head, $aR, $aS), text(styled(view("div"), diag_note), "  note: " + row[6]), $aR, $aS);
 	}
-	return $aK;
+	return $aW;
 }
 function console_row(row) {
-	const $bb = row[1];
-	let $bc = null;
-	if ($bb === "error") {
-		$bc = text(styled(view("div"), console_error), row[2]);
+	const $bn = row[1];
+	let $bo = null;
+	if ($bn === "error") {
+		$bo = text(styled(view("div"), console_error), row[2]);
 	} else {
-		$bc = text(view("div"), row[2]);
+		$bo = text(view("div"), row[2]);
 	}
-	return $bc;
+	return $bo;
 }
 function playground_page(status2, diagnostics2, console_lines2, can_format2, can_platform2, share_label2, mode2, run2, format2, share2, $K, $L) {
-	return child(child(styled(view("div"), add(shell, page_fill)), top_bar($a("1"))), child(child(child(styled(view("main"), add(wide_column, workbench)), text(styled(view("h1"), pane_label), "Playground: vilan in the browser")), child(child(child(child(child(child(styled(view("div"), controls), on(bind_text(styled(view("button"), run_button), $ac(mode2, (current) => {
-		const $aa = current;
-		let $ab = null;
-		if ($aa === "node") {
-			$ab = "Check";
+	return $af($af(styled(view("div"), add(shell, page_fill)), top_bar($a("1"), $K, $L), $K, $L), $af($af($af(styled(view("main"), add(wide_column, workbench)), text(styled(view("h1"), pane_label), "Playground: vilan in the browser"), $K, $L), $af($af($af($af($af($af(styled(view("div"), controls), on(bind_text(styled(view("button"), run_button), $ak(mode2, (current) => {
+		const $ai = current;
+		let $aj = null;
+		if ($ai === "node") {
+			$aj = "Check";
 		} else {
-			$ab = "Run";
+			$aj = "Run";
 		}
-		return $ab;
-	}, $K), $K, $L), "click", ($ap) => {
+		return $aj;
+	}, $K), $K, $L), "click", ($ax) => {
 		return run2();
-	})), child(child(show(attr(attr(styled(view("select"), template_select), "id", "mode"), "aria-label", "Compile mode"), can_platform2, $K, $L), template_option("browser", "Browser: compile and run")), template_option("node", "Server: check the process leg"))), show(on(text(styled(view("button"), example_button), "Format"), "click", ($ax) => {
+	}), $K, $L), $af($af(show($ac($ac(styled(view("select"), template_select), "id", "mode", $K, $L), "aria-label", "Compile mode", $K, $L), can_platform2, $K, $L), template_option("browser", "Browser: compile and run", $K, $L), $K, $L), template_option("node", "Server: check the process leg", $K, $L), $K, $L), $K, $L), show(on(text(styled(view("button"), example_button), "Format"), "click", ($aH) => {
 		return format2();
-	}), can_format2, $K, $L)), on(bind_text(styled(view("button"), example_button), share_label2, $K, $L), "click", ($ay) => {
+	}), can_format2, $K, $L), $K, $L), on(bind_text(styled(view("button"), example_button), share_label2, $K, $L), "click", ($aI) => {
 		return share2();
-	})), bind_text(attr(styled(view("p"), status_line), "role", "status"), status2, $K, $L)), attr(attr(styled(view("select"), template_select), "id", "version"), "aria-label", "Compiler version"))), child(child(styled(view("div"), panes), child(child(child(child(styled(view("div"), pane), child(child(styled(view("div"), pane_head), text(styled(view("p"), pane_label), "Program")), child(child(child(child(child(attr(attr(styled(view("select"), template_select), "id", "template"), "aria-label", "Load an example"), text(attr(attr(attr(view("option"), "value", ""), "disabled", "true"), "hidden", "true"), "Examples")), template_option("counter", "Counter: reactive state")), template_option("hello", "Hello: mount and print")), template_option("styles", "Styles: compile-time CSS")), show(template_option("server", "Server: typed HTTP, checked"), can_platform2, $K, $L)))), attr(attr(styled(view("div"), editor_host), "id", "editor"), "aria-label", "Program editor")), text(styled(view("p"), pane_label), "Diagnostics")), child(child(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Nothing to report."), $az(diagnostics2, (rows) => {
+	}), $K, $L), bind_text($ac(styled(view("p"), status_line), "role", "status", $K, $L), status2, $K, $L), $K, $L), $ac($ac(styled(view("select"), template_select), "id", "version", $K, $L), "aria-label", "Compiler version", $K, $L), $K, $L), $K, $L), $af($af(styled(view("div"), panes), $af($af($af($af(styled(view("div"), pane), $af($af(styled(view("div"), pane_head), text(styled(view("p"), pane_label), "Program"), $K, $L), $af($af($af($af($af($ac($ac(styled(view("select"), template_select), "id", "template", $K, $L), "aria-label", "Load an example", $K, $L), text($ac($ac($ac(view("option"), "value", "", $K, $L), "disabled", "true", $K, $L), "hidden", "true", $K, $L), "Examples"), $K, $L), template_option("counter", "Counter: reactive state", $K, $L), $K, $L), template_option("hello", "Hello: mount and print", $K, $L), $K, $L), template_option("styles", "Styles: compile-time CSS", $K, $L), $K, $L), show(template_option("server", "Server: typed HTTP, checked", $K, $L), can_platform2, $K, $L), $K, $L), $K, $L), $K, $L), $ac($ac(styled(view("div"), editor_host), "id", "editor", $K, $L), "aria-label", "Program editor", $K, $L), $K, $L), text(styled(view("p"), pane_label), "Diagnostics"), $K, $L), $af($af(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Nothing to report."), $aJ(diagnostics2, (rows) => {
 		return rows.length === 0;
-	}, $K), $K, $L)), $aL(view("div"), diagnostics2, (row) => {
+	}, $K), $K, $L), $K, $L), $aX(view("div"), diagnostics2, (row) => {
 		return row[0];
-	}, (row, $aG) => {
-		return diagnostic_row(row);
-	}, $K, $L)))), child(child(child(child(styled(view("div"), pane), text(styled(view("p"), pane_label), "Result")), attr(attr(styled(view("div"), runner_host), "id", "runner"), "aria-label", "Program result")), text(styled(view("p"), pane_label), "Console")), child(child(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Program output lands here."), $aY(console_lines2, (rows) => {
+	}, (row, $aQ) => {
+		return diagnostic_row(row, $K, $aQ);
+	}, $K, $L), $K, $L), $K, $L), $K, $L), $af($af($af($af(styled(view("div"), pane), text(styled(view("p"), pane_label), "Result"), $K, $L), $ac($ac(styled(view("div"), runner_host), "id", "runner", $K, $L), "aria-label", "Program result", $K, $L), $K, $L), text(styled(view("p"), pane_label), "Console"), $K, $L), $af($af(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Program output lands here."), $bk(console_lines2, (rows) => {
 		return rows.length === 0;
-	}, $K), $K, $L)), $bd(view("div"), console_lines2, (row) => {
+	}, $K), $K, $L), $K, $L), $bp(view("div"), console_lines2, (row) => {
 		return row[0];
-	}, (row, $ba) => {
+	}, (row, $bm) => {
 		return console_row(row);
-	}, $K, $L))))));
+	}, $K, $L), $K, $L), $K, $L), $K, $L), $K, $L), $K, $L);
 }
 function eq(self, other) {
 	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2] && self[3] === other[3] && self[4] === other[4] && self[5] === other[5] && self[6] === other[6];
@@ -467,8 +465,8 @@ function eq(self, other) {
 function eq2(self, other) {
 	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2];
 }
-function top_bar(scroll_fade) {
-	return child(style_var(styled(view("nav"), topbar), "--nav-fade", scroll_fade), child(child(styled(view("div"), add(column, nav_row)), child(child(attr(styled(view("a"), add(nav_brand, nav_link)), "href", "/"), attr(attr(attr(styled(view("img"), no_drag), "src", "" + assets + "/mark.svg"), "alt", ""), "height", "18")), text(view("span"), "VILAN"))), child(child(child(styled(view("div"), nav_links), text(attr(styled(view("a"), nav_link), "href", "#install"), "Install")), text(attr(styled(view("a"), nav_link), "href", "/docs/tour/hello-vilan.html"), "Learn")), text(attr(styled(view("a"), nav_link), "href", "/docs/"), "Docs"))));
+function top_bar(scroll_fade, $Y, $Z) {
+	return $af(style_var(styled(view("nav"), topbar), "--nav-fade", scroll_fade), $af($af(styled(view("div"), add(column, nav_row)), $af($af($ac(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $Y, $Z), $ac($ac($ac(styled(view("img"), no_drag), "src", "" + assets + "/mark.svg", $Y, $Z), "alt", "", $Y, $Z), "height", "18", $Y, $Z), $Y, $Z), text(view("span"), "VILAN"), $Y, $Z), $Y, $Z), $af($af($af(styled(view("div"), nav_links), text($ac(styled(view("a"), nav_link), "href", "#install", $Y, $Z), "Install"), $Y, $Z), text($ac(styled(view("a"), nav_link), "href", "/docs/tour/hello-vilan.html", $Y, $Z), "Learn"), $Y, $Z), text($ac(styled(view("a"), nav_link), "href", "/docs/", $Y, $Z), "Docs"), $Y, $Z), $Y, $Z), $Y, $Z);
 }
 function $a(value) {
 	let subscribers = [  ];
@@ -612,93 +610,101 @@ function $W(self) {
 	}
 	return result;
 }
-function $Z(self) {
+function $ab(self) {
 	return self[0].v;
 }
-function $Y(self, observer) {
+function $aa(self, observer) {
 	const id = fresh_id();
 	self[1].v.push([ id, () => {
-		observer($Z(self));
+		observer($ab(self));
 		return;
 	} ]);
-	observer($Z(self));
+	observer($ab(self));
 	return [ self[1], id ];
 }
-function $ac(self, transform, $ad) {
-	const derived = $a(transform($Z(self)));
+function $ac(self, name, value, $ad, $ae) {
+	apply(value, self, name, $ad, $ae);
+	return self;
+}
+function $af(self, content, $ag, $ah) {
+	place(content, self, $ag, $ah);
+	return self;
+}
+function $ak(self, transform, $al) {
+	const derived = $a(transform($ab(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$e(derived, transform($Z(self)), $ad);
+		$e(derived, transform($ab(self)), $al);
 		return;
 	} ]);
 	return derived;
 }
-function $ak(self, item, $al) {
+function $as(self, item, $at) {
 	self[0].v.push(() => {
-		dispose(item, $al);
+		dispose(item, $at);
 		return;
 	});
 	return item;
 }
-function $ag(self, observer, $ah, $ai) {
-	$ak(get_owner($ai), $Y(self, observer), $ah);
+function $ao(self, observer, $ap, $aq) {
+	$as(get_owner($aq), $aa(self, observer), $ap);
 }
-function $ar(policy, body) {
+function $az(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
 	fresh[2].v = true;
 	return result;
 }
-function $aw(self) {
+function $aE(self) {
 	return self[0].v;
 }
-function $av(self, observer) {
+function $aD(self, observer) {
 	const id = fresh_id();
 	self[1].v.push([ id, () => {
-		observer($aw(self));
+		observer($aE(self));
 		return;
 	} ]);
-	observer($aw(self));
+	observer($aE(self));
 	return [ self[1], id ];
 }
-function $au(self, observer, $ah, $ai) {
-	$ak(get_owner($ai), $av(self, observer), $ah);
+function $aC(self, observer, $ap, $aq) {
+	$as(get_owner($aq), $aD(self, observer), $ap);
 }
-function $aA(self) {
+function $aK(self) {
 	return self[0].v;
 }
-function $aB(self, value, $f) {
+function $aL(self, value, $f) {
 	self[0].v = value;
-	const $aC = $f;
-	let $aD = null;
-	if ($aC[0] === 0) {
-		const turn = $aC[1];
-		$aD = enqueue(turn, self[1].v);
+	const $aM = $f;
+	let $aN = null;
+	if ($aM[0] === 0) {
+		const turn = $aM[1];
+		$aN = enqueue(turn, self[1].v);
 	} else {
-		const $aE = $j(draining_turns.v);
-		let $aF = null;
-		if ($aE[0] === 0) {
-			const draining = $aE[1];
-			$aF = enqueue(draining, self[1].v);
+		const $aO = $j(draining_turns.v);
+		let $aP = null;
+		if ($aO[0] === 0) {
+			const draining = $aO[1];
+			$aP = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$aF = undefined;
+			$aP = undefined;
 		}
-		$aD = $aF;
+		$aN = $aP;
 	}
-	return $aD;
+	return $aN;
 }
-function $az(self, transform, $ad) {
-	const derived = $d(transform($aA(self)));
+function $aJ(self, transform, $al) {
+	const derived = $d(transform($aK(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$aB(derived, transform($aA(self)), $ad);
+		$aL(derived, transform($aK(self)), $al);
 		return;
 	} ]);
 	return derived;
 }
-function $aO(old_keys, old_items, items, key_of) {
+function $ba(old_keys, old_items, items, key_of) {
 	let claimed = [  ];
 	for (const _ of old_keys) {
 		claimed.push(false);
@@ -711,13 +717,13 @@ function $aO(old_keys, old_items, items, key_of) {
 		while (index < old_keys.length) {
 			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
 				__at_put(claimed, index, true);
-				let $aP = null;
+				let $bb = null;
 				if (eq(__at(old_items, index), item)) {
-					$aP = [ 0, index ];
+					$bb = [ 0, index ];
 				} else {
-					$aP = [ 1, index ];
+					$bb = [ 1, index ];
 				}
-				step = $aP;
+				step = $bb;
 				break;
 			}
 			index = index + 1;
@@ -734,38 +740,38 @@ function $aO(old_keys, old_items, items, key_of) {
 	}
 	return [ steps, removed ];
 }
-function $aT(owner, body) {
+function $bf(owner, body) {
 	return body(owner);
 }
-function $aX(self) {
+function $bj(self) {
 	return self[0].v;
 }
-function $aW(self, observer) {
+function $bi(self, observer) {
 	const id = fresh_id();
 	self[1].v.push([ id, () => {
-		observer($aX(self));
+		observer($bj(self));
 		return;
 	} ]);
-	observer($aX(self));
+	observer($bj(self));
 	return [ self[1], id ];
 }
-function $aV(self, observer, $ah, $ai) {
-	$ak(get_owner($ai), $aW(self, observer), $ah);
+function $bh(self, observer, $ap, $aq) {
+	$as(get_owner($aq), $bi(self, observer), $ap);
 }
-function $aL(self, source, key, render, $aM, $aN) {
+function $aX(self, source, key, render, $aY, $aZ) {
 	const element = __clone(self[0]);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
 	const row_views = __shared_new([  ]);
 	const row_owners = __shared_new([  ]);
-	defer(get_owner($aN), () => {
+	defer(get_owner($aZ), () => {
 		for (const owner of row_owners.v) {
 			dispose2(owner);
 		}
 		return;
 	});
-	$aV(source, (list) => {
-		const plan = $aO(row_keys.v, row_items.v, list, key);
+	$bh(source, (list) => {
+		const plan = $ba(row_keys.v, row_items.v, list, key);
 		const previous_views = row_views.v;
 		const previous_owners = row_owners.v;
 		for (const index of plan[1]) {
@@ -777,32 +783,32 @@ function $aL(self, source, key, render, $aM, $aN) {
 		let position = 0;
 		for (const step of plan[0]) {
 			const item = __at(list, position);
-			const $aQ = step;
-			let $aR = null;
-			if ($aQ[0] === 0) {
-				const index2 = $aQ[1];
+			const $bc = step;
+			let $bd = null;
+			if ($bc[0] === 0) {
+				const index2 = $bc[1];
 				next_views.push(__at(previous_views, index2));
 				next_owners.push(__at(previous_owners, index2));
-				$aR = undefined;
-			} else if ($aQ[0] === 1) {
-				const index3 = $aQ[1];
+				$bd = undefined;
+			} else if ($bc[0] === 1) {
+				const index3 = $bc[1];
 				dispose2(__at(previous_owners, index3));
 				__at(previous_views, index3)[0].remove();
 				const owner = new3();
-				next_views.push($aT(owner, ($aS) => {
-					return render(item, $aS);
+				next_views.push($bf(owner, ($be) => {
+					return render(item, $be);
 				}));
 				next_owners.push(owner);
-				$aR = undefined;
+				$bd = undefined;
 			} else {
 				const owner2 = new3();
-				next_views.push($aT(owner2, ($aU) => {
-					return render(item, $aU);
+				next_views.push($bf(owner2, ($bg) => {
+					return render(item, $bg);
 				}));
 				next_owners.push(owner2);
-				$aR = undefined;
+				$bd = undefined;
 			}
-			$aR;
+			$bd;
 			position = position + 1;
 		}
 		for (const row of next_views) {
@@ -817,21 +823,21 @@ function $aL(self, source, key, render, $aM, $aN) {
 		row_views.v = next_views;
 		row_owners.v = next_owners;
 		return;
-	}, $aM, $aN);
+	}, $aY, $aZ);
 	return self;
 }
-function $aZ(self) {
+function $bl(self) {
 	return self[0].v;
 }
-function $aY(self, transform, $ad) {
-	const derived = $d(transform($aZ(self)));
+function $bk(self, transform, $al) {
+	const derived = $d(transform($bl(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$aB(derived, transform($aZ(self)), $ad);
+		$aL(derived, transform($bl(self)), $al);
 		return;
 	} ]);
 	return derived;
 }
-function $be(old_keys, old_items, items, key_of) {
+function $bq(old_keys, old_items, items, key_of) {
 	let claimed = [  ];
 	for (const _ of old_keys) {
 		claimed.push(false);
@@ -844,13 +850,13 @@ function $be(old_keys, old_items, items, key_of) {
 		while (index < old_keys.length) {
 			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
 				__at_put(claimed, index, true);
-				let $bf = null;
+				let $br = null;
 				if (eq2(__at(old_items, index), item)) {
-					$bf = [ 0, index ];
+					$br = [ 0, index ];
 				} else {
-					$bf = [ 1, index ];
+					$br = [ 1, index ];
 				}
-				step = $bf;
+				step = $br;
 				break;
 			}
 			index = index + 1;
@@ -867,20 +873,20 @@ function $be(old_keys, old_items, items, key_of) {
 	}
 	return [ steps, removed ];
 }
-function $bd(self, source, key, render, $aM, $aN) {
+function $bp(self, source, key, render, $aY, $aZ) {
 	const element = __clone(self[0]);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
 	const row_views = __shared_new([  ]);
 	const row_owners = __shared_new([  ]);
-	defer(get_owner($aN), () => {
+	defer(get_owner($aZ), () => {
 		for (const owner of row_owners.v) {
 			dispose2(owner);
 		}
 		return;
 	});
-	$aV(source, (list) => {
-		const plan = $be(row_keys.v, row_items.v, list, key);
+	$bh(source, (list) => {
+		const plan = $bq(row_keys.v, row_items.v, list, key);
 		const previous_views = row_views.v;
 		const previous_owners = row_owners.v;
 		for (const index of plan[1]) {
@@ -892,32 +898,32 @@ function $bd(self, source, key, render, $aM, $aN) {
 		let position = 0;
 		for (const step of plan[0]) {
 			const item = __at(list, position);
-			const $bg = step;
-			let $bh = null;
-			if ($bg[0] === 0) {
-				const index2 = $bg[1];
+			const $bs = step;
+			let $bt = null;
+			if ($bs[0] === 0) {
+				const index2 = $bs[1];
 				next_views.push(__at(previous_views, index2));
 				next_owners.push(__at(previous_owners, index2));
-				$bh = undefined;
-			} else if ($bg[0] === 1) {
-				const index3 = $bg[1];
+				$bt = undefined;
+			} else if ($bs[0] === 1) {
+				const index3 = $bs[1];
 				dispose2(__at(previous_owners, index3));
 				__at(previous_views, index3)[0].remove();
 				const owner = new3();
-				next_views.push($aT(owner, ($aS) => {
-					return render(item, $aS);
+				next_views.push($bf(owner, ($be) => {
+					return render(item, $be);
 				}));
 				next_owners.push(owner);
-				$bh = undefined;
+				$bt = undefined;
 			} else {
 				const owner2 = new3();
-				next_views.push($aT(owner2, ($aU) => {
-					return render(item, $aU);
+				next_views.push($bf(owner2, ($bg) => {
+					return render(item, $bg);
 				}));
 				next_owners.push(owner2);
-				$bh = undefined;
+				$bt = undefined;
 			}
-			$bh;
+			$bt;
 			position = position + 1;
 		}
 		for (const row of next_views) {
@@ -932,72 +938,72 @@ function $bd(self, source, key, render, $aM, $aN) {
 		row_views.v = next_views;
 		row_owners.v = next_owners;
 		return;
-	}, $aM, $aN);
+	}, $aY, $aZ);
 	return self;
 }
-function $bj(body) {
+function $bv(body) {
 	const scope = new3();
 	const result = body(scope);
 	return [ result, scope ];
 }
-function $bk(policy, body) {
+function $bw(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
 	fresh[2].v = true;
 	return result;
 }
-function $bp(self, value, $f) {
+function $bB(self, value, $f) {
 	self[0].v = value;
-	const $bq = $f;
-	let $br = null;
-	if ($bq[0] === 0) {
-		const turn = $bq[1];
-		$br = enqueue(turn, self[1].v);
+	const $bC = $f;
+	let $bD = null;
+	if ($bC[0] === 0) {
+		const turn = $bC[1];
+		$bD = enqueue(turn, self[1].v);
 	} else {
-		const $bs = $j(draining_turns.v);
-		let $bt = null;
-		if ($bs[0] === 0) {
-			const draining = $bs[1];
-			$bt = enqueue(draining, self[1].v);
+		const $bE = $j(draining_turns.v);
+		let $bF = null;
+		if ($bE[0] === 0) {
+			const draining = $bE[1];
+			$bF = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$bt = undefined;
+			$bF = undefined;
 		}
-		$br = $bt;
+		$bD = $bF;
 	}
-	return $br;
+	return $bD;
 }
-function $bw(self) {
+function $bI(self) {
 	return self[0].v;
 }
-function $bx(self, value, $f) {
+function $bJ(self, value, $f) {
 	self[0].v = value;
-	const $by = $f;
-	let $bz = null;
-	if ($by[0] === 0) {
-		const turn = $by[1];
-		$bz = enqueue(turn, self[1].v);
+	const $bK = $f;
+	let $bL = null;
+	if ($bK[0] === 0) {
+		const turn = $bK[1];
+		$bL = enqueue(turn, self[1].v);
 	} else {
-		const $bA = $j(draining_turns.v);
-		let $bB = null;
-		if ($bA[0] === 0) {
-			const draining = $bA[1];
-			$bB = enqueue(draining, self[1].v);
+		const $bM = $j(draining_turns.v);
+		let $bN = null;
+		if ($bM[0] === 0) {
+			const draining = $bM[1];
+			$bN = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$bB = undefined;
+			$bN = undefined;
 		}
-		$bz = $bB;
+		$bL = $bN;
 	}
-	return $bz;
+	return $bL;
 }
-function $bu(self, transform, $bv) {
-	$bx(self, transform($bw(self)), $bv);
+function $bG(self, transform, $bH) {
+	$bJ(self, transform($bI(self)), $bH);
 }
 const next_subscriber_id = __shared_new(0);
 const draining_turns = __shared_new([  ]);
@@ -1122,10 +1128,10 @@ mount_root("app", ($J) => {
 VilanPlayground.init("#editor", VilanPlayground.example("counter"));
 VilanPlayground.startCompiler((event) => {
 	const kind = event.kind;
-	let $bm = null;
+	let $by = null;
 	if (kind === "ready") {
-		$aB(can_format, event.canFormat, [ 1 ]);
-		$aB(can_platform, event.canPlatform, [ 1 ]);
+		$aL(can_format, event.canFormat, [ 1 ]);
+		$aL(can_platform, event.canPlatform, [ 1 ]);
 		if (!(event.canPlatform)) {
 			VilanPlayground.setMode("browser");
 		}
@@ -1146,14 +1152,14 @@ VilanPlayground.startCompiler((event) => {
 		} else if (command === "mode") {
 			$e(mode, event.name, [ 1 ]);
 		}
-		$bm = undefined;
+		$by = undefined;
 	} else if (kind === "formatted") {
 		if (event.changed) {
 			$e(status, "Formatted.", [ 1 ]);
 		} else {
 			$e(status, "Format made no changes.", [ 1 ]);
 		}
-		$bm = undefined;
+		$by = undefined;
 	} else if (kind === "shared") {
 		if (event.copied) {
 			$e(status, "Link copied to the clipboard.", [ 1 ]);
@@ -1162,35 +1168,35 @@ VilanPlayground.startCompiler((event) => {
 			$e(status, "Link ready in the address bar.", [ 1 ]);
 			flash_share("Link ready");
 		}
-		$bm = undefined;
+		$by = undefined;
 	} else if (kind === "checked") {
 		const count = apply_diagnostics(event);
-		let $bn = null;
+		let $bz = null;
 		if (event.ok) {
 			if (event.platform === "node") {
 				$e(status, "No problems (server check, vilan " + event.version + ").", [ 1 ]);
 			} else {
 				$e(status, "No problems (vilan " + event.version + ").", [ 1 ]);
 			}
-			$bn = undefined;
+			$bz = undefined;
 		} else if (count === 1) {
 			$e(status, "1 problem; see the diagnostics.", [ 1 ]);
 		} else {
 			$e(status, "" + count + " problems; see the diagnostics.", [ 1 ]);
 		}
-		$bm = $bn;
+		$by = $bz;
 	} else if (kind === "result") {
 		apply_diagnostics(event);
-		let $bo = null;
+		let $bA = null;
 		if (event.platform === "node") {
 			if (event.ok) {
 				$e(status, "Server program checks clean (vilan " + event.version + ").", [ 1 ]);
 			} else {
 				$e(status, "Build failed; see the diagnostics.", [ 1 ]);
 			}
-			$bo = undefined;
+			$bA = undefined;
 		} else {
-			$bp(console_lines, [  ], [ 1 ]);
+			$bB(console_lines, [  ], [ 1 ]);
 			if (event.ok) {
 				$e(status, "Compiled (vilan " + event.version + ")", [ 1 ]);
 				VilanPlayground.runProgram(event.js, event.css);
@@ -1198,19 +1204,19 @@ VilanPlayground.startCompiler((event) => {
 				$e(status, "Build failed; see the diagnostics.", [ 1 ]);
 				VilanPlayground.clearProgram();
 			}
-			$bo = undefined;
+			$bA = undefined;
 		}
-		$bm = $bo;
+		$by = $bA;
 	} else if (kind === "crash") {
 		$e(status, "The compiler crashed on this input; it has been restarted. Please report the program that did it.", [ 1 ]);
 	}
-	return $bm;
+	return $by;
 });
 window.addEventListener("message", (host_event) => {
 	const message = host_event.data;
 	const kind = message.kind;
 	if (kind === "log" || kind === "error") {
-		$bu(console_lines, (lines) => {
+		$bG(console_lines, (lines) => {
 			let next = __clone(lines);
 			if (next.length < console_cap) {
 				const id = next_row_id.v;
