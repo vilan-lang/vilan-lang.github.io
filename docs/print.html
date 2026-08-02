@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-573f600f.js";
+            window.path_to_searchindex_js = "searchindex-51fac66c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-91647468.js"></script>
@@ -2789,7 +2789,11 @@ depth of function calls, registers with the nearest owner automatically
 error mentioning <code>owner_scope</code>. It means “wrap this in <code>mount_root</code>”
 (or <code>run_with_owner</code> in a test). Purely static structure needs no
 boundary: <code>mount("app", view("div").child(view("p").text("hi")))</code> is
-fine, because nothing in it subscribes.</p>
+fine, because nothing in it subscribes. That holds through your own
+generic helpers too — a <code>fun card&lt;T: Slot&gt;(content: T): View</code> called
+with static content needs no boundary, while the same helper called
+with a <code>Signal</code> keeps the requirement: the compiler follows each call’s
+actual instantiation.</p>
 <h2 id="events-run-in-turns"><a class="header" href="#events-run-in-turns">Events run in turns</a></h2>
 <p>Each event dispatch runs your handler inside a fresh <strong>turn</strong>: all the
 signal writes one click causes are batched, and watchers see the final
@@ -7612,13 +7616,20 @@ roots: <code>main</code> is semantically the outermost, run-less extent);</li>
 <li>a module-level initializer;</li>
 <li>any caller chain that does not pass through a <code>run</code> of that context.</li>
 </ul>
-<p>Trait/generic-dispatched calls are covered conservatively: a dispatch
-site is treated as reaching every candidate implementation (and the
-trait default), so a needy candidate demands coverage of the caller
-even if another candidate would have been selected. Dead code,
-a function with no callers at all, is exempt (it cannot run
-uncovered); a function called only from top level, or taken as a
-value, is not.</p>
+<p>A call dispatched on a <strong>generic bound</strong> is covered by instantiation:
+the compiler resolves each call chain’s recorded type bindings — through
+generic forwarding functions, recursively — and a needy candidate
+implementation demands coverage only of the callers whose instantiation
+actually selects it. A chain the compiler cannot resolve (an
+unrecorded binding, a function taken as a value or itself reachable
+through dispatch) is covered conservatively: the site is treated as
+reaching every candidate, so a needy candidate demands coverage of the
+caller even if another candidate would have been selected. A call
+dispatched on a <strong>concrete receiver’s type</strong> is always covered
+conservatively. Dead code, a function with no callers at all, is
+exempt (it cannot run uncovered); a function called from top level, or
+taken as a value, is entered without the value and is never covered,
+whatever its other callers.</p>
 <p>A function that reads a context <strong>cannot be used as a value</strong>
 (“<code>…</code> reads context <code>…</code>, so it can’t be used as a value”): an indirect
 call would bypass the hidden parameter. Wrap it in a closure literal at

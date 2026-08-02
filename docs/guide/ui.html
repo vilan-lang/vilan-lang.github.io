@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-573f600f.js";
+            window.path_to_searchindex_js = "../searchindex-51fac66c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -335,7 +335,11 @@ depth of function calls, registers with the nearest owner automatically
 error mentioning <code>owner_scope</code>. It means “wrap this in <code>mount_root</code>”
 (or <code>run_with_owner</code> in a test). Purely static structure needs no
 boundary: <code>mount("app", view("div").child(view("p").text("hi")))</code> is
-fine, because nothing in it subscribes.</p>
+fine, because nothing in it subscribes. That holds through your own
+generic helpers too — a <code>fun card&lt;T: Slot&gt;(content: T): View</code> called
+with static content needs no boundary, while the same helper called
+with a <code>Signal</code> keeps the requirement: the compiler follows each call’s
+actual instantiation.</p>
 <h2 id="events-run-in-turns"><a class="header" href="#events-run-in-turns">Events run in turns</a></h2>
 <p>Each event dispatch runs your handler inside a fresh <strong>turn</strong>: all the
 signal writes one click causes are batched, and watchers see the final
