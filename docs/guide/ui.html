@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-4c9b95ae.js";
+            window.path_to_searchindex_js = "../searchindex-52f5a681.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -203,7 +203,7 @@ view so you can keep going:</p>
 <ul>
 <li><strong>Static content</strong>: <code>.text(content)</code>, <code>.class(name)</code>,
 <code>.attr(name, value)</code>, <code>.styled(style)</code> (see <a href="styling.html">Styling</a>).</li>
-<li><strong>Structure</strong>: <code>.child(view)</code>, <code>.children(views)</code>.</li>
+<li><strong>Structure</strong>: <code>.child(content)</code>, <code>.children(views)</code>.</li>
 <li><strong>Events</strong>: <code>.on(event, handler)</code>, or <code>.on_event(event, |e| …)</code> when
 you need the DOM event itself (<code>prevent_default</code>, <code>key()</code>, modifiers).</li>
 <li><strong>Reactive bindings</strong>: <code>.bind_text(signal)</code>, <code>.bind_class(signal)</code>,
@@ -211,6 +211,102 @@ you need the DOM event itself (<code>prevent_default</code>, <code>key()</code>,
 </ul>
 <p>Every <code>bind_*</code> sets the property now and re-sets it whenever the signal
 changes. There is no render loop to trigger.</p>
+<h2 id="text-children-and-mixed-content"><a class="header" href="#text-children-and-mixed-content">Text children and mixed content</a></h2>
+<p><code>child</code> takes more than a <code>View</code>. Anything that can fill a child
+position works — the value’s type decides what lands in the DOM:</p>
+<ul>
+<li>a <code>View</code> appends as an element;</li>
+<li>a <code>str</code> appends as a <strong>text node</strong>;</li>
+<li>a <code>Signal&lt;str&gt;</code> appends as a text node kept in sync;</li>
+<li>a <code>List&lt;View&gt;</code> appends every view, in order.</li>
+</ul>
+<p>Text nodes make mixed content direct: prose around an inline element is
+a run of siblings, not a pile of wrapper spans.</p>
+<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+
+fun tip(): View {
+	view("p")
+		.child("Update any time with ")
+		.child(view("code").text("vilan upgrade"))
+		.child(".")
+}
+
+fun main() {
+	let _root = mount_root("app", || tip());
+}
+</code></pre>
+<p><code>attr</code> is typed the same way: a <code>str</code> value sets once, a <code>Signal&lt;str&gt;</code>
+re-sets whenever it changes — <code>attr("href", signal)</code> and
+<code>bind_attr("href", signal)</code> are the same binding, chosen by type or by
+name. (<code>text</code> is unchanged: it still replaces everything the element
+contains, text nodes included, like the DOM’s <code>textContent</code>.)</p>
+<h2 id="element-syntax"><a class="header" href="#element-syntax">Element syntax</a></h2>
+<p>The chain has a markup coat. An <strong>element expression</strong> is HTML-shaped
+sugar that lowers, before analysis, to exactly the chain you would have
+written — the same methods, in the same order, emitting the same code:</p>
+<pre><code class="language-vilan browser">import std::reactive::Signal;
+import std::ui::{ View, mount_root, view };
+
+fun counter(): View {
+	let count = Signal::new(0);
+	&lt;div&gt;
+		&lt;h2&gt;"Counter"&lt;/h2&gt;
+		&lt;button on:click(|| count.set_with(|n| n + 1))&gt;"+1"&lt;/button&gt;
+		&lt;p&gt;{count.map(|n: i32| i"clicked {n} times")}&lt;/p&gt;
+	&lt;/div&gt;
+}
+
+fun main() {
+	let _root = mount_root("app", || counter());
+}
+</code></pre>
+<p>One rule governs the head — everything between <code>&lt;tag</code> and <code>&gt;</code>:</p>
+<ul>
+<li>An <strong>undotted</strong> <code>name(value)</code> is an attribute: <code>.attr("name", value)</code>,
+the value’s type deciding static vs tracked as always. A bare name
+(<code>disabled</code>) is a boolean attribute. Keyword and hyphenated names
+(<code>type</code>, <code>aria-label</code>) are ordinary attribute names.</li>
+<li>A <strong>leading dot</strong> is the chain, verbatim: <code>.styled(card)</code>,
+<code>.bind_value(draft)</code>, <code>.show(flag)</code>, <code>.bind_each(rows, |r| r.id, |r| row(r))</code>. Every <code>View</code> method works in head position — the dot is
+what keeps attributes and methods from ever colliding, so a new
+method can never change what existing markup means.</li>
+<li><code>on:click(handler)</code> is an event. A zero-parameter closure literal
+lowers to <code>.on</code>, a one-parameter literal to <code>.on_event</code>; a named
+one-parameter handler is written in chain form
+(<code>.on_event("click", handler)</code>).</li>
+</ul>
+<p>Children — everything between <code>&gt;</code> and <code>&lt;/tag&gt;</code> — are nested elements,
+<strong>quoted</strong> strings (<code>i"…"</code> interpolation included), and <code>{expression}</code>
+holes; each lowers to <code>.child(…)</code> in written order. Text children are
+quoted because Vilan’s lexer is context-free and stays that way — and
+the payoff is that interpolation, escapes, and expressions work in
+markup exactly as they do everywhere else. Bare text is a parse error
+that suggests the quoted form.</p>
+<p>An element is an ordinary expression: it nests in holes, sits in match
+arms, and takes postfix chains. The two forms mix freely —</p>
+<pre><code class="language-vilan browser">import std::reactive::Signal;
+import std::ui::{ View, mount_root, view };
+
+fun panel(items: Signal&lt;List&lt;str&gt;&gt;, flag: Signal&lt;bool&gt;): View {
+	&lt;section class("panel")&gt;
+		&lt;input placeholder("What needs doing?") /&gt;
+		&lt;ul .bind_each(items, |t| t, |t| &lt;li&gt;{t}&lt;/li&gt;) /&gt;
+		&lt;p .show(flag)&gt;"empty"&lt;/p&gt;
+	&lt;/section&gt;
+}
+
+fun main() {
+	let _root = mount_root("app", || panel(Signal::new(["alpha"]), Signal::new(false)));
+}
+</code></pre>
+<p>Components stay what they are — functions returning <code>View</code> — and are
+called in holes: <code>{todo_row(items, todo)}</code>. Reactivity stays explicit:
+an <code>if</code> or <code>match</code> inside a hole runs once at build, exactly as it does
+in a chain; reactive structure is <code>.show</code>/<code>.when</code>/<code>.swap</code>/<code>.bind_each</code>
+in head position, and <code>Signal</code> values in slots. The sugar adds no
+semantics: <code>import std::ui::{ view, View }</code> is still required (the
+compiler points the way if it is missing), and everything this guide
+says about ownership, boundaries, and binding types applies unchanged.</p>
 <h2 id="components-are-just-functions"><a class="header" href="#components-are-just-functions">Components are just functions</a></h2>
 <p>A “component” is a function that returns a <code>View</code>. There is no
 registration, special types, or props system; the parameters are the
@@ -476,7 +572,7 @@ framework already puts them there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-81770c6a.js"></script>
+        <script src="../theme/vilan-09ede7b7.js"></script>
 
 
 

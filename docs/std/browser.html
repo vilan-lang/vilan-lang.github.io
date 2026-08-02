@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-4c9b95ae.js";
+            window.path_to_searchindex_js = "../searchindex-52f5a681.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-91647468.js"></script>
@@ -184,6 +184,7 @@
 fun get_element_by_id(id: str): Element
 fun create_element(tag: str): Element
 fun create_element_ns(namespace: str, tag: str): Element   // createElementNS
+fun create_text_node(content: str): Text                   // a fresh text node
 fun query_selector(selector: str): Element
 fun query_selector_all(selector: str): List&lt;Element&gt;
 
@@ -193,6 +194,7 @@ impl Element {
 	fun set_attribute(self, name: str, value: str)
 	fun set_style_property(self, name: str, value: str) // style.setProperty (CSS custom props)
 	fun append(self, child: Element)
+	fun append_text(self, child: Text)                 // appendChild, text-node overload
 	fun remove(self)                                   // detach from the document
 	fun clear(self)                                    // remove every child
 	fun set_hidden(self, hidden: bool)
@@ -200,6 +202,11 @@ impl Element {
 	fun set_value(self, value: str)
 	fun on(self, event: str, handler: || void)
 	fun on_event(self, event: str, handler: |Event| void)
+}
+
+external struct Text;                // a text node — text only, no attributes
+impl Text {
+	fun set_text(self, text: str)                      // textContent =
 }
 
 external struct Event;
@@ -220,6 +227,9 @@ job. Prefer the <code>View</code> layer; drop to <code>dom</code> for what it do
 fun view(tag: str): View
 fun mount(id: str, view: View)                                   // attach only
 fun mount_root(id: str, body: (|| View) context owner_scope): Owner
+
+trait Slot { fun place(self, parent: View) }          // View | str | Signal&lt;str&gt; | List&lt;View&gt;
+trait AttrValue { fun apply(self, parent: View, name: str) }   // str | Signal&lt;str&gt;
 </code></pre>
 <p><code>mount_root</code> = fresh owner + turn boundary + attach; it returns the root
 owner (most apps let it live forever). <code>mount</code> is the attach half alone.
@@ -241,11 +251,11 @@ too.</p>
 <tr><td><code>text</code></td><td><code>(content: str): View</code></td><td>static text</td></tr>
 <tr><td><code>class</code></td><td><code>(name: str): View</code></td><td>static class</td></tr>
 <tr><td><code>styled</code></td><td><code>(style: Style): View</code></td><td>classes from a compiled style</td></tr>
-<tr><td><code>attr</code></td><td><code>(name: str, value: str): View</code></td><td>static attribute</td></tr>
+<tr><td><code>attr</code></td><td><code>(name: str, value: V): View</code>; <code>V: AttrValue</code></td><td><code>str</code> sets once, <code>Signal&lt;str&gt;</code> tracks</td></tr>
 <tr><td><code>style_var</code></td><td><code>(name: str, source: Signal&lt;str&gt;): View</code></td><td>reactive CSS custom property</td></tr>
 <tr><td><code>on</code></td><td><code>(event: str, handler: (|| void) context turn_scope): View</code></td><td>handler runs in a fresh turn</td></tr>
 <tr><td><code>on_event</code></td><td><code>(event: str, handler: (|Event| void) context turn_scope): View</code></td><td>same, with the DOM event</td></tr>
-<tr><td><code>child</code></td><td><code>(child: View): View</code></td><td>append one</td></tr>
+<tr><td><code>child</code></td><td><code>(content: C): View</code>; <code>C: Slot</code></td><td>element, text node (<code>str</code>/<code>Signal&lt;str&gt;</code>), or <code>List&lt;View&gt;</code></td></tr>
 <tr><td><code>children</code></td><td><code>(items: List&lt;View&gt;): View</code></td><td>append several</td></tr>
 <tr><td><code>bind_text</code></td><td><code>(source: Signal&lt;str&gt;): View</code></td><td>reactive text</td></tr>
 <tr><td><code>bind_class</code></td><td><code>(source: Signal&lt;str&gt;): View</code></td><td>reactive class</td></tr>
@@ -346,7 +356,7 @@ fun main() {
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-81770c6a.js"></script>
+        <script src="../theme/vilan-09ede7b7.js"></script>
 
 
 

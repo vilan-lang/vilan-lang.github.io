@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4c9b95ae.js";
+            window.path_to_searchindex_js = "searchindex-52f5a681.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-91647468.js"></script>
@@ -368,6 +368,9 @@ for the explicit keywords when you <em>don’t</em> want to wait. The
 <tr><td><code>await fetchThing()</code></td><td><code>fetch_thing()</code> (awaiting is implicit)</td></tr>
 <tr><td><code>class</code> with methods</td><td><code>struct</code> + <code>impl</code> block</td></tr>
 <tr><td>interfaces / duck typing</td><td><code>trait</code>s, checked at compile time</td></tr>
+<tr><td>JSX: <code>&lt;div className="x"&gt;</code></td><td><code>&lt;div class("x")&gt;</code> — text children are quoted</td></tr>
+<tr><td>JSX: <code>onClick={handler}</code></td><td><code>on:click(handler)</code></td></tr>
+<tr><td>JSX: <code>&lt;TodoRow todo={t} /&gt;</code></td><td>a function call in a hole: <code>{todo_row(t)}</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -2654,7 +2657,7 @@ view so you can keep going:</p>
 <ul>
 <li><strong>Static content</strong>: <code>.text(content)</code>, <code>.class(name)</code>,
 <code>.attr(name, value)</code>, <code>.styled(style)</code> (see <a href="#styling">Styling</a>).</li>
-<li><strong>Structure</strong>: <code>.child(view)</code>, <code>.children(views)</code>.</li>
+<li><strong>Structure</strong>: <code>.child(content)</code>, <code>.children(views)</code>.</li>
 <li><strong>Events</strong>: <code>.on(event, handler)</code>, or <code>.on_event(event, |e| …)</code> when
 you need the DOM event itself (<code>prevent_default</code>, <code>key()</code>, modifiers).</li>
 <li><strong>Reactive bindings</strong>: <code>.bind_text(signal)</code>, <code>.bind_class(signal)</code>,
@@ -2662,6 +2665,102 @@ you need the DOM event itself (<code>prevent_default</code>, <code>key()</code>,
 </ul>
 <p>Every <code>bind_*</code> sets the property now and re-sets it whenever the signal
 changes. There is no render loop to trigger.</p>
+<h2 id="text-children-and-mixed-content"><a class="header" href="#text-children-and-mixed-content">Text children and mixed content</a></h2>
+<p><code>child</code> takes more than a <code>View</code>. Anything that can fill a child
+position works — the value’s type decides what lands in the DOM:</p>
+<ul>
+<li>a <code>View</code> appends as an element;</li>
+<li>a <code>str</code> appends as a <strong>text node</strong>;</li>
+<li>a <code>Signal&lt;str&gt;</code> appends as a text node kept in sync;</li>
+<li>a <code>List&lt;View&gt;</code> appends every view, in order.</li>
+</ul>
+<p>Text nodes make mixed content direct: prose around an inline element is
+a run of siblings, not a pile of wrapper spans.</p>
+<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+
+fun tip(): View {
+	view("p")
+		.child("Update any time with ")
+		.child(view("code").text("vilan upgrade"))
+		.child(".")
+}
+
+fun main() {
+	let _root = mount_root("app", || tip());
+}
+</code></pre>
+<p><code>attr</code> is typed the same way: a <code>str</code> value sets once, a <code>Signal&lt;str&gt;</code>
+re-sets whenever it changes — <code>attr("href", signal)</code> and
+<code>bind_attr("href", signal)</code> are the same binding, chosen by type or by
+name. (<code>text</code> is unchanged: it still replaces everything the element
+contains, text nodes included, like the DOM’s <code>textContent</code>.)</p>
+<h2 id="element-syntax"><a class="header" href="#element-syntax">Element syntax</a></h2>
+<p>The chain has a markup coat. An <strong>element expression</strong> is HTML-shaped
+sugar that lowers, before analysis, to exactly the chain you would have
+written — the same methods, in the same order, emitting the same code:</p>
+<pre><code class="language-vilan browser">import std::reactive::Signal;
+import std::ui::{ View, mount_root, view };
+
+fun counter(): View {
+	let count = Signal::new(0);
+	&lt;div&gt;
+		&lt;h2&gt;"Counter"&lt;/h2&gt;
+		&lt;button on:click(|| count.set_with(|n| n + 1))&gt;"+1"&lt;/button&gt;
+		&lt;p&gt;{count.map(|n: i32| i"clicked {n} times")}&lt;/p&gt;
+	&lt;/div&gt;
+}
+
+fun main() {
+	let _root = mount_root("app", || counter());
+}
+</code></pre>
+<p>One rule governs the head — everything between <code>&lt;tag</code> and <code>&gt;</code>:</p>
+<ul>
+<li>An <strong>undotted</strong> <code>name(value)</code> is an attribute: <code>.attr("name", value)</code>,
+the value’s type deciding static vs tracked as always. A bare name
+(<code>disabled</code>) is a boolean attribute. Keyword and hyphenated names
+(<code>type</code>, <code>aria-label</code>) are ordinary attribute names.</li>
+<li>A <strong>leading dot</strong> is the chain, verbatim: <code>.styled(card)</code>,
+<code>.bind_value(draft)</code>, <code>.show(flag)</code>, <code>.bind_each(rows, |r| r.id, |r| row(r))</code>. Every <code>View</code> method works in head position — the dot is
+what keeps attributes and methods from ever colliding, so a new
+method can never change what existing markup means.</li>
+<li><code>on:click(handler)</code> is an event. A zero-parameter closure literal
+lowers to <code>.on</code>, a one-parameter literal to <code>.on_event</code>; a named
+one-parameter handler is written in chain form
+(<code>.on_event("click", handler)</code>).</li>
+</ul>
+<p>Children — everything between <code>&gt;</code> and <code>&lt;/tag&gt;</code> — are nested elements,
+<strong>quoted</strong> strings (<code>i"…"</code> interpolation included), and <code>{expression}</code>
+holes; each lowers to <code>.child(…)</code> in written order. Text children are
+quoted because Vilan’s lexer is context-free and stays that way — and
+the payoff is that interpolation, escapes, and expressions work in
+markup exactly as they do everywhere else. Bare text is a parse error
+that suggests the quoted form.</p>
+<p>An element is an ordinary expression: it nests in holes, sits in match
+arms, and takes postfix chains. The two forms mix freely —</p>
+<pre><code class="language-vilan browser">import std::reactive::Signal;
+import std::ui::{ View, mount_root, view };
+
+fun panel(items: Signal&lt;List&lt;str&gt;&gt;, flag: Signal&lt;bool&gt;): View {
+	&lt;section class("panel")&gt;
+		&lt;input placeholder("What needs doing?") /&gt;
+		&lt;ul .bind_each(items, |t| t, |t| &lt;li&gt;{t}&lt;/li&gt;) /&gt;
+		&lt;p .show(flag)&gt;"empty"&lt;/p&gt;
+	&lt;/section&gt;
+}
+
+fun main() {
+	let _root = mount_root("app", || panel(Signal::new(["alpha"]), Signal::new(false)));
+}
+</code></pre>
+<p>Components stay what they are — functions returning <code>View</code> — and are
+called in holes: <code>{todo_row(items, todo)}</code>. Reactivity stays explicit:
+an <code>if</code> or <code>match</code> inside a hole runs once at build, exactly as it does
+in a chain; reactive structure is <code>.show</code>/<code>.when</code>/<code>.swap</code>/<code>.bind_each</code>
+in head position, and <code>Signal</code> values in slots. The sugar adds no
+semantics: <code>import std::ui::{ view, View }</code> is still required (the
+compiler points the way if it is missing), and everything this guide
+says about ownership, boundaries, and binding types applies unchanged.</p>
 <h2 id="components-are-just-functions"><a class="header" href="#components-are-just-functions">Components are just functions</a></h2>
 <p>A “component” is a function that returns a <code>View</code>. There is no
 registration, special types, or props system; the parameters are the
@@ -5491,6 +5590,7 @@ transport or protocol bridge.</p>
 fun get_element_by_id(id: str): Element
 fun create_element(tag: str): Element
 fun create_element_ns(namespace: str, tag: str): Element   // createElementNS
+fun create_text_node(content: str): Text                   // a fresh text node
 fun query_selector(selector: str): Element
 fun query_selector_all(selector: str): List&lt;Element&gt;
 
@@ -5500,6 +5600,7 @@ impl Element {
 	fun set_attribute(self, name: str, value: str)
 	fun set_style_property(self, name: str, value: str) // style.setProperty (CSS custom props)
 	fun append(self, child: Element)
+	fun append_text(self, child: Text)                 // appendChild, text-node overload
 	fun remove(self)                                   // detach from the document
 	fun clear(self)                                    // remove every child
 	fun set_hidden(self, hidden: bool)
@@ -5507,6 +5608,11 @@ impl Element {
 	fun set_value(self, value: str)
 	fun on(self, event: str, handler: || void)
 	fun on_event(self, event: str, handler: |Event| void)
+}
+
+external struct Text;                // a text node — text only, no attributes
+impl Text {
+	fun set_text(self, text: str)                      // textContent =
 }
 
 external struct Event;
@@ -5527,6 +5633,9 @@ job. Prefer the <code>View</code> layer; drop to <code>dom</code> for what it do
 fun view(tag: str): View
 fun mount(id: str, view: View)                                   // attach only
 fun mount_root(id: str, body: (|| View) context owner_scope): Owner
+
+trait Slot { fun place(self, parent: View) }          // View | str | Signal&lt;str&gt; | List&lt;View&gt;
+trait AttrValue { fun apply(self, parent: View, name: str) }   // str | Signal&lt;str&gt;
 </code></pre>
 <p><code>mount_root</code> = fresh owner + turn boundary + attach; it returns the root
 owner (most apps let it live forever). <code>mount</code> is the attach half alone.
@@ -5548,11 +5657,11 @@ too.</p>
 <tr><td><code>text</code></td><td><code>(content: str): View</code></td><td>static text</td></tr>
 <tr><td><code>class</code></td><td><code>(name: str): View</code></td><td>static class</td></tr>
 <tr><td><code>styled</code></td><td><code>(style: Style): View</code></td><td>classes from a compiled style</td></tr>
-<tr><td><code>attr</code></td><td><code>(name: str, value: str): View</code></td><td>static attribute</td></tr>
+<tr><td><code>attr</code></td><td><code>(name: str, value: V): View</code>; <code>V: AttrValue</code></td><td><code>str</code> sets once, <code>Signal&lt;str&gt;</code> tracks</td></tr>
 <tr><td><code>style_var</code></td><td><code>(name: str, source: Signal&lt;str&gt;): View</code></td><td>reactive CSS custom property</td></tr>
 <tr><td><code>on</code></td><td><code>(event: str, handler: (|| void) context turn_scope): View</code></td><td>handler runs in a fresh turn</td></tr>
 <tr><td><code>on_event</code></td><td><code>(event: str, handler: (|Event| void) context turn_scope): View</code></td><td>same, with the DOM event</td></tr>
-<tr><td><code>child</code></td><td><code>(child: View): View</code></td><td>append one</td></tr>
+<tr><td><code>child</code></td><td><code>(content: C): View</code>; <code>C: Slot</code></td><td>element, text node (<code>str</code>/<code>Signal&lt;str&gt;</code>), or <code>List&lt;View&gt;</code></td></tr>
 <tr><td><code>children</code></td><td><code>(items: List&lt;View&gt;): View</code></td><td>append several</td></tr>
 <tr><td><code>bind_text</code></td><td><code>(source: Signal&lt;str&gt;): View</code></td><td>reactive text</td></tr>
 <tr><td><code>bind_class</code></td><td><code>(source: Signal&lt;str&gt;): View</code></td><td>reactive class</td></tr>
@@ -6162,7 +6271,13 @@ error.</li>
 characters. Consequently <code>&lt;=</code>/<code>&gt;=</code> lex as <code>&lt;</code>/<code>&gt;</code> followed by <code>=</code>, and the
 shift operators <code>&lt;&lt;</code>/<code>&gt;&gt;</code> are two adjacent control tokens; the parser
 accepts them as shifts only when <strong>span-adjacent</strong> (no whitespace):
-<code>a &lt;&lt; b</code> is a shift, <code>a &lt; &lt; b</code> is a parse error (§3.7).</p>
+<code>a &lt;&lt; b</code> is a shift, <code>a &lt; &lt; b</code> is a parse error (§3.7). The element form
+(grammar spec, <em>atom</em>) reuses the same discipline: <code>&lt;/</code> and <code>/&gt;</code> are
+span-adjacent pairs, <code>on:</code> joins by adjacency, and a hyphenated element
+or attribute name (<code>aria-label</code>, <code>my-widget</code>) is a span-adjacent
+name-<code>-</code>-name run — <code>data - id</code> is three tokens of arithmetic, not a
+name. The lexer itself is untouched by the element form: every token it
+produces already existed.</p>
 <h2 id="25-trivia-and-token-separation"><a class="header" href="#25-trivia-and-token-separation">2.5 Trivia and token separation</a></h2>
 <p>Whitespace (any Unicode whitespace) and comments may appear between any
 two tokens and are required only where two tokens would otherwise lex as
@@ -6337,10 +6452,20 @@ postfix = "." member
 
 atom    = literal | IDENT | IDENT generic-args
         | "(" expression ")" | tuple | list
-        | tuple-comprehension | macro-invocation | macro-block ;
+        | tuple-comprehension | macro-invocation | macro-block
+        | element ;
 tuple   = "(" expression "," expression { "," expression } [ "," ] ")" ;
 list    = "[" [ expression { "," expression } [ "," ] ] "]" ;
 tuple-comprehension = "(" IDENT "in" secondary-expr "=&gt;" expression ")" ;
+
+element      = "&lt;" element-name { head-item }
+               ( "/&gt;" | "&gt;" { child } "&lt;/" element-name "&gt;" ) ;
+head-item    = "." member                          (* a chain link, verbatim *)
+             | "on" ":" IDENT "(" expression ")"   (* event form *)
+             | element-name [ "(" expression ")" ] ;
+                                          (* attribute; bare name = boolean *)
+element-name = NAME { "-" NAME } ;   (* NAME: an identifier or any keyword *)
+child        = element | STRING | ISTRING | "{" expression "}" ;
 </code></pre>
 <p><code>Name&lt;Args&gt;</code> is read as a generic path head only when <code>::</code> immediately
 follows (<code>List&lt;str&gt;::new()</code>); otherwise <code>&lt;</code> is a comparison. A member
@@ -6350,6 +6475,20 @@ chain’s result, calling a closure-typed value
 through the following plain postfixes up to the next <code>?.</code> or <code>!</code>:
 <code>a?.b.c()!</code> lifts <code>b.c()</code> into the container, then try-asserts the
 result (§5.10).</p>
+<p>An <strong>element</strong> appears only in atom position, where <code>&lt;</code> begins no other
+expression; after an operand, <code>&lt;</code> remains a comparison (<code>x &lt; &lt;div/&gt;</code> is
+a comparison whose right operand is an element). <code>/&gt;</code>, the closing
+marker <code>&lt;/</code>, the <code>on:</code> joint, and the <code>-</code> joints of a hyphenated name
+are <strong>span-adjacent</strong> token pairs, the shift-operator discipline
+(lexical spec §2.4). The closing tag’s name must match the opening
+tag’s token for token. In a head item, an undotted name is an attribute
+(a bare name is a boolean attribute) and a leading <code>.</code> is an ordinary
+chain member — the grammar never consults any method list. Text
+children are quoted strings; bare text is a parse error. An element is
+an ordinary expression: it desugars before analysis to the <code>std::ui</code>
+view chain (<code>view("tag")</code> with one method call per head item and a
+<code>.child(…)</code> per child), and postfix suffixes apply to it
+(<code>&lt;div /&gt;.show(flag)</code>).</p>
 <h2 id="37-operator-precedence"><a class="header" href="#37-operator-precedence">3.7 Operator precedence</a></h2>
 <p>From tightest to loosest; every binary level is left-associative:</p>
 <div class="table-wrapper">
@@ -7913,6 +8052,17 @@ last spans lines — when a <code>})</code> would be followed by more chain on t
 same line. A chain that ends at its spanning link is left alone, so the
 trailing-closure shape <code>self.cleanups.write().push(|| { … });</code> stays as
 written.</li>
+<li>A list or struct literal also splits <em>regardless of width</em> when one of
+its elements spans lines, because its closing <code>}</code> or <code>]</code> — and usually a
+<code>)</code> and <code>;</code> after it — would otherwise pile onto that element’s last
+line. Unlike a chain, the <em>last</em> element counts: a composite has no
+position where a spanning element leaves a clean line.</li>
+<li>A comment you write <em>inside</em> one of these constructs keeps it split, and
+attaches to the element it precedes — the link, element, field, imported
+name or parameter below it. A construct that collapsed would have no line
+to keep the comment on, which is why the comment decides the layout. A
+comment inside an element (a closure body a link carries, say) is that
+body’s own and changes nothing.</li>
 <li>A <code>fun</code> signature over the budget breaks its parameter list the same
 way, one parameter per line, with the return type, a <code>borrows</code> clause
 and the body’s <code>{</code> (or a bodyless <code>;</code>) riding the closing <code>)</code>. An empty
@@ -7920,12 +8070,14 @@ parameter list never breaks, so a signature pushed over by its <em>name</em>
 stays long. A closure’s parameters are never broken.</li>
 <li>Parenthesized groups you wrote are kept, even where the grammar
 doesn’t need them: a redundant paren is usually there for clarity.</li>
-<li>A call’s <em>argument</em> list is never wrapped: layout hangs off the last
-argument, so a long earlier argument leaves a long line. This is
-deliberately not symmetric with the parameter rule above — an argument
-list sits inside an expression, where the builder convention decides
-layout, while a parameter list is a declaration’s own contract and has
-no shape but one-per-line.</li>
+<li>A call’s <em>argument</em> list is never wrapped, but the split reaches the
+<strong>last</strong> argument, so a statement whose only breakable construct sits
+there still breaks it — <code>list.push(T { … })</code> splits the literal. A long
+<em>earlier</em> argument still leaves a long line: layout hangs off the final
+argument. This is deliberately not symmetric with the parameter rule
+above — an argument list sits inside an expression, where the builder
+convention decides layout, while a parameter list is a declaration’s own
+contract and has no shape but one-per-line.</li>
 <li>A file the formatter cannot yet print faithfully is left byte-for-byte
 untouched, never half-formatted.</li>
 </ul>
@@ -8588,7 +8740,7 @@ and options of Wire types, and anything with <code>[derive(Wire)]</code>.
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/vilan-81770c6a.js"></script>
+        <script src="theme/vilan-09ede7b7.js"></script>
 
         <script>
         window.addEventListener('load', function() {
