@@ -432,7 +432,7 @@ function console_row(row) {
 	return $bc;
 }
 function playground_page(status2, diagnostics2, console_lines2, can_format2, can_platform2, share_label2, mode2, run2, format2, share2, $K, $L) {
-	return child(child(styled(view("div"), add(shell, page_fill)), top_bar($a("1"))), child(child(child(styled(view("main"), add(wide_column, workbench)), text(styled(view("h1"), pane_label), "Playground: vilan in the browser")), child(child(child(child(child(styled(view("div"), controls), on(bind_text(styled(view("button"), run_button), $ac(mode2, (current) => {
+	return child(child(styled(view("div"), add(shell, page_fill)), top_bar($a("1"))), child(child(child(styled(view("main"), add(wide_column, workbench)), text(styled(view("h1"), pane_label), "Playground: vilan in the browser")), child(child(child(child(child(child(styled(view("div"), controls), on(bind_text(styled(view("button"), run_button), $ac(mode2, (current) => {
 		const $aa = current;
 		let $ab = null;
 		if ($aa === "node") {
@@ -447,7 +447,7 @@ function playground_page(status2, diagnostics2, console_lines2, can_format2, can
 		return format2();
 	}), can_format2, $K, $L)), on(bind_text(styled(view("button"), example_button), share_label2, $K, $L), "click", ($ay) => {
 		return share2();
-	})), bind_text(attr(styled(view("p"), status_line), "role", "status"), status2, $K, $L))), child(child(styled(view("div"), panes), child(child(child(child(styled(view("div"), pane), child(child(styled(view("div"), pane_head), text(styled(view("p"), pane_label), "Program")), child(child(child(child(child(attr(attr(styled(view("select"), template_select), "id", "template"), "aria-label", "Load an example"), text(attr(attr(attr(view("option"), "value", ""), "disabled", "true"), "hidden", "true"), "Examples")), template_option("counter", "Counter: reactive state")), template_option("hello", "Hello: mount and print")), template_option("styles", "Styles: compile-time CSS")), show(template_option("server", "Server: typed HTTP, checked"), can_platform2, $K, $L)))), attr(attr(styled(view("div"), editor_host), "id", "editor"), "aria-label", "Program editor")), text(styled(view("p"), pane_label), "Diagnostics")), child(child(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Nothing to report."), $az(diagnostics2, (rows) => {
+	})), bind_text(attr(styled(view("p"), status_line), "role", "status"), status2, $K, $L)), attr(attr(styled(view("select"), template_select), "id", "version"), "aria-label", "Compiler version"))), child(child(styled(view("div"), panes), child(child(child(child(styled(view("div"), pane), child(child(styled(view("div"), pane_head), text(styled(view("p"), pane_label), "Program")), child(child(child(child(child(attr(attr(styled(view("select"), template_select), "id", "template"), "aria-label", "Load an example"), text(attr(attr(attr(view("option"), "value", ""), "disabled", "true"), "hidden", "true"), "Examples")), template_option("counter", "Counter: reactive state")), template_option("hello", "Hello: mount and print")), template_option("styles", "Styles: compile-time CSS")), show(template_option("server", "Server: typed HTTP, checked"), can_platform2, $K, $L)))), attr(attr(styled(view("div"), editor_host), "id", "editor"), "aria-label", "Program editor")), text(styled(view("p"), pane_label), "Diagnostics")), child(child(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Nothing to report."), $az(diagnostics2, (rows) => {
 		return rows.length === 0;
 	}, $K), $K, $L)), $aL(view("div"), diagnostics2, (row) => {
 		return row[0];
@@ -1126,6 +1126,9 @@ VilanPlayground.startCompiler((event) => {
 	if (kind === "ready") {
 		$aB(can_format, event.canFormat, [ 1 ]);
 		$aB(can_platform, event.canPlatform, [ 1 ]);
+		if (!(event.canPlatform)) {
+			VilanPlayground.setMode("browser");
+		}
 		$e(status, "Ready (vilan " + event.version + ")", [ 1 ]);
 		compiler_ready.v = true;
 		run_on_arrival();
