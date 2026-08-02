@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0e07076e.js";
+            window.path_to_searchindex_js = "searchindex-4c9b95ae.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-91647468.js"></script>
@@ -7908,6 +7908,11 @@ block — is judged by the line it opens, and its body lines are measured
 where they are printed. So <code>view(…)…when(cond, || { … })</code> splits its
 chain like any other; only what shares the opening line counts toward
 that line’s width.</li>
+<li>A chain also splits <em>regardless of width</em> when a link that is not its
+last spans lines — when a <code>})</code> would be followed by more chain on the
+same line. A chain that ends at its spanning link is left alone, so the
+trailing-closure shape <code>self.cleanups.write().push(|| { … });</code> stays as
+written.</li>
 <li>A <code>fun</code> signature over the budget breaks its parameter list the same
 way, one parameter per line, with the return type, a <code>borrows</code> clause
 and the body’s <code>{</code> (or a bodyless <code>;</code>) riding the closing <code>)</code>. An empty
