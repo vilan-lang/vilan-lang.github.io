@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Numbers - The Vilan documentation</title>
+        <title>Projects and dependencies - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -174,107 +174,64 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="numbers-reference"><a class="header" href="#numbers-reference">Numbers reference</a></h1>
-<p>The sized numeric family (<code>std::number</code>), generic <code>min</code>/<code>max</code> (<code>std::math</code>),
-and random values (<code>std::random</code>). Literal syntax and conversion semantics:
-<a href="../tour/values-and-types.html">Values and types</a>.</p>
-<h2 id="the-family"><a class="header" href="#the-family">The family</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Type</th><th>Width</th><th>Literal</th></tr>
-</thead>
-<tbody>
-<tr><td><code>i8 i16 i32 i53</code></td><td>signed</td><td>bare = <code>i32</code>; others suffixed (<code>100i53</code>)</td></tr>
-<tr><td><code>u8 u16 u32 u53</code></td><td>unsigned</td><td>suffixed (<code>0xFFu8</code>)</td></tr>
-<tr><td><code>f64</code></td><td>float</td><td><code>2.5</code> or <code>10f</code></td></tr>
-<tr><td><code>f32</code></td><td>float</td><td><code>2.5f32</code></td></tr>
-<tr><td><code>BigInt</code></td><td>arbitrary</td><td><code>7n</code></td></tr>
-</tbody>
-</table>
-</div>
-<p><code>i53</code>/<code>u53</code> are the <strong>wide</strong> integers, named for the precision they
-actually deliver: they are f64-backed on the JS backend, and every value
-in ±2^53 (JavaScript’s safe-integer window) is exact. There is no <code>i64</code>:
-a type that silently loses precision past 2^53 would be lying about its
-width; for bigger integers use <code>BigInt</code>.</p>
-<p>Literals are range-checked at compile time (an out-of-range <code>i53</code> literal
-is a compile error, not a rounded value). Integer division truncates
-toward zero. No implicit width coercion; convert with <code>as_*</code>. Arithmetic
-that overflows a type’s range is <strong>undefined behavior</strong>
-(spec <a href="../spec/execution.html">§7.2a</a>): on JS it manifests as f64
-artifacts; a checked <code>add_safe</code> family is recorded future work.</p>
-<h2 id="methods"><a class="header" href="#methods">Methods</a></h2>
-<p>Integers (per type; shown for <code>i32</code>):</p>
-<pre><code class="language-vilan fragment">impl i32 {
-	fun abs(self): i32
-	fun pow(self, exponent: i32): i32
-	fun min(self, other: i32): i32
-	fun max(self, other: i32): i32
-	fun rem(self, m: i32): i32     // the % operator's method
-	fun diff(self, other: i32): i32
-}
+                        <h1 id="projects-and-dependencies"><a class="header" href="#projects-and-dependencies">Projects and dependencies</a></h1>
+<p><a href="hello-vilan.html#projects-vilantoml">Hello Vilan</a> covers the two basic
+manifests: an application (<code>[package]</code>) and a library (<code>[library]</code>). This
+page is the rest of the manifest’s vocabulary — external dependencies,
+pre-build commands, and workspaces — for when a project grows into it.</p>
+<h2 id="git-dependencies"><a class="header" href="#git-dependencies">Git dependencies</a></h2>
+<p>Beyond <code>path</code> dependencies, a dependency can live in a git repository, pinned to one exact
+point (a tag or a commit, never a branch):</p>
+<pre><code class="language-toml">[package.dependencies]
+shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
+pinned = { git = "https://github.com/someone/other", rev = "9f2c1ab" }
 </code></pre>
-<p>Floats add the usual math surface:</p>
-<pre><code class="language-vilan fragment">impl f64 {
-	fun abs(self): f64
-	fun sqrt(self): f64
-	fun pow(self, exponent: f64): f64
-	fun floor(self): f64
-	fun ceil(self): f64
-	fun round(self): f64
-	fun min(self, other: f64): f64
-	fun max(self, other: f64): f64
-	fun sin(self): f64      // cos, tan, asin, acos, atan …
-}
-</code></pre>
-<p>Every numeric type implements <code>Default</code> (zero), the operator traits, and
-comparison.</p>
-<h2 id="conversions-as_"><a class="header" href="#conversions-as_">Conversions: <code>as_*</code></a></h2>
-<p>Every numeric type converts to every other with Rust-<code>as</code> semantics.
-Floats truncate toward zero; integers fold two’s-complement into the
-target width:</p>
-<pre><code class="language-vilan">import std::print;
+<p>The repository must be a <code>[library]</code> with its <code>vilan.toml</code> at the root.
+<code>vilan build</code> (or <code>check</code>, or <code>run</code>) fetches it once into
+<code>~/.vilan/git-deps/</code> and reuses that checkout forever after, so builds
+work offline and a moved tag cannot change what you already built.
+Nothing else fetches: the editor uses the cache when it’s there and
+never reaches the network.</p>
+<h2 id="pre-build-commands-and-default-entry"><a class="header" href="#pre-build-commands-and-default-entry">Pre-build commands and <code>default-entry</code></a></h2>
+<p>Two more keys matter once a project grows. <code>[build] run</code> names a
+command (or a list of them) to run before each build and each <code>--watch</code>
+round: an asset pipeline, a codegen sidecar. And
+<code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
+has several. Both are covered in <a href="../guide/dev-loop.html">the dev loop</a>.</p>
+<h2 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h2>
+<p>A workspace groups several packages so they build together with one
+<code>vilan build .</code> at the root. You need it less often than you might
+expect, since a client + server app is <em>one</em> package with two entries
+(see <a href="#the-shape-of-a-full-stack-app">below</a>). Reach for a workspace
+when members want their own manifests and dependency sets:</p>
+<pre><code class="language-toml">[project]
+packages = ["common", "client", "server"]
 
-fun main() {
-	print((3.9).as_i32());    // 3
-	print((-1).as_u8());      // 255 — folded
-	print((300).as_u8());     // 44
-	let wide = 9007199254740992i53;
-	print(wide.as_i32());
-	print((255u8).as_f64() / 2.0);
-}
+[project.dependencies]
+shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
 </code></pre>
-<p>Conversions on literals fold at compile time.</p>
-<h2 id="stdmath"><a class="header" href="#stdmath">std::math</a></h2>
-<pre><code class="language-vilan fragment">fun min&lt;T: Ord&gt;(a: T, b: T): T
-fun max&lt;T: Ord&gt;(a: T, b: T): T
-fun minmax&lt;T: Ord&gt;(a: T, b: T): (T, T)   // (smaller, larger)
+<p>Dependencies declared at the workspace root are there for the members to
+share, so the version lives in one file. A member takes one by name:</p>
+<pre><code class="language-toml">[package.dependencies]
+shapes = { project = true }
 </code></pre>
-<h2 id="stdrandom"><a class="header" href="#stdrandom">std::random</a></h2>
-<pre><code class="language-vilan fragment">fun range&lt;T: Random&gt;(low: T, high: T): T   // uniform in [low, high)
-// implemented for i32, u32, f64
-</code></pre>
-<pre><code class="language-vilan">import std::print;
-import std::random;
-
-fun main() {
-	let roll = random::range(1, 7);   // 1..=6
-	print(roll &gt;= 1 &amp;&amp; roll &lt;= 6);
-}
-</code></pre>
-<p>Not cryptographic: for tokens and ids use <code>std::crypto</code>
-(<code>random_uuid</code>, <code>random_bytes</code>; see <a href="misc.html">misc</a>).</p>
+<p>That is the whole form: <code>project = true</code> and nothing else, once per
+dependency you want. It is opt-in on purpose: a member that stays silent
+gets nothing, so adding a dependency at the root can never change what
+another package sees. A <code>path</code> written at the root is relative to the
+<em>root</em>, since that is where you wrote it. And a member that declares its
+own <code>shapes = { path = "…" }</code> uses that one. There is no shadowing rule
+to remember, because inheritance only happens where you ask for it.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../std/strings.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../tour/hello-vilan.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../std/traits.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../tour/values-and-types.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -284,11 +241,11 @@ fun main() {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../std/strings.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../tour/hello-vilan.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../std/traits.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../tour/values-and-types.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fdaec2e1.js";
+            window.path_to_searchindex_js = "../searchindex-e800b659.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-91647468.js"></script>
+        <script src="../toc-e4e9f39d.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -289,50 +289,12 @@ imported by other packages:</p>
 <pre><code class="language-toml">[library]
 name = "common"
 </code></pre>
-<p>A dependency can also live in a git repository, pinned to one exact
-point (a tag or a commit, never a branch):</p>
-<pre><code class="language-toml">[package.dependencies]
-shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
-pinned = { git = "https://github.com/someone/other", rev = "9f2c1ab" }
-</code></pre>
-<p>The repository must be a <code>[library]</code> with its <code>vilan.toml</code> at the root.
-<code>vilan build</code> (or <code>check</code>, or <code>run</code>) fetches it once into
-<code>~/.vilan/git-deps/</code> and reuses that checkout forever after, so builds
-work offline and a moved tag cannot change what you already built.
-Nothing else fetches: the editor uses the cache when it’s there and
-never reaches the network.</p>
-<p>Two more keys matter once a project grows. <code>[build] run</code> names a
-command (or a list of them) to run before each build and each <code>--watch</code>
-round: an asset pipeline, a codegen sidecar. And
-<code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
-has several. Both are covered in <a href="../guide/dev-loop.html">the dev loop</a>.</p>
-<p>A workspace groups several packages so they build together with one
-<code>vilan build .</code> at the root. You need it less often than you might
-expect, since a client + server app is <em>one</em> package with two entries
-(see <a href="#the-shape-of-a-full-stack-app">below</a>). Reach for a workspace
-when members want their own manifests and dependency sets:</p>
-<pre><code class="language-toml">[project]
-packages = ["common", "client", "server"]
-
-[project.dependencies]
-shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
-</code></pre>
-<p>Dependencies declared at the workspace root are there for the members to
-share, so the version lives in one file. A member takes one by name:</p>
-<pre><code class="language-toml">[package.dependencies]
-shapes = { project = true }
-</code></pre>
-<p>That is the whole form: <code>project = true</code> and nothing else, once per
-dependency you want. It is opt-in on purpose: a member that stays silent
-gets nothing, so adding a dependency at the root can never change what
-another package sees. A <code>path</code> written at the root is relative to the
-<em>root</em>, since that is where you wrote it. And a member that declares its
-own <code>shapes = { path = "…" }</code> uses that one. There is no shadowing rule
-to remember, because inheritance only happens where you ask for it.</p>
 <p>By default a package’s sources live in <code>src/</code> and the entry file is
 <code>src/main.vl</code>; that is where <code>vilan build</code> looks when the manifest says
 nothing. Point it elsewhere with <code>root = "."</code> (sources beside the
 manifest) or <code>entry = "app.vl"</code>.</p>
+<p>Dependencies from git, pre-build commands, <code>default-entry</code>, and
+workspaces are covered in <a href="projects.html">Projects and dependencies</a>.</p>
 <h2 id="imports"><a class="header" href="#imports">Imports</a></h2>
 <pre><code class="language-vilan fragment">import std::print;                          // one item
 import std::reactive::{ Signal, combine };  // several at once
@@ -392,7 +354,7 @@ Importing the module is fine; reaching it is what’s checked. The
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../tour/values-and-types.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../tour/projects.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -406,7 +368,7 @@ Importing the module is fine; reaching it is what’s checked. The
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../tour/values-and-types.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../tour/projects.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

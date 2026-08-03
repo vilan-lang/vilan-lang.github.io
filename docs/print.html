@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-fdaec2e1.js";
+            window.path_to_searchindex_js = "searchindex-e800b659.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-91647468.js"></script>
+        <script src="toc-e4e9f39d.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -511,50 +511,12 @@ imported by other packages:</p>
 <pre><code class="language-toml">[library]
 name = "common"
 </code></pre>
-<p>A dependency can also live in a git repository, pinned to one exact
-point (a tag or a commit, never a branch):</p>
-<pre><code class="language-toml">[package.dependencies]
-shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
-pinned = { git = "https://github.com/someone/other", rev = "9f2c1ab" }
-</code></pre>
-<p>The repository must be a <code>[library]</code> with its <code>vilan.toml</code> at the root.
-<code>vilan build</code> (or <code>check</code>, or <code>run</code>) fetches it once into
-<code>~/.vilan/git-deps/</code> and reuses that checkout forever after, so builds
-work offline and a moved tag cannot change what you already built.
-Nothing else fetches: the editor uses the cache when it’s there and
-never reaches the network.</p>
-<p>Two more keys matter once a project grows. <code>[build] run</code> names a
-command (or a list of them) to run before each build and each <code>--watch</code>
-round: an asset pipeline, a codegen sidecar. And
-<code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
-has several. Both are covered in <a href="#the-dev-loop">the dev loop</a>.</p>
-<p>A workspace groups several packages so they build together with one
-<code>vilan build .</code> at the root. You need it less often than you might
-expect, since a client + server app is <em>one</em> package with two entries
-(see <a href="#the-shape-of-a-full-stack-app">below</a>). Reach for a workspace
-when members want their own manifests and dependency sets:</p>
-<pre><code class="language-toml">[project]
-packages = ["common", "client", "server"]
-
-[project.dependencies]
-shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
-</code></pre>
-<p>Dependencies declared at the workspace root are there for the members to
-share, so the version lives in one file. A member takes one by name:</p>
-<pre><code class="language-toml">[package.dependencies]
-shapes = { project = true }
-</code></pre>
-<p>That is the whole form: <code>project = true</code> and nothing else, once per
-dependency you want. It is opt-in on purpose: a member that stays silent
-gets nothing, so adding a dependency at the root can never change what
-another package sees. A <code>path</code> written at the root is relative to the
-<em>root</em>, since that is where you wrote it. And a member that declares its
-own <code>shapes = { path = "…" }</code> uses that one. There is no shadowing rule
-to remember, because inheritance only happens where you ask for it.</p>
 <p>By default a package’s sources live in <code>src/</code> and the entry file is
 <code>src/main.vl</code>; that is where <code>vilan build</code> looks when the manifest says
 nothing. Point it elsewhere with <code>root = "."</code> (sources beside the
 manifest) or <code>entry = "app.vl"</code>.</p>
+<p>Dependencies from git, pre-build commands, <code>default-entry</code>, and
+workspaces are covered in <a href="#projects-and-dependencies">Projects and dependencies</a>.</p>
 <h2 id="imports"><a class="header" href="#imports">Imports</a></h2>
 <pre><code class="language-vilan fragment">import std::print;                          // one item
 import std::reactive::{ Signal, combine };  // several at once
@@ -605,6 +567,55 @@ server thing), you get a clear compile error naming the call chain.
 Importing the module is fine; reaching it is what’s checked. The
 <a href="#platforms">platforms chapter</a> has the details, and the
 <a href="#a-full-stack-walkthrough">walkthrough</a> builds a whole app in this shape.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="projects-and-dependencies"><a class="header" href="#projects-and-dependencies">Projects and dependencies</a></h1>
+<p><a href="#projects-vilantoml">Hello Vilan</a> covers the two basic
+manifests: an application (<code>[package]</code>) and a library (<code>[library]</code>). This
+page is the rest of the manifest’s vocabulary — external dependencies,
+pre-build commands, and workspaces — for when a project grows into it.</p>
+<h2 id="git-dependencies"><a class="header" href="#git-dependencies">Git dependencies</a></h2>
+<p>Beyond <code>path</code> dependencies, a dependency can live in a git repository, pinned to one exact
+point (a tag or a commit, never a branch):</p>
+<pre><code class="language-toml">[package.dependencies]
+shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
+pinned = { git = "https://github.com/someone/other", rev = "9f2c1ab" }
+</code></pre>
+<p>The repository must be a <code>[library]</code> with its <code>vilan.toml</code> at the root.
+<code>vilan build</code> (or <code>check</code>, or <code>run</code>) fetches it once into
+<code>~/.vilan/git-deps/</code> and reuses that checkout forever after, so builds
+work offline and a moved tag cannot change what you already built.
+Nothing else fetches: the editor uses the cache when it’s there and
+never reaches the network.</p>
+<h2 id="pre-build-commands-and-default-entry"><a class="header" href="#pre-build-commands-and-default-entry">Pre-build commands and <code>default-entry</code></a></h2>
+<p>Two more keys matter once a project grows. <code>[build] run</code> names a
+command (or a list of them) to run before each build and each <code>--watch</code>
+round: an asset pipeline, a codegen sidecar. And
+<code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
+has several. Both are covered in <a href="#the-dev-loop">the dev loop</a>.</p>
+<h2 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h2>
+<p>A workspace groups several packages so they build together with one
+<code>vilan build .</code> at the root. You need it less often than you might
+expect, since a client + server app is <em>one</em> package with two entries
+(see <a href="#the-shape-of-a-full-stack-app">below</a>). Reach for a workspace
+when members want their own manifests and dependency sets:</p>
+<pre><code class="language-toml">[project]
+packages = ["common", "client", "server"]
+
+[project.dependencies]
+shapes = { git = "https://github.com/someone/shapes", tag = "v1.2.0" }
+</code></pre>
+<p>Dependencies declared at the workspace root are there for the members to
+share, so the version lives in one file. A member takes one by name:</p>
+<pre><code class="language-toml">[package.dependencies]
+shapes = { project = true }
+</code></pre>
+<p>That is the whole form: <code>project = true</code> and nothing else, once per
+dependency you want. It is opt-in on purpose: a member that stays silent
+gets nothing, so adding a dependency at the root can never change what
+another package sees. A <code>path</code> written at the root is relative to the
+<em>root</em>, since that is where you wrote it. And a member that declares its
+own <code>shapes = { path = "…" }</code> uses that one. There is no shadowing rule
+to remember, because inheritance only happens where you ask for it.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="values-and-types"><a class="header" href="#values-and-types">Values and types</a></h1>
 <blockquote>
@@ -6076,7 +6087,7 @@ known to diverge from this specification (linking the tracked gap), or
 where behavior is deliberately implementation-defined.</li>
 <li>The specification states <strong>intent</strong>. A compiler behavior that contradicts
 normative text is a compiler bug, even before it is fixed; such gaps are
-tracked in <code>vilan/proposal/backlog.md</code> and pinned as <code>#[ignore]</code>d tests.</li>
+tracked in <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/backlog.md">the repository’s backlog</a> and pinned as <code>#[ignore]</code>d tests.</li>
 </ul>
 <p>Deliberately implementation-defined (a conforming implementation may vary):
 diagnostic wording and spans; the shape of emitted JavaScript (subject to
@@ -6143,7 +6154,7 @@ leading U+FEFF byte-order mark is an encoding marker rather than source
 text: it is ignored, and positions are counted from the byte after it. A
 U+FEFF anywhere else is content. Together these make a program’s meaning
 independent of how an editor saved it: the same source is the same
-program on every platform. (See <code>proposal/windows-support.md</code> §2; the
+program on every platform. (See <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/windows-support.md">the design notes</a> §2; the
 canonical on-disk form is LF with no BOM, and <code>vilan fmt</code> writes it.)</p>
 <h2 id="21-comments"><a class="header" href="#21-comments">2.1 Comments</a></h2>
 <p>A comment begins with <code>//</code> and runs to the end of the line. There are no
@@ -6613,7 +6624,7 @@ though std has one: <code>pkg::ui</code> is always the package’s own module,
 case-insensitive filesystem that answers <code>import foo</code> with <code>Foo.vl</code> is a
 <strong>diagnostic naming both spellings</strong>, not a resolution, so that a program
 compiles identically on case-sensitive and case-insensitive filesystems
-(<code>proposal/windows-support.md</code> §5). Every component of the resolved path
+(<a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/windows-support.md">design notes</a> §5). Every component of the resolved path
 carries the rule, so <code>foo/lib.vl</code> is reached by <code>import foo</code> only when the
 directory is spelled <code>foo</code>.</p>
 <h2 id="43-imports"><a class="header" href="#43-imports">4.3 Imports</a></h2>
@@ -6884,8 +6895,8 @@ sharing mechanism (views, projections, <code>Shared</code>, <code>Arena</code>/<
 resource class, §6.8) is a <em>claim</em> on an owner, and all of them obey the
 one law stated in §6.0. The numbered sections that follow are that law’s
 projections: the four rules (design:
-<code>proposal/memory-management-rev-1.md</code>), the escape hatches, and resources
-(design: <code>proposal/claims-and-epochs.md</code>, <code>proposal/destruction.md</code>). Rules
+<a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/memory-management-rev-1.md">the design notes</a>), the escape hatches, and resources
+(design: <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/claims-and-epochs.md">claims and epochs</a>, <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/destruction.md">destruction</a>). Rules
 1–3 and rule 4’s static half are normative and enforced; rule 4’s dynamic
 remainder is future work, marked below.</p>
 <h2 id="60-the-law--owners-epochs-and-claims"><a class="header" href="#60-the-law--owners-epochs-and-claims">6.0 The law — owners, epochs, and claims</a></h2>
@@ -7099,7 +7110,7 @@ cell under another live view traps, while overlapping writes through the
 cell do not (the reconciled trap law of §6.0; a <code>write</code> view is <em>not</em>
 exclusive). See <a href="#cells-reference">cells</a>.</p>
 <h2 id="68-resources-and-destruction"><a class="header" href="#68-resources-and-destruction">6.8 Resources and destruction</a></h2>
-<p><em>(Design: <code>proposal/destruction.md</code>.)</em> Rule 1 copies values, and a
+<p><em>(Design: <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/destruction.md">destruction</a>.)</em> Rule 1 copies values, and a
 droppable value cannot survive copying: a copied file handle double-closes,
 a copied refcount miscounts. Destruction is therefore not bolted onto the
 data world: the world is partitioned. <strong>Data</strong> is everything above: copied
