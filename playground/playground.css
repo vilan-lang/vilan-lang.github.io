@@ -1,5 +1,16 @@
+*.s10uy5mh{background:rgba(18, 0, 4, calc(var(--nav-fade, 0) * 0.86))}
+*.s1d0a46f{padding:8px 20px}
+*.s1ihgui1{padding:7px 14px}
+*.s1mnphwb{border:none}
+*.s1nyo5tw{padding:6px 10px}
+*.s1tlfgp4{margin:var(--space-0)}
+*.s1ucbaf9{inset:0}
+*.s1ufvr2{padding:var(--space-4)}
+*.s4sfhb{flex:1 1 0}
+*.sl1fkff{background:rgba(249, 223, 231, 0.10)}
+*.smaui08{flex:1 1 auto}
+*.spit95n{border:1px solid rgba(249, 223, 231, 0.10)}
 .s10oplpw{margin-left:auto}
-.s10uy5mh{background:rgba(18, 0, 4, calc(var(--nav-fade, 0) * 0.86))}
 .s13ldclz{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E %3Cfilter id='d' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E %3CfeTurbulence type='fractalNoise' baseFrequency='2' numOctaves='3' seed='3214' stitchTiles='stitch' result='n'/%3E %3CfeColorMatrix in='n' type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1' result='n1'/%3E %3CfeColorMatrix in='n1' type='luminanceToAlpha' result='a'/%3E %3CfeComponentTransfer in='a' result='m1'%3E%3CfeFuncA type='discrete' tableValues='1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'/%3E%3C/feComponentTransfer%3E %3CfeFlood flood-color='%23262324' result='f1'/%3E %3CfeComposite in='f1' in2='m1' operator='in' result='dark'/%3E %3CfeComponentTransfer in='a' result='m2'%3E%3CfeFuncA type='discrete' tableValues='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/%3E%3C/feComponentTransfer%3E %3CfeFlood flood-color='rgba(255, 89, 0, 0.57)' result='f2'/%3E %3CfeComposite in='f2' in2='m2' operator='in' result='orange'/%3E %3CfeMerge%3E%3CfeMergeNode in='dark'/%3E%3CfeMergeNode in='orange'/%3E%3C/feMerge%3E %3C/filter%3E %3Crect width='120' height='120' filter='url(%2523d)'/%3E %3C/svg%3E")}
 .s13ygf9q{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
 .s143oef3{border-bottom:1px solid rgba(249, 223, 231, calc(var(--nav-fade, 0) * 0.10))}
@@ -19,20 +30,16 @@
 .s19qv9u6{font-family:inherit}
 .s1as7syx{background-size:calc(clamp(1100px, 100vw, 1920px) * 0.78125) calc(clamp(1100px, 100vw, 1920px) * 0.78125)}
 .s1atdsbb{flex-direction:column}
-.s1d0a46f{padding:8px 20px}
 .s1dcp4lt{background-color:#120004}
 .s1ddx1v8{mix-blend-mode:soft-light}
 .s1dnzynr{background-color:#1B060D}
 .s1dyo48i{opacity:1}
 .s1eamei2{max-width:1264px}
 .s1eewcz2{max-width:1880px}
-.s1ihgui1{padding:7px 14px}
 .s1itpo6m{color:#E5AFD9}
 .s1iy45h3{user-select:none}
 .s1j2narg{color:#EB682E}
 .s1jjwgph{color:#F9DFE7}
-.s1mnphwb{border:none}
-.s1nyo5tw{padding:6px 10px}
 .s1odj214{letter-spacing:0.14em}
 .s1odkmbv{letter-spacing:0.35em}
 .s1om2gx7{font-family:'Inter', system-ui, -apple-system, sans-serif}
@@ -49,11 +56,8 @@
 .s1sgiyn8{padding-bottom:var(--space-6)}
 .s1sw9ehx{max-height:240px}
 .s1t71824{width:calc(clamp(1100px, 100vw, 1920px) * 0.05208)}
-.s1tlfgp4{margin:var(--space-0)}
 .s1tv0w0m{width:calc(clamp(1100px, 100vw, 1920px) * 0.16198)}
 .s1u16gt0{animation:bloom-drift-a 44s ease-in-out infinite alternate}
-.s1ucbaf9{inset:0}
-.s1ufvr2{padding:var(--space-4)}
 .s1v942yc{padding-bottom:var(--space-24)}
 .s1vtg8d6{padding-left:32px}
 .s1wraoya{--reveal:1}
@@ -70,7 +74,6 @@
 .s3a4ev{opacity:0.8}
 .s3a4ew{opacity:0.9}
 .s41qynl{white-space:pre-wrap}
-.s4sfhb{flex:1 1 0}
 .s58iza0{position:absolute}
 .s80ttlx{top:0}
 .s8k3705{left:0}
@@ -103,15 +106,12 @@
 .skjzgjh{font-weight:600}
 .skjzhdq{font-weight:700}
 .skugn91{background-size:120px 120px}
-.sl1fkff{background:rgba(249, 223, 231, 0.10)}
-.smaui08{flex:1 1 auto}
 .snq8cl8{line-height:18px}
 .snqanrz{line-height:48px}
 .sondrfd{min-height:100%}
 .sonk3zu{min-height:96px}
 .sowfjmu{display:block}
 .sp4tc1m{margin-right:auto}
-.spit95n{border:1px solid rgba(249, 223, 231, 0.10)}
 .srapg3a:hover{opacity:1}
 .srk904b{padding-top:calc(clamp(1100px, 100vw, 1920px) * 0.15208)}
 .ss654zr{height:calc(clamp(1100px, 100vw, 1920px) * 0.52917)}
