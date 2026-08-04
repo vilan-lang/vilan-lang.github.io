@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -192,13 +192,13 @@ works unqualified.)</p>
 impl Option&lt;type T&gt; {
 	// predicates
 	fun is_some(self): bool
-	fun is_some_and(self, fn: |T| bool): bool
+	fun is_some_and(own self, fn: |T| bool): bool
 	fun is_none(self): bool
 	fun is_none_or(own self, fn: |T| bool): bool
 
 	// extraction
 	fun unwrap(own self): T                  // panics on None
-	fun unwrap_or(self, fallback: T): T
+	fun unwrap_or(own self, fallback: T): T
 	fun unwrap_or_else(own self, fn: || T): T
 
 	// in-place partial move — read/replace the slot through `&amp;mut self`,
@@ -211,23 +211,23 @@ impl Option&lt;type T&gt; {
 	fun map_or&lt;U&gt;(own self, fn: |T| U, fallback: U): U
 	fun map_or_else&lt;U&gt;(own self, fn: |T| U, fallback: || U): U
 	fun map_or_default&lt;U: Default&gt;(own self, fn: |T| U): U
-	fun inspect(self, fn: |T| void): Self    // peek, pass through
+	fun inspect(own self, fn: |T| void): Self  // peek, pass through
 	fun filter(own self, predicate: |T| bool): Option&lt;T&gt;
 
 	// combination
 	fun and&lt;U&gt;(own self, own b: Option&lt;U&gt;): Option&lt;U&gt;
 	fun and_then&lt;U&gt;(own self, fn: |T| Option&lt;U&gt;): Option&lt;U&gt;
-	fun or(self, b: Option&lt;T&gt;): Option&lt;T&gt;
-	fun or_else(self, fn: || Option&lt;T&gt;): Option&lt;T&gt;
-	fun xor(self, b: Option&lt;T&gt;): Option&lt;T&gt;
+	fun or(own self, b: Option&lt;T&gt;): Option&lt;T&gt;
+	fun or_else(own self, fn: || Option&lt;T&gt;): Option&lt;T&gt;
+	fun xor(own self, own b: Option&lt;T&gt;): Option&lt;T&gt;
 	fun zip&lt;U&gt;(own self, own peer: Option&lt;U&gt;): Option&lt;(T, U)&gt;
 
 	// bridging
-	fun ok_or&lt;E&gt;(self, err: E): Result&lt;T, E&gt;
+	fun ok_or&lt;E&gt;(own self, err: E): Result&lt;T, E&gt;
 	fun ok_or_else&lt;E&gt;(own self, err: || E): Result&lt;T, E&gt;
 }
 impl Option&lt;type T: Default&gt; { fun unwrap_or_default(own self): T }
-impl Option&lt;(type T, type U)&gt; { fun unzip(self): (Option&lt;T&gt;, Option&lt;U&gt;) }
+impl Option&lt;(type T, type U)&gt; { fun unzip(own self): (Option&lt;T&gt;, Option&lt;U&gt;) }
 </code></pre>
 <p><code>str.parse_i32(): Option&lt;i32&gt;</code> (declared here) is the string→number path.</p>
 <p>The combinators that hand the payload onward take <strong><code>own self</code></strong>: they move
@@ -242,6 +242,22 @@ borrowing <code>self</code> and never consume, so they stay free on a resource.<
 is what R7 requires. <code>if (opt.is_some()) { opt.unwrap() }</code> moves <code>opt</code> on one
 path only and is rejected as a conditional move (before this was checked it
 compiled and destroyed the payload twice).</p>
+<p>The capture <em>owns</em> the payload it took, so it is torn down at the end of its
+leg unless you move it on — into <code>drop</code>, into a return, into an <code>own</code>
+argument, into a struct field. Either way the payload is destroyed exactly
+once. A capture taken from a loan (<code>match &amp;opt</code>, or <code>opt is Some(let value)</code>)
+consumes nothing and owns nothing: <code>opt</code> stays the owner and tears the
+payload down itself.</p>
+<p>Three combinators are <strong>rejected</strong> at an <code>Option&lt;SomeResource&gt;</code>, and the rule
+is one sentence: each has a path that <em>discards</em> a resource value it was
+handed, and a generic body cannot destroy a <code>T</code>. <code>opt.or(other)</code> throws
+<code>other</code> away when <code>opt</code> is <code>Some</code>; <code>opt.xor(other)</code> throws both away when both
+are <code>Some</code>; <code>opt.unwrap_or(fallback)</code> throws the fallback away when <code>opt</code> is
+<code>Some</code>. Each names the discarded value in its diagnostic. The spellings that
+<em>produce</em> the alternative instead of taking one in — <code>or_else</code>,
+<code>unwrap_or_else</code> — work, because nothing is ever discarded. Everything else on
+this surface is fine at a resource, including <code>inspect</code> and <code>==</code>, which loan
+rather than consume.</p>
 <p><code>take</code> and <code>replace</code> mutate the <code>Option</code> in place through <code>&amp;mut self</code>: <code>take</code>
 swaps <code>None</code> in and hands the old contents back, <code>replace</code> swaps a new value in
 and hands the old back. Both leave a valid <code>Option</code> behind, which is what makes

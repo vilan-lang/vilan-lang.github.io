@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -248,10 +248,49 @@ the expression, not the <code>calc(..)</code> wrapper.</li>
 <code>Color::transparent()</code>, <code>Color::hex("#663399")</code>, and stepped ramps
 like <code>Color::gray(300)</code>, <code>Color::blue(600)</code>, <code>Color::red(500)</code>,
 <code>Color::green(500)</code>.</li>
+<li><strong>Alpha</strong> comes two ways. <code>Color::rgba(27, 6, 13, 0.9)</code> is a literal
+translucent colour — <code>hex</code>’s twin, for a palette outside the ramps.
+<code>some_color.alpha(0.08)</code> is <em>this colour at that alpha</em>, and is the
+one to reach for on a ramp step: it keeps the token underneath, so
+<code>Color::gray(900).alpha(0.08)</code> still re-themes when <code>--gray-900</code>
+changes. Both check their range at build time — <code>alpha(1.5)</code> stops the
+build.</li>
+<li><strong><code>Gradient</code></strong> is a <code>background-image</code> value, not a <code>Color</code>.
+<code>Gradient::linear(degrees)</code> (0 points up, 90 to the right) or
+<code>Gradient::radial(RadialExtent::ClosestSide)</code>, then <code>.stop(colour, percent)</code> per stop, handed to <code>background_gradient</code>. It is a different
+slot from <code>background</code>, so a style can set a colour <em>and</em> paint a
+gradient over it. Two stops minimum.</li>
 <li>Keyword properties use enums: <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
-<code>WhiteSpace</code>, <code>UserSelect</code>.</li>
+<code>WhiteSpace</code>, <code>UserSelect</code>, <code>RadialExtent</code>.</li>
 </ul>
+<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+import std::style::{ style, space, Style, Color, Gradient, Length, RadialExtent };
+
+let hero = const style()
+	.padding(space(6))
+	.radius(space(2))
+	.background(Color::gray(900))
+	.background_gradient(
+		Gradient::linear(135.0)
+			.stop(Color::rgba(178, 48, 86, 0.9), 0.0)
+			.stop(Color::blue(600), 100.0),
+	)
+	.border_top(Length::px(1), Color::white().alpha(0.14))
+	.color(Color::white());
+
+let glow = const style().background_gradient(
+	Gradient::radial(RadialExtent::ClosestSide)
+		.stop(Color::rgba(235, 104, 46, 0.4), 0.0)
+		.stop(Color::transparent(), 100.0),
+);
+
+fun main() {
+	let _root = mount_root("app", || {
+		view("div").styled(hero).child(view("div").styled(glow))
+	});
+}
+</code></pre>
 <p>Some properties take a plain <code>str</code> — <code>font_family</code>, <code>transform</code>,
 <code>box_shadow</code>, <code>text_decoration</code>, <code>flex</code>, <code>grid_template_columns</code>. That
 isn’t a weaker <code>raw</code>: the property name is still checked and completable,
@@ -268,6 +307,32 @@ untyped property with a <em>typed</em> value, so a token still emits its
 <code>:root</code> declaration. The typed surface grows by demand — if you find
 yourself reaching for <code>raw</code> on the same property repeatedly, that is the
 evidence a method should exist.</p>
+<h2 id="boxes-edges-and-borders"><a class="header" href="#boxes-edges-and-borders">Boxes, edges and borders</a></h2>
+<p>Spacing comes in three arities, and the name says which: the whole box
+(<code>padding</code>, <code>margin</code>), an axis (<code>padding_x</code>, <code>margin_y</code>), or one edge
+(<code>padding_top</code>, <code>margin_left</code>, and the other six). There is no
+multi-value shorthand method, because there is nothing it would buy:
+<code>padding: 8px 16px</code> is <code>padding_y(..).padding_x(..)</code>, spelled with the
+methods you already have.</p>
+<p>Borders match: <code>border(width, colour)</code> for all four edges,
+<code>border_top</code>/<code>border_right</code>/<code>border_bottom</code>/<code>border_left</code> for one, and
+<code>border_none()</code> to remove one. <code>border_none()</code> fills the <em>same</em> slot the
+shorthand does, so <code>base.border_none()</code> genuinely takes the border off a
+style that set one. <code>border_color</code> is its own slot, which is what lets a
+<code>hover</code> recolour a border without restating its width.</p>
+<pre><code class="language-vilan fragment">let card = const style()
+	.border(Length::px(1), Color::gray(300))
+	.hover(style().border_color(Color::blue(600)));
+
+let flush = const card.border_none().margin_left(Length::auto());
+</code></pre>
+<p><strong>Write one arity per family.</strong> Mixing the box with its edges —
+<code>padding(space(4)).padding_top(space(0))</code> — leaves two rules of equal
+specificity, and which one wins is decided by the stylesheet’s ordering
+of two generated class names rather than by the order you wrote them.
+The axis and edge methods share slots, so <code>padding_x(..)</code> then
+<code>padding_left(..)</code> <em>is</em> a clean override; it is the whole-box shorthand
+that does not compose.</p>
 <h2 id="states-and-breakpoints"><a class="header" href="#states-and-breakpoints">States and breakpoints</a></h2>
 <p>Hover, focus, and friends take an <strong>inner</strong> style. Everything in the
 inner style applies under that condition:</p>
@@ -383,6 +448,12 @@ condition.</li>
 wins — and a reactive one keeps winning every time its signal
 changes. Use one mechanism per element (custom classes can ride along
 via <code>.raw</code>).</li>
+<li>Don’t mix a shorthand with its own longhands (<code>padding</code> with
+<code>padding_top</code>, <code>border</code> with <code>border_color</code> at the <em>same</em> condition).
+Each is its own atomic rule, they are equally specific, and the winner
+is decided by class-name ordering. Under a condition there is no
+problem — a <code>hover</code> rule is more specific than the base rule it
+overrides.</li>
 </ul>
 <p>Full method table: the <a href="../std/style.html">style reference</a>.</p>
 

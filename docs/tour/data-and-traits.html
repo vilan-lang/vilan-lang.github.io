@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -324,6 +324,54 @@ fun main() {
 	print(Robot { id = 7 }.greet());
 }
 </code></pre>
+<p>A trait can take type parameters, and they can carry bounds of their own.
+The bound is in scope inside the trait’s default bodies — the same way a
+bound on a function or an impl is inside theirs — so a default can call
+the bound’s methods on a value of that type:</p>
+<pre><code class="language-vilan">import std::print;
+
+trait Label {
+	fun label(self): str;
+}
+
+// `T: Label` — the bound is usable by the defaults below.
+trait Holder&lt;T: Label&gt; {
+	fun item(self): T;
+
+	fun describe(self): str {
+		"holding " + self.item().label()
+	}
+}
+
+struct Dog {}
+impl Dog with Label {
+	fun label(self): str { "a dog" }
+}
+
+struct Cat {}
+impl Cat with Label {
+	fun label(self): str { "a cat" }
+}
+
+struct DogBox {}
+impl DogBox with Holder&lt;Dog&gt; {
+	fun item(self): Dog { Dog {} }
+}
+
+struct CatBox {}
+impl CatBox with Holder&lt;Cat&gt; {
+	fun item(self): Cat { Cat {} }
+}
+
+fun main() {
+	print(DogBox {}.describe());
+	print(CatBox {}.describe());
+}
+</code></pre>
+<p>Each impl picks the argument (<code>Holder&lt;Dog&gt;</code>, <code>Holder&lt;Cat&gt;</code>) and is checked
+against the bound there. The one <code>describe</code> body is then specialized per
+implementing type, so <code>self.item().label()</code> reaches <code>Dog</code>’s <code>label</code> in one
+and <code>Cat</code>’s in the other.</p>
 <p>Traits are like interfaces, with two differences. They’re implemented
 explicitly (<code>impl Robot with Greet</code>), never structurally. And they
 appear as <em>bounds</em> on generics (<code>T: Greet</code>) rather than as standalone

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -221,9 +221,17 @@ overrides the package’s <code>target</code> (<code>--target</code> is an accep
 <li><code>--watch</code>: rebuild whenever a watched source changes (Ctrl-C stops).</li>
 <li><code>-d, --debug</code>: also emit <code>.parse.out</code> / <code>.analyze.out</code> /
 <code>.callgraph.out</code> dumps, for poking at the compiler’s view of your code.</li>
+<li><code>--print-chunks</code>: report the route-chunk plan — what a <code>split = true</code>
+browser leg would load lazily per route, with function counts and a byte
+estimate. Analysis only; the emitted JavaScript is unchanged, so this is
+how to measure a leg before opting it in
+(<a href="../guide/dev-loop.html#shipping-routes-separately">the dev loop</a>).</li>
 <li><code>--backend js</code>: the only backend today; the flag exists so a future
 one has somewhere to live.</li>
 </ul>
+<p>A <code>browser</code> entry with <code>[entry.&lt;name&gt;] split = true</code> writes an eager
+bundle plus one file per route arm and a <code>&lt;name&gt;.chunks.json</code> listing
+them.</p>
 <h2 id="vilan-check-file"><a class="header" href="#vilan-check-file"><code>vilan check [file]</code></a></h2>
 <p><code>build</code> without the output: type-checks and reports diagnostics, writes
 nothing, and runs no <code>[build] run</code> hooks. Same path forms and flags

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -344,6 +344,72 @@ it needs the stylesheet to <em>be</em> a <code>&lt;link&gt;</code> to <code>dist
 style change rather than the flicker-free stylesheet reload. That is still
 correct (the byte-diff classifies inlined CSS as a bundle change), but not
 as surgical. The <code>&lt;link&gt;</code> form is the one to prefer for the tightest loop.</p>
+<h2 id="shipping-routes-separately"><a class="header" href="#shipping-routes-separately">Shipping routes separately</a></h2>
+<p>A browser leg ships as one file, so first load pays for every page in the
+app. Opt one leg into route chunks and the compiler splits it for you:</p>
+<pre><code class="language-toml">[entry.client]
+target = "browser"
+split = true
+</code></pre>
+<p>Now <code>vilan build</code> writes an eager <code>dist/client.js</code> plus one
+<code>dist/client.&lt;Route&gt;.js</code> per arm of your route <code>match</code>, and a
+<code>dist/client.chunks.json</code> listing them (serve the whole directory and you
+are done). No keyword, no <code>lazy()</code> wrapper, nothing to forget: the router
+<code>match</code> already marks the seams, so the split is inferred from the code you
+wrote. A function only one arm can reach rides that arm’s file; anything
+two arms share, and every module-level binding, stays eager.</p>
+<p><strong>What the user sees while a chunk loads: the page they were on.</strong> The
+route signal doesn’t advance until the code arrives, so there is no blank
+frame and no placeholder tree to design — the previous page simply stays,
+then swaps. First visit to a route pays one fetch; every later visit is
+instant. If the fetch fails, the navigation doesn’t happen (and the console
+says why). For a progress indicator, bind <code>router::pending()</code> — it’s an
+ordinary <code>Signal&lt;bool&gt;</code>, so <code>show</code> (or <code>bind_text</code>, or a class) is all it
+takes:</p>
+<pre><code class="language-vilan browser">import std::reactive::Signal;
+import std::router::{ current_path, pending, segments };
+import std::ui::{ View, mount_root, view };
+
+[derive(PartialEq)]
+enum Route {
+	Home,
+	NotFound,
+}
+
+fun parse(path: str): Route {
+	if segments(path).len() == 0 { Route::Home } else { Route::NotFound }
+}
+
+fun home_page(): View {
+	view("h1").text("Home")
+}
+
+fun missing_page(): View {
+	view("h1").text("Nothing here")
+}
+
+fun main() {
+	let route = current_path().map(parse);
+	let _root = mount_root("app", || {
+		view("main")
+			// Visible only while a route chunk is in flight; the page behind
+			// it is the one you were already on.
+			.child(view("div").class("spinner").text("Loading…").show(pending()))
+			.swap(route, |current| match current {
+				Route::Home =&gt; home_page(),
+				Route::NotFound =&gt; missing_page(),
+			})
+	});
+}
+</code></pre>
+<p>Two things to know. <code>split</code> is a <code>browser</code> leg’s key — a Node entry has no
+navigation to gate, and the build says so rather than ignoring the line.
+And <code>--watch</code> builds ignore it: HMR swaps whole bundles, so the dev loop
+keeps working on one file. Single-file emission stays the default and is
+not going anywhere; <code>split</code> is opt-in, per leg.</p>
+<p><code>vilan build --print-chunks</code> reports what <em>would</em> split without emitting
+anything, which is the way to find out whether a leg has enough per-route
+code to be worth it.</p>
 <h2 id="cleaning-up-strays"><a class="header" href="#cleaning-up-strays">Cleaning up strays</a></h2>
 <p>The swap disposes the UI root and closes the live rpc socket for you. Anything
 <em>else</em> a bundle started outside the reactive system (a raw interval, a bare

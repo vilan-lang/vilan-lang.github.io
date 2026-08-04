@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -252,7 +252,7 @@ too.</p>
 <tr><td><code>class</code></td><td><code>(name: str): View</code></td><td>static class</td></tr>
 <tr><td><code>styled</code></td><td><code>(style: Style): View</code></td><td>classes from a compiled style</td></tr>
 <tr><td><code>attr</code></td><td><code>(name: str, value: V): View</code>; <code>V: AttrValue</code></td><td><code>str</code> sets once, <code>Signal&lt;str&gt;</code> tracks</td></tr>
-<tr><td><code>style_var</code></td><td><code>(name: str, source: Signal&lt;str&gt;): View</code></td><td>reactive CSS custom property</td></tr>
+<tr><td><code>style_var</code></td><td><code>(name: str, source: Signal&lt;str&gt;): View</code></td><td>reactive CSS custom property; registers with the enclosing boundary like every <code>bind_*</code></td></tr>
 <tr><td><code>on</code></td><td><code>(event: str, handler: (|| void) context turn_scope): View</code></td><td>handler runs in a fresh turn</td></tr>
 <tr><td><code>on_event</code></td><td><code>(event: str, handler: (|Event| void) context turn_scope): View</code></td><td>same, with the DOM event</td></tr>
 <tr><td><code>child</code></td><td><code>(content: C): View</code>; <code>C: Slot</code></td><td>element, text node (<code>str</code>/<code>Signal&lt;str&gt;</code>), or <code>List&lt;View&gt;</code></td></tr>

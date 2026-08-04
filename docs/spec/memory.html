@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -323,20 +323,36 @@ element. The parameter conventions:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Convention</th><th>Written</th><th>Meaning</th></tr>
+<tr><th>Convention</th><th>Written</th><th>Data</th><th>Resource</th></tr>
 </thead>
 <tbody>
-<tr><td>bare</td><td><code>x: T</code></td><td>by value (a copy, rule 1)</td></tr>
-<tr><td>own</td><td><code>own x: T</code></td><td>by value, explicitly (documentation of intent)</td></tr>
-<tr><td>ref</td><td><code>&amp;x</code> / <code>x: &amp;T</code></td><td>readonly view</td></tr>
-<tr><td>ref mut</td><td><code>&amp;mut x</code> / <code>x: &amp;mut T</code></td><td>writable view</td></tr>
+<tr><td>bare</td><td><code>x: T</code></td><td>by value (a copy, rule 1)</td><td>a <strong>loan</strong> — no copy, no move (R3)</td></tr>
+<tr><td>own</td><td><code>own x: T</code></td><td>by value, explicitly (documentation of intent)</td><td>a <strong>move</strong> (R3)</td></tr>
+<tr><td>ref</td><td><code>&amp;x</code> / <code>x: &amp;T</code></td><td>readonly view</td><td>readonly view (a loan)</td></tr>
+<tr><td>ref mut</td><td><code>&amp;mut x</code> / <code>x: &amp;mut T</code></td><td>writable view</td><td>writable view (a loan)</td></tr>
 </tbody>
 </table>
 </div>
+<p>The two columns are one rule read at two types, not two rules. <strong>A bare
+parameter is a loan; for data a loan is indistinguishable from a copy</strong> —
+nothing observes the difference, because the callee’s copy is private and a
+resource’s is forbidden — so the data column states the copy the
+implementation performs and the resource column states the ownership the
+convention carries. <code>own</code> is the same story from the other side: it is the
+convention that says “the callee takes ownership”, which for data is
+performed by copying and for a resource <em>is</em> the move. R3 (below) is the
+normative statement for a resource; this table is its by-convention index.</p>
+<p>The consequence that catches people, spelled out because it is what the
+“a copy” reading hides: <strong>a body may not move a bare parameter out</strong> — no
+returning it, no <code>own</code>-passing it on, no consuming <code>match</code> of it — when the
+parameter is a resource. A loan changes no ownership, so ownership cannot
+leave through one.</p>
 <p>Orthogonal to the conventions, <code>mut x: T</code> marks the <strong>binder</strong> mutable:
 the callee may rebind and field-write its by-value copy (rule 1 copies
 an aggregate at body entry), with nothing visible to the caller. To
-mutate the <em>caller’s</em> value, use <code>&amp;mut</code>.</p>
+mutate the <em>caller’s</em> value, use <code>&amp;mut</code>. <code>mut</code> combines with neither
+<code>own</code> nor a view — an <code>own</code> parameter is already the callee’s own storage
+and is writable without it, so <code>mut own x</code> is a parse error.</p>
 <h2 id="64-rule-4--no-invalidating-mutation-under-a-live-view"><a class="header" href="#64-rule-4--no-invalidating-mutation-under-a-live-view">6.4 Rule 4 — no invalidating mutation under a live view</a></h2>
 <p>While a view of a place is live, mutations that would <strong>invalidate</strong> the
 view (replacing the aggregate that contains the place, removing the
@@ -461,7 +477,8 @@ changes no ownership and is policed by rule 4.</p>
 resource.</li>
 <li><strong>R2: overwrite drops.</strong> Assigning onto a binding that still owns a
 resource drops the old value first, then moves the new one in.</li>
-<li><strong>R3: parameters.</strong> <code>self</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans, unchanged; <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
+<li><strong>R3: parameters.</strong> <code>self</code> / bare <code>x</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans,
+unchanged (§6.3’s table is the by-convention index of this line); <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
 not the binding’s last use is an error (where a data <code>own</code> would silently
 copy). The rule reads in both directions: because a loan changes no
 ownership, a body may not move a loaned resource parameter <strong>out</strong> — no
@@ -479,8 +496,14 @@ read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>)
 live aggregate is rejected; v1 has no partial moves. The sanctioned
 partial move is <code>Option</code> (below).</li>
 <li><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
-subject; pattern captures move the payloads into the arm. Matching a loan
-(<code>match &amp;self.state</code>) inspects without consuming.</li>
+subject; pattern captures move the payloads into the arm, and each capture
+<strong>owns</strong> what it took — it is destroyed at the end of the arm that bound
+it, in reverse capture order, unless it is moved onward first. The same
+holds for a <code>let</code> pattern (<code>let (handle, count) = pair</code>), whose captures
+drop at the declaring scope’s end. Matching a loan (<code>match &amp;self.state</code>,
+and the <code>x is Some(let v)</code> test) inspects without consuming: the subject
+keeps ownership and destroys the payload itself, so its captures own
+nothing.</li>
 <li><strong>R7: no conditional moves.</strong> A binding must be moved on every path
 through a scope or on none; moving it on one path only is an error. This
 keeps end-of-scope ownership static: there are no runtime drop flags in
@@ -544,7 +567,9 @@ cooperative <code>Disposable</code> protocol, which is the data-world teardown h
 resource mechanism).</p>
 <h3 id="drop-timing-and-order"><a class="header" href="#drop-timing-and-order">Drop timing and order</a></h3>
 <p>At the owner’s scope end, still-owned resource locals drop in <strong>reverse
-declaration order</strong>. A value’s own <code>drop</code> body runs <strong>before its fields</strong>,
+declaration order</strong> — a pattern capture (R6) counts as a local of the arm
+that bound it, declared before that arm’s own statements and so destroyed
+after them. A value’s own <code>drop</code> body runs <strong>before its fields</strong>,
 and the fields drop in reverse field order; an enum’s payload drops with the
 value. <strong>Every exit runs drops</strong>: fall-through, <code>ret</code>, <code>jump break</code>, <code>jump continue</code> (out of the scopes they leave), and panic unwinding, because a
 resource-owning scope lowers to a <code>try</code>/<code>finally</code> and every exit flows

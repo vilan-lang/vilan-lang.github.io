@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -226,7 +226,8 @@ local directory, or <code>{ git = "…", tag | rev = "…" }</code> for a <code>
 repository pinned to exactly one of a tag or a commit; registry
 dependencies are future work).</li>
 <li><strong><code>[entry.&lt;name&gt;]</code></strong>: one build entry per table: <code>path</code> (default
-<code>&lt;root&gt;/&lt;name&gt;.vl</code>) and <code>target</code> (default <code>node</code>). A package with
+<code>&lt;root&gt;/&lt;name&gt;.vl</code>), <code>target</code> (default <code>node</code>), and <code>split</code> (default
+<code>false</code>; §11.5). A package with
 entries builds each for its own platform; reachability (§11.2) is
 what lets one source tree serve several. <code>[package] default-entry</code>
 names the entry <code>vilan run</code> executes when several are runnable.</li>
@@ -255,7 +256,16 @@ per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</l
 <h2 id="115-build-products"><a class="header" href="#115-build-products">11.5 Build products</a></h2>
 <p>Each entry emits <code>dist/&lt;name&gt;.js</code> for its platform (browser entries
 first, so a server that ships bundles finds them fresh), plus
-<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).
+<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).</p>
+<p>A <code>browser</code> entry declaring <strong><code>split = true</code></strong> emits <strong>route chunks</strong>
+instead of one file: <code>dist/&lt;name&gt;.js</code> carries every module-level binding
+(so §7.6’s initialization order is untouched) and every function two or
+more route arms can reach, and <code>dist/&lt;name&gt;.&lt;arm&gt;.js</code> carries the
+functions exactly one arm of the entry’s route <code>match</code> can reach. A
+<code>dist/&lt;name&gt;.chunks.json</code> lists them. Chunks are fetched when a
+navigation first reaches their arm, and the route value does not advance
+until one arrives; which functions land where is implementation-defined
+beyond that rule. <code>split</code> on a non-<code>browser</code> entry is a manifest error.
 <code>vilan run</code> builds all entries and starts one <code>@process</code> entry: the
 only one, the designated <code>default-entry</code>, or the one <code>--entry</code> names;
 <code>vilan check</code> checks every entry, always. The emitted text beyond

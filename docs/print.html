@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-341c2438.js";
+            window.path_to_searchindex_js = "searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -1111,6 +1111,54 @@ fun main() {
 	print(Robot { id = 7 }.greet());
 }
 </code></pre>
+<p>A trait can take type parameters, and they can carry bounds of their own.
+The bound is in scope inside the trait’s default bodies — the same way a
+bound on a function or an impl is inside theirs — so a default can call
+the bound’s methods on a value of that type:</p>
+<pre><code class="language-vilan">import std::print;
+
+trait Label {
+	fun label(self): str;
+}
+
+// `T: Label` — the bound is usable by the defaults below.
+trait Holder&lt;T: Label&gt; {
+	fun item(self): T;
+
+	fun describe(self): str {
+		"holding " + self.item().label()
+	}
+}
+
+struct Dog {}
+impl Dog with Label {
+	fun label(self): str { "a dog" }
+}
+
+struct Cat {}
+impl Cat with Label {
+	fun label(self): str { "a cat" }
+}
+
+struct DogBox {}
+impl DogBox with Holder&lt;Dog&gt; {
+	fun item(self): Dog { Dog {} }
+}
+
+struct CatBox {}
+impl CatBox with Holder&lt;Cat&gt; {
+	fun item(self): Cat { Cat {} }
+}
+
+fun main() {
+	print(DogBox {}.describe());
+	print(CatBox {}.describe());
+}
+</code></pre>
+<p>Each impl picks the argument (<code>Holder&lt;Dog&gt;</code>, <code>Holder&lt;Cat&gt;</code>) and is checked
+against the bound there. The one <code>describe</code> body is then specialized per
+implementing type, so <code>self.item().label()</code> reaches <code>Dog</code>’s <code>label</code> in one
+and <code>Cat</code>’s in the other.</p>
 <p>Traits are like interfaces, with two differences. They’re implemented
 explicitly (<code>impl Robot with Greet</code>), never structurally. And they
 appear as <em>bounds</em> on generics (<code>T: Greet</code>) rather than as standalone
@@ -1947,6 +1995,34 @@ function that moves its parameter out has to say <code>own</code>.</p>
 ends: falling off the bottom, an early <code>ret</code>, a <code>jump</code> out of a loop,
 even a panic unwinding through. There are no drop flags and nothing to remember:
 if a binding still owns a resource when control leaves the scope, it drops.</p>
+<p>A <strong>pattern capture is a binding like any other</strong>. Matching by value
+consumes what you matched, so the capture becomes the payload’s owner —
+and it drops at the end of the arm that bound it:</p>
+<pre><code class="language-vilan">import std::print;
+import std::drop::Drop;
+import std::option::Option::{ self, Some, None };
+
+resource struct Guard { label: str }
+impl Guard with Drop {
+	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
+}
+
+fun main() {
+	let slot: Option&lt;Guard&gt; = Some(Guard { label = "held" });
+	match slot {
+		Some(let g) =&gt; print(i"using {g.label}"),
+		None =&gt; print("empty"),
+	}
+	print("after match");
+}
+</code></pre>
+<p>This prints <code>using held</code>, <code>dropped held</code>, <code>after match</code> — the payload dies
+at the end of the leg, not at the end of <code>main</code>, because that leg is where
+it was bound. Move it somewhere else inside the leg (return it, pass it by
+<code>own</code>, put it in a struct) and the destination owns it instead; it is
+destroyed exactly once either way. A capture from a <em>loan</em> — <code>match &amp;slot</code>,
+or <code>slot is Some(let g)</code> — owns nothing, because nothing was consumed:
+<code>slot</code> is still the owner and drops the payload itself.</p>
 <h2 id="tearing-down-early-dropx"><a class="header" href="#tearing-down-early-dropx">Tearing down early: <code>drop(x)</code></a></h2>
 <p>Sometimes you want a resource gone <em>before</em> its scope ends. Move it into
 <code>drop</code>:</p>
@@ -3113,10 +3189,49 @@ the expression, not the <code>calc(..)</code> wrapper.</li>
 <code>Color::transparent()</code>, <code>Color::hex("#663399")</code>, and stepped ramps
 like <code>Color::gray(300)</code>, <code>Color::blue(600)</code>, <code>Color::red(500)</code>,
 <code>Color::green(500)</code>.</li>
+<li><strong>Alpha</strong> comes two ways. <code>Color::rgba(27, 6, 13, 0.9)</code> is a literal
+translucent colour — <code>hex</code>’s twin, for a palette outside the ramps.
+<code>some_color.alpha(0.08)</code> is <em>this colour at that alpha</em>, and is the
+one to reach for on a ramp step: it keeps the token underneath, so
+<code>Color::gray(900).alpha(0.08)</code> still re-themes when <code>--gray-900</code>
+changes. Both check their range at build time — <code>alpha(1.5)</code> stops the
+build.</li>
+<li><strong><code>Gradient</code></strong> is a <code>background-image</code> value, not a <code>Color</code>.
+<code>Gradient::linear(degrees)</code> (0 points up, 90 to the right) or
+<code>Gradient::radial(RadialExtent::ClosestSide)</code>, then <code>.stop(colour, percent)</code> per stop, handed to <code>background_gradient</code>. It is a different
+slot from <code>background</code>, so a style can set a colour <em>and</em> paint a
+gradient over it. Two stops minimum.</li>
 <li>Keyword properties use enums: <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
-<code>WhiteSpace</code>, <code>UserSelect</code>.</li>
+<code>WhiteSpace</code>, <code>UserSelect</code>, <code>RadialExtent</code>.</li>
 </ul>
+<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+import std::style::{ style, space, Style, Color, Gradient, Length, RadialExtent };
+
+let hero = const style()
+	.padding(space(6))
+	.radius(space(2))
+	.background(Color::gray(900))
+	.background_gradient(
+		Gradient::linear(135.0)
+			.stop(Color::rgba(178, 48, 86, 0.9), 0.0)
+			.stop(Color::blue(600), 100.0),
+	)
+	.border_top(Length::px(1), Color::white().alpha(0.14))
+	.color(Color::white());
+
+let glow = const style().background_gradient(
+	Gradient::radial(RadialExtent::ClosestSide)
+		.stop(Color::rgba(235, 104, 46, 0.4), 0.0)
+		.stop(Color::transparent(), 100.0),
+);
+
+fun main() {
+	let _root = mount_root("app", || {
+		view("div").styled(hero).child(view("div").styled(glow))
+	});
+}
+</code></pre>
 <p>Some properties take a plain <code>str</code> — <code>font_family</code>, <code>transform</code>,
 <code>box_shadow</code>, <code>text_decoration</code>, <code>flex</code>, <code>grid_template_columns</code>. That
 isn’t a weaker <code>raw</code>: the property name is still checked and completable,
@@ -3133,6 +3248,32 @@ untyped property with a <em>typed</em> value, so a token still emits its
 <code>:root</code> declaration. The typed surface grows by demand — if you find
 yourself reaching for <code>raw</code> on the same property repeatedly, that is the
 evidence a method should exist.</p>
+<h2 id="boxes-edges-and-borders"><a class="header" href="#boxes-edges-and-borders">Boxes, edges and borders</a></h2>
+<p>Spacing comes in three arities, and the name says which: the whole box
+(<code>padding</code>, <code>margin</code>), an axis (<code>padding_x</code>, <code>margin_y</code>), or one edge
+(<code>padding_top</code>, <code>margin_left</code>, and the other six). There is no
+multi-value shorthand method, because there is nothing it would buy:
+<code>padding: 8px 16px</code> is <code>padding_y(..).padding_x(..)</code>, spelled with the
+methods you already have.</p>
+<p>Borders match: <code>border(width, colour)</code> for all four edges,
+<code>border_top</code>/<code>border_right</code>/<code>border_bottom</code>/<code>border_left</code> for one, and
+<code>border_none()</code> to remove one. <code>border_none()</code> fills the <em>same</em> slot the
+shorthand does, so <code>base.border_none()</code> genuinely takes the border off a
+style that set one. <code>border_color</code> is its own slot, which is what lets a
+<code>hover</code> recolour a border without restating its width.</p>
+<pre><code class="language-vilan fragment">let card = const style()
+	.border(Length::px(1), Color::gray(300))
+	.hover(style().border_color(Color::blue(600)));
+
+let flush = const card.border_none().margin_left(Length::auto());
+</code></pre>
+<p><strong>Write one arity per family.</strong> Mixing the box with its edges —
+<code>padding(space(4)).padding_top(space(0))</code> — leaves two rules of equal
+specificity, and which one wins is decided by the stylesheet’s ordering
+of two generated class names rather than by the order you wrote them.
+The axis and edge methods share slots, so <code>padding_x(..)</code> then
+<code>padding_left(..)</code> <em>is</em> a clean override; it is the whole-box shorthand
+that does not compose.</p>
 <h2 id="states-and-breakpoints"><a class="header" href="#states-and-breakpoints">States and breakpoints</a></h2>
 <p>Hover, focus, and friends take an <strong>inner</strong> style. Everything in the
 inner style applies under that condition:</p>
@@ -3248,6 +3389,12 @@ condition.</li>
 wins — and a reactive one keeps winning every time its signal
 changes. Use one mechanism per element (custom classes can ride along
 via <code>.raw</code>).</li>
+<li>Don’t mix a shorthand with its own longhands (<code>padding</code> with
+<code>padding_top</code>, <code>border</code> with <code>border_color</code> at the <em>same</em> condition).
+Each is its own atomic rule, they are equally specific, and the winner
+is decided by class-name ordering. Under a condition there is no
+problem — a <code>hover</code> rule is more specific than the base rule it
+overrides.</li>
 </ul>
 <p>Full method table: the <a href="#stdstyle-reference">style reference</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -4395,6 +4542,72 @@ it needs the stylesheet to <em>be</em> a <code>&lt;link&gt;</code> to <code>dist
 style change rather than the flicker-free stylesheet reload. That is still
 correct (the byte-diff classifies inlined CSS as a bundle change), but not
 as surgical. The <code>&lt;link&gt;</code> form is the one to prefer for the tightest loop.</p>
+<h2 id="shipping-routes-separately"><a class="header" href="#shipping-routes-separately">Shipping routes separately</a></h2>
+<p>A browser leg ships as one file, so first load pays for every page in the
+app. Opt one leg into route chunks and the compiler splits it for you:</p>
+<pre><code class="language-toml">[entry.client]
+target = "browser"
+split = true
+</code></pre>
+<p>Now <code>vilan build</code> writes an eager <code>dist/client.js</code> plus one
+<code>dist/client.&lt;Route&gt;.js</code> per arm of your route <code>match</code>, and a
+<code>dist/client.chunks.json</code> listing them (serve the whole directory and you
+are done). No keyword, no <code>lazy()</code> wrapper, nothing to forget: the router
+<code>match</code> already marks the seams, so the split is inferred from the code you
+wrote. A function only one arm can reach rides that arm’s file; anything
+two arms share, and every module-level binding, stays eager.</p>
+<p><strong>What the user sees while a chunk loads: the page they were on.</strong> The
+route signal doesn’t advance until the code arrives, so there is no blank
+frame and no placeholder tree to design — the previous page simply stays,
+then swaps. First visit to a route pays one fetch; every later visit is
+instant. If the fetch fails, the navigation doesn’t happen (and the console
+says why). For a progress indicator, bind <code>router::pending()</code> — it’s an
+ordinary <code>Signal&lt;bool&gt;</code>, so <code>show</code> (or <code>bind_text</code>, or a class) is all it
+takes:</p>
+<pre><code class="language-vilan browser">import std::reactive::Signal;
+import std::router::{ current_path, pending, segments };
+import std::ui::{ View, mount_root, view };
+
+[derive(PartialEq)]
+enum Route {
+	Home,
+	NotFound,
+}
+
+fun parse(path: str): Route {
+	if segments(path).len() == 0 { Route::Home } else { Route::NotFound }
+}
+
+fun home_page(): View {
+	view("h1").text("Home")
+}
+
+fun missing_page(): View {
+	view("h1").text("Nothing here")
+}
+
+fun main() {
+	let route = current_path().map(parse);
+	let _root = mount_root("app", || {
+		view("main")
+			// Visible only while a route chunk is in flight; the page behind
+			// it is the one you were already on.
+			.child(view("div").class("spinner").text("Loading…").show(pending()))
+			.swap(route, |current| match current {
+				Route::Home =&gt; home_page(),
+				Route::NotFound =&gt; missing_page(),
+			})
+	});
+}
+</code></pre>
+<p>Two things to know. <code>split</code> is a <code>browser</code> leg’s key — a Node entry has no
+navigation to gate, and the build says so rather than ignoring the line.
+And <code>--watch</code> builds ignore it: HMR swaps whole bundles, so the dev loop
+keeps working on one file. Single-file emission stays the default and is
+not going anywhere; <code>split</code> is opt-in, per leg.</p>
+<p><code>vilan build --print-chunks</code> reports what <em>would</em> split without emitting
+anything, which is the way to find out whether a leg has enough per-route
+code to be worth it.</p>
 <h2 id="cleaning-up-strays"><a class="header" href="#cleaning-up-strays">Cleaning up strays</a></h2>
 <p>The swap disposes the UI root and closes the live rpc socket for you. Anything
 <em>else</em> a bundle started outside the reactive system (a raw interval, a bare
@@ -4614,13 +4827,13 @@ works unqualified.)</p>
 impl Option&lt;type T&gt; {
 	// predicates
 	fun is_some(self): bool
-	fun is_some_and(self, fn: |T| bool): bool
+	fun is_some_and(own self, fn: |T| bool): bool
 	fun is_none(self): bool
 	fun is_none_or(own self, fn: |T| bool): bool
 
 	// extraction
 	fun unwrap(own self): T                  // panics on None
-	fun unwrap_or(self, fallback: T): T
+	fun unwrap_or(own self, fallback: T): T
 	fun unwrap_or_else(own self, fn: || T): T
 
 	// in-place partial move — read/replace the slot through `&amp;mut self`,
@@ -4633,23 +4846,23 @@ impl Option&lt;type T&gt; {
 	fun map_or&lt;U&gt;(own self, fn: |T| U, fallback: U): U
 	fun map_or_else&lt;U&gt;(own self, fn: |T| U, fallback: || U): U
 	fun map_or_default&lt;U: Default&gt;(own self, fn: |T| U): U
-	fun inspect(self, fn: |T| void): Self    // peek, pass through
+	fun inspect(own self, fn: |T| void): Self  // peek, pass through
 	fun filter(own self, predicate: |T| bool): Option&lt;T&gt;
 
 	// combination
 	fun and&lt;U&gt;(own self, own b: Option&lt;U&gt;): Option&lt;U&gt;
 	fun and_then&lt;U&gt;(own self, fn: |T| Option&lt;U&gt;): Option&lt;U&gt;
-	fun or(self, b: Option&lt;T&gt;): Option&lt;T&gt;
-	fun or_else(self, fn: || Option&lt;T&gt;): Option&lt;T&gt;
-	fun xor(self, b: Option&lt;T&gt;): Option&lt;T&gt;
+	fun or(own self, b: Option&lt;T&gt;): Option&lt;T&gt;
+	fun or_else(own self, fn: || Option&lt;T&gt;): Option&lt;T&gt;
+	fun xor(own self, own b: Option&lt;T&gt;): Option&lt;T&gt;
 	fun zip&lt;U&gt;(own self, own peer: Option&lt;U&gt;): Option&lt;(T, U)&gt;
 
 	// bridging
-	fun ok_or&lt;E&gt;(self, err: E): Result&lt;T, E&gt;
+	fun ok_or&lt;E&gt;(own self, err: E): Result&lt;T, E&gt;
 	fun ok_or_else&lt;E&gt;(own self, err: || E): Result&lt;T, E&gt;
 }
 impl Option&lt;type T: Default&gt; { fun unwrap_or_default(own self): T }
-impl Option&lt;(type T, type U)&gt; { fun unzip(self): (Option&lt;T&gt;, Option&lt;U&gt;) }
+impl Option&lt;(type T, type U)&gt; { fun unzip(own self): (Option&lt;T&gt;, Option&lt;U&gt;) }
 </code></pre>
 <p><code>str.parse_i32(): Option&lt;i32&gt;</code> (declared here) is the string→number path.</p>
 <p>The combinators that hand the payload onward take <strong><code>own self</code></strong>: they move
@@ -4664,6 +4877,22 @@ borrowing <code>self</code> and never consume, so they stay free on a resource.<
 is what R7 requires. <code>if (opt.is_some()) { opt.unwrap() }</code> moves <code>opt</code> on one
 path only and is rejected as a conditional move (before this was checked it
 compiled and destroyed the payload twice).</p>
+<p>The capture <em>owns</em> the payload it took, so it is torn down at the end of its
+leg unless you move it on — into <code>drop</code>, into a return, into an <code>own</code>
+argument, into a struct field. Either way the payload is destroyed exactly
+once. A capture taken from a loan (<code>match &amp;opt</code>, or <code>opt is Some(let value)</code>)
+consumes nothing and owns nothing: <code>opt</code> stays the owner and tears the
+payload down itself.</p>
+<p>Three combinators are <strong>rejected</strong> at an <code>Option&lt;SomeResource&gt;</code>, and the rule
+is one sentence: each has a path that <em>discards</em> a resource value it was
+handed, and a generic body cannot destroy a <code>T</code>. <code>opt.or(other)</code> throws
+<code>other</code> away when <code>opt</code> is <code>Some</code>; <code>opt.xor(other)</code> throws both away when both
+are <code>Some</code>; <code>opt.unwrap_or(fallback)</code> throws the fallback away when <code>opt</code> is
+<code>Some</code>. Each names the discarded value in its diagnostic. The spellings that
+<em>produce</em> the alternative instead of taking one in — <code>or_else</code>,
+<code>unwrap_or_else</code> — work, because nothing is ever discarded. Everything else on
+this surface is fine at a resource, including <code>inspect</code> and <code>==</code>, which loan
+rather than consume.</p>
 <p><code>take</code> and <code>replace</code> mutate the <code>Option</code> in place through <code>&amp;mut self</code>: <code>take</code>
 swaps <code>None</code> in and hands the old contents back, <code>replace</code> swaps a new value in
 and hands the old back. Both leave a valid <code>Option</code> behind, which is what makes
@@ -5656,9 +5885,9 @@ list-rendering primitive.</p>
 <p>Typed, compile-time atomic styles. Concepts and the emission model: the
 <a href="#styling">styling guide</a>.</p>
 <pre><code class="language-vilan fragment">import std::style::{
-	style, space, Style, Length, Color,
+	style, space, Style, Length, Color, Gradient,
 	Display, Position, FlexDirection, AlignItems, JustifyContent,
-	TextAlign, Cursor, Overflow, WhiteSpace, UserSelect,
+	TextAlign, Cursor, Overflow, WhiteSpace, UserSelect, RadialExtent,
 };
 </code></pre>
 <h2 id="constructors-and-values"><a class="header" href="#constructors-and-values">Constructors and values</a></h2>
@@ -5686,8 +5915,26 @@ impl Color {
 	fun blue(step: i32): Color
 	fun red(step: i32): Color
 	fun green(step: i32): Color
+
+	fun rgba(red: i32, green: i32, blue: i32, alpha: f64): Color  // a literal, 0-255 / 0.0-1.0
+	fun alpha(self, value: f64): Color   // THIS colour at that alpha
+}
+
+impl Gradient {
+	fun linear(degrees: f64): Gradient            // 0 up, 90 right, 180 down
+	fun radial(extent: RadialExtent): Gradient    // extent keyword; centred
+	fun stop(self, color: Color, percent: f64): Gradient
 }
 </code></pre>
+<p><code>alpha</code> renders the relative-colour form, <code>rgb(from &lt;colour&gt; r g b / a)</code>,
+so a ramp step stays a <code>var(--gray-900)</code> and keeps re-theming — which an
+8-digit hex could not do. Channels, alphas and the two-stop gradient
+minimum are checked during const evaluation, so a bad value stops the
+build naming itself.</p>
+<p>A <code>Gradient</code> is a <strong><code>background-image</code></strong> value, not a <code>Color</code>: it reaches
+a style through <code>background_gradient</code>, which fills a different slot from
+<code>background</code>. What stays with <code>raw</code>: positioned gradients
+(<code>at 20% 40%</code>), multi-layer lists, <code>repeating-*</code>, and data-URI images.</p>
 <p>Keyword enums: <code>Display</code> (Flex, Block, …), <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
 <code>WhiteSpace</code> (Normal, Nowrap, Pre, PreWrap, PreLine), <code>UserSelect</code> (Auto,
@@ -5703,7 +5950,7 @@ one atomic rule, deduplicated build-wide.</p>
 <tr><th>Method</th><th>Value</th></tr>
 </thead>
 <tbody>
-<tr><td><code>display</code></td><td><code>Display</code></td></tr>
+<tr><td><code>display</code></td><td><code>Display</code> (Flex, Grid, Block, Inline, InlineBlock, InlineFlex, InlineGrid, Hidden)</td></tr>
 <tr><td><code>position</code></td><td><code>Position</code></td></tr>
 <tr><td><code>flex_direction</code></td><td><code>FlexDirection</code></td></tr>
 <tr><td><code>align_items</code></td><td><code>AlignItems</code></td></tr>
@@ -5712,6 +5959,8 @@ one atomic rule, deduplicated build-wide.</p>
 <tr><td><code>flex_shrink</code></td><td><code>f64</code></td></tr>
 <tr><td><code>grid_template_columns</code></td><td><code>str</code> — <code>"repeat(3, 1fr)"</code></td></tr>
 <tr><td><code>gap</code>, <code>padding</code>, <code>padding_x</code>, <code>padding_y</code>, <code>margin</code>, <code>margin_x</code>, <code>margin_y</code></td><td><code>Length</code></td></tr>
+<tr><td><code>padding_top</code>, <code>padding_right</code>, <code>padding_bottom</code>, <code>padding_left</code></td><td><code>Length</code> — one edge</td></tr>
+<tr><td><code>margin_top</code>, <code>margin_right</code>, <code>margin_bottom</code>, <code>margin_left</code></td><td><code>Length</code> — one edge</td></tr>
 <tr><td><code>width</code>, <code>height</code>, <code>min_width</code>, <code>max_width</code>, <code>min_height</code>, <code>max_height</code></td><td><code>Length</code></td></tr>
 <tr><td><code>top</code>, <code>right</code>, <code>bottom</code>, <code>left</code>, <code>inset</code></td><td><code>Length</code></td></tr>
 <tr><td><code>overflow</code></td><td><code>Overflow</code></td></tr>
@@ -5726,10 +5975,13 @@ one atomic rule, deduplicated build-wide.</p>
 </thead>
 <tbody>
 <tr><td><code>radius</code></td><td><code>Length</code></td></tr>
-<tr><td><code>border</code></td><td><code>(width: Length, color: Color)</code></td></tr>
+<tr><td><code>border</code></td><td><code>(width: Length, color: Color)</code> — always <code>solid</code></td></tr>
+<tr><td><code>border_top</code>, <code>border_right</code>, <code>border_bottom</code>, <code>border_left</code></td><td><code>(width: Length, color: Color)</code></td></tr>
+<tr><td><code>border_none</code></td><td>— fills the <code>border</code> slot, so it <em>removes</em> a border set earlier</td></tr>
 <tr><td><code>border_color</code></td><td><code>Color</code> — its own slot, so a <code>hover</code> can recolour without restating the width</td></tr>
 <tr><td><code>box_shadow</code></td><td><code>str</code></td></tr>
 <tr><td><code>background</code>, <code>color</code></td><td><code>Color</code></td></tr>
+<tr><td><code>background_gradient</code></td><td><code>Gradient</code> — the <code>background-image</code> slot</td></tr>
 <tr><td><code>font_family</code></td><td><code>str</code></td></tr>
 <tr><td><code>font_size</code></td><td><code>Length</code></td></tr>
 <tr><td><code>font_weight</code></td><td><code>i32</code></td></tr>
@@ -5749,6 +6001,12 @@ one atomic rule, deduplicated build-wide.</p>
 <p>A <code>str</code>-valued method is not a weaker <code>raw</code>: it keeps the property name
 checked and completable while the <em>value</em> stays a CSS expression the compiler
 has nothing to validate (a font stack, a transform list, a shadow layer).</p>
+<p><strong>One arity per family.</strong> The name carries the arity — whole box
+(<code>padding</code>), axis (<code>padding_x</code>), edge (<code>padding_top</code>) — and there is no
+multi-value shorthand method, because <code>padding_y(v).padding_x(h)</code> already
+computes <code>padding: v h</code>. Mixing a shorthand with its own longhands leaves
+two equally specific atomic rules whose order the class-name sort decides;
+the axis and edge methods share slots and override cleanly.</p>
 <p>Escape hatches:</p>
 <pre><code class="language-vilan fragment">fun raw(self, property: str, value: str): Style
 fun with_length(self, property: str, value: Length): Style
@@ -5968,7 +6226,7 @@ too.</p>
 <tr><td><code>class</code></td><td><code>(name: str): View</code></td><td>static class</td></tr>
 <tr><td><code>styled</code></td><td><code>(style: Style): View</code></td><td>classes from a compiled style</td></tr>
 <tr><td><code>attr</code></td><td><code>(name: str, value: V): View</code>; <code>V: AttrValue</code></td><td><code>str</code> sets once, <code>Signal&lt;str&gt;</code> tracks</td></tr>
-<tr><td><code>style_var</code></td><td><code>(name: str, source: Signal&lt;str&gt;): View</code></td><td>reactive CSS custom property</td></tr>
+<tr><td><code>style_var</code></td><td><code>(name: str, source: Signal&lt;str&gt;): View</code></td><td>reactive CSS custom property; registers with the enclosing boundary like every <code>bind_*</code></td></tr>
 <tr><td><code>on</code></td><td><code>(event: str, handler: (|| void) context turn_scope): View</code></td><td>handler runs in a fresh turn</td></tr>
 <tr><td><code>on_event</code></td><td><code>(event: str, handler: (|Event| void) context turn_scope): View</code></td><td>same, with the DOM event</td></tr>
 <tr><td><code>child</code></td><td><code>(content: C): View</code>; <code>C: Slot</code></td><td>element, text node (<code>str</code>/<code>Signal&lt;str&gt;</code>), or <code>List&lt;View&gt;</code></td></tr>
@@ -7071,9 +7329,16 @@ than through trait bounds.</em></p>
 <p>A trait declares required methods (signature-only) and defaults (with
 bodies). <code>trait X with Y</code> makes <code>Y</code> a supertrait: implementing <code>X</code>
 requires <code>Y</code>. A trait’s generic parameters may carry defaults
-(<code>trait PartialEq&lt;B = Self&gt;</code>); <code>Self</code> in a trait body denotes the
-implementing type. Traits are used as <strong>bounds</strong>; a trait is not a type:
-<code>let x: Display</code> is a compile error (no trait objects).</p>
+(<code>trait PartialEq&lt;B = Self&gt;</code>) and <strong>bounds</strong> (<code>trait Holder&lt;T: Bound&gt;</code>);
+<code>Self</code> in a trait body denotes the implementing type. Traits are used as
+<strong>bounds</strong>; a trait is not a type: <code>let x: Display</code> is a compile error
+(no trait objects).</p>
+<p>A trait parameter’s bound is in scope inside the trait’s own default
+bodies, exactly as a function’s or impl’s is inside theirs (§5.6): a
+default may call the bound trait’s members on a value of that parameter’s
+type. Each impl supplies the parameter’s argument (<code>impl DogBox with Holder&lt;Dog&gt;</code>), whose conformance is checked there, and the default
+monomorphizes per implementing type — so the call reaches that type’s
+argument’s implementation, never the bound trait’s abstract member.</p>
 <p>Trait members resolve on a value when exactly one visible impl provides
 the name; a trait default is inherited by impls that don’t override it.</p>
 <h2 id="56-generic-binding-and-inference"><a class="header" href="#56-generic-binding-and-inference">5.6 Generic binding and inference</a></h2>
@@ -7088,14 +7353,23 @@ of a generic parameter with a concrete (or caller-generic) type
 <strong>binds</strong> it. Bindings are per-call.</li>
 <li>A generic mentioned only in the return type is bound by unifying the
 declared return type against the call’s expected type
-(<code>let c: Cell&lt;i32&gt; = Cell::fresh()</code> binds <code>T := i32</code>). Only the
-<strong>callee’s own</strong> binders participate; a caller-side generic
-introduced by substitution is never re-bound against the expectation.</li>
+(<code>let c: Cell&lt;i32&gt; = Cell::fresh()</code> binds <code>T := i32</code>). Only binders
+that are <strong>free at this call</strong> participate: neither a caller-side
+generic introduced by substitution, nor a binder of a declaration
+enclosing the call — the latter is fixed by the enclosing
+instantiation, and callee and caller can share one outright (a trait’s
+parameter, in a call between two of its own members).</li>
 <li>After binding, every bound’s satisfaction is checked; an unsatisfied
 bound is an error naming the parameter and bound.</li>
 <li>A call whose generics cannot all be grounded (no argument or
 expectation determines them) is an error at the call.</li>
 </ol>
+<p>Bounds cut both ways. At a call they are an <strong>obligation</strong> (3 above); at
+a declaration they are an <strong>assumption</strong>: inside the body of whatever
+declares the parameter — a function, an impl, or a trait — the bound
+trait’s members are in scope on that parameter’s type, and a call to one
+resolves through the bound and dispatches at monomorphization to the
+implementation the parameter is bound to there.</p>
 <p>Method calls additionally bind the receiver’s impl binders from the
 receiver’s type before the parameters are considered. Closure arguments
 participate: a closure’s parameter types take the callee’s expectations,
@@ -7342,20 +7616,36 @@ element. The parameter conventions:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Convention</th><th>Written</th><th>Meaning</th></tr>
+<tr><th>Convention</th><th>Written</th><th>Data</th><th>Resource</th></tr>
 </thead>
 <tbody>
-<tr><td>bare</td><td><code>x: T</code></td><td>by value (a copy, rule 1)</td></tr>
-<tr><td>own</td><td><code>own x: T</code></td><td>by value, explicitly (documentation of intent)</td></tr>
-<tr><td>ref</td><td><code>&amp;x</code> / <code>x: &amp;T</code></td><td>readonly view</td></tr>
-<tr><td>ref mut</td><td><code>&amp;mut x</code> / <code>x: &amp;mut T</code></td><td>writable view</td></tr>
+<tr><td>bare</td><td><code>x: T</code></td><td>by value (a copy, rule 1)</td><td>a <strong>loan</strong> — no copy, no move (R3)</td></tr>
+<tr><td>own</td><td><code>own x: T</code></td><td>by value, explicitly (documentation of intent)</td><td>a <strong>move</strong> (R3)</td></tr>
+<tr><td>ref</td><td><code>&amp;x</code> / <code>x: &amp;T</code></td><td>readonly view</td><td>readonly view (a loan)</td></tr>
+<tr><td>ref mut</td><td><code>&amp;mut x</code> / <code>x: &amp;mut T</code></td><td>writable view</td><td>writable view (a loan)</td></tr>
 </tbody>
 </table>
 </div>
+<p>The two columns are one rule read at two types, not two rules. <strong>A bare
+parameter is a loan; for data a loan is indistinguishable from a copy</strong> —
+nothing observes the difference, because the callee’s copy is private and a
+resource’s is forbidden — so the data column states the copy the
+implementation performs and the resource column states the ownership the
+convention carries. <code>own</code> is the same story from the other side: it is the
+convention that says “the callee takes ownership”, which for data is
+performed by copying and for a resource <em>is</em> the move. R3 (below) is the
+normative statement for a resource; this table is its by-convention index.</p>
+<p>The consequence that catches people, spelled out because it is what the
+“a copy” reading hides: <strong>a body may not move a bare parameter out</strong> — no
+returning it, no <code>own</code>-passing it on, no consuming <code>match</code> of it — when the
+parameter is a resource. A loan changes no ownership, so ownership cannot
+leave through one.</p>
 <p>Orthogonal to the conventions, <code>mut x: T</code> marks the <strong>binder</strong> mutable:
 the callee may rebind and field-write its by-value copy (rule 1 copies
 an aggregate at body entry), with nothing visible to the caller. To
-mutate the <em>caller’s</em> value, use <code>&amp;mut</code>.</p>
+mutate the <em>caller’s</em> value, use <code>&amp;mut</code>. <code>mut</code> combines with neither
+<code>own</code> nor a view — an <code>own</code> parameter is already the callee’s own storage
+and is writable without it, so <code>mut own x</code> is a parse error.</p>
 <h2 id="64-rule-4--no-invalidating-mutation-under-a-live-view"><a class="header" href="#64-rule-4--no-invalidating-mutation-under-a-live-view">6.4 Rule 4 — no invalidating mutation under a live view</a></h2>
 <p>While a view of a place is live, mutations that would <strong>invalidate</strong> the
 view (replacing the aggregate that contains the place, removing the
@@ -7480,7 +7770,8 @@ changes no ownership and is policed by rule 4.</p>
 resource.</li>
 <li><strong>R2: overwrite drops.</strong> Assigning onto a binding that still owns a
 resource drops the old value first, then moves the new one in.</li>
-<li><strong>R3: parameters.</strong> <code>self</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans, unchanged; <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
+<li><strong>R3: parameters.</strong> <code>self</code> / bare <code>x</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans,
+unchanged (§6.3’s table is the by-convention index of this line); <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
 not the binding’s last use is an error (where a data <code>own</code> would silently
 copy). The rule reads in both directions: because a loan changes no
 ownership, a body may not move a loaned resource parameter <strong>out</strong> — no
@@ -7498,8 +7789,14 @@ read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>)
 live aggregate is rejected; v1 has no partial moves. The sanctioned
 partial move is <code>Option</code> (below).</li>
 <li><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
-subject; pattern captures move the payloads into the arm. Matching a loan
-(<code>match &amp;self.state</code>) inspects without consuming.</li>
+subject; pattern captures move the payloads into the arm, and each capture
+<strong>owns</strong> what it took — it is destroyed at the end of the arm that bound
+it, in reverse capture order, unless it is moved onward first. The same
+holds for a <code>let</code> pattern (<code>let (handle, count) = pair</code>), whose captures
+drop at the declaring scope’s end. Matching a loan (<code>match &amp;self.state</code>,
+and the <code>x is Some(let v)</code> test) inspects without consuming: the subject
+keeps ownership and destroys the payload itself, so its captures own
+nothing.</li>
 <li><strong>R7: no conditional moves.</strong> A binding must be moved on every path
 through a scope or on none; moving it on one path only is an error. This
 keeps end-of-scope ownership static: there are no runtime drop flags in
@@ -7563,7 +7860,9 @@ cooperative <code>Disposable</code> protocol, which is the data-world teardown h
 resource mechanism).</p>
 <h3 id="drop-timing-and-order"><a class="header" href="#drop-timing-and-order">Drop timing and order</a></h3>
 <p>At the owner’s scope end, still-owned resource locals drop in <strong>reverse
-declaration order</strong>. A value’s own <code>drop</code> body runs <strong>before its fields</strong>,
+declaration order</strong> — a pattern capture (R6) counts as a local of the arm
+that bound it, declared before that arm’s own statements and so destroyed
+after them. A value’s own <code>drop</code> body runs <strong>before its fields</strong>,
 and the fields drop in reverse field order; an enum’s payload drops with the
 value. <strong>Every exit runs drops</strong>: fall-through, <code>ret</code>, <code>jump break</code>, <code>jump continue</code> (out of the scopes they leave), and panic unwinding, because a
 resource-owning scope lowers to a <code>try</code>/<code>finally</code> and every exit flows
@@ -8224,7 +8523,8 @@ local directory, or <code>{ git = "…", tag | rev = "…" }</code> for a <code>
 repository pinned to exactly one of a tag or a commit; registry
 dependencies are future work).</li>
 <li><strong><code>[entry.&lt;name&gt;]</code></strong>: one build entry per table: <code>path</code> (default
-<code>&lt;root&gt;/&lt;name&gt;.vl</code>) and <code>target</code> (default <code>node</code>). A package with
+<code>&lt;root&gt;/&lt;name&gt;.vl</code>), <code>target</code> (default <code>node</code>), and <code>split</code> (default
+<code>false</code>; §11.5). A package with
 entries builds each for its own platform; reachability (§11.2) is
 what lets one source tree serve several. <code>[package] default-entry</code>
 names the entry <code>vilan run</code> executes when several are runnable.</li>
@@ -8253,7 +8553,16 @@ per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</l
 <h2 id="115-build-products"><a class="header" href="#115-build-products">11.5 Build products</a></h2>
 <p>Each entry emits <code>dist/&lt;name&gt;.js</code> for its platform (browser entries
 first, so a server that ships bundles finds them fresh), plus
-<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).
+<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).</p>
+<p>A <code>browser</code> entry declaring <strong><code>split = true</code></strong> emits <strong>route chunks</strong>
+instead of one file: <code>dist/&lt;name&gt;.js</code> carries every module-level binding
+(so §7.6’s initialization order is untouched) and every function two or
+more route arms can reach, and <code>dist/&lt;name&gt;.&lt;arm&gt;.js</code> carries the
+functions exactly one arm of the entry’s route <code>match</code> can reach. A
+<code>dist/&lt;name&gt;.chunks.json</code> lists them. Chunks are fetched when a
+navigation first reaches their arm, and the route value does not advance
+until one arrives; which functions land where is implementation-defined
+beyond that rule. <code>split</code> on a non-<code>browser</code> entry is a manifest error.
 <code>vilan run</code> builds all entries and starts one <code>@process</code> entry: the
 only one, the designated <code>default-entry</code>, or the one <code>--entry</code> names;
 <code>vilan check</code> checks every entry, always. The emitted text beyond
@@ -8370,9 +8679,17 @@ overrides the package’s <code>target</code> (<code>--target</code> is an accep
 <li><code>--watch</code>: rebuild whenever a watched source changes (Ctrl-C stops).</li>
 <li><code>-d, --debug</code>: also emit <code>.parse.out</code> / <code>.analyze.out</code> /
 <code>.callgraph.out</code> dumps, for poking at the compiler’s view of your code.</li>
+<li><code>--print-chunks</code>: report the route-chunk plan — what a <code>split = true</code>
+browser leg would load lazily per route, with function counts and a byte
+estimate. Analysis only; the emitted JavaScript is unchanged, so this is
+how to measure a leg before opting it in
+(<a href="#shipping-routes-separately">the dev loop</a>).</li>
 <li><code>--backend js</code>: the only backend today; the flag exists so a future
 one has somewhere to live.</li>
 </ul>
+<p>A <code>browser</code> entry with <code>[entry.&lt;name&gt;] split = true</code> writes an eager
+bundle plus one file per route arm and a <code>&lt;name&gt;.chunks.json</code> listing
+them.</p>
 <h2 id="vilan-check-file"><a class="header" href="#vilan-check-file"><code>vilan check [file]</code></a></h2>
 <p><code>build</code> without the output: type-checks and reports diagnostics, writes
 nothing, and runs no <code>[build] run</code> hooks. Same path forms and flags

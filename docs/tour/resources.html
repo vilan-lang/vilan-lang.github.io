@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -259,6 +259,34 @@ function that moves its parameter out has to say <code>own</code>.</p>
 ends: falling off the bottom, an early <code>ret</code>, a <code>jump</code> out of a loop,
 even a panic unwinding through. There are no drop flags and nothing to remember:
 if a binding still owns a resource when control leaves the scope, it drops.</p>
+<p>A <strong>pattern capture is a binding like any other</strong>. Matching by value
+consumes what you matched, so the capture becomes the payload’s owner —
+and it drops at the end of the arm that bound it:</p>
+<pre><code class="language-vilan">import std::print;
+import std::drop::Drop;
+import std::option::Option::{ self, Some, None };
+
+resource struct Guard { label: str }
+impl Guard with Drop {
+	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
+}
+
+fun main() {
+	let slot: Option&lt;Guard&gt; = Some(Guard { label = "held" });
+	match slot {
+		Some(let g) =&gt; print(i"using {g.label}"),
+		None =&gt; print("empty"),
+	}
+	print("after match");
+}
+</code></pre>
+<p>This prints <code>using held</code>, <code>dropped held</code>, <code>after match</code> — the payload dies
+at the end of the leg, not at the end of <code>main</code>, because that leg is where
+it was bound. Move it somewhere else inside the leg (return it, pass it by
+<code>own</code>, put it in a struct) and the destination owns it instead; it is
+destroyed exactly once either way. A capture from a <em>loan</em> — <code>match &amp;slot</code>,
+or <code>slot is Some(let g)</code> — owns nothing, because nothing was consumed:
+<code>slot</code> is still the owner and drops the payload itself.</p>
 <h2 id="tearing-down-early-dropx"><a class="header" href="#tearing-down-early-dropx">Tearing down early: <code>drop(x)</code></a></h2>
 <p>Sometimes you want a resource gone <em>before</em> its scope ends. Move it into
 <code>drop</code>:</p>

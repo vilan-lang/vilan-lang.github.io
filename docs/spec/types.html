@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-341c2438.js";
+            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -240,9 +240,16 @@ than through trait bounds.</em></p>
 <p>A trait declares required methods (signature-only) and defaults (with
 bodies). <code>trait X with Y</code> makes <code>Y</code> a supertrait: implementing <code>X</code>
 requires <code>Y</code>. A trait’s generic parameters may carry defaults
-(<code>trait PartialEq&lt;B = Self&gt;</code>); <code>Self</code> in a trait body denotes the
-implementing type. Traits are used as <strong>bounds</strong>; a trait is not a type:
-<code>let x: Display</code> is a compile error (no trait objects).</p>
+(<code>trait PartialEq&lt;B = Self&gt;</code>) and <strong>bounds</strong> (<code>trait Holder&lt;T: Bound&gt;</code>);
+<code>Self</code> in a trait body denotes the implementing type. Traits are used as
+<strong>bounds</strong>; a trait is not a type: <code>let x: Display</code> is a compile error
+(no trait objects).</p>
+<p>A trait parameter’s bound is in scope inside the trait’s own default
+bodies, exactly as a function’s or impl’s is inside theirs (§5.6): a
+default may call the bound trait’s members on a value of that parameter’s
+type. Each impl supplies the parameter’s argument (<code>impl DogBox with Holder&lt;Dog&gt;</code>), whose conformance is checked there, and the default
+monomorphizes per implementing type — so the call reaches that type’s
+argument’s implementation, never the bound trait’s abstract member.</p>
 <p>Trait members resolve on a value when exactly one visible impl provides
 the name; a trait default is inherited by impls that don’t override it.</p>
 <h2 id="56-generic-binding-and-inference"><a class="header" href="#56-generic-binding-and-inference">5.6 Generic binding and inference</a></h2>
@@ -257,14 +264,23 @@ of a generic parameter with a concrete (or caller-generic) type
 <strong>binds</strong> it. Bindings are per-call.</li>
 <li>A generic mentioned only in the return type is bound by unifying the
 declared return type against the call’s expected type
-(<code>let c: Cell&lt;i32&gt; = Cell::fresh()</code> binds <code>T := i32</code>). Only the
-<strong>callee’s own</strong> binders participate; a caller-side generic
-introduced by substitution is never re-bound against the expectation.</li>
+(<code>let c: Cell&lt;i32&gt; = Cell::fresh()</code> binds <code>T := i32</code>). Only binders
+that are <strong>free at this call</strong> participate: neither a caller-side
+generic introduced by substitution, nor a binder of a declaration
+enclosing the call — the latter is fixed by the enclosing
+instantiation, and callee and caller can share one outright (a trait’s
+parameter, in a call between two of its own members).</li>
 <li>After binding, every bound’s satisfaction is checked; an unsatisfied
 bound is an error naming the parameter and bound.</li>
 <li>A call whose generics cannot all be grounded (no argument or
 expectation determines them) is an error at the call.</li>
 </ol>
+<p>Bounds cut both ways. At a call they are an <strong>obligation</strong> (3 above); at
+a declaration they are an <strong>assumption</strong>: inside the body of whatever
+declares the parameter — a function, an impl, or a trait — the bound
+trait’s members are in scope on that parameter’s type, and a call to one
+resolves through the bound and dispatches at monomorphization to the
+implementation the parameter is bound to there.</p>
 <p>Method calls additionally bind the receiver’s impl binders from the
 receiver’s type before the parameters are considered. Closure arguments
 participate: a closure’s parameter types take the callee’s expectations,
