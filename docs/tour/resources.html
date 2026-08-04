@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
+            window.path_to_searchindex_js = "../searchindex-341c2438.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -244,8 +244,16 @@ fun main() {
 </code></pre>
 <p>A loan changes no ownership, so <code>g</code> is still yours after each call: the
 program prints <code>inspecting g</code> twice, then <code>done</code>, then <code>dropped g</code> when
-<code>main</code> ends. Method calls (<code>&amp;self</code>, <code>&amp;mut self</code>) are loans too; that is how
-a resource’s own methods reach it without consuming it.</p>
+<code>main</code> ends. Method calls are loans too — a bare <code>self</code> receiver, like
+<code>&amp;self</code> and <code>&amp;mut self</code>, borrows — and that is how a resource’s own methods
+reach it without consuming it.</p>
+<p>The exception is a method that declares <strong><code>own self</code></strong>: it takes the
+receiver by value, so the call is a <em>move</em>. <code>Option::unwrap(own self)</code> is
+the one you will meet first — <code>option.unwrap()</code> hands you the payload and
+ends <code>option</code>’s ownership, so reading <code>option</code> afterwards is a
+use-after-move error and <code>option</code> is not torn down at scope end. That
+symmetry is the whole rule: a body may only consume what it owns, so a
+function that moves its parameter out has to say <code>own</code>.</p>
 <h2 id="teardown-happens-on-every-exit"><a class="header" href="#teardown-happens-on-every-exit">Teardown happens on every exit</a></h2>
 <p>Because teardown is tied to the owner’s scope, it runs however the scope
 ends: falling off the bottom, an early <code>ret</code>, a <code>jump</code> out of a loop,

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
+            window.path_to_searchindex_js = "../searchindex-341c2438.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -208,6 +208,22 @@ prefix (see <a href="../tour/macros-and-const.html">Macros &amp; const</a>). The
 are emitted during the build.</li>
 <li><code>view.styled(card)</code> puts the style’s classes on the element.</li>
 </ul>
+<h2 id="getting-the-stylesheet-onto-the-page"><a class="header" href="#getting-the-stylesheet-onto-the-page">Getting the stylesheet onto the page</a></h2>
+<p>The build writes every emitted rule into a sidecar beside the bundle —
+<code>app.js</code> gets <code>app.css</code>, <code>dist/client.js</code> gets <code>dist/client.css</code> — and
+<strong>your page has to link it</strong>. Nothing injects the tag for you: the HTML
+shell is yours, not the compiler’s.</p>
+<pre><code class="language-text">&lt;link rel="stylesheet" href="app.css" /&gt;
+</code></pre>
+<p>Both <code>vilan init</code> browser templates already carry the line, and the
+fullstack one also carries the route that serves it:</p>
+<pre><code class="language-vilan fragment">"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
+</code></pre>
+<p>Miss the link and nothing announces it — the app runs, unstyled, while
+the compiler faithfully rebuilds a stylesheet nobody loads. A <code>&lt;link&gt;</code>
+(rather than an inlined <code>&lt;style&gt;</code>) is also what lets <code>--watch</code> hot-swap
+CSS without reloading the page; see
+<a href="dev-loop.html#the-css-link-idiom">the dev loop</a>.</p>
 <p>At runtime you can still <em>select and combine</em> styles you already built.
 <code>a + b</code> merges two styles (per property, the right side wins), and
 picking one of two styles in an <code>if</code> is fine. What you can’t do is
@@ -223,20 +239,35 @@ let primary = const button + style().background(Color::blue(600)).color(Color::w
 steps grow like Tailwind’s. It’s the usual argument to <code>padding</code>,
 <code>gap</code>, <code>margin</code>, and <code>radius</code>.</li>
 <li><strong><code>Length</code></strong> covers everything else: <code>Length::px(1.0)</code>,
-<code>Length::rem(1.5)</code>, <code>Length::pct(50.0)</code>, <code>Length::auto()</code>, and
-<code>Length::var("--w")</code> for a CSS variable (see dynamic values below).</li>
+<code>Length::rem(1.5)</code>, <code>Length::em(0.02)</code>, <code>Length::pct(50.0)</code>,
+<code>Length::vh(100.0)</code>, <code>Length::vw(50.0)</code>, <code>Length::auto()</code>,
+<code>Length::var("--w")</code> for a CSS variable (see dynamic values below), and
+<code>Length::calc("100% - 2rem")</code> when the value is arithmetic — you write
+the expression, not the <code>calc(..)</code> wrapper.</li>
 <li><strong><code>Color</code></strong> has <code>Color::white()</code>, <code>Color::black()</code>,
 <code>Color::transparent()</code>, <code>Color::hex("#663399")</code>, and stepped ramps
 like <code>Color::gray(300)</code>, <code>Color::blue(600)</code>, <code>Color::red(500)</code>,
 <code>Color::green(500)</code>.</li>
 <li>Keyword properties use enums: <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
-<code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>.</li>
+<code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
+<code>WhiteSpace</code>, <code>UserSelect</code>.</li>
 </ul>
+<p>Some properties take a plain <code>str</code> — <code>font_family</code>, <code>transform</code>,
+<code>box_shadow</code>, <code>text_decoration</code>, <code>flex</code>, <code>grid_template_columns</code>. That
+isn’t a weaker <code>raw</code>: the property name is still checked and completable,
+and only the <em>value</em> is a CSS expression there is nothing to validate (a
+font stack, a transform list). Reach for them the same way you reach for
+<code>padding</code>.</p>
 <p>For anything the typed surface doesn’t cover, escape hatches:</p>
-<pre><code class="language-vilan fragment">.raw("font-family", "system-ui, sans-serif")
+<pre><code class="language-vilan fragment">.raw("clip-path", "polygon(0 0, 100% 0, 100% 80%)")
 .with_length("scroll-margin-top", space(4))
 .with_color("outline-color", Color::blue(300))
 </code></pre>
+<p><code>raw</code> takes any property; <code>with_length</code> and <code>with_color</code> take an
+untyped property with a <em>typed</em> value, so a token still emits its
+<code>:root</code> declaration. The typed surface grows by demand — if you find
+yourself reaching for <code>raw</code> on the same property repeatedly, that is the
+evidence a method should exist.</p>
 <h2 id="states-and-breakpoints"><a class="header" href="#states-and-breakpoints">States and breakpoints</a></h2>
 <p>Hover, focus, and friends take an <strong>inner</strong> style. Everything in the
 inner style applies under that condition:</p>
@@ -247,14 +278,38 @@ inner style applies under that condition:</p>
 	.disabled(style().opacity(0.5));
 </code></pre>
 <p>Available: <code>.hover</code>, <code>.focus</code>, <code>.active</code>, <code>.disabled</code>, <code>.first</code>,
-<code>.last</code>, <code>.dark</code> (dark mode via <code>prefers-color-scheme</code>), and
-<code>.pseudo(name, inner)</code> for anything else. Breakpoints work the same way:
-<code>.sm(inner)</code> (640px), <code>.md(inner)</code> (768px), <code>.lg(inner)</code> (1024px),
-<code>.xl(inner)</code> (1280px), or <code>.media(min_width, inner)</code>. All are <code>min-width</code>
-conditions, so chains are mobile-first: in
-<code>.sm(grid_cols(2)).lg(grid_cols(3))</code> the widest matching breakpoint wins
-(the stylesheet emits media rules in ascending min-width order, which is
-what makes that true).</p>
+<code>.last</code>, <code>.dark</code>, and <code>.pseudo(name, inner)</code> for anything else.
+Breakpoints work the same way: <code>.sm(inner)</code> (640px), <code>.md(inner)</code>
+(768px), <code>.lg(inner)</code> (1024px), <code>.xl(inner)</code> (1280px), or
+<code>.media(min_width, inner)</code>. All are <code>min-width</code> conditions, so chains are
+mobile-first: in <code>.sm(grid_cols(2)).lg(grid_cols(3))</code> the widest matching
+breakpoint wins (the stylesheet emits media rules in ascending min-width
+order, which is what makes that true).</p>
+<h2 id="dark-mode-and-stacking-conditions"><a class="header" href="#dark-mode-and-stacking-conditions">Dark mode, and stacking conditions</a></h2>
+<p><code>.dark(inner)</code> applies under a <code>:root[data-theme="dark"]</code> ancestor — an
+explicit switch you set on the document, not <code>prefers-color-scheme</code>. That
+is deliberate: a server can decide the theme and write the attribute
+before a byte of JavaScript runs, and a user’s toggle is one attribute
+write.</p>
+<p>Conditions <strong>stack</strong>, nesting outside-in in the order the CSS nests them:
+a breakpoint outside dark, dark outside the pseudo-class.</p>
+<pre><code class="language-vilan fragment">let button = const style()
+	.background(Color::gray(100))
+	.hover(style().background(Color::gray(200)))
+	.dark(style().background(Color::gray(800)))
+	.dark(style().hover(style().background(Color::gray(700))))
+	.md(style().dark(style().hover(style().background(Color::gray(600)))));
+</code></pre>
+<p>Write them in any other order and the build stops and tells you which
+order it wanted — <code>hover(dark(..))</code> says to write <code>dark(hover(..))</code>. No
+axis may wrap itself, so one media, one dark and one pseudo-class is the
+whole lattice.</p>
+<p>Why the order matters beyond spelling: <code>dark(hover(..))</code> produces a
+<em>more specific</em> selector than either <code>dark(..)</code> or <code>hover(..)</code>, so it
+beats both. Between a plain <code>.dark(x)</code> and a plain <code>.hover(y)</code> on the
+same property the two are equally specific and dark wins — a theme
+shouldn’t be undone by a hover — so when a dark theme needs its own
+hover colour, say so with <code>dark(hover(..))</code>.</p>
 <h2 id="dynamic-values"><a class="header" href="#dynamic-values">Dynamic values</a></h2>
 <p>Styles are static, so how does a progress bar grow? Through CSS custom
 properties. The style declares a variable, and the element binds the
@@ -276,15 +331,44 @@ fun main() {
 }
 </code></pre>
 <p>The rule is compiled once. Only the variable’s value changes at runtime.
-This one channel covers most “dynamic styling” needs; for the rest,
-<code>bind_class</code> swaps between prebuilt styles.</p>
+This one channel covers most “dynamic styling” needs — a value that
+changes inside a rule.</p>
+<h2 id="swapping-whole-styles"><a class="header" href="#swapping-whole-styles">Swapping whole styles</a></h2>
+<p>When what changes is <em>which</em> style applies, not a value inside one, put
+the style in a signal and bind it. <code>bind_styled</code> is to <code>styled</code> what
+<code>bind_class</code> is to <code>class</code>:</p>
+<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+import std::style::{ style, space, Style, Color };
+import std::reactive::Signal;
+
+let idle = const style().padding(space(2)).background(Color::gray(100));
+let busy = const style().padding(space(2)).background(Color::blue(600));
+
+fun main() {
+	let state = Signal::new(idle);
+	let _root = mount_root("app", || {
+		view("div")
+			.bind_styled(state)
+			.child(view("button").text("start").on("click", || state.set(busy)))
+	});
+}
+</code></pre>
+<p>Both styles are built in <code>const</code>, so both sets of rules are in the
+stylesheet before the page loads; the signal only chooses between class
+strings that already exist. That is the construct-in-const rule holding
+with a signal in the middle — you still cannot build a style at runtime,
+and you never needed to.</p>
+<p>Server-side, <code>bind_styled</code> reads the signal once, like every other
+<code>bind_*</code> on the <a href="ssr.html">SSR</a> layer: the style the signal holds when the
+request is rendered is the one served.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> Each property-under-a-condition becomes one atomic
 CSS rule with a generated class name, deduplicated across the whole
 build: two styles that both say <code>padding(space(4))</code> share one class.
-<code>styled</code> sets <code>class_list()</code>, the space-joined class names. A
-breakpoint can’t wrap another media-conditioned style (you’ll get a
-compile-time panic saying so).</p>
+<code>styled</code> sets <code>class_list()</code>, the space-joined class names. Each
+combination of conditions is its own slot, so <code>hover(..)</code> and
+<code>dark(hover(..))</code> never fight over one — they are different rules with
+different class names, resolved by CSS specificity.</p>
 </blockquote>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
@@ -294,9 +378,11 @@ runtime.</li>
 <li><code>+</code> is a per-property override, not CSS specificity. The right
 operand’s value replaces the left’s for the same property and
 condition.</li>
-<li><code>.class(name)</code> and <code>.styled(style)</code> both set the class attribute, so
-the later call wins. Use one mechanism per element (custom classes can
-ride along via <code>.raw</code>).</li>
+<li><code>.class(name)</code>, <code>.styled(style)</code>, <code>.bind_class(..)</code> and
+<code>.bind_styled(..)</code> all set the class attribute, so the later call
+wins — and a reactive one keeps winning every time its signal
+changes. Use one mechanism per element (custom classes can ride along
+via <code>.raw</code>).</li>
 </ul>
 <p>Full method table: the <a href="../std/style.html">style reference</a>.</p>
 

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
+            window.path_to_searchindex_js = "../searchindex-341c2438.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -182,7 +182,7 @@
 annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 <pre><code class="language-vilan fragment">impl List&lt;type T&gt; {
 	fun new(): List&lt;T&gt;
-	fun push(&amp;mut self, item: T)
+	fun push(&amp;mut self, own item: T)
 	fun pop(&amp;mut self): Option&lt;T&gt;
 	fun insert(&amp;mut self, index: i32, value: T)   // panics out of bounds
 	fun remove(&amp;mut self, index: i32): T          // panics out of bounds
@@ -197,7 +197,7 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun fold&lt;B&gt;(self, init: B, fn: |B, T| B): B
 	fun for_each(self, fn: |T| void)
 	fun reverse(self): List&lt;T&gt;
-	fun sort_by(self, compare: |T, T| Ordering): List&lt;T&gt;   // stable
+	fun sort_by(own self, compare: |T, T| Ordering): List&lt;T&gt;   // stable
 }
 impl List&lt;type T: Add + Default&gt; { fun sum(self): T }
 impl List&lt;type T: Mul + Default&gt; { fun product(self): T }
@@ -214,6 +214,12 @@ impl List&lt;type T: Display&gt; { fun join(self, separator: str): str }
 <p>The methods that take <code>self</code> by value are pure — they return a new list and
 leave the receiver alone. The mutating ones take <code>&amp;mut self</code>: <code>push</code>, <code>pop</code>,
 <code>insert</code>, <code>remove</code>.</p>
+<p>“Leave the receiver alone” reaches the ELEMENTS, not just the spine: the list a
+pure method returns never shares element storage with the receiver, so writing
+through <code>xs.map(f)[0]</code> cannot show up in <code>xs[0]</code>. That is rule 1 (a value is
+copied when it is stored), and it is why <code>push</code> and <code>sort_by</code> are written <code>own</code>
+— they keep what they are given. A fresh value costs nothing there: <code>own</code> copies
+a <em>place</em>, and a value with no other owner moves in.</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {

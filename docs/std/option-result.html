@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
+            window.path_to_searchindex_js = "../searchindex-341c2438.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -194,12 +194,12 @@ impl Option&lt;type T&gt; {
 	fun is_some(self): bool
 	fun is_some_and(self, fn: |T| bool): bool
 	fun is_none(self): bool
-	fun is_none_or(self, fn: |T| bool): bool
+	fun is_none_or(own self, fn: |T| bool): bool
 
 	// extraction
-	fun unwrap(self): T                      // panics on None
+	fun unwrap(own self): T                  // panics on None
 	fun unwrap_or(self, fallback: T): T
-	fun unwrap_or_else(self, fn: || T): T
+	fun unwrap_or_else(own self, fn: || T): T
 
 	// in-place partial move — read/replace the slot through `&amp;mut self`,
 	// always leaving a valid Option behind
@@ -207,29 +207,41 @@ impl Option&lt;type T&gt; {
 	fun replace(&amp;mut self, value: T): Option&lt;T&gt;  // value in, old contents out
 
 	// transformation
-	fun map&lt;U&gt;(self, fn: |T| U): Option&lt;U&gt;
-	fun map_or&lt;U&gt;(self, fn: |T| U, fallback: U): U
-	fun map_or_else&lt;U&gt;(self, fn: |T| U, fallback: || U): U
-	fun map_or_default&lt;U: Default&gt;(self, fn: |T| U): U
+	fun map&lt;U&gt;(own self, fn: |T| U): Option&lt;U&gt;
+	fun map_or&lt;U&gt;(own self, fn: |T| U, fallback: U): U
+	fun map_or_else&lt;U&gt;(own self, fn: |T| U, fallback: || U): U
+	fun map_or_default&lt;U: Default&gt;(own self, fn: |T| U): U
 	fun inspect(self, fn: |T| void): Self    // peek, pass through
-	fun filter(self, predicate: |T| bool): Option&lt;T&gt;
+	fun filter(own self, predicate: |T| bool): Option&lt;T&gt;
 
 	// combination
-	fun and&lt;U&gt;(self, b: Option&lt;U&gt;): Option&lt;U&gt;
-	fun and_then&lt;U&gt;(self, fn: |T| Option&lt;U&gt;): Option&lt;U&gt;
+	fun and&lt;U&gt;(own self, own b: Option&lt;U&gt;): Option&lt;U&gt;
+	fun and_then&lt;U&gt;(own self, fn: |T| Option&lt;U&gt;): Option&lt;U&gt;
 	fun or(self, b: Option&lt;T&gt;): Option&lt;T&gt;
 	fun or_else(self, fn: || Option&lt;T&gt;): Option&lt;T&gt;
 	fun xor(self, b: Option&lt;T&gt;): Option&lt;T&gt;
-	fun zip&lt;U&gt;(self, peer: Option&lt;U&gt;): Option&lt;(T, U)&gt;
+	fun zip&lt;U&gt;(own self, own peer: Option&lt;U&gt;): Option&lt;(T, U)&gt;
 
 	// bridging
 	fun ok_or&lt;E&gt;(self, err: E): Result&lt;T, E&gt;
-	fun ok_or_else&lt;E&gt;(self, err: || E): Result&lt;T, E&gt;
+	fun ok_or_else&lt;E&gt;(own self, err: || E): Result&lt;T, E&gt;
 }
-impl Option&lt;type T: Default&gt; { fun unwrap_or_default(self): T }
+impl Option&lt;type T: Default&gt; { fun unwrap_or_default(own self): T }
 impl Option&lt;(type T, type U)&gt; { fun unzip(self): (Option&lt;T&gt;, Option&lt;U&gt;) }
 </code></pre>
 <p><code>str.parse_i32(): Option&lt;i32&gt;</code> (declared here) is the string→number path.</p>
+<p>The combinators that hand the payload onward take <strong><code>own self</code></strong>: they move
+the value out of the <code>Option</code>, so they must own it (<code>docs/spec/memory.md</code> R3).
+For plain data that is invisible — <code>own</code> copies, and <code>opt.unwrap()</code> leaves
+<code>opt</code> perfectly readable. For an <code>Option&lt;SomeResource&gt;</code> it is the affine rule
+biting: <code>opt.unwrap()</code> <em>moves</em> <code>opt</code>, a later use of <code>opt</code> is a
+use-after-move error, and <code>opt</code> is not torn down at scope end (the payload
+you now hold is). The pure predicates — <code>is_some</code>, <code>is_none</code> — keep a
+borrowing <code>self</code> and never consume, so they stay free on a resource.</p>
+<p>Reaching a resource payload is a <code>match</code>, not a guarded <code>unwrap</code>: <code>match opt { Some(let value) =&gt; .., None =&gt; .. }</code> consumes <code>opt</code> on <em>every</em> path, which
+is what R7 requires. <code>if (opt.is_some()) { opt.unwrap() }</code> moves <code>opt</code> on one
+path only and is rejected as a conditional move (before this was checked it
+compiled and destroyed the payload twice).</p>
 <p><code>take</code> and <code>replace</code> mutate the <code>Option</code> in place through <code>&amp;mut self</code>: <code>take</code>
 swaps <code>None</code> in and hands the old contents back, <code>replace</code> swaps a new value in
 and hands the old back. Both leave a valid <code>Option</code> behind, which is what makes

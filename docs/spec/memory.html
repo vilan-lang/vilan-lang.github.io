@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
+            window.path_to_searchindex_js = "../searchindex-341c2438.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -271,6 +271,26 @@ fun main() {
 	print(a.x);   // 4 — b is a semantic copy
 }
 </code></pre>
+<p>“Field initialization” is the whole of a <strong>construction</strong>: a place read into a
+list element, a tuple element, a struct field, or a variant payload is stored
+in a slot of a new aggregate that outlives the literal, so it copies there too.
+The same holds for a place handed to a parameter declared <code>own</code> — a signature’s
+way of saying the callee keeps it, which is how <code>List::push</code> is written — and
+for a place a body <strong>returns</strong> that it does not own, i.e. one reached through a
+by-value parameter. Together these are what make “a call owns its result” true,
+which is the premise every elision below rests on:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut xs = [1, 2];
+	mut rows = [xs];        // a copy: the element is not xs's storage
+	rows[0].push(9);
+	print(xs.len());        // 2
+}
+</code></pre>
+<p>A consequence worth naming: the list a pure <code>List</code> method returns never shares
+element storage with its receiver. Writing through an element of <code>xs.map(f)</code>,
+<code>xs.filter(p)</code>, <code>xs.sort_by(c)</code>, or <code>xs.reverse()</code> cannot show up in <code>xs</code>.</p>
 <h2 id="62-rule-2--elision-is-an-optimization-never-observable"><a class="header" href="#62-rule-2--elision-is-an-optimization-never-observable">6.2 Rule 2 — elision is an optimization, never observable</a></h2>
 <p>An implementation may skip a copy (reuse the storage) when no conforming
 program can tell, e.g. when the source is never used again. Elision must
@@ -443,7 +463,15 @@ resource.</li>
 resource drops the old value first, then moves the new one in.</li>
 <li><strong>R3: parameters.</strong> <code>self</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans, unchanged; <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
 not the binding’s last use is an error (where a data <code>own</code> would silently
-copy).</li>
+copy). The rule reads in both directions: because a loan changes no
+ownership, a body may not move a loaned resource parameter <strong>out</strong> — no
+returning it, no <code>own</code>-passing it on, no consuming <code>match</code> of it. Doing so
+would hand the caller a second owner while the caller’s binding stays live
+and still drops at its scope end, destroying one value twice. <code>own</code> is the
+only convention a body may consume, and a <strong>consuming method</strong> therefore
+declares <code>own self</code>: <code>o.unwrap()</code> is a move of <code>o</code>, so a later use of <code>o</code> is
+use-after-move and <code>o</code> is not torn down at scope end. A bare <code>self</code>
+receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</li>
 <li><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
 diverging leg is exempt).</li>
 <li><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
@@ -472,12 +500,16 @@ reference is a per-call loan, exactly like a parameter. Captures of a
 <code>Set</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
 reject resource type arguments in v1: their internals are host code the
 move checker cannot see. <code>Option</code> is the sanctioned container (it is a
-Vilan enum, checkable under R11).</li>
+Vilan enum, checkable under R11). The rule is read <strong>per instantiation</strong>,
+not per written head: a resource that reaches a container through a
+generic aggregate’s member is rejected the same way, so <code>Signal&lt;Database&gt;</code>
+— whose storage is a <code>Shared&lt;T&gt;</code> — is refused exactly as
+<code>Shared&lt;Database&gt;</code> is. Holding the resource in a struct field of your own
+is the sanctioned alternative, and stays legal.</li>
 <li><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a
 type parameter with a resource type re-checks the instantiated body under
 the affine rules (T := the resource): every T-typed value is used at most
-once as a move, with no captures and no copies. <code>Option::unwrap(self): T</code>
-passes; a body that reads its parameter twice fails <strong>at the instantiation
+once as a move, with no captures and no copies. <code>Option::unwrap(own self): T</code> passes; a body that reads its parameter twice fails <strong>at the instantiation
 site</strong>, not inside std. For an <code>own T</code> parameter the rule tightens to
 <em>exactly</em> once (a generic body is emitted once and so cannot run an
 instantiation-conditional destructor; zero moves would leak).</li>

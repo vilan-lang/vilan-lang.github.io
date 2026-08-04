@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
+            window.path_to_searchindex_js = "../searchindex-341c2438.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -180,7 +180,7 @@
 <pre><code class="language-vilan fragment">import std::style::{
 	style, space, Style, Length, Color,
 	Display, Position, FlexDirection, AlignItems, JustifyContent,
-	TextAlign, Cursor, Overflow,
+	TextAlign, Cursor, Overflow, WhiteSpace, UserSelect,
 };
 </code></pre>
 <h2 id="constructors-and-values"><a class="header" href="#constructors-and-values">Constructors and values</a></h2>
@@ -190,9 +190,13 @@ fun space(step: i32): Length       // spacing scale: space(1) = 0.25rem
 impl Length {
 	fun px(value: f64): Length
 	fun rem(value: f64): Length
+	fun em(value: f64): Length     // relative to the element's own font size
 	fun pct(value: f64): Length
+	fun vh(value: f64): Length     // viewport units
+	fun vw(value: f64): Length
 	fun auto(): Length
 	fun var(name: str): Length     // a CSS custom-property reference ("--w")
+	fun calc(expression: str): Length  // "100% - 2rem" — no calc(..) wrapper
 }
 
 impl Color {
@@ -207,7 +211,10 @@ impl Color {
 }
 </code></pre>
 <p>Keyword enums: <code>Display</code> (Flex, Block, …), <code>Position</code>, <code>FlexDirection</code>,
-<code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>.</p>
+<code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
+<code>WhiteSpace</code> (Normal, Nowrap, Pre, PreWrap, PreLine), <code>UserSelect</code> (Auto,
+Text, All, <strong>Off</strong> — <code>none</code>, named to stay clear of <code>Option::None</code>, like
+<code>Display::Hidden</code>).</p>
 <h2 id="style-methods"><a class="header" href="#style-methods">Style methods</a></h2>
 <p>Every method returns a new <code>Style</code> with one more property slot; each slot is
 one atomic rule, deduplicated build-wide.</p>
@@ -223,8 +230,12 @@ one atomic rule, deduplicated build-wide.</p>
 <tr><td><code>flex_direction</code></td><td><code>FlexDirection</code></td></tr>
 <tr><td><code>align_items</code></td><td><code>AlignItems</code></td></tr>
 <tr><td><code>justify_content</code></td><td><code>JustifyContent</code></td></tr>
+<tr><td><code>flex</code></td><td><code>str</code> — the shorthand, <code>"1 1 auto"</code></td></tr>
+<tr><td><code>flex_shrink</code></td><td><code>f64</code></td></tr>
+<tr><td><code>grid_template_columns</code></td><td><code>str</code> — <code>"repeat(3, 1fr)"</code></td></tr>
 <tr><td><code>gap</code>, <code>padding</code>, <code>padding_x</code>, <code>padding_y</code>, <code>margin</code>, <code>margin_x</code>, <code>margin_y</code></td><td><code>Length</code></td></tr>
-<tr><td><code>width</code>, <code>height</code>, <code>max_width</code>, <code>min_height</code></td><td><code>Length</code></td></tr>
+<tr><td><code>width</code>, <code>height</code>, <code>min_width</code>, <code>max_width</code>, <code>min_height</code>, <code>max_height</code></td><td><code>Length</code></td></tr>
+<tr><td><code>top</code>, <code>right</code>, <code>bottom</code>, <code>left</code>, <code>inset</code></td><td><code>Length</code></td></tr>
 <tr><td><code>overflow</code></td><td><code>Overflow</code></td></tr>
 </tbody>
 </table>
@@ -238,17 +249,28 @@ one atomic rule, deduplicated build-wide.</p>
 <tbody>
 <tr><td><code>radius</code></td><td><code>Length</code></td></tr>
 <tr><td><code>border</code></td><td><code>(width: Length, color: Color)</code></td></tr>
+<tr><td><code>border_color</code></td><td><code>Color</code> — its own slot, so a <code>hover</code> can recolour without restating the width</td></tr>
+<tr><td><code>box_shadow</code></td><td><code>str</code></td></tr>
 <tr><td><code>background</code>, <code>color</code></td><td><code>Color</code></td></tr>
+<tr><td><code>font_family</code></td><td><code>str</code></td></tr>
 <tr><td><code>font_size</code></td><td><code>Length</code></td></tr>
 <tr><td><code>font_weight</code></td><td><code>i32</code></td></tr>
 <tr><td><code>line_height</code></td><td><code>f64</code></td></tr>
+<tr><td><code>letter_spacing</code></td><td><code>Length</code> — usually <code>Length::em(..)</code></td></tr>
 <tr><td><code>text_align</code></td><td><code>TextAlign</code></td></tr>
+<tr><td><code>text_decoration</code></td><td><code>str</code></td></tr>
+<tr><td><code>white_space</code></td><td><code>WhiteSpace</code></td></tr>
+<tr><td><code>user_select</code></td><td><code>UserSelect</code></td></tr>
 <tr><td><code>cursor</code></td><td><code>Cursor</code></td></tr>
 <tr><td><code>opacity</code></td><td><code>f64</code></td></tr>
 <tr><td><code>transition</code></td><td><code>str</code></td></tr>
+<tr><td><code>transform</code></td><td><code>str</code></td></tr>
 </tbody>
 </table>
 </div>
+<p>A <code>str</code>-valued method is not a weaker <code>raw</code>: it keeps the property name
+checked and completable while the <em>value</em> stays a CSS expression the compiler
+has nothing to validate (a font stack, a transform list, a shadow layer).</p>
 <p>Escape hatches:</p>
 <pre><code class="language-vilan fragment">fun raw(self, property: str, value: str): Style
 fun with_length(self, property: str, value: Length): Style
@@ -262,7 +284,7 @@ fun active(self, inner: Style): Style
 fun disabled(self, inner: Style): Style
 fun first(self, inner: Style): Style      // :first-child
 fun last(self, inner: Style): Style       // :last-child
-fun dark(self, inner: Style): Style       // prefers-color-scheme: dark
+fun dark(self, inner: Style): Style       // :root[data-theme="dark"] ancestor
 fun pseudo(self, name: str, inner: Style): Style
 
 fun sm(self, inner: Style): Style          // breakpoints (min-width):
@@ -271,10 +293,22 @@ fun lg(self, inner: Style): Style
 fun xl(self, inner: Style): Style
 fun media(self, min_width: str, inner: Style): Style
 </code></pre>
-<p>A breakpoint cannot wrap an already-media-conditioned style (panics at
-compile-time evaluation). Media rules emit in ascending min-width order,
-so a chain like <code>.sm(x).lg(y)</code> is mobile-first: the widest matching
-breakpoint wins.</p>
+<h3 id="stacking"><a class="header" href="#stacking">Stacking</a></h3>
+<p>The three condition axes nest <strong>outside-in, in the order the selector
+nests them</strong> — media, then dark, then the pseudo-class:</p>
+<pre><code class="language-vilan fragment">style().md(style().dark(style().hover(style().opacity(0.8))))
+// @media (min-width: 768px){:root[data-theme="dark"] .sX:hover{opacity:0.8}}
+</code></pre>
+<p>Every other order is a compile-time-evaluation panic naming the fix
+(<code>hover(dark(..))</code> says to write <code>dark(hover(..))</code>), and no axis can wrap
+itself — one media, one dark, one pseudo-class per slot. Media rules emit
+in ascending min-width order, so a chain like <code>.sm(x).lg(y)</code> is
+mobile-first: the widest matching breakpoint wins.</p>
+<p><code>dark</code> is an ancestor selector, so a composed <code>dark(hover(..))</code> rule is
+more specific than either <code>dark(..)</code> or <code>hover(..)</code> alone and wins
+against both. Between an <em>un</em>composed <code>dark(x)</code> and <code>hover(y)</code> on the
+same property the two are equally specific and dark wins, so use
+<code>dark(hover(..))</code> when a dark theme needs its own hover.</p>
 <h2 id="runtime-legal-operations"><a class="header" href="#runtime-legal-operations">Runtime-legal operations</a></h2>
 <p>Construction emits rules and therefore lives in <code>const</code>; these do not emit
 and work anywhere:</p>

@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f1b151a6.js";
+            window.path_to_searchindex_js = "searchindex-341c2438.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -1932,8 +1932,16 @@ fun main() {
 </code></pre>
 <p>A loan changes no ownership, so <code>g</code> is still yours after each call: the
 program prints <code>inspecting g</code> twice, then <code>done</code>, then <code>dropped g</code> when
-<code>main</code> ends. Method calls (<code>&amp;self</code>, <code>&amp;mut self</code>) are loans too; that is how
-a resource’s own methods reach it without consuming it.</p>
+<code>main</code> ends. Method calls are loans too — a bare <code>self</code> receiver, like
+<code>&amp;self</code> and <code>&amp;mut self</code>, borrows — and that is how a resource’s own methods
+reach it without consuming it.</p>
+<p>The exception is a method that declares <strong><code>own self</code></strong>: it takes the
+receiver by value, so the call is a <em>move</em>. <code>Option::unwrap(own self)</code> is
+the one you will meet first — <code>option.unwrap()</code> hands you the payload and
+ends <code>option</code>’s ownership, so reading <code>option</code> afterwards is a
+use-after-move error and <code>option</code> is not torn down at scope end. That
+symmetry is the whole rule: a body may only consume what it owns, so a
+function that moves its parameter out has to say <code>own</code>.</p>
 <h2 id="teardown-happens-on-every-exit"><a class="header" href="#teardown-happens-on-every-exit">Teardown happens on every exit</a></h2>
 <p>Because teardown is tied to the owner’s scope, it runs however the scope
 ends: falling off the bottom, an early <code>ret</code>, a <code>jump</code> out of a loop,
@@ -3065,6 +3073,22 @@ prefix (see <a href="#macros--const">Macros &amp; const</a>). The rules
 are emitted during the build.</li>
 <li><code>view.styled(card)</code> puts the style’s classes on the element.</li>
 </ul>
+<h2 id="getting-the-stylesheet-onto-the-page"><a class="header" href="#getting-the-stylesheet-onto-the-page">Getting the stylesheet onto the page</a></h2>
+<p>The build writes every emitted rule into a sidecar beside the bundle —
+<code>app.js</code> gets <code>app.css</code>, <code>dist/client.js</code> gets <code>dist/client.css</code> — and
+<strong>your page has to link it</strong>. Nothing injects the tag for you: the HTML
+shell is yours, not the compiler’s.</p>
+<pre><code class="language-text">&lt;link rel="stylesheet" href="app.css" /&gt;
+</code></pre>
+<p>Both <code>vilan init</code> browser templates already carry the line, and the
+fullstack one also carries the route that serves it:</p>
+<pre><code class="language-vilan fragment">"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
+</code></pre>
+<p>Miss the link and nothing announces it — the app runs, unstyled, while
+the compiler faithfully rebuilds a stylesheet nobody loads. A <code>&lt;link&gt;</code>
+(rather than an inlined <code>&lt;style&gt;</code>) is also what lets <code>--watch</code> hot-swap
+CSS without reloading the page; see
+<a href="#the-css-link-idiom">the dev loop</a>.</p>
 <p>At runtime you can still <em>select and combine</em> styles you already built.
 <code>a + b</code> merges two styles (per property, the right side wins), and
 picking one of two styles in an <code>if</code> is fine. What you can’t do is
@@ -3080,20 +3104,35 @@ let primary = const button + style().background(Color::blue(600)).color(Color::w
 steps grow like Tailwind’s. It’s the usual argument to <code>padding</code>,
 <code>gap</code>, <code>margin</code>, and <code>radius</code>.</li>
 <li><strong><code>Length</code></strong> covers everything else: <code>Length::px(1.0)</code>,
-<code>Length::rem(1.5)</code>, <code>Length::pct(50.0)</code>, <code>Length::auto()</code>, and
-<code>Length::var("--w")</code> for a CSS variable (see dynamic values below).</li>
+<code>Length::rem(1.5)</code>, <code>Length::em(0.02)</code>, <code>Length::pct(50.0)</code>,
+<code>Length::vh(100.0)</code>, <code>Length::vw(50.0)</code>, <code>Length::auto()</code>,
+<code>Length::var("--w")</code> for a CSS variable (see dynamic values below), and
+<code>Length::calc("100% - 2rem")</code> when the value is arithmetic — you write
+the expression, not the <code>calc(..)</code> wrapper.</li>
 <li><strong><code>Color</code></strong> has <code>Color::white()</code>, <code>Color::black()</code>,
 <code>Color::transparent()</code>, <code>Color::hex("#663399")</code>, and stepped ramps
 like <code>Color::gray(300)</code>, <code>Color::blue(600)</code>, <code>Color::red(500)</code>,
 <code>Color::green(500)</code>.</li>
 <li>Keyword properties use enums: <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
-<code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>.</li>
+<code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
+<code>WhiteSpace</code>, <code>UserSelect</code>.</li>
 </ul>
+<p>Some properties take a plain <code>str</code> — <code>font_family</code>, <code>transform</code>,
+<code>box_shadow</code>, <code>text_decoration</code>, <code>flex</code>, <code>grid_template_columns</code>. That
+isn’t a weaker <code>raw</code>: the property name is still checked and completable,
+and only the <em>value</em> is a CSS expression there is nothing to validate (a
+font stack, a transform list). Reach for them the same way you reach for
+<code>padding</code>.</p>
 <p>For anything the typed surface doesn’t cover, escape hatches:</p>
-<pre><code class="language-vilan fragment">.raw("font-family", "system-ui, sans-serif")
+<pre><code class="language-vilan fragment">.raw("clip-path", "polygon(0 0, 100% 0, 100% 80%)")
 .with_length("scroll-margin-top", space(4))
 .with_color("outline-color", Color::blue(300))
 </code></pre>
+<p><code>raw</code> takes any property; <code>with_length</code> and <code>with_color</code> take an
+untyped property with a <em>typed</em> value, so a token still emits its
+<code>:root</code> declaration. The typed surface grows by demand — if you find
+yourself reaching for <code>raw</code> on the same property repeatedly, that is the
+evidence a method should exist.</p>
 <h2 id="states-and-breakpoints"><a class="header" href="#states-and-breakpoints">States and breakpoints</a></h2>
 <p>Hover, focus, and friends take an <strong>inner</strong> style. Everything in the
 inner style applies under that condition:</p>
@@ -3104,14 +3143,38 @@ inner style applies under that condition:</p>
 	.disabled(style().opacity(0.5));
 </code></pre>
 <p>Available: <code>.hover</code>, <code>.focus</code>, <code>.active</code>, <code>.disabled</code>, <code>.first</code>,
-<code>.last</code>, <code>.dark</code> (dark mode via <code>prefers-color-scheme</code>), and
-<code>.pseudo(name, inner)</code> for anything else. Breakpoints work the same way:
-<code>.sm(inner)</code> (640px), <code>.md(inner)</code> (768px), <code>.lg(inner)</code> (1024px),
-<code>.xl(inner)</code> (1280px), or <code>.media(min_width, inner)</code>. All are <code>min-width</code>
-conditions, so chains are mobile-first: in
-<code>.sm(grid_cols(2)).lg(grid_cols(3))</code> the widest matching breakpoint wins
-(the stylesheet emits media rules in ascending min-width order, which is
-what makes that true).</p>
+<code>.last</code>, <code>.dark</code>, and <code>.pseudo(name, inner)</code> for anything else.
+Breakpoints work the same way: <code>.sm(inner)</code> (640px), <code>.md(inner)</code>
+(768px), <code>.lg(inner)</code> (1024px), <code>.xl(inner)</code> (1280px), or
+<code>.media(min_width, inner)</code>. All are <code>min-width</code> conditions, so chains are
+mobile-first: in <code>.sm(grid_cols(2)).lg(grid_cols(3))</code> the widest matching
+breakpoint wins (the stylesheet emits media rules in ascending min-width
+order, which is what makes that true).</p>
+<h2 id="dark-mode-and-stacking-conditions"><a class="header" href="#dark-mode-and-stacking-conditions">Dark mode, and stacking conditions</a></h2>
+<p><code>.dark(inner)</code> applies under a <code>:root[data-theme="dark"]</code> ancestor — an
+explicit switch you set on the document, not <code>prefers-color-scheme</code>. That
+is deliberate: a server can decide the theme and write the attribute
+before a byte of JavaScript runs, and a user’s toggle is one attribute
+write.</p>
+<p>Conditions <strong>stack</strong>, nesting outside-in in the order the CSS nests them:
+a breakpoint outside dark, dark outside the pseudo-class.</p>
+<pre><code class="language-vilan fragment">let button = const style()
+	.background(Color::gray(100))
+	.hover(style().background(Color::gray(200)))
+	.dark(style().background(Color::gray(800)))
+	.dark(style().hover(style().background(Color::gray(700))))
+	.md(style().dark(style().hover(style().background(Color::gray(600)))));
+</code></pre>
+<p>Write them in any other order and the build stops and tells you which
+order it wanted — <code>hover(dark(..))</code> says to write <code>dark(hover(..))</code>. No
+axis may wrap itself, so one media, one dark and one pseudo-class is the
+whole lattice.</p>
+<p>Why the order matters beyond spelling: <code>dark(hover(..))</code> produces a
+<em>more specific</em> selector than either <code>dark(..)</code> or <code>hover(..)</code>, so it
+beats both. Between a plain <code>.dark(x)</code> and a plain <code>.hover(y)</code> on the
+same property the two are equally specific and dark wins — a theme
+shouldn’t be undone by a hover — so when a dark theme needs its own
+hover colour, say so with <code>dark(hover(..))</code>.</p>
 <h2 id="dynamic-values"><a class="header" href="#dynamic-values">Dynamic values</a></h2>
 <p>Styles are static, so how does a progress bar grow? Through CSS custom
 properties. The style declares a variable, and the element binds the
@@ -3133,15 +3196,44 @@ fun main() {
 }
 </code></pre>
 <p>The rule is compiled once. Only the variable’s value changes at runtime.
-This one channel covers most “dynamic styling” needs; for the rest,
-<code>bind_class</code> swaps between prebuilt styles.</p>
+This one channel covers most “dynamic styling” needs — a value that
+changes inside a rule.</p>
+<h2 id="swapping-whole-styles"><a class="header" href="#swapping-whole-styles">Swapping whole styles</a></h2>
+<p>When what changes is <em>which</em> style applies, not a value inside one, put
+the style in a signal and bind it. <code>bind_styled</code> is to <code>styled</code> what
+<code>bind_class</code> is to <code>class</code>:</p>
+<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+import std::style::{ style, space, Style, Color };
+import std::reactive::Signal;
+
+let idle = const style().padding(space(2)).background(Color::gray(100));
+let busy = const style().padding(space(2)).background(Color::blue(600));
+
+fun main() {
+	let state = Signal::new(idle);
+	let _root = mount_root("app", || {
+		view("div")
+			.bind_styled(state)
+			.child(view("button").text("start").on("click", || state.set(busy)))
+	});
+}
+</code></pre>
+<p>Both styles are built in <code>const</code>, so both sets of rules are in the
+stylesheet before the page loads; the signal only chooses between class
+strings that already exist. That is the construct-in-const rule holding
+with a signal in the middle — you still cannot build a style at runtime,
+and you never needed to.</p>
+<p>Server-side, <code>bind_styled</code> reads the signal once, like every other
+<code>bind_*</code> on the <a href="#server-side-rendering-1">SSR</a> layer: the style the signal holds when the
+request is rendered is the one served.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> Each property-under-a-condition becomes one atomic
 CSS rule with a generated class name, deduplicated across the whole
 build: two styles that both say <code>padding(space(4))</code> share one class.
-<code>styled</code> sets <code>class_list()</code>, the space-joined class names. A
-breakpoint can’t wrap another media-conditioned style (you’ll get a
-compile-time panic saying so).</p>
+<code>styled</code> sets <code>class_list()</code>, the space-joined class names. Each
+combination of conditions is its own slot, so <code>hover(..)</code> and
+<code>dark(hover(..))</code> never fight over one — they are different rules with
+different class names, resolved by CSS specificity.</p>
 </blockquote>
 <h2 id="traps-5"><a class="header" href="#traps-5">Traps</a></h2>
 <ul>
@@ -3151,9 +3243,11 @@ runtime.</li>
 <li><code>+</code> is a per-property override, not CSS specificity. The right
 operand’s value replaces the left’s for the same property and
 condition.</li>
-<li><code>.class(name)</code> and <code>.styled(style)</code> both set the class attribute, so
-the later call wins. Use one mechanism per element (custom classes can
-ride along via <code>.raw</code>).</li>
+<li><code>.class(name)</code>, <code>.styled(style)</code>, <code>.bind_class(..)</code> and
+<code>.bind_styled(..)</code> all set the class attribute, so the later call
+wins — and a reactive one keeps winning every time its signal
+changes. Use one mechanism per element (custom classes can ride along
+via <code>.raw</code>).</li>
 </ul>
 <p>Full method table: the <a href="#stdstyle-reference">style reference</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -4316,7 +4410,7 @@ of <a href="#dev--hmr-reference"><code>std::dev</code></a>.</p>
 annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 <pre><code class="language-vilan fragment">impl List&lt;type T&gt; {
 	fun new(): List&lt;T&gt;
-	fun push(&amp;mut self, item: T)
+	fun push(&amp;mut self, own item: T)
 	fun pop(&amp;mut self): Option&lt;T&gt;
 	fun insert(&amp;mut self, index: i32, value: T)   // panics out of bounds
 	fun remove(&amp;mut self, index: i32): T          // panics out of bounds
@@ -4331,7 +4425,7 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun fold&lt;B&gt;(self, init: B, fn: |B, T| B): B
 	fun for_each(self, fn: |T| void)
 	fun reverse(self): List&lt;T&gt;
-	fun sort_by(self, compare: |T, T| Ordering): List&lt;T&gt;   // stable
+	fun sort_by(own self, compare: |T, T| Ordering): List&lt;T&gt;   // stable
 }
 impl List&lt;type T: Add + Default&gt; { fun sum(self): T }
 impl List&lt;type T: Mul + Default&gt; { fun product(self): T }
@@ -4348,6 +4442,12 @@ impl List&lt;type T: Display&gt; { fun join(self, separator: str): str }
 <p>The methods that take <code>self</code> by value are pure — they return a new list and
 leave the receiver alone. The mutating ones take <code>&amp;mut self</code>: <code>push</code>, <code>pop</code>,
 <code>insert</code>, <code>remove</code>.</p>
+<p>“Leave the receiver alone” reaches the ELEMENTS, not just the spine: the list a
+pure method returns never shares element storage with the receiver, so writing
+through <code>xs.map(f)[0]</code> cannot show up in <code>xs[0]</code>. That is rule 1 (a value is
+copied when it is stored), and it is why <code>push</code> and <code>sort_by</code> are written <code>own</code>
+— they keep what they are given. A fresh value costs nothing there: <code>own</code> copies
+a <em>place</em>, and a value with no other owner moves in.</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -4516,12 +4616,12 @@ impl Option&lt;type T&gt; {
 	fun is_some(self): bool
 	fun is_some_and(self, fn: |T| bool): bool
 	fun is_none(self): bool
-	fun is_none_or(self, fn: |T| bool): bool
+	fun is_none_or(own self, fn: |T| bool): bool
 
 	// extraction
-	fun unwrap(self): T                      // panics on None
+	fun unwrap(own self): T                  // panics on None
 	fun unwrap_or(self, fallback: T): T
-	fun unwrap_or_else(self, fn: || T): T
+	fun unwrap_or_else(own self, fn: || T): T
 
 	// in-place partial move — read/replace the slot through `&amp;mut self`,
 	// always leaving a valid Option behind
@@ -4529,29 +4629,41 @@ impl Option&lt;type T&gt; {
 	fun replace(&amp;mut self, value: T): Option&lt;T&gt;  // value in, old contents out
 
 	// transformation
-	fun map&lt;U&gt;(self, fn: |T| U): Option&lt;U&gt;
-	fun map_or&lt;U&gt;(self, fn: |T| U, fallback: U): U
-	fun map_or_else&lt;U&gt;(self, fn: |T| U, fallback: || U): U
-	fun map_or_default&lt;U: Default&gt;(self, fn: |T| U): U
+	fun map&lt;U&gt;(own self, fn: |T| U): Option&lt;U&gt;
+	fun map_or&lt;U&gt;(own self, fn: |T| U, fallback: U): U
+	fun map_or_else&lt;U&gt;(own self, fn: |T| U, fallback: || U): U
+	fun map_or_default&lt;U: Default&gt;(own self, fn: |T| U): U
 	fun inspect(self, fn: |T| void): Self    // peek, pass through
-	fun filter(self, predicate: |T| bool): Option&lt;T&gt;
+	fun filter(own self, predicate: |T| bool): Option&lt;T&gt;
 
 	// combination
-	fun and&lt;U&gt;(self, b: Option&lt;U&gt;): Option&lt;U&gt;
-	fun and_then&lt;U&gt;(self, fn: |T| Option&lt;U&gt;): Option&lt;U&gt;
+	fun and&lt;U&gt;(own self, own b: Option&lt;U&gt;): Option&lt;U&gt;
+	fun and_then&lt;U&gt;(own self, fn: |T| Option&lt;U&gt;): Option&lt;U&gt;
 	fun or(self, b: Option&lt;T&gt;): Option&lt;T&gt;
 	fun or_else(self, fn: || Option&lt;T&gt;): Option&lt;T&gt;
 	fun xor(self, b: Option&lt;T&gt;): Option&lt;T&gt;
-	fun zip&lt;U&gt;(self, peer: Option&lt;U&gt;): Option&lt;(T, U)&gt;
+	fun zip&lt;U&gt;(own self, own peer: Option&lt;U&gt;): Option&lt;(T, U)&gt;
 
 	// bridging
 	fun ok_or&lt;E&gt;(self, err: E): Result&lt;T, E&gt;
-	fun ok_or_else&lt;E&gt;(self, err: || E): Result&lt;T, E&gt;
+	fun ok_or_else&lt;E&gt;(own self, err: || E): Result&lt;T, E&gt;
 }
-impl Option&lt;type T: Default&gt; { fun unwrap_or_default(self): T }
+impl Option&lt;type T: Default&gt; { fun unwrap_or_default(own self): T }
 impl Option&lt;(type T, type U)&gt; { fun unzip(self): (Option&lt;T&gt;, Option&lt;U&gt;) }
 </code></pre>
 <p><code>str.parse_i32(): Option&lt;i32&gt;</code> (declared here) is the string→number path.</p>
+<p>The combinators that hand the payload onward take <strong><code>own self</code></strong>: they move
+the value out of the <code>Option</code>, so they must own it (<code>docs/spec/memory.md</code> R3).
+For plain data that is invisible — <code>own</code> copies, and <code>opt.unwrap()</code> leaves
+<code>opt</code> perfectly readable. For an <code>Option&lt;SomeResource&gt;</code> it is the affine rule
+biting: <code>opt.unwrap()</code> <em>moves</em> <code>opt</code>, a later use of <code>opt</code> is a
+use-after-move error, and <code>opt</code> is not torn down at scope end (the payload
+you now hold is). The pure predicates — <code>is_some</code>, <code>is_none</code> — keep a
+borrowing <code>self</code> and never consume, so they stay free on a resource.</p>
+<p>Reaching a resource payload is a <code>match</code>, not a guarded <code>unwrap</code>: <code>match opt { Some(let value) =&gt; .., None =&gt; .. }</code> consumes <code>opt</code> on <em>every</em> path, which
+is what R7 requires. <code>if (opt.is_some()) { opt.unwrap() }</code> moves <code>opt</code> on one
+path only and is rejected as a conditional move (before this was checked it
+compiled and destroyed the payload twice).</p>
 <p><code>take</code> and <code>replace</code> mutate the <code>Option</code> in place through <code>&amp;mut self</code>: <code>take</code>
 swaps <code>None</code> in and hands the old contents back, <code>replace</code> swaps a new value in
 and hands the old back. Both leave a valid <code>Option</code> behind, which is what makes
@@ -5546,7 +5658,7 @@ list-rendering primitive.</p>
 <pre><code class="language-vilan fragment">import std::style::{
 	style, space, Style, Length, Color,
 	Display, Position, FlexDirection, AlignItems, JustifyContent,
-	TextAlign, Cursor, Overflow,
+	TextAlign, Cursor, Overflow, WhiteSpace, UserSelect,
 };
 </code></pre>
 <h2 id="constructors-and-values"><a class="header" href="#constructors-and-values">Constructors and values</a></h2>
@@ -5556,9 +5668,13 @@ fun space(step: i32): Length       // spacing scale: space(1) = 0.25rem
 impl Length {
 	fun px(value: f64): Length
 	fun rem(value: f64): Length
+	fun em(value: f64): Length     // relative to the element's own font size
 	fun pct(value: f64): Length
+	fun vh(value: f64): Length     // viewport units
+	fun vw(value: f64): Length
 	fun auto(): Length
 	fun var(name: str): Length     // a CSS custom-property reference ("--w")
+	fun calc(expression: str): Length  // "100% - 2rem" — no calc(..) wrapper
 }
 
 impl Color {
@@ -5573,7 +5689,10 @@ impl Color {
 }
 </code></pre>
 <p>Keyword enums: <code>Display</code> (Flex, Block, …), <code>Position</code>, <code>FlexDirection</code>,
-<code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>.</p>
+<code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
+<code>WhiteSpace</code> (Normal, Nowrap, Pre, PreWrap, PreLine), <code>UserSelect</code> (Auto,
+Text, All, <strong>Off</strong> — <code>none</code>, named to stay clear of <code>Option::None</code>, like
+<code>Display::Hidden</code>).</p>
 <h2 id="style-methods"><a class="header" href="#style-methods">Style methods</a></h2>
 <p>Every method returns a new <code>Style</code> with one more property slot; each slot is
 one atomic rule, deduplicated build-wide.</p>
@@ -5589,8 +5708,12 @@ one atomic rule, deduplicated build-wide.</p>
 <tr><td><code>flex_direction</code></td><td><code>FlexDirection</code></td></tr>
 <tr><td><code>align_items</code></td><td><code>AlignItems</code></td></tr>
 <tr><td><code>justify_content</code></td><td><code>JustifyContent</code></td></tr>
+<tr><td><code>flex</code></td><td><code>str</code> — the shorthand, <code>"1 1 auto"</code></td></tr>
+<tr><td><code>flex_shrink</code></td><td><code>f64</code></td></tr>
+<tr><td><code>grid_template_columns</code></td><td><code>str</code> — <code>"repeat(3, 1fr)"</code></td></tr>
 <tr><td><code>gap</code>, <code>padding</code>, <code>padding_x</code>, <code>padding_y</code>, <code>margin</code>, <code>margin_x</code>, <code>margin_y</code></td><td><code>Length</code></td></tr>
-<tr><td><code>width</code>, <code>height</code>, <code>max_width</code>, <code>min_height</code></td><td><code>Length</code></td></tr>
+<tr><td><code>width</code>, <code>height</code>, <code>min_width</code>, <code>max_width</code>, <code>min_height</code>, <code>max_height</code></td><td><code>Length</code></td></tr>
+<tr><td><code>top</code>, <code>right</code>, <code>bottom</code>, <code>left</code>, <code>inset</code></td><td><code>Length</code></td></tr>
 <tr><td><code>overflow</code></td><td><code>Overflow</code></td></tr>
 </tbody>
 </table>
@@ -5604,17 +5727,28 @@ one atomic rule, deduplicated build-wide.</p>
 <tbody>
 <tr><td><code>radius</code></td><td><code>Length</code></td></tr>
 <tr><td><code>border</code></td><td><code>(width: Length, color: Color)</code></td></tr>
+<tr><td><code>border_color</code></td><td><code>Color</code> — its own slot, so a <code>hover</code> can recolour without restating the width</td></tr>
+<tr><td><code>box_shadow</code></td><td><code>str</code></td></tr>
 <tr><td><code>background</code>, <code>color</code></td><td><code>Color</code></td></tr>
+<tr><td><code>font_family</code></td><td><code>str</code></td></tr>
 <tr><td><code>font_size</code></td><td><code>Length</code></td></tr>
 <tr><td><code>font_weight</code></td><td><code>i32</code></td></tr>
 <tr><td><code>line_height</code></td><td><code>f64</code></td></tr>
+<tr><td><code>letter_spacing</code></td><td><code>Length</code> — usually <code>Length::em(..)</code></td></tr>
 <tr><td><code>text_align</code></td><td><code>TextAlign</code></td></tr>
+<tr><td><code>text_decoration</code></td><td><code>str</code></td></tr>
+<tr><td><code>white_space</code></td><td><code>WhiteSpace</code></td></tr>
+<tr><td><code>user_select</code></td><td><code>UserSelect</code></td></tr>
 <tr><td><code>cursor</code></td><td><code>Cursor</code></td></tr>
 <tr><td><code>opacity</code></td><td><code>f64</code></td></tr>
 <tr><td><code>transition</code></td><td><code>str</code></td></tr>
+<tr><td><code>transform</code></td><td><code>str</code></td></tr>
 </tbody>
 </table>
 </div>
+<p>A <code>str</code>-valued method is not a weaker <code>raw</code>: it keeps the property name
+checked and completable while the <em>value</em> stays a CSS expression the compiler
+has nothing to validate (a font stack, a transform list, a shadow layer).</p>
 <p>Escape hatches:</p>
 <pre><code class="language-vilan fragment">fun raw(self, property: str, value: str): Style
 fun with_length(self, property: str, value: Length): Style
@@ -5628,7 +5762,7 @@ fun active(self, inner: Style): Style
 fun disabled(self, inner: Style): Style
 fun first(self, inner: Style): Style      // :first-child
 fun last(self, inner: Style): Style       // :last-child
-fun dark(self, inner: Style): Style       // prefers-color-scheme: dark
+fun dark(self, inner: Style): Style       // :root[data-theme="dark"] ancestor
 fun pseudo(self, name: str, inner: Style): Style
 
 fun sm(self, inner: Style): Style          // breakpoints (min-width):
@@ -5637,10 +5771,22 @@ fun lg(self, inner: Style): Style
 fun xl(self, inner: Style): Style
 fun media(self, min_width: str, inner: Style): Style
 </code></pre>
-<p>A breakpoint cannot wrap an already-media-conditioned style (panics at
-compile-time evaluation). Media rules emit in ascending min-width order,
-so a chain like <code>.sm(x).lg(y)</code> is mobile-first: the widest matching
-breakpoint wins.</p>
+<h3 id="stacking"><a class="header" href="#stacking">Stacking</a></h3>
+<p>The three condition axes nest <strong>outside-in, in the order the selector
+nests them</strong> — media, then dark, then the pseudo-class:</p>
+<pre><code class="language-vilan fragment">style().md(style().dark(style().hover(style().opacity(0.8))))
+// @media (min-width: 768px){:root[data-theme="dark"] .sX:hover{opacity:0.8}}
+</code></pre>
+<p>Every other order is a compile-time-evaluation panic naming the fix
+(<code>hover(dark(..))</code> says to write <code>dark(hover(..))</code>), and no axis can wrap
+itself — one media, one dark, one pseudo-class per slot. Media rules emit
+in ascending min-width order, so a chain like <code>.sm(x).lg(y)</code> is
+mobile-first: the widest matching breakpoint wins.</p>
+<p><code>dark</code> is an ancestor selector, so a composed <code>dark(hover(..))</code> rule is
+more specific than either <code>dark(..)</code> or <code>hover(..)</code> alone and wins
+against both. Between an <em>un</em>composed <code>dark(x)</code> and <code>hover(y)</code> on the
+same property the two are equally specific and dark wins, so use
+<code>dark(hover(..))</code> when a dark theme needs its own hover.</p>
 <h2 id="runtime-legal-operations"><a class="header" href="#runtime-legal-operations">Runtime-legal operations</a></h2>
 <p>Construction emits rules and therefore lives in <code>const</code>; these do not emit
 and work anywhere:</p>
@@ -5829,6 +5975,7 @@ too.</p>
 <tr><td><code>children</code></td><td><code>(items: List&lt;View&gt;): View</code></td><td>append several</td></tr>
 <tr><td><code>bind_text</code></td><td><code>(source: Signal&lt;str&gt;): View</code></td><td>reactive text</td></tr>
 <tr><td><code>bind_class</code></td><td><code>(source: Signal&lt;str&gt;): View</code></td><td>reactive class</td></tr>
+<tr><td><code>bind_styled</code></td><td><code>(source: Signal&lt;Style&gt;): View</code></td><td>reactive compiled style — <code>styled</code>’s reactive twin</td></tr>
 <tr><td><code>bind_attr</code></td><td><code>(name: str, source: Signal&lt;str&gt;): View</code></td><td>reactive attribute</td></tr>
 <tr><td><code>bind_value</code></td><td><code>(signal: Signal&lt;str&gt;): View</code></td><td>two-way input bind</td></tr>
 <tr><td><code>bind_draft</code></td><td><code>(draft: Draft&lt;str&gt;): View</code></td><td>local-first input bind (<a href="#draft--local-first-cells">drafts</a>)</td></tr>
@@ -7143,6 +7290,26 @@ fun main() {
 	print(a.x);   // 4 — b is a semantic copy
 }
 </code></pre>
+<p>“Field initialization” is the whole of a <strong>construction</strong>: a place read into a
+list element, a tuple element, a struct field, or a variant payload is stored
+in a slot of a new aggregate that outlives the literal, so it copies there too.
+The same holds for a place handed to a parameter declared <code>own</code> — a signature’s
+way of saying the callee keeps it, which is how <code>List::push</code> is written — and
+for a place a body <strong>returns</strong> that it does not own, i.e. one reached through a
+by-value parameter. Together these are what make “a call owns its result” true,
+which is the premise every elision below rests on:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut xs = [1, 2];
+	mut rows = [xs];        // a copy: the element is not xs's storage
+	rows[0].push(9);
+	print(xs.len());        // 2
+}
+</code></pre>
+<p>A consequence worth naming: the list a pure <code>List</code> method returns never shares
+element storage with its receiver. Writing through an element of <code>xs.map(f)</code>,
+<code>xs.filter(p)</code>, <code>xs.sort_by(c)</code>, or <code>xs.reverse()</code> cannot show up in <code>xs</code>.</p>
 <h2 id="62-rule-2--elision-is-an-optimization-never-observable"><a class="header" href="#62-rule-2--elision-is-an-optimization-never-observable">6.2 Rule 2 — elision is an optimization, never observable</a></h2>
 <p>An implementation may skip a copy (reuse the storage) when no conforming
 program can tell, e.g. when the source is never used again. Elision must
@@ -7315,7 +7482,15 @@ resource.</li>
 resource drops the old value first, then moves the new one in.</li>
 <li><strong>R3: parameters.</strong> <code>self</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans, unchanged; <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
 not the binding’s last use is an error (where a data <code>own</code> would silently
-copy).</li>
+copy). The rule reads in both directions: because a loan changes no
+ownership, a body may not move a loaned resource parameter <strong>out</strong> — no
+returning it, no <code>own</code>-passing it on, no consuming <code>match</code> of it. Doing so
+would hand the caller a second owner while the caller’s binding stays live
+and still drops at its scope end, destroying one value twice. <code>own</code> is the
+only convention a body may consume, and a <strong>consuming method</strong> therefore
+declares <code>own self</code>: <code>o.unwrap()</code> is a move of <code>o</code>, so a later use of <code>o</code> is
+use-after-move and <code>o</code> is not torn down at scope end. A bare <code>self</code>
+receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</li>
 <li><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
 diverging leg is exempt).</li>
 <li><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
@@ -7344,12 +7519,16 @@ reference is a per-call loan, exactly like a parameter. Captures of a
 <code>Set</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
 reject resource type arguments in v1: their internals are host code the
 move checker cannot see. <code>Option</code> is the sanctioned container (it is a
-Vilan enum, checkable under R11).</li>
+Vilan enum, checkable under R11). The rule is read <strong>per instantiation</strong>,
+not per written head: a resource that reaches a container through a
+generic aggregate’s member is rejected the same way, so <code>Signal&lt;Database&gt;</code>
+— whose storage is a <code>Shared&lt;T&gt;</code> — is refused exactly as
+<code>Shared&lt;Database&gt;</code> is. Holding the resource in a struct field of your own
+is the sanctioned alternative, and stays legal.</li>
 <li><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a
 type parameter with a resource type re-checks the instantiated body under
 the affine rules (T := the resource): every T-typed value is used at most
-once as a move, with no captures and no copies. <code>Option::unwrap(self): T</code>
-passes; a body that reads its parameter twice fails <strong>at the instantiation
+once as a move, with no captures and no copies. <code>Option::unwrap(own self): T</code> passes; a body that reads its parameter twice fails <strong>at the instantiation
 site</strong>, not inside std. For an <code>own T</code> parameter the rule tightens to
 <em>exactly</em> once (a generic body is emitted once and so cannot run an
 instantiation-conditional destructor; zero moves would leak).</li>
