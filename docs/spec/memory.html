@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e800b659.js";
+            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -313,6 +313,10 @@ element. The parameter conventions:</p>
 </tbody>
 </table>
 </div>
+<p>Orthogonal to the conventions, <code>mut x: T</code> marks the <strong>binder</strong> mutable:
+the callee may rebind and field-write its by-value copy (rule 1 copies
+an aggregate at body entry), with nothing visible to the caller. To
+mutate the <em>caller’s</em> value, use <code>&amp;mut</code>.</p>
 <h2 id="64-rule-4--no-invalidating-mutation-under-a-live-view"><a class="header" href="#64-rule-4--no-invalidating-mutation-under-a-live-view">6.4 Rule 4 — no invalidating mutation under a live view</a></h2>
 <p>While a view of a place is live, mutations that would <strong>invalidate</strong> the
 view (replacing the aggregate that contains the place, removing the

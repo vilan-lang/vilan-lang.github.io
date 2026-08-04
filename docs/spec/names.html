@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e800b659.js";
+            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -247,8 +247,8 @@ call one declared later). Local <code>let</code> bindings are visible only after
 their declaration.</p>
 <p>A <code>let</code> may also redeclare a name <strong>within the same scope</strong>: the later
 binding shadows the earlier one from its own declaration point onward,
-while uses before that point keep the earlier binding (parameters and
-loop/pattern bindings are shadowable the same way). Visibility starts at
+while uses before that point keep the earlier binding (parameters —
+<code>mut</code> or not — and loop/pattern bindings are shadowable the same way). Visibility starts at
 the <strong>end</strong> of the declaring statement, so an initializer never reads the
 binding it declares: in <code>let x = x + 1;</code> the right-hand <code>x</code> is the
 previous <code>x</code> (an enclosing or earlier same-scope binding) and an error

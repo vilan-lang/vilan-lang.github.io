@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e800b659.js";
+            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -203,6 +203,24 @@ end of a block is the block’s value. You’ll see this everywhere in Vilan.
 <p>Generic functions take type parameters. Bounds say what the body is
 allowed to do with them:</p>
 <pre><code class="language-vilan fragment">fun largest&lt;T: PartialOrd&gt;(a: T, b: T): T { … }
+</code></pre>
+<p>Parameters are immutable by default, like <code>let</code> bindings. Write <code>mut</code> to
+make one a scratch copy the body can rebind and mutate — the caller
+never sees it, because parameters arrive by value (to change the
+caller’s value, take <code>&amp;mut</code> instead). It works on <code>self</code> and closure
+parameters too:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun bump(mut x: i32): i32 {
+	x = x + 1;
+	x
+}
+
+fun main() {
+	let original = 7;
+	print(bump(original)); // 8
+	print(original);       // 7 — untouched
+}
 </code></pre>
 <h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
 <p>A closure is an inline function value. Where JavaScript writes

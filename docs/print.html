@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-e800b659.js";
+            window.path_to_searchindex_js = "searchindex-e1c749f6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -847,6 +847,24 @@ end of a block is the block’s value. You’ll see this everywhere in Vilan.
 <p>Generic functions take type parameters. Bounds say what the body is
 allowed to do with them:</p>
 <pre><code class="language-vilan fragment">fun largest&lt;T: PartialOrd&gt;(a: T, b: T): T { … }
+</code></pre>
+<p>Parameters are immutable by default, like <code>let</code> bindings. Write <code>mut</code> to
+make one a scratch copy the body can rebind and mutate — the caller
+never sees it, because parameters arrive by value (to change the
+caller’s value, take <code>&amp;mut</code> instead). It works on <code>self</code> and closure
+parameters too:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun bump(mut x: i32): i32 {
+	x = x + 1;
+	x
+}
+
+fun main() {
+	let original = 7;
+	print(bump(original)); // 8
+	print(original);       // 7 — untouched
+}
 </code></pre>
 <h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
 <p>A closure is an inline function value. Where JavaScript writes
@@ -6357,7 +6375,7 @@ exposes a declaration to importers of the module.</p>
            [ ":" type ] [ "borrows" IDENT ]
            ( block | ";" ) ;
 
-parameter  = [ convention ] binder [ ":" type ] ;
+parameter  = [ "mut" | convention ] binder [ ":" type ] ;
 convention = "own" | "&amp;" [ "mut" ] ;
 binder     = IDENT | "(" binder "," binder { "," binder } [ "," ] ")" ;
 
@@ -6370,6 +6388,14 @@ functions and required trait methods. A parameter’s <strong>convention</strong
 come from the prefix (<code>own x</code>, <code>&amp;mut self</code>) or from a view type
 (<code>x: &amp;mut T</code>); the prefix wins if both are present (§6.3). The <code>borrows</code>
 clause names the parameter the returned view projects (§6.5).</p>
+<p>A leading <code>mut</code> is <strong>binder mutability</strong>, not a convention: the body may
+rebind and field-write its by-value copy, invisibly to the caller —
+<code>fun f(mut x: T) { … }</code> is <code>fun f(x': T) { mut x = x'; … }</code>. It applies
+to a plain name binder (including <code>self</code> and closure parameters), never
+combines with a convention, is not part of the signature (trait
+conformance ignores it), and is rejected on an <code>external fun</code> (no body).
+A resource cannot be taken <code>mut</code> (a resource never copies; take it
+<code>own</code>).</p>
 <h3 id="structs-and-enums"><a class="header" href="#structs-and-enums">Structs and enums</a></h3>
 <pre><code class="language-text">struct = [ "resource" ] [ "external" ] "struct" (IDENT | "null") [ generic-params ]
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
@@ -6669,8 +6695,8 @@ call one declared later). Local <code>let</code> bindings are visible only after
 their declaration.</p>
 <p>A <code>let</code> may also redeclare a name <strong>within the same scope</strong>: the later
 binding shadows the earlier one from its own declaration point onward,
-while uses before that point keep the earlier binding (parameters and
-loop/pattern bindings are shadowable the same way). Visibility starts at
+while uses before that point keep the earlier binding (parameters —
+<code>mut</code> or not — and loop/pattern bindings are shadowable the same way). Visibility starts at
 the <strong>end</strong> of the declaring statement, so an initializer never reads the
 binding it declares: in <code>let x = x + 1;</code> the right-hand <code>x</code> is the
 previous <code>x</code> (an enclosing or earlier same-scope binding) and an error
@@ -7028,6 +7054,10 @@ element. The parameter conventions:</p>
 </tbody>
 </table>
 </div>
+<p>Orthogonal to the conventions, <code>mut x: T</code> marks the <strong>binder</strong> mutable:
+the callee may rebind and field-write its by-value copy (rule 1 copies
+an aggregate at body entry), with nothing visible to the caller. To
+mutate the <em>caller’s</em> value, use <code>&amp;mut</code>.</p>
 <h2 id="64-rule-4--no-invalidating-mutation-under-a-live-view"><a class="header" href="#64-rule-4--no-invalidating-mutation-under-a-live-view">6.4 Rule 4 — no invalidating mutation under a live view</a></h2>
 <p>While a view of a place is live, mutations that would <strong>invalidate</strong> the
 view (replacing the aggregate that contains the place, removing the

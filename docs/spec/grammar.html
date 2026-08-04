@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e800b659.js";
+            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -229,7 +229,7 @@ exposes a declaration to importers of the module.</p>
            [ ":" type ] [ "borrows" IDENT ]
            ( block | ";" ) ;
 
-parameter  = [ convention ] binder [ ":" type ] ;
+parameter  = [ "mut" | convention ] binder [ ":" type ] ;
 convention = "own" | "&amp;" [ "mut" ] ;
 binder     = IDENT | "(" binder "," binder { "," binder } [ "," ] ")" ;
 
@@ -242,6 +242,14 @@ functions and required trait methods. A parameter’s <strong>convention</strong
 come from the prefix (<code>own x</code>, <code>&amp;mut self</code>) or from a view type
 (<code>x: &amp;mut T</code>); the prefix wins if both are present (§6.3). The <code>borrows</code>
 clause names the parameter the returned view projects (§6.5).</p>
+<p>A leading <code>mut</code> is <strong>binder mutability</strong>, not a convention: the body may
+rebind and field-write its by-value copy, invisibly to the caller —
+<code>fun f(mut x: T) { … }</code> is <code>fun f(x': T) { mut x = x'; … }</code>. It applies
+to a plain name binder (including <code>self</code> and closure parameters), never
+combines with a convention, is not part of the signature (trait
+conformance ignores it), and is rejected on an <code>external fun</code> (no body).
+A resource cannot be taken <code>mut</code> (a resource never copies; take it
+<code>own</code>).</p>
 <h3 id="structs-and-enums"><a class="header" href="#structs-and-enums">Structs and enums</a></h3>
 <pre><code class="language-text">struct = [ "resource" ] [ "external" ] "struct" (IDENT | "null") [ generic-params ]
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
