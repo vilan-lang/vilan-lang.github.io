@@ -122,7 +122,7 @@ function enqueue(turn, subscribers) {
 			}
 		}
 		if (!(seen)) {
-			turn[0].v.push(subscriber);
+			turn[0].v.push(__clone(subscriber));
 		}
 	}
 	if (turn[2].v && !(turn[3].v) && !(turn[1].v)) {
@@ -137,7 +137,7 @@ function enqueue(turn, subscribers) {
 function drain(turn) {
 	if (!(turn[1].v)) {
 		turn[1].v = true;
-		draining_turns.v.push(turn);
+		draining_turns.v.push(__clone(turn));
 		let budget = 100000;
 		while (!($k(turn[0].v)) && budget > 0) {
 			const wave = turn[0].v;
@@ -155,7 +155,7 @@ function dispose(self, $az) {
 	let kept = [  ];
 	for (const subscriber of self[0].v) {
 		if (subscriber[0] !== self[1]) {
-			kept.push(subscriber);
+			kept.push(__clone(subscriber));
 		}
 	}
 	self[0].v = kept;
@@ -166,7 +166,7 @@ function dispose(self, $az) {
 		let kept_pending = [  ];
 		for (const subscriber2 of turn[0].v) {
 			if (subscriber2[0] !== self[1]) {
-				kept_pending.push(subscriber2);
+				kept_pending.push(__clone(subscriber2));
 			}
 		}
 		turn[0].v = kept_pending;
@@ -296,18 +296,18 @@ function is_svg_tag(tag) {
 }
 function text(self, content) {
 	self[0].textContent = content;
-	return self;
+	return __clone(self);
 }
 function styled(self, style) {
 	self[0].setAttribute("class", class_list(style));
-	return self;
+	return __clone(self);
 }
 function style_var(self, name, source) {
 	const element = __clone(self[0]);
 	$af(source, (value) => {
 		return element.style.setProperty(name, value);
 	});
-	return self;
+	return __clone(self);
 }
 function on(self, event, handler) {
 	self[0].addEventListener(event, () => {
@@ -315,7 +315,7 @@ function on(self, event, handler) {
 			return handler($aD);
 		});
 	});
-	return self;
+	return __clone(self);
 }
 function bind_text(self, source, $ar, $as) {
 	const element = __clone(self[0]);
@@ -323,7 +323,7 @@ function bind_text(self, source, $ar, $as) {
 		element.textContent = value;
 		return;
 	}, $ar, $as);
-	return self;
+	return __clone(self);
 }
 function show(self, condition, $aF, $aG) {
 	const element = __clone(self[0]);
@@ -331,7 +331,7 @@ function show(self, condition, $aF, $aG) {
 		element.hidden = !(visible);
 		return;
 	}, $aF, $aG);
-	return self;
+	return __clone(self);
 }
 function place(self, parent) {
 	parent[0].appendChild(self[0]);
@@ -393,7 +393,7 @@ function add(self, b) {
 		}
 		$Z;
 	}
-	return [ rules ];
+	return [ __clone(rules) ];
 }
 function template_option(value, label, $aK, $aL) {
 	return text($ah(view("option"), "value", value, $aK, $aL), label);
@@ -597,7 +597,7 @@ function $I(self, value, $f) {
 function $U(self) {
 	let result = [  ];
 	for (const entry of __map_values(self[0])) {
-		result.push(entry[0]);
+		result.push(__clone(entry[0]));
 	}
 	return result;
 }
@@ -606,19 +606,19 @@ function $V(self, key) {
 	let $X = null;
 	if ($W[0] === 0) {
 		const entry = $W[1];
-		$X = [ 0, entry[1] ];
+		$X = [ 0, __clone(entry[1]) ];
 	} else {
 		$X = [ 1 ];
 	}
 	return $X;
 }
 function $aa(self, key, value) {
-	self[0].set(hash(key), [ key, value ]);
+	self[0].set(hash(key), [ __clone(key), __clone(value) ]);
 }
 function $ab(self) {
 	let result = [  ];
 	for (const entry of __map_values(self[0])) {
-		result.push(entry[1]);
+		result.push(__clone(entry[1]));
 	}
 	return result;
 }
@@ -636,11 +636,11 @@ function $af(self, observer) {
 }
 function $ah(self, name, value, $ai, $aj) {
 	apply(value, self, name, $ai, $aj);
-	return self;
+	return __clone(self);
 }
 function $ak(self, content, $al, $am) {
 	place(content, self, $al, $am);
-	return self;
+	return __clone(self);
 }
 function $ap(self, transform, $aq) {
 	const derived = $a(transform($ag(self)));
@@ -655,7 +655,7 @@ function $ax(self, item, $ay) {
 		dispose(item, $ay);
 		return;
 	});
-	return item;
+	return __clone(item);
 }
 function $at(self, observer, $au, $av) {
 	$ax(get_owner($av), $af(self, observer), $au);
@@ -753,7 +753,7 @@ function $bg(old_keys, old_items, items, key_of) {
 		}
 		index2 = index2 + 1;
 	}
-	return [ steps, removed ];
+	return [ __clone(steps), __clone(removed) ];
 }
 function $bl(owner, body) {
 	return body(owner);
@@ -797,13 +797,13 @@ function $bd(self, source, key, render, $be, $bf) {
 		let next_owners = [  ];
 		let position = 0;
 		for (const step of plan[0]) {
-			const item = __at(list, position);
+			const item = __clone(__at(list, position));
 			const $bi = step;
 			let $bj = null;
 			if ($bi[0] === 0) {
 				const index2 = $bi[1];
-				next_views.push(__at(previous_views, index2));
-				next_owners.push(__at(previous_owners, index2));
+				next_views.push(__clone(__at(previous_views, index2)));
+				next_owners.push(__clone(__at(previous_owners, index2)));
 				$bj = undefined;
 			} else if ($bi[0] === 1) {
 				const index3 = $bi[1];
@@ -813,14 +813,14 @@ function $bd(self, source, key, render, $be, $bf) {
 				next_views.push($bl(owner, ($bk) => {
 					return render(item, $bk);
 				}));
-				next_owners.push(owner);
+				next_owners.push(__clone(owner));
 				$bj = undefined;
 			} else {
 				const owner2 = new3();
 				next_views.push($bl(owner2, ($bm) => {
 					return render(item, $bm);
 				}));
-				next_owners.push(owner2);
+				next_owners.push(__clone(owner2));
 				$bj = undefined;
 			}
 			$bj;
@@ -839,7 +839,7 @@ function $bd(self, source, key, render, $be, $bf) {
 		row_owners.v = next_owners;
 		return;
 	}, $be, $bf);
-	return self;
+	return __clone(self);
 }
 function $br(self) {
 	return self[0].v;
@@ -886,7 +886,7 @@ function $bw(old_keys, old_items, items, key_of) {
 		}
 		index2 = index2 + 1;
 	}
-	return [ steps, removed ];
+	return [ __clone(steps), __clone(removed) ];
 }
 function $bv(self, source, key, render, $be, $bf) {
 	const element = __clone(self[0]);
@@ -912,13 +912,13 @@ function $bv(self, source, key, render, $be, $bf) {
 		let next_owners = [  ];
 		let position = 0;
 		for (const step of plan[0]) {
-			const item = __at(list, position);
+			const item = __clone(__at(list, position));
 			const $by = step;
 			let $bz = null;
 			if ($by[0] === 0) {
 				const index2 = $by[1];
-				next_views.push(__at(previous_views, index2));
-				next_owners.push(__at(previous_owners, index2));
+				next_views.push(__clone(__at(previous_views, index2)));
+				next_owners.push(__clone(__at(previous_owners, index2)));
 				$bz = undefined;
 			} else if ($by[0] === 1) {
 				const index3 = $by[1];
@@ -928,14 +928,14 @@ function $bv(self, source, key, render, $be, $bf) {
 				next_views.push($bl(owner, ($bk) => {
 					return render(item, $bk);
 				}));
-				next_owners.push(owner);
+				next_owners.push(__clone(owner));
 				$bz = undefined;
 			} else {
 				const owner2 = new3();
 				next_views.push($bl(owner2, ($bm) => {
 					return render(item, $bm);
 				}));
-				next_owners.push(owner2);
+				next_owners.push(__clone(owner2));
 				$bz = undefined;
 			}
 			$bz;
@@ -954,12 +954,12 @@ function $bv(self, source, key, render, $be, $bf) {
 		row_owners.v = next_owners;
 		return;
 	}, $be, $bf);
-	return self;
+	return __clone(self);
 }
 function $bB(body) {
 	const scope = new3();
 	const result = body(scope);
-	return [ result, scope ];
+	return [ result, __clone(scope) ];
 }
 function $bC(policy, body) {
 	const fresh = new2();
@@ -1123,7 +1123,7 @@ const flash_share = (label) => {
 	}
 	$D;
 	const timer2 = after(1600);
-	share_revert.v = [ 0, timer2 ];
+	share_revert.v = [ 0, __clone(timer2) ];
 	__task(async () => {
 		if (await (wait(timer2, [ 1 ]))) {
 			$e(share_label, "Share", [ 1 ]);
