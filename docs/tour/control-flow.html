@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
+            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -384,13 +384,13 @@ would become an <code>Option&lt;bool&gt;</code>, so <code>match</code> on the li
 instead.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> Both operators are trait-driven, not hard-coded to
-<code>Option</code> and <code>Result</code>. <code>!</code> dispatches through <code>Try</code>, and <code>?.</code> through
-<code>Try</code> plus the <code>Lift</code> marker (<code>std::operators</code>). Your own
-two-outcome type can implement them and join in. A <code>?.</code> continuation
-that itself produces the container flattens instead of nesting, so
-<code>find(key)?.shelf()</code> on an <code>Option</code>-returning method stays a single
-<code>Option</code>. (A bare <code>?</code> lifts the std pair only for now; a user <code>Lift</code>
-container lifts through <code>?.</code> chains.)</p>
+<code>Option</code> and <code>Result</code>. <code>!</code> dispatches through <code>Try</code>; both lift forms —
+<code>?.</code> and the bare <code>?</code> — go through the <code>Lift</code> marker
+(<code>std::operators</code>). Your own container can opt in and lift the same
+way, calling its own <code>map</code> and <code>and_then</code>
+(<a href="../std/traits.html">traits</a>). A continuation that itself produces the
+container flattens instead of nesting, so <code>find(key)?.shelf()</code> on an
+<code>Option</code>-returning method stays a single <code>Option</code>.</p>
 </blockquote>
 <h2 id="panics-and-asserts"><a class="header" href="#panics-and-asserts">Panics and asserts</a></h2>
 <p><code>panic(message)</code> stops the program with a message. Use it for states

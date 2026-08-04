@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
+            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -331,7 +331,26 @@ declared range (endpoints inclusive), and every element must satisfy the
 element bound. A generic parameter forwarded into a tuple-bounded
 position satisfies it only through its own declared tuple bound: a
 contained arity range whose element bound names the same trait or a
-subtrait. <em><code>keyof</code> and spread parameters are recorded future work.</em></p>
+subtrait.</p>
+<p>A <strong>spread parameter</strong> <code>...items: T</code> is a <em>call convention</em> over an
+ordinary tuple parameter — the call site writes the pack’s elements out
+flat, and they are collected into that one tuple argument:</p>
+<pre><code class="language-vilan fragment">fun log&lt;T: (..: Display)&gt;(...items: T)      //  log(1, "hi")  ==  log((1, "hi"))
+fun gather&lt;T: (2..)&gt;(...sources: (U in T: Signal&lt;U&gt;)): Signal&lt;T&gt;
+</code></pre>
+<p><code>T</code> is the <strong>pack</strong> — the tuple of the collected arguments’ types — not
+each element’s type; a uniform requirement is spelled as the element
+bound. The callee side is unchanged in every respect, so a spread
+parameter’s legal call arities are exactly the arities its declared type
+admits, by the rule above: <code>(2..)</code> refuses a one-argument call, and <code>(..)</code>
+accepts a zero-argument one (the empty pack <code>()</code>). A spread parameter is
+what makes 0- and 1-arity tuple <em>values</em> reachable; tuple types already
+admit them. Since the convention lives on the declaration, a spread
+function used as a <strong>value</strong> has its tuple type, and is called with a
+tuple.</p>
+<p>Grammar and the positions where <code>...</code> is rejected: §3.3. <em><code>keyof</code>, and
+spreading a tuple INTO a spread parameter (<code>f(..existing)</code>, which needs
+the tuple-value spread), are recorded future work.</em></p>
 <p><strong>Positional access</strong> <code>t.0</code>, <code>t.1</code> (chaining as <code>t.0.1</code>) types as that
 element and, through a <code>mut</code> binding, assigns it. Tuples store flat: a
 tuple-typed element occupies its elements’ slots, so accessing one

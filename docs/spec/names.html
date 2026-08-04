@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
+            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -248,7 +248,9 @@ their declaration.</p>
 <p>A <code>let</code> may also redeclare a name <strong>within the same scope</strong>: the later
 binding shadows the earlier one from its own declaration point onward,
 while uses before that point keep the earlier binding (parameters —
-<code>mut</code> or not — and loop/pattern bindings are shadowable the same way). Visibility starts at
+<code>mut</code>, spread, or plain — and loop/pattern bindings are shadowable the same way). A
+spread parameter binds one name to the whole pack, like any other
+parameter; it declares no per-element names. Visibility starts at
 the <strong>end</strong> of the declaring statement, so an initializer never reads the
 binding it declares: in <code>let x = x + 1;</code> the right-hand <code>x</code> is the
 previous <code>x</code> (an enclosing or earlier same-scope binding) and an error

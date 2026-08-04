@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
+            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -267,10 +267,50 @@ trait Try&lt;T, B&gt; {
 	fun verdict(self): Verdict&lt;T, B&gt;;   // split into good/bad
 	fun from_bad(bad: B): Self;         // rebuild from the bad half (for propagation)
 }
-trait Lift {}                           // opt-in marker for ?.
+trait Lift {}                           // opt-in marker for ? and ?.
 </code></pre>
 <p><code>Option</code> and <code>Result</code> implement both in std. A custom two-outcome type that
-implements <code>Try</code> gets <code>!</code>; adding the <code>Lift</code> marker gets <code>?.</code>.</p>
+implements <code>Try</code> gets <code>!</code>; adding the <code>Lift</code> marker gets both lift forms —
+the <code>?.</code> chain and the bare <code>?</code> that lifts a whole expression.</p>
+<p><code>Lift</code> declares no members: it is consent, not a contract you fill in. What
+the operators actually call is a pair of ordinary methods your container
+supplies — <code>map&lt;U&gt;(self, |T| U)</code> for the plain case, and
+<code>and_then&lt;U&gt;(self, |T| Self-of-U)</code> for the flattening one. The element is the
+container’s <strong>first type argument</strong>.</p>
+<pre><code class="language-vilan">import std::print;
+import std::operators::Lift;
+
+struct Tagged&lt;T&gt; {
+	value: T,
+	tag: str,
+}
+
+impl Tagged&lt;type T&gt; with Lift {}
+
+impl Tagged&lt;type T&gt; {
+	fun map&lt;U&gt;(self, fn: |T| U): Tagged&lt;U&gt; {
+		Tagged { value = fn(self.value), tag = self.tag }
+	}
+
+	fun and_then&lt;U&gt;(self, fn: |T| Tagged&lt;U&gt;): Tagged&lt;U&gt; {
+		let inner = fn(self.value);
+		Tagged { value = inner.value, tag = self.tag + "+" + inner.tag }
+	}
+}
+
+fun main() {
+	let price = Tagged { value = 40, tag = "eur" };
+	let tax = Tagged { value = 2, tag = "eur" };
+
+	let doubled = price? * 2;        // map — Tagged&lt;i32&gt;, value 80
+	let total = price? + tax?;       // and_then, then map — value 42
+	print(total.tag);                // eur+eur
+}
+</code></pre>
+<p>A region with several <code>?</code>s nests the calls left to right — <code>price.and_then(|p| tax.map(|t| p + t))</code> above — so short-circuiting and laziness are whatever
+your <code>and_then</code> does with the closure it is handed. Every receiver in one
+expression must be the same container; a type with a <code>map</code> but no <code>Lift</code> is
+refused, and a missing <code>map</code>/<code>and_then</code> is named in the error.</p>
 
                     </main>
 

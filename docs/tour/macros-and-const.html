@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
+            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -214,6 +214,35 @@ be a constant.</li>
 </ul>
 <p>The flagship user is styling: <code>const style()…</code> chains evaluate at build
 time and emit CSS. See the <a href="../guide/styling.html">styling guide</a>.</p>
+<h3 id="release-builds-fold-without-the-keyword"><a class="header" href="#release-builds-fold-without-the-keyword">Release builds fold without the keyword</a></h3>
+<p>A <code>release</code> build also folds ordinary initializers it can work out for
+itself, under the same rules — no keyword needed:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun square(n: i32): i32 {
+	n * n
+}
+
+fun main() {
+	let side = 3 + 1;
+	print(square(side));   // release ships `16`; debug ships the calls
+}
+</code></pre>
+<p><code>debug</code> deliberately does not, so the readable build keeps the
+computation where a stack trace can show it. Set the preset in
+<code>vilan.toml</code>:</p>
+<pre><code class="language-toml">[build]
+preset = "release"      # or: infer-const = false, to opt out
+</code></pre>
+<p>The keyword is still worth writing, and the difference is what happens
+when evaluation <em>fails</em>. <code>const</code> promises the fold and reports an error
+if it can’t deliver — the budget blew, a host call snuck in, the result
+wasn’t plain data. Inference promises nothing: anything it can’t settle
+it silently leaves alone, to run at runtime exactly as written. So a
+release build never rejects a program a debug build accepts, and never
+changes what a program does — it only moves some of the arithmetic
+earlier. Write <code>const</code> when you want the guarantee (and the error when
+it breaks); let inference pick up the rest.</p>
 <h2 id="derive-macros-impls-from-a-types-shape"><a class="header" href="#derive-macros-impls-from-a-types-shape">Derive macros: impls from a type’s shape</a></h2>
 <p>You’ve already seen <code>[derive(PartialEq, Debug)]</code>. A derive is a macro: a
 function that runs at compile time, receives the type it annotates as

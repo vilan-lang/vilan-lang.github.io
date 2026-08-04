@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7774ec32.js";
+            window.path_to_searchindex_js = "searchindex-53e5aa56.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -866,6 +866,37 @@ fun main() {
 	print(original);       // 7 — untouched
 }
 </code></pre>
+<h2 id="taking-any-number-of-arguments"><a class="header" href="#taking-any-number-of-arguments">Taking any number of arguments</a></h2>
+<p>Prefix the last parameter with <code>...</code> and callers write its elements out
+flat instead of building a tuple. The parameter itself is an ordinary
+tuple parameter — <code>fun f(...items: T)</code> is <code>fun f(items: T)</code>, and
+<code>f(a, b)</code> is <code>f((a, b))</code> — so <code>T</code> is the whole <strong>pack</strong>, a tuple of
+however many arguments arrived, and its bound decides how many are
+allowed:</p>
+<pre><code class="language-vilan">import std::print;
+
+// `(..)` admits any arity, including none at all.
+fun how_many&lt;T: (..)&gt;(...items: T): i32 {
+	1
+}
+
+// A fixed parameter first; the spread takes whatever is left.
+fun first_of(head: i32, ...rest: (i32, i32)): i32 {
+	head
+}
+
+fun main() {
+	print(how_many());
+	print(how_many("a", true, 3));
+	print(first_of(7, 8, 9));
+}
+</code></pre>
+<p><code>T: (2..)</code> would reject <code>how_many(1)</code> with the arity bound’s own error,
+and <code>T: (..: Display)</code> would require every argument to be printable.
+Since the arguments are collected into a value the <em>call site</em> builds,
+<code>...</code> never combines with <code>own</code>, <code>&amp;</code>, or <code>&amp;mut</code>; <code>mut ...items</code> is fine,
+and means what <code>mut</code> always means. <code>...</code> belongs to a plain <code>fun</code> — not
+to a closure, a trait method, an <code>impl</code> member, or an <code>external fun</code>.</p>
 <h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
 <p>A closure is an inline function value. Where JavaScript writes
 <code>x =&gt; x * 2</code>, Vilan writes <code>|x| x * 2</code>. Parameter types are usually
@@ -1421,13 +1452,13 @@ would become an <code>Option&lt;bool&gt;</code>, so <code>match</code> on the li
 instead.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> Both operators are trait-driven, not hard-coded to
-<code>Option</code> and <code>Result</code>. <code>!</code> dispatches through <code>Try</code>, and <code>?.</code> through
-<code>Try</code> plus the <code>Lift</code> marker (<code>std::operators</code>). Your own
-two-outcome type can implement them and join in. A <code>?.</code> continuation
-that itself produces the container flattens instead of nesting, so
-<code>find(key)?.shelf()</code> on an <code>Option</code>-returning method stays a single
-<code>Option</code>. (A bare <code>?</code> lifts the std pair only for now; a user <code>Lift</code>
-container lifts through <code>?.</code> chains.)</p>
+<code>Option</code> and <code>Result</code>. <code>!</code> dispatches through <code>Try</code>; both lift forms —
+<code>?.</code> and the bare <code>?</code> — go through the <code>Lift</code> marker
+(<code>std::operators</code>). Your own container can opt in and lift the same
+way, calling its own <code>map</code> and <code>and_then</code>
+(<a href="#core-traits-reference">traits</a>). A continuation that itself produces the
+container flattens instead of nesting, so <code>find(key)?.shelf()</code> on an
+<code>Option</code>-returning method stays a single <code>Option</code>.</p>
 </blockquote>
 <h2 id="panics-and-asserts"><a class="header" href="#panics-and-asserts">Panics and asserts</a></h2>
 <p><code>panic(message)</code> stops the program with a message. Use it for states
@@ -2211,6 +2242,35 @@ be a constant.</li>
 </ul>
 <p>The flagship user is styling: <code>const style()…</code> chains evaluate at build
 time and emit CSS. See the <a href="#styling">styling guide</a>.</p>
+<h3 id="release-builds-fold-without-the-keyword"><a class="header" href="#release-builds-fold-without-the-keyword">Release builds fold without the keyword</a></h3>
+<p>A <code>release</code> build also folds ordinary initializers it can work out for
+itself, under the same rules — no keyword needed:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun square(n: i32): i32 {
+	n * n
+}
+
+fun main() {
+	let side = 3 + 1;
+	print(square(side));   // release ships `16`; debug ships the calls
+}
+</code></pre>
+<p><code>debug</code> deliberately does not, so the readable build keeps the
+computation where a stack trace can show it. Set the preset in
+<code>vilan.toml</code>:</p>
+<pre><code class="language-toml">[build]
+preset = "release"      # or: infer-const = false, to opt out
+</code></pre>
+<p>The keyword is still worth writing, and the difference is what happens
+when evaluation <em>fails</em>. <code>const</code> promises the fold and reports an error
+if it can’t deliver — the budget blew, a host call snuck in, the result
+wasn’t plain data. Inference promises nothing: anything it can’t settle
+it silently leaves alone, to run at runtime exactly as written. So a
+release build never rejects a program a debug build accepts, and never
+changes what a program does — it only moves some of the arithmetic
+earlier. Write <code>const</code> when you want the guarantee (and the error when
+it breaks); let inference pick up the rest.</p>
 <h2 id="derive-macros-impls-from-a-types-shape"><a class="header" href="#derive-macros-impls-from-a-types-shape">Derive macros: impls from a type’s shape</a></h2>
 <p>You’ve already seen <code>[derive(PartialEq, Debug)]</code>. A derive is a macro: a
 function that runs at compile time, receives the type it annotates as
@@ -5353,10 +5413,50 @@ trait Try&lt;T, B&gt; {
 	fun verdict(self): Verdict&lt;T, B&gt;;   // split into good/bad
 	fun from_bad(bad: B): Self;         // rebuild from the bad half (for propagation)
 }
-trait Lift {}                           // opt-in marker for ?.
+trait Lift {}                           // opt-in marker for ? and ?.
 </code></pre>
 <p><code>Option</code> and <code>Result</code> implement both in std. A custom two-outcome type that
-implements <code>Try</code> gets <code>!</code>; adding the <code>Lift</code> marker gets <code>?.</code>.</p>
+implements <code>Try</code> gets <code>!</code>; adding the <code>Lift</code> marker gets both lift forms —
+the <code>?.</code> chain and the bare <code>?</code> that lifts a whole expression.</p>
+<p><code>Lift</code> declares no members: it is consent, not a contract you fill in. What
+the operators actually call is a pair of ordinary methods your container
+supplies — <code>map&lt;U&gt;(self, |T| U)</code> for the plain case, and
+<code>and_then&lt;U&gt;(self, |T| Self-of-U)</code> for the flattening one. The element is the
+container’s <strong>first type argument</strong>.</p>
+<pre><code class="language-vilan">import std::print;
+import std::operators::Lift;
+
+struct Tagged&lt;T&gt; {
+	value: T,
+	tag: str,
+}
+
+impl Tagged&lt;type T&gt; with Lift {}
+
+impl Tagged&lt;type T&gt; {
+	fun map&lt;U&gt;(self, fn: |T| U): Tagged&lt;U&gt; {
+		Tagged { value = fn(self.value), tag = self.tag }
+	}
+
+	fun and_then&lt;U&gt;(self, fn: |T| Tagged&lt;U&gt;): Tagged&lt;U&gt; {
+		let inner = fn(self.value);
+		Tagged { value = inner.value, tag = self.tag + "+" + inner.tag }
+	}
+}
+
+fun main() {
+	let price = Tagged { value = 40, tag = "eur" };
+	let tax = Tagged { value = 2, tag = "eur" };
+
+	let doubled = price? * 2;        // map — Tagged&lt;i32&gt;, value 80
+	let total = price? + tax?;       // and_then, then map — value 42
+	print(total.tag);                // eur+eur
+}
+</code></pre>
+<p>A region with several <code>?</code>s nests the calls left to right — <code>price.and_then(|p| tax.map(|t| p + t))</code> above — so short-circuiting and laziness are whatever
+your <code>and_then</code> does with the closure it is handed. Every receiver in one
+expression must be the same container; a type with a <code>map</code> but no <code>Lift</code> is
+refused, and a missing <code>map</code>/<code>and_then</code> is named in the error.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="cells-reference"><a class="header" href="#cells-reference">Cells reference</a></h1>
 <p>The two sharing tools: <code>std::shared::Shared</code> (one shared mutable cell) and
@@ -7085,7 +7185,7 @@ exposes a declaration to importers of the module.</p>
            [ ":" type ] [ "borrows" IDENT ]
            ( block | ";" ) ;
 
-parameter  = [ "mut" | convention ] binder [ ":" type ] ;
+parameter  = [ "mut" | convention ] [ "..." ] binder [ ":" type ] ;
 convention = "own" | "&amp;" [ "mut" ] ;
 binder     = IDENT | "(" binder "," binder { "," binder } [ "," ] ")" ;
 
@@ -7109,6 +7209,17 @@ combines with a convention, is not part of the signature (trait
 conformance ignores it), and is rejected on an <code>external fun</code> (no body).
 A resource cannot be taken <code>mut</code> (a resource never copies; take it
 <code>own</code>).</p>
+<p>A leading <code>...</code> marks a <strong>spread parameter</strong>: a call convention over an
+ordinary tuple parameter, where the call site writes the pack’s elements
+out flat — <code>fun f(...items: T) { … }</code> is <code>fun f(items: T) { … }</code> with
+<code>f(a, b)</code> meaning <code>f((a, b))</code> (§5.9). It must be the <strong>last</strong> parameter
+(so at most one per signature), must declare its type, and takes a plain
+name binder. Unlike <code>mut</code> it <strong>is</strong> part of the signature, and it is
+rejected outside a free <code>fun</code>: on a closure literal, on a trait
+declaration or any <code>impl</code> member, and on an <code>external fun</code>. It never
+combines with a convention — the argument is a tuple the <em>call site</em>
+builds, so there is nothing to transfer or alias — but <code>mut</code> may precede
+it (<code>mut ...items: T</code>).</p>
 <h3 id="structs-and-enums"><a class="header" href="#structs-and-enums">Structs and enums</a></h3>
 <pre><code class="language-text">struct = [ "resource" ] [ "external" ] "struct" (IDENT | "null") [ generic-params ]
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
@@ -7284,7 +7395,7 @@ struct-init   = IDENT [ generic-args ]
 init-field    = IDENT [ "=" expression ] ;   (* shorthand: name alone *)
 closure       = ( "||" | "|" [ closure-param { "," closure-param } [ "," ] ] "|" )
                 [ ":" type ] expression ;
-closure-param = parameter ;   (* the same rule as a function's *)
+closure-param = parameter ;   (* the same rule as a function's, less "..." *)
 </code></pre>
 <p>Two consequences of the tier split are normative:</p>
 <ul>
@@ -7409,7 +7520,9 @@ their declaration.</p>
 <p>A <code>let</code> may also redeclare a name <strong>within the same scope</strong>: the later
 binding shadows the earlier one from its own declaration point onward,
 while uses before that point keep the earlier binding (parameters —
-<code>mut</code> or not — and loop/pattern bindings are shadowable the same way). Visibility starts at
+<code>mut</code>, spread, or plain — and loop/pattern bindings are shadowable the same way). A
+spread parameter binds one name to the whole pack, like any other
+parameter; it declares no per-element names. Visibility starts at
 the <strong>end</strong> of the declaring statement, so an initializer never reads the
 binding it declares: in <code>let x = x + 1;</code> the right-hand <code>x</code> is the
 previous <code>x</code> (an enclosing or earlier same-scope binding) and an error
@@ -7597,7 +7710,26 @@ declared range (endpoints inclusive), and every element must satisfy the
 element bound. A generic parameter forwarded into a tuple-bounded
 position satisfies it only through its own declared tuple bound: a
 contained arity range whose element bound names the same trait or a
-subtrait. <em><code>keyof</code> and spread parameters are recorded future work.</em></p>
+subtrait.</p>
+<p>A <strong>spread parameter</strong> <code>...items: T</code> is a <em>call convention</em> over an
+ordinary tuple parameter — the call site writes the pack’s elements out
+flat, and they are collected into that one tuple argument:</p>
+<pre><code class="language-vilan fragment">fun log&lt;T: (..: Display)&gt;(...items: T)      //  log(1, "hi")  ==  log((1, "hi"))
+fun gather&lt;T: (2..)&gt;(...sources: (U in T: Signal&lt;U&gt;)): Signal&lt;T&gt;
+</code></pre>
+<p><code>T</code> is the <strong>pack</strong> — the tuple of the collected arguments’ types — not
+each element’s type; a uniform requirement is spelled as the element
+bound. The callee side is unchanged in every respect, so a spread
+parameter’s legal call arities are exactly the arities its declared type
+admits, by the rule above: <code>(2..)</code> refuses a one-argument call, and <code>(..)</code>
+accepts a zero-argument one (the empty pack <code>()</code>). A spread parameter is
+what makes 0- and 1-arity tuple <em>values</em> reachable; tuple types already
+admit them. Since the convention lives on the declaration, a spread
+function used as a <strong>value</strong> has its tuple type, and is called with a
+tuple.</p>
+<p>Grammar and the positions where <code>...</code> is rejected: §3.3. <em><code>keyof</code>, and
+spreading a tuple INTO a spread parameter (<code>f(..existing)</code>, which needs
+the tuple-value spread), are recorded future work.</em></p>
 <p><strong>Positional access</strong> <code>t.0</code>, <code>t.1</code> (chaining as <code>t.0.1</code>) types as that
 element and, through a <code>mut</code> binding, assigns it. Tuples store flat: a
 tuple-typed element occupies its elements’ slots, so accessing one
@@ -8654,6 +8786,40 @@ type: numbers, strings, booleans, lists, tuples, structs and enums of
 const-evaluable contents. The expression’s <em>type</em> is checked exactly
 as if it ran at runtime; <code>const</code> never changes typing, only when the
 computation happens.</p>
+<h2 id="95-inferred-const"><a class="header" href="#95-inferred-const">9.5 Inferred <code>const</code></a></h2>
+<p>A <strong>release</strong> build additionally folds <code>let</code> and <code>mut</code> initializers
+that were never marked <code>const</code>, where it can settle them under §9.2’s
+environment. <code>let total = 1 + 2 * 3;</code> ships as <code>7</code> with no keyword.</p>
+<p>The keyword remains the contract, and the difference is what happens on
+failure. An explicit <code>const</code> that cannot be evaluated is a compile
+error (§9.3). An inferred fold that cannot be evaluated — for <strong>any</strong>
+reason: a runtime free variable, a host capability, a panic, a budget,
+a result that is not plain data — simply does not happen, with no
+diagnostic. The binding stays exactly as written and runs at runtime.
+Inference can therefore never change whether a program compiles, only
+when some of its arithmetic happens.</p>
+<p>Four rules bound it:</p>
+<ul>
+<li><strong>Observable behaviour is preserved exactly.</strong> An evaluation that
+panics, prints, or exits is discarded and the binding left alone.
+(An explicit <code>const</code> <em>does</em> discard what its evaluation printed —
+that computation is what the author asked to move to compile time.)</li>
+<li><strong>Inference never creates a const context.</strong> Reaching a
+compile-time-only function (§9.2) refuses the fold rather than
+performing the emission, so whether a style compiles never depends on
+the optimizer.</li>
+<li><strong>Inferred evaluation has its own, tighter budgets</strong>, and a fold
+whose literal would be large is declined — explicit <code>const</code> is the
+opt-in for expensive or bulky results.</li>
+<li><strong>Type parameters are out of scope.</strong> A binding inside a generic
+function body is never folded: its value depends on a
+monomorphization the const environment does not carry.</li>
+</ul>
+<p>The <code>debug</code> preset does not infer, so a debug build keeps every such
+computation where a stack trace can show it; <code>release</code> does. Folding is
+deterministic — the same source folds identically on every build — and
+the language server never runs the pass, since it produces nothing to
+report.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="spec-10--macros"><a class="header" href="#spec-10--macros">Spec §10 — Macros</a></h1>
 <p>A macro is a compile-time function that receives program structure as

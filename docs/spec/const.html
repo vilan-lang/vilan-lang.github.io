@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
+            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -240,6 +240,40 @@ type: numbers, strings, booleans, lists, tuples, structs and enums of
 const-evaluable contents. The expression’s <em>type</em> is checked exactly
 as if it ran at runtime; <code>const</code> never changes typing, only when the
 computation happens.</p>
+<h2 id="95-inferred-const"><a class="header" href="#95-inferred-const">9.5 Inferred <code>const</code></a></h2>
+<p>A <strong>release</strong> build additionally folds <code>let</code> and <code>mut</code> initializers
+that were never marked <code>const</code>, where it can settle them under §9.2’s
+environment. <code>let total = 1 + 2 * 3;</code> ships as <code>7</code> with no keyword.</p>
+<p>The keyword remains the contract, and the difference is what happens on
+failure. An explicit <code>const</code> that cannot be evaluated is a compile
+error (§9.3). An inferred fold that cannot be evaluated — for <strong>any</strong>
+reason: a runtime free variable, a host capability, a panic, a budget,
+a result that is not plain data — simply does not happen, with no
+diagnostic. The binding stays exactly as written and runs at runtime.
+Inference can therefore never change whether a program compiles, only
+when some of its arithmetic happens.</p>
+<p>Four rules bound it:</p>
+<ul>
+<li><strong>Observable behaviour is preserved exactly.</strong> An evaluation that
+panics, prints, or exits is discarded and the binding left alone.
+(An explicit <code>const</code> <em>does</em> discard what its evaluation printed —
+that computation is what the author asked to move to compile time.)</li>
+<li><strong>Inference never creates a const context.</strong> Reaching a
+compile-time-only function (§9.2) refuses the fold rather than
+performing the emission, so whether a style compiles never depends on
+the optimizer.</li>
+<li><strong>Inferred evaluation has its own, tighter budgets</strong>, and a fold
+whose literal would be large is declined — explicit <code>const</code> is the
+opt-in for expensive or bulky results.</li>
+<li><strong>Type parameters are out of scope.</strong> A binding inside a generic
+function body is never folded: its value depends on a
+monomorphization the const environment does not carry.</li>
+</ul>
+<p>The <code>debug</code> preset does not infer, so a debug build keeps every such
+computation where a stack trace can show it; <code>release</code> does. Folding is
+deterministic — the same source folds identically on every build — and
+the language server never runs the pass, since it produces nothing to
+report.</p>
 
                     </main>
 

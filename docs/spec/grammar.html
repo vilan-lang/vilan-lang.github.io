@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
+            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -229,7 +229,7 @@ exposes a declaration to importers of the module.</p>
            [ ":" type ] [ "borrows" IDENT ]
            ( block | ";" ) ;
 
-parameter  = [ "mut" | convention ] binder [ ":" type ] ;
+parameter  = [ "mut" | convention ] [ "..." ] binder [ ":" type ] ;
 convention = "own" | "&amp;" [ "mut" ] ;
 binder     = IDENT | "(" binder "," binder { "," binder } [ "," ] ")" ;
 
@@ -253,6 +253,17 @@ combines with a convention, is not part of the signature (trait
 conformance ignores it), and is rejected on an <code>external fun</code> (no body).
 A resource cannot be taken <code>mut</code> (a resource never copies; take it
 <code>own</code>).</p>
+<p>A leading <code>...</code> marks a <strong>spread parameter</strong>: a call convention over an
+ordinary tuple parameter, where the call site writes the pack’s elements
+out flat — <code>fun f(...items: T) { … }</code> is <code>fun f(items: T) { … }</code> with
+<code>f(a, b)</code> meaning <code>f((a, b))</code> (§5.9). It must be the <strong>last</strong> parameter
+(so at most one per signature), must declare its type, and takes a plain
+name binder. Unlike <code>mut</code> it <strong>is</strong> part of the signature, and it is
+rejected outside a free <code>fun</code>: on a closure literal, on a trait
+declaration or any <code>impl</code> member, and on an <code>external fun</code>. It never
+combines with a convention — the argument is a tuple the <em>call site</em>
+builds, so there is nothing to transfer or alias — but <code>mut</code> may precede
+it (<code>mut ...items: T</code>).</p>
 <h3 id="structs-and-enums"><a class="header" href="#structs-and-enums">Structs and enums</a></h3>
 <pre><code class="language-text">struct = [ "resource" ] [ "external" ] "struct" (IDENT | "null") [ generic-params ]
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
@@ -428,7 +439,7 @@ struct-init   = IDENT [ generic-args ]
 init-field    = IDENT [ "=" expression ] ;   (* shorthand: name alone *)
 closure       = ( "||" | "|" [ closure-param { "," closure-param } [ "," ] ] "|" )
                 [ ":" type ] expression ;
-closure-param = parameter ;   (* the same rule as a function's *)
+closure-param = parameter ;   (* the same rule as a function's, less "..." *)
 </code></pre>
 <p>Two consequences of the tier split are normative:</p>
 <ul>
