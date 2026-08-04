@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
+            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -211,6 +211,7 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 	fun new(value: T): Signal&lt;T&gt;
 	fun set(self, value: T)                 // write + notify
 	fun set_with(self, transform: sync |T| T)    // read-modify-write
+	fun update(self, mutate: sync |&amp;mut T| void) // mutate in place, notify once
 	fun map&lt;U&gt;(self, transform: sync |T| U): Signal&lt;U&gt;
 }
 impl Signal&lt;type T&gt; with Source&lt;T&gt; {
@@ -226,6 +227,31 @@ impl Signal&lt;Signal&lt;type U&gt;&gt; {
 <ul>
 <li><code>set</code> notifies through the ambient turn when one exists (writes coalesce);
 outside any turn it notifies immediately.</li>
+<li><code>update</code> mutates the <strong>stored</strong> value through a writable view and notifies
+once, unconditionally, after the closure returns — the collection door
+(<code>proposal/signal-update.md</code>). It shares <code>set</code>’s notify half, so batching,
+drain affinity, and dedup behave identically. A read from <em>inside</em> the
+closure sees the in-progress value; a re-entrant <code>update</code> of the same
+signal is unsupported.</li>
+</ul>
+<pre><code class="language-vilan">import std::print;
+import std::reactive::{ Signal, Owner, batch };
+
+fun main() {
+	let owner = Owner::new();
+	let todos: Signal&lt;List&lt;str&gt;&gt; = Signal::new([]);
+	owner.take(todos.sub(|list| print(list.len())));   // 0
+
+	todos.update(|&amp;mut list| { list.push("write docs"); });   // 1
+
+	// Two updates, one notification: `update` batches like any write.
+	batch(|| {
+		todos.update(|&amp;mut list| { list.push("ship it"); });
+		todos.update(|&amp;mut list| { list.push("rest"); });
+	});                                                        // 3
+}
+</code></pre>
+<ul>
 <li><code>map</code>’s result is a live derived signal; its internal subscription is
 unowned (lives as long as the source).</li>
 <li><code>effect</code> requires an ambient owner; calling it outside every owner is a

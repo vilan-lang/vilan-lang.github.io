@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-e1c749f6.js";
+            window.path_to_searchindex_js = "searchindex-f1b151a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -1577,11 +1577,12 @@ rows[i].text = "sent";
 <ul>
 <li>“Why didn’t my mutation stick?” You mutated a copy. Either take <code>&amp;mut</code>
 at the function boundary, or restructure around <code>Shared</code> or a signal’s
-<code>set_with</code>.</li>
+<code>update</code>.</li>
 <li><code>shared.read().push(x)</code> is lost (it mutates a copy). Use
 <code>shared.write().push(x)</code>.</li>
 <li>Signals hold values too. Mutate a signal’s list with
-<code>signal.set_with(|list| …)</code>, never by mutating a <code>get()</code> result.</li>
+<code>signal.update(|&amp;mut list| …)</code> — which hands the closure a writable view
+of the stored value — never by mutating a <code>get()</code> result.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="async"><a class="header" href="#async">Async</a></h1>
@@ -2412,21 +2413,40 @@ fun main() {
 signal.get(): T                        // current value
 signal.set(value: T)                   // write + notify subscribers
 signal.set_with(transform: sync |T| T) // read-modify-write in one step
+signal.update(mutate: sync |&amp;mut T| void) // mutate in place + notify once
 </code></pre>
 <p>Signals hold <strong>values</strong>. Vilan copies, so <code>get</code> hands you a copy, and the
-only way to change what subscribers see is <code>set</code> or <code>set_with</code>. To update
-a list inside a signal, transform it:</p>
+only way to change what subscribers see is a write through the signal
+itself. For a collection, <code>update</code> is the one you want: the closure gets a
+<strong>writable view of the stored value</strong>, so you mutate it directly.</p>
 <pre><code class="language-vilan">import std::print;
 import std::reactive::Signal;
 
 fun main() {
 	let items: Signal&lt;List&lt;str&gt;&gt; = Signal::new([]);
-	items.set_with(|list| {
-		mut updated = list;
-		updated.push("first");
-		updated
+	items.update(|&amp;mut list| {
+		list.push("first");
 	});
 	print(items.get().len());
+}
+</code></pre>
+<p>The <code>&amp;mut</code> in <code>|&amp;mut list|</code> is the same view convention a function
+parameter takes — it says <em>this closure mutates the caller’s value</em>, which
+is exactly what makes the push land in the signal rather than in a copy.
+Subscribers are notified <strong>once</strong>, after the closure returns, whatever it
+did (a closure that writes nothing still notifies — <code>update</code> is a write,
+like <code>set</code>). Inside a <code>batch</code>, that notification defers and coalesces like
+any other write. <code>update</code> works for any <code>T</code> a closure can mutate: <code>Map</code>,
+<code>Set</code>, a struct’s fields, a nested aggregate.</p>
+<p><code>set_with</code> remains the read-<strong>transform</strong>-write form, and it still reads
+better when you’re computing a new value rather than editing one:</p>
+<pre><code class="language-vilan">import std::print;
+import std::reactive::Signal;
+
+fun main() {
+	let count = Signal::new(1);
+	count.set_with(|n| n + 4);
+	print(count.get());
 }
 </code></pre>
 <p>(If you tried <code>items.get().push("first")</code>, you’d be mutating a copy. The
@@ -4298,19 +4318,36 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun new(): List&lt;T&gt;
 	fun push(&amp;mut self, item: T)
 	fun pop(&amp;mut self): Option&lt;T&gt;
+	fun insert(&amp;mut self, index: i32, value: T)   // panics out of bounds
+	fun remove(&amp;mut self, index: i32): T          // panics out of bounds
 	fun len(self): i32
 	fun is_empty(self): bool
+	fun get(self, index: i32): Option&lt;T&gt;
+	fun first(self): Option&lt;T&gt;
+	fun last(self): Option&lt;T&gt;
 	fun map&lt;U&gt;(self, fn: |T| U): List&lt;U&gt;
 	fun filter(self, predicate: |T| bool): List&lt;T&gt;
+	fun find(self, predicate: |T| bool): Option&lt;T&gt;
 	fun fold&lt;B&gt;(self, init: B, fn: |B, T| B): B
 	fun for_each(self, fn: |T| void)
+	fun reverse(self): List&lt;T&gt;
+	fun sort_by(self, compare: |T, T| Ordering): List&lt;T&gt;   // stable
 }
 impl List&lt;type T: Add + Default&gt; { fun sum(self): T }
 impl List&lt;type T: Mul + Default&gt; { fun product(self): T }
+impl List&lt;type T: Ord&gt; { fun sort(self): List&lt;T&gt; }        // stable
+impl List&lt;type T: PartialEq&gt; {
+	fun contains(self, value: T): bool
+	fun index_of(self, value: T): Option&lt;i32&gt;
+}
+impl List&lt;type T: Display&gt; { fun join(self, separator: str): str }
 </code></pre>
 <p>Indexing is <code>list[i]</code>; iterate with <code>for item in list</code> (copies) or
 <code>for e in &amp;mut list</code> (in-place views; see the
 <a href="#the-memory-model">memory model</a>).</p>
+<p>The methods that take <code>self</code> by value are pure — they return a new list and
+leave the receiver alone. The mutating ones take <code>&amp;mut self</code>: <code>push</code>, <code>pop</code>,
+<code>insert</code>, <code>remove</code>.</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -4318,6 +4355,59 @@ fun main() {
 	let lengths = words.map(|word| word.len());
 	print(lengths.fold(0, |total, n| total + n));
 	print(lengths.sum());
+}
+</code></pre>
+<h3 id="searching"><a class="header" href="#searching">Searching</a></h3>
+<p><code>find</code> takes a predicate and short-circuits; <code>contains</code> and <code>index_of</code> take a
+value and need <code>T: PartialEq</code>. Missing answers are <code>None</code>, never a panic.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	let scores = [40, 91, 65];
+	print(scores.find(|n| n &gt; 50).unwrap_or(0));  // 91
+	print(scores.contains(65));                   // true
+	print(scores.index_of(65).unwrap_or(-1));     // 2
+	print(scores.index_of(7).is_none());          // true
+}
+</code></pre>
+<h3 id="ordering"><a class="header" href="#ordering">Ordering</a></h3>
+<p><code>sort</code> orders by <code>Ord</code>; <code>sort_by</code> takes a comparator returning
+<a href="#core-traits-reference"><code>Ordering</code></a>. Both are <strong>stable</strong> — elements the comparator calls
+<code>Equal</code> keep their input order — and both return a new list, as does <code>reverse</code>.</p>
+<pre><code class="language-vilan">import std::{ print, compare::Ordering };
+
+fun main() {
+	let ns = [10, 2, 1];
+	print(ns.sort()[0]);      // 1
+	print(ns.reverse()[0]);   // 1
+	print(ns.sort_by(|a, b| b.compare(a))[0]);   // 10 — descending
+}
+</code></pre>
+<h3 id="splicing"><a class="header" href="#splicing">Splicing</a></h3>
+<p><code>insert</code> shifts the tail right (an <code>index</code> equal to <code>len()</code> appends); <code>remove</code>
+shifts it left and returns the element. Both <strong>panic</strong> on an out-of-range
+index, exactly as <code>list[i]</code> does — a bad index is a caller bug. Reach for
+<code>get</code> when you don’t know whether an index is live.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut xs = [1, 2, 4];
+	xs.insert(2, 3);
+	print(xs.len());       // 4
+	print(xs.remove(0));   // 1
+	print(xs[0]);          // 2
+}
+</code></pre>
+<h3 id="joining"><a class="header" href="#joining">Joining</a></h3>
+<p><code>join</code> renders each element through <a href="#core-traits-reference"><code>Display</code></a> and puts
+<code>separator</code> between them. It lives in <code>std::display</code> beside the bound it
+needs, so it is the one <code>List</code> method that takes an import — and calling it
+without one names the import in the error.</p>
+<pre><code class="language-vilan">import std::{ print, display::Display };
+
+fun main() {
+	print(["alpha", "beta", "gamma"].join(", "));  // alpha, beta, gamma
+	print([1, 2, 3].join("-"));                    // 1-2-3
 }
 </code></pre>
 <h2 id="mapk-v"><a class="header" href="#mapk-v"><code>Map&lt;K, V&gt;</code></a></h2>
@@ -4654,11 +4744,23 @@ artifacts; a checked <code>add_safe</code> family is recorded future work.</p>
 	fun round(self): f64
 	fun min(self, other: f64): f64
 	fun max(self, other: f64): f64
+	fun clamp(self, min: f64, max: f64): f64
 	fun sin(self): f64      // cos, tan, asin, acos, atan …
 }
 </code></pre>
 <p>Every numeric type implements <code>Default</code> (zero), the operator traits, and
 comparison.</p>
+<p><code>clamp</code> confines a value to a range. The integers inherit it from <code>Ord</code>; the
+floats are deliberately <em>not</em> <code>Ord</code> (NaN has no place in a total order), so
+<code>f64</code> and <code>f32</code> carry their own — same recipe, same result.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	print(9.clamp(0, 5));       // 5   — i32, through Ord
+	print(9f.clamp(0f, 5f));    // 5
+	print((0f - 1f).clamp(0f, 5f));   // 0
+}
+</code></pre>
 <h2 id="conversions-as_"><a class="header" href="#conversions-as_">Conversions: <code>as_*</code></a></h2>
 <p>Every numeric type converts to every other with Rust-<code>as</code> semantics.
 Floats truncate toward zero; integers fold two’s-complement into the
@@ -5271,6 +5373,7 @@ usage patterns: the <a href="#reactive-state">reactive guide</a>.</p>
 	fun new(value: T): Signal&lt;T&gt;
 	fun set(self, value: T)                 // write + notify
 	fun set_with(self, transform: sync |T| T)    // read-modify-write
+	fun update(self, mutate: sync |&amp;mut T| void) // mutate in place, notify once
 	fun map&lt;U&gt;(self, transform: sync |T| U): Signal&lt;U&gt;
 }
 impl Signal&lt;type T&gt; with Source&lt;T&gt; {
@@ -5286,6 +5389,31 @@ impl Signal&lt;Signal&lt;type U&gt;&gt; {
 <ul>
 <li><code>set</code> notifies through the ambient turn when one exists (writes coalesce);
 outside any turn it notifies immediately.</li>
+<li><code>update</code> mutates the <strong>stored</strong> value through a writable view and notifies
+once, unconditionally, after the closure returns — the collection door
+(<code>proposal/signal-update.md</code>). It shares <code>set</code>’s notify half, so batching,
+drain affinity, and dedup behave identically. A read from <em>inside</em> the
+closure sees the in-progress value; a re-entrant <code>update</code> of the same
+signal is unsupported.</li>
+</ul>
+<pre><code class="language-vilan">import std::print;
+import std::reactive::{ Signal, Owner, batch };
+
+fun main() {
+	let owner = Owner::new();
+	let todos: Signal&lt;List&lt;str&gt;&gt; = Signal::new([]);
+	owner.take(todos.sub(|list| print(list.len())));   // 0
+
+	todos.update(|&amp;mut list| { list.push("write docs"); });   // 1
+
+	// Two updates, one notification: `update` batches like any write.
+	batch(|| {
+		todos.update(|&amp;mut list| { list.push("ship it"); });
+		todos.update(|&amp;mut list| { list.push("rest"); });
+	});                                                        // 3
+}
+</code></pre>
+<ul>
 <li><code>map</code>’s result is a live derived signal; its internal subscription is
 unowned (lives as long as the source).</li>
 <li><code>effect</code> requires an ambient owner; calling it outside every owner is a
@@ -6387,7 +6515,10 @@ extern-args = STRING [ "," STRING ]           (* module/global binding *)
 functions and required trait methods. A parameter’s <strong>convention</strong> may
 come from the prefix (<code>own x</code>, <code>&amp;mut self</code>) or from a view type
 (<code>x: &amp;mut T</code>); the prefix wins if both are present (§6.3). The <code>borrows</code>
-clause names the parameter the returned view projects (§6.5).</p>
+clause names the parameter the returned view projects (§6.5). A <strong>closure
+literal’s</strong> parameters take this same rule, conventions included, so a
+callback can receive a writable view: <code>signal.update(|&amp;mut list| { … })</code>
+against a <code>sync |&amp;mut T| void</code> parameter.</p>
 <p>A leading <code>mut</code> is <strong>binder mutability</strong>, not a convention: the body may
 rebind and field-write its by-value copy, invisibly to the caller —
 <code>fun f(mut x: T) { … }</code> is <code>fun f(x': T) { mut x = x'; … }</code>. It applies
@@ -6571,7 +6702,7 @@ struct-init   = IDENT [ generic-args ]
 init-field    = IDENT [ "=" expression ] ;   (* shorthand: name alone *)
 closure       = ( "||" | "|" [ closure-param { "," closure-param } [ "," ] ] "|" )
                 [ ":" type ] expression ;
-closure-param = binder [ ":" type ] ;
+closure-param = parameter ;   (* the same rule as a function's *)
 </code></pre>
 <p>Two consequences of the tier split are normative:</p>
 <ul>
@@ -8586,8 +8717,9 @@ conversions. Convert with <code>as_*</code> or unify the declarations.</li>
 <ul>
 <li><strong><code>shared.read()</code> is a copy.</strong> <code>shared.read().push(x)</code> is lost; write
 through the cell: <code>shared.write().push(x)</code>.</li>
-<li><strong>Mutate signal lists with <code>set_with</code></strong>, never by mutating a <code>get()</code>
-result (also a copy).</li>
+<li><strong>Mutate signal collections with <code>update</code></strong> — <code>signal.update(|&amp;mut list| { list.push(x); })</code> writes the stored value through a view and notifies
+once. Never mutate a <code>get()</code> result (also a copy). <code>set_with</code> stays the
+read-<em>transform</em>-write form.</li>
 <li><strong><code>bind_value</code> fights remote updates.</strong> For server-backed fields use
 <code>bind_draft</code>.</li>
 <li><strong><code>show</code> keeps bindings live</strong> while hidden; use <code>when</code> to drop state and

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
+            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -364,11 +364,12 @@ rows[i].text = "sent";
 <ul>
 <li>“Why didn’t my mutation stick?” You mutated a copy. Either take <code>&amp;mut</code>
 at the function boundary, or restructure around <code>Shared</code> or a signal’s
-<code>set_with</code>.</li>
+<code>update</code>.</li>
 <li><code>shared.read().push(x)</code> is lost (it mutates a copy). Use
 <code>shared.write().push(x)</code>.</li>
 <li>Signals hold values too. Mutate a signal’s list with
-<code>signal.set_with(|list| …)</code>, never by mutating a <code>get()</code> result.</li>
+<code>signal.update(|&amp;mut list| …)</code> — which hands the closure a writable view
+of the stored value — never by mutating a <code>get()</code> result.</li>
 </ul>
 
                     </main>

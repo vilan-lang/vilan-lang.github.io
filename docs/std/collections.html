@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
+            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -184,19 +184,36 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun new(): List&lt;T&gt;
 	fun push(&amp;mut self, item: T)
 	fun pop(&amp;mut self): Option&lt;T&gt;
+	fun insert(&amp;mut self, index: i32, value: T)   // panics out of bounds
+	fun remove(&amp;mut self, index: i32): T          // panics out of bounds
 	fun len(self): i32
 	fun is_empty(self): bool
+	fun get(self, index: i32): Option&lt;T&gt;
+	fun first(self): Option&lt;T&gt;
+	fun last(self): Option&lt;T&gt;
 	fun map&lt;U&gt;(self, fn: |T| U): List&lt;U&gt;
 	fun filter(self, predicate: |T| bool): List&lt;T&gt;
+	fun find(self, predicate: |T| bool): Option&lt;T&gt;
 	fun fold&lt;B&gt;(self, init: B, fn: |B, T| B): B
 	fun for_each(self, fn: |T| void)
+	fun reverse(self): List&lt;T&gt;
+	fun sort_by(self, compare: |T, T| Ordering): List&lt;T&gt;   // stable
 }
 impl List&lt;type T: Add + Default&gt; { fun sum(self): T }
 impl List&lt;type T: Mul + Default&gt; { fun product(self): T }
+impl List&lt;type T: Ord&gt; { fun sort(self): List&lt;T&gt; }        // stable
+impl List&lt;type T: PartialEq&gt; {
+	fun contains(self, value: T): bool
+	fun index_of(self, value: T): Option&lt;i32&gt;
+}
+impl List&lt;type T: Display&gt; { fun join(self, separator: str): str }
 </code></pre>
 <p>Indexing is <code>list[i]</code>; iterate with <code>for item in list</code> (copies) or
 <code>for e in &amp;mut list</code> (in-place views; see the
 <a href="../tour/memory-model.html">memory model</a>).</p>
+<p>The methods that take <code>self</code> by value are pure — they return a new list and
+leave the receiver alone. The mutating ones take <code>&amp;mut self</code>: <code>push</code>, <code>pop</code>,
+<code>insert</code>, <code>remove</code>.</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -204,6 +221,59 @@ fun main() {
 	let lengths = words.map(|word| word.len());
 	print(lengths.fold(0, |total, n| total + n));
 	print(lengths.sum());
+}
+</code></pre>
+<h3 id="searching"><a class="header" href="#searching">Searching</a></h3>
+<p><code>find</code> takes a predicate and short-circuits; <code>contains</code> and <code>index_of</code> take a
+value and need <code>T: PartialEq</code>. Missing answers are <code>None</code>, never a panic.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	let scores = [40, 91, 65];
+	print(scores.find(|n| n &gt; 50).unwrap_or(0));  // 91
+	print(scores.contains(65));                   // true
+	print(scores.index_of(65).unwrap_or(-1));     // 2
+	print(scores.index_of(7).is_none());          // true
+}
+</code></pre>
+<h3 id="ordering"><a class="header" href="#ordering">Ordering</a></h3>
+<p><code>sort</code> orders by <code>Ord</code>; <code>sort_by</code> takes a comparator returning
+<a href="traits.html"><code>Ordering</code></a>. Both are <strong>stable</strong> — elements the comparator calls
+<code>Equal</code> keep their input order — and both return a new list, as does <code>reverse</code>.</p>
+<pre><code class="language-vilan">import std::{ print, compare::Ordering };
+
+fun main() {
+	let ns = [10, 2, 1];
+	print(ns.sort()[0]);      // 1
+	print(ns.reverse()[0]);   // 1
+	print(ns.sort_by(|a, b| b.compare(a))[0]);   // 10 — descending
+}
+</code></pre>
+<h3 id="splicing"><a class="header" href="#splicing">Splicing</a></h3>
+<p><code>insert</code> shifts the tail right (an <code>index</code> equal to <code>len()</code> appends); <code>remove</code>
+shifts it left and returns the element. Both <strong>panic</strong> on an out-of-range
+index, exactly as <code>list[i]</code> does — a bad index is a caller bug. Reach for
+<code>get</code> when you don’t know whether an index is live.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut xs = [1, 2, 4];
+	xs.insert(2, 3);
+	print(xs.len());       // 4
+	print(xs.remove(0));   // 1
+	print(xs[0]);          // 2
+}
+</code></pre>
+<h3 id="joining"><a class="header" href="#joining">Joining</a></h3>
+<p><code>join</code> renders each element through <a href="traits.html"><code>Display</code></a> and puts
+<code>separator</code> between them. It lives in <code>std::display</code> beside the bound it
+needs, so it is the one <code>List</code> method that takes an import — and calling it
+without one names the import in the error.</p>
+<pre><code class="language-vilan">import std::{ print, display::Display };
+
+fun main() {
+	print(["alpha", "beta", "gamma"].join(", "));  // alpha, beta, gamma
+	print([1, 2, 3].join("-"));                    // 1-2-3
 }
 </code></pre>
 <h2 id="mapk-v"><a class="header" href="#mapk-v"><code>Map&lt;K, V&gt;</code></a></h2>

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
+            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -241,7 +241,10 @@ extern-args = STRING [ "," STRING ]           (* module/global binding *)
 functions and required trait methods. A parameter’s <strong>convention</strong> may
 come from the prefix (<code>own x</code>, <code>&amp;mut self</code>) or from a view type
 (<code>x: &amp;mut T</code>); the prefix wins if both are present (§6.3). The <code>borrows</code>
-clause names the parameter the returned view projects (§6.5).</p>
+clause names the parameter the returned view projects (§6.5). A <strong>closure
+literal’s</strong> parameters take this same rule, conventions included, so a
+callback can receive a writable view: <code>signal.update(|&amp;mut list| { … })</code>
+against a <code>sync |&amp;mut T| void</code> parameter.</p>
 <p>A leading <code>mut</code> is <strong>binder mutability</strong>, not a convention: the body may
 rebind and field-write its by-value copy, invisibly to the caller —
 <code>fun f(mut x: T) { … }</code> is <code>fun f(x': T) { mut x = x'; … }</code>. It applies
@@ -425,7 +428,7 @@ struct-init   = IDENT [ generic-args ]
 init-field    = IDENT [ "=" expression ] ;   (* shorthand: name alone *)
 closure       = ( "||" | "|" [ closure-param { "," closure-param } [ "," ] ] "|" )
                 [ ":" type ] expression ;
-closure-param = binder [ ":" type ] ;
+closure-param = parameter ;   (* the same rule as a function's *)
 </code></pre>
 <p>Two consequences of the tier split are normative:</p>
 <ul>

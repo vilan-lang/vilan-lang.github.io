@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
+            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -208,21 +208,40 @@ fun main() {
 signal.get(): T                        // current value
 signal.set(value: T)                   // write + notify subscribers
 signal.set_with(transform: sync |T| T) // read-modify-write in one step
+signal.update(mutate: sync |&amp;mut T| void) // mutate in place + notify once
 </code></pre>
 <p>Signals hold <strong>values</strong>. Vilan copies, so <code>get</code> hands you a copy, and the
-only way to change what subscribers see is <code>set</code> or <code>set_with</code>. To update
-a list inside a signal, transform it:</p>
+only way to change what subscribers see is a write through the signal
+itself. For a collection, <code>update</code> is the one you want: the closure gets a
+<strong>writable view of the stored value</strong>, so you mutate it directly.</p>
 <pre><code class="language-vilan">import std::print;
 import std::reactive::Signal;
 
 fun main() {
 	let items: Signal&lt;List&lt;str&gt;&gt; = Signal::new([]);
-	items.set_with(|list| {
-		mut updated = list;
-		updated.push("first");
-		updated
+	items.update(|&amp;mut list| {
+		list.push("first");
 	});
 	print(items.get().len());
+}
+</code></pre>
+<p>The <code>&amp;mut</code> in <code>|&amp;mut list|</code> is the same view convention a function
+parameter takes — it says <em>this closure mutates the caller’s value</em>, which
+is exactly what makes the push land in the signal rather than in a copy.
+Subscribers are notified <strong>once</strong>, after the closure returns, whatever it
+did (a closure that writes nothing still notifies — <code>update</code> is a write,
+like <code>set</code>). Inside a <code>batch</code>, that notification defers and coalesces like
+any other write. <code>update</code> works for any <code>T</code> a closure can mutate: <code>Map</code>,
+<code>Set</code>, a struct’s fields, a nested aggregate.</p>
+<p><code>set_with</code> remains the read-<strong>transform</strong>-write form, and it still reads
+better when you’re computing a new value rather than editing one:</p>
+<pre><code class="language-vilan">import std::print;
+import std::reactive::Signal;
+
+fun main() {
+	let count = Signal::new(1);
+	count.set_with(|n| n + 4);
+	print(count.get());
 }
 </code></pre>
 <p>(If you tried <code>items.get().push("first")</code>, you’d be mutating a copy. The

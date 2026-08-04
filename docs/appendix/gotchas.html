@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
+            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -193,8 +193,9 @@ conversions. Convert with <code>as_*</code> or unify the declarations.</li>
 <ul>
 <li><strong><code>shared.read()</code> is a copy.</strong> <code>shared.read().push(x)</code> is lost; write
 through the cell: <code>shared.write().push(x)</code>.</li>
-<li><strong>Mutate signal lists with <code>set_with</code></strong>, never by mutating a <code>get()</code>
-result (also a copy).</li>
+<li><strong>Mutate signal collections with <code>update</code></strong> — <code>signal.update(|&amp;mut list| { list.push(x); })</code> writes the stored value through a view and notifies
+once. Never mutate a <code>get()</code> result (also a copy). <code>set_with</code> stays the
+read-<em>transform</em>-write form.</li>
 <li><strong><code>bind_value</code> fights remote updates.</strong> For server-backed fields use
 <code>bind_draft</code>.</li>
 <li><strong><code>show</code> keeps bindings live</strong> while hidden; use <code>when</code> to drop state and

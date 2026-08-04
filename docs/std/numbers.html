@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e1c749f6.js";
+            window.path_to_searchindex_js = "../searchindex-f1b151a6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -225,11 +225,23 @@ artifacts; a checked <code>add_safe</code> family is recorded future work.</p>
 	fun round(self): f64
 	fun min(self, other: f64): f64
 	fun max(self, other: f64): f64
+	fun clamp(self, min: f64, max: f64): f64
 	fun sin(self): f64      // cos, tan, asin, acos, atan …
 }
 </code></pre>
 <p>Every numeric type implements <code>Default</code> (zero), the operator traits, and
 comparison.</p>
+<p><code>clamp</code> confines a value to a range. The integers inherit it from <code>Ord</code>; the
+floats are deliberately <em>not</em> <code>Ord</code> (NaN has no place in a total order), so
+<code>f64</code> and <code>f32</code> carry their own — same recipe, same result.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	print(9.clamp(0, 5));       // 5   — i32, through Ord
+	print(9f.clamp(0f, 5f));    // 5
+	print((0f - 1f).clamp(0f, 5f));   // 0
+}
+</code></pre>
 <h2 id="conversions-as_"><a class="header" href="#conversions-as_">Conversions: <code>as_*</code></a></h2>
 <p>Every numeric type converts to every other with Rust-<code>as</code> semantics.
 Floats truncate toward zero; integers fold two’s-complement into the
