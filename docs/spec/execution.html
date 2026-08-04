@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -261,6 +261,29 @@ copying it refers to the same task). <code>async { … }</code> spawns a block.<
 <li><code>await expr</code>: suspend until the <code>Task&lt;T&gt;</code> (or raw host <code>Promise&lt;T&gt;</code>)
 operand settles; yields <code>T</code>.</li>
 </ul>
+<p><strong><code>Task</code> does not nest.</strong> A task settles with a <em>value</em>, and a task is not
+one: spawning a computation that produces a task yields <code>Task&lt;T&gt;</code>, not
+<code>Task&lt;Task&lt;T&gt;&gt;</code>, and one <code>await</code> reaches the value. This holds however the
+type arises — including a generic <code>T</code> that instantiates at a task — so
+<code>Task&lt;..&gt;</code> is idempotent: <code>Task&lt;Task&lt;T&gt;&gt;</code> is not a type any expression has.</p>
+<pre><code class="language-vilan">import std::print;
+import std::task::Task;
+
+fun wrap&lt;T&gt;(value: T): Task&lt;T&gt; {
+	async { value }
+}
+
+fun main() {
+	let inner: Task&lt;i32&gt; = async { 7 };
+	let outer: Task&lt;i32&gt; = async { inner };   // not `Task&lt;Task&lt;i32&gt;&gt;`
+	let value: i32 = await outer;             // one `await`, not two
+	print(value + await wrap(inner));         // generic `T` = `Task&lt;i32&gt;`: same rule
+}
+</code></pre>
+<p>The rule follows the host rather than being imposed on it: a task is a
+host thenable, and the promise resolution procedure <em>adopts</em> a thenable
+result instead of boxing it. A nested task is unrepresentable at runtime,
+so the type says so too.</p>
 <p>A spawned computation runs to its first suspension synchronously, then
 interleaves with its spawner per the host event loop. Dropping a task
 abandons nothing: the computation still runs; only its result is

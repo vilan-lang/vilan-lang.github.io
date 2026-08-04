@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -386,6 +386,17 @@ rejects with “connection lost”. A call made while down fails immediately
 with “not connected”. Nothing is silently retried, because an rpc might
 not be safe to repeat. Retrying is the app’s decision: a draft’s next
 push, or the user pressing the button again.</p>
+<p>Third — when you ask for it — a hook that runs once the connection is back
+<em>and</em> the mirrors have resynced. That is the moment to re-send whatever the
+outage swallowed, and for an edited draft it is one line:</p>
+<pre><code class="language-vilan fragment">let title = draft(page.title, |value: str| { … client.rename(value) … });
+client.transport.on_reconnect(|| title.repush());
+</code></pre>
+<p>Without it the user’s text survives in the input but never reaches the
+server until they type again. With it, the reconnect carries it. <code>repush</code>
+sends only when the remote is actually behind, and its delivery is
+at-least-once — see
+<a href="reactive.html#surviving-a-dropped-connection">local-first drafts</a>.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> The backoff dials at 250 ms doubling to a 4 s cap,
 ten attempts before giving up (<code>Closed</code>). Mirrors rebind by

@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -2701,6 +2701,8 @@ can safely commit through an rpc:</p>
 draft(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;
 draft.push(value)   // set local + spawn the commit (never waits on the wire)
 draft.adopt(remote) // fold in a remote change
+draft.commit()      // send now (the explicit save)
+draft.repush()      // re-send if the remote never got the current value
 </code></pre>
 <p>The commit closure returns <code>None</code> on success or <code>Some(reason)</code> on
 failure, so an rpc-calling closure drops straight in.</p>
@@ -2744,6 +2746,59 @@ edit, and a <strong>dirty</strong> local wins (last-write-wins: the remote value
 remembered so your eventual push knowingly overwrites it). The
 <a href="#stdreactive-reference">reactive reference</a> states all of it precisely,
 and <code>bind_draft</code> in <a href="#building-ui">Building UI</a> is the input-side wiring.</p>
+</blockquote>
+<h3 id="one-commit-per-burst-not-per-keystroke"><a class="header" href="#one-commit-per-burst-not-per-keystroke">One commit per burst, not per keystroke</a></h3>
+<p>Per-keystroke-<em>safe</em> is not per-keystroke-<em>cheap</em>: a bound input sends a
+frame for every character. <code>debounce(millis)</code> coalesces a burst into one
+commit, and it does <strong>not</strong> slow the typing down — <code>local</code> and the <code>Dirty</code>
+state still land the instant you press a key, so the input is as immediate
+as ever. Only the commit waits for you to stop:</p>
+<pre><code class="language-vilan">import std::print;
+import std::reactive::{ draft, Draft, DraftState };
+import std::option::Option::{ self, Some, None };
+import std::shared::Shared;
+import std::time::{ sleep_for, Duration };
+
+fun main() {
+	let saved: Shared&lt;List&lt;str&gt;&gt; = Shared::new([]);
+	let notes = draft("", |value: str| {
+		saved.write().push(value);
+		None
+	}).debounce(30);
+
+	notes.push("h");
+	notes.push("he");
+	notes.push("hey");
+	print(notes.local.get());       // "hey" — instantly, nothing was delayed
+	print(saved.read().len());      // 0 — the window is still open
+
+	sleep_for(Duration::millis(150));
+	print(saved.read().len());      // 1 — one commit for the whole burst
+	print(saved.read()[0]);         // "hey" — the value you ended on
+}
+</code></pre>
+<p>The commit fires after the last push (trailing edge). <code>commit()</code> — a blur
+handler, a Save button — cancels a pending window and sends immediately, so
+an explicit save costs one commit rather than yours plus the window’s.</p>
+<h3 id="surviving-a-dropped-connection"><a class="header" href="#surviving-a-dropped-connection">Surviving a dropped connection</a></h3>
+<p>A draft edited while the connection is down keeps the user’s text, but
+nothing re-sends it on its own: the cell holds an opaque commit closure and
+has no idea what transport it rides, so it cannot notice a reconnect. You
+connect the two, in one line:</p>
+<pre><code class="language-vilan fragment">let title = draft(page.title, |value: str| { … client.rename(value) … });
+client.transport.on_reconnect(|| title.repush());
+</code></pre>
+<p><code>repush()</code> re-sends only if the remote never got the current value — a clean
+draft does nothing, so a screen full of untouched drafts costs nothing on
+reconnect. It is also what a “retry” button in a failure banner calls.</p>
+<blockquote>
+<p><strong>The honest part.</strong> Delivery is <em>at-least-once</em>: a commit the server
+applied but could not acknowledge before the socket died looks exactly
+like one that never arrived, so it gets sent twice. That is harmless for
+the shape drafts are built for — “set this field to this value” — and it
+is not for a commit that appends. And a re-push that fails is not retried
+on a timer; it rides the next reconnect, so a value the server keeps
+refusing can’t spin.</p>
 </blockquote>
 <h2 id="keyed-reconciliation"><a class="header" href="#keyed-reconciliation">Keyed reconciliation</a></h2>
 <p><code>reconcile(old_keys, old_items, new_items, key)</code> computes a minimal
@@ -3267,13 +3322,22 @@ style that set one. <code>border_color</code> is its own slot, which is what let
 
 let flush = const card.border_none().margin_left(Length::auto());
 </code></pre>
-<p><strong>Write one arity per family.</strong> Mixing the box with its edges —
-<code>padding(space(4)).padding_top(space(0))</code> — leaves two rules of equal
-specificity, and which one wins is decided by the stylesheet’s ordering
-of two generated class names rather than by the order you wrote them.
-The axis and edge methods share slots, so <code>padding_x(..)</code> then
-<code>padding_left(..)</code> <em>is</em> a clean override; it is the whole-box shorthand
-that does not compose.</p>
+<p><strong>Mixing arities is fine, and it resolves in the order you wrote it.</strong>
+A property that covers others — <code>padding</code> over its edges, <code>margin</code>,
+<code>inset</code> over <code>top</code>/<code>right</code>/<code>bottom</code>/<code>left</code>, <code>border</code> over its parts,
+<code>background</code>, <code>flex</code> — forms a <em>family</em>, and last-wins holds across the
+whole family, not just one property. So
+<code>padding(space(4)).padding_top(space(0))</code> is <code>1rem</code> on three edges and
+<code>0</code> on the top, and <code>padding_top(space(0)).padding(space(4))</code> is <code>1rem</code>
+all round: the later whole-box value replaces the edge outright, exactly
+as a second <code>padding(..)</code> would. The same holds across <code>+</code>, and across
+<code>raw</code> (a <code>raw("margin-left", "auto")</code> belongs to the <code>margin</code> family
+like the method does).</p>
+<pre><code class="language-vilan fragment">// A tight box with one edge opened up, and a card whose border is
+// recoloured — both read top to bottom, like the rest of the chain.
+let panel = const style().padding(space(4)).padding_top(space(0));
+let lit = const card + style().border_color(Color::blue(600));
+</code></pre>
 <h2 id="states-and-breakpoints"><a class="header" href="#states-and-breakpoints">States and breakpoints</a></h2>
 <p>Hover, focus, and friends take an <strong>inner</strong> style. Everything in the
 inner style applies under that condition:</p>
@@ -3389,12 +3453,11 @@ condition.</li>
 wins — and a reactive one keeps winning every time its signal
 changes. Use one mechanism per element (custom classes can ride along
 via <code>.raw</code>).</li>
-<li>Don’t mix a shorthand with its own longhands (<code>padding</code> with
-<code>padding_top</code>, <code>border</code> with <code>border_color</code> at the <em>same</em> condition).
-Each is its own atomic rule, they are equally specific, and the winner
-is decided by class-name ordering. Under a condition there is no
-problem — a <code>hover</code> rule is more specific than the base rule it
-overrides.</li>
+<li>A shorthand and its own longhands (<code>padding</code> with <code>padding_top</code>,
+<code>border</code> with <code>border_color</code>) resolve by the order you wrote them, not
+by specificity: a later longhand narrows the shorthand, a later
+shorthand replaces the whole family. This holds per condition, so a
+<code>dark</code> or <code>hover</code> variant of one family never disturbs the base.</li>
 </ul>
 <p>Full method table: the <a href="#stdstyle-reference">style reference</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -3758,6 +3821,17 @@ rejects with “connection lost”. A call made while down fails immediately
 with “not connected”. Nothing is silently retried, because an rpc might
 not be safe to repeat. Retrying is the app’s decision: a draft’s next
 push, or the user pressing the button again.</p>
+<p>Third — when you ask for it — a hook that runs once the connection is back
+<em>and</em> the mirrors have resynced. That is the moment to re-send whatever the
+outage swallowed, and for an edited draft it is one line:</p>
+<pre><code class="language-vilan fragment">let title = draft(page.title, |value: str| { … client.rename(value) … });
+client.transport.on_reconnect(|| title.repush());
+</code></pre>
+<p>Without it the user’s text survives in the input but never reaches the
+server until they type again. With it, the reconnect carries it. <code>repush</code>
+sends only when the remote is actually behind, and its delivery is
+at-least-once — see
+<a href="#surviving-a-dropped-connection">local-first drafts</a>.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> The backoff dials at 250 ms doubling to a 4 s cap,
 ten attempts before giving up (<code>Closed</code>). Mirrors rebind by
@@ -4551,21 +4625,31 @@ split = true
 </code></pre>
 <p>Now <code>vilan build</code> writes an eager <code>dist/client.js</code> plus one
 <code>dist/client.&lt;Route&gt;.js</code> per arm of your route <code>match</code>, and a
-<code>dist/client.chunks.json</code> listing them (serve the whole directory and you
-are done). No keyword, no <code>lazy()</code> wrapper, nothing to forget: the router
-<code>match</code> already marks the seams, so the split is inferred from the code you
-wrote. A function only one arm can reach rides that arm’s file; anything
-two arms share, and every module-level binding, stays eager.</p>
+<code>dist/client.chunks.json</code> listing them. No keyword, no <code>lazy()</code> wrapper,
+nothing to forget: the router <code>match</code> already marks the seams, so the split
+is inferred from the code you wrote. A function only one arm can reach rides
+that arm’s file; anything two arms share, and every module-level binding,
+stays eager.</p>
 <p><strong>What the user sees while a chunk loads: the page they were on.</strong> The
 route signal doesn’t advance until the code arrives, so there is no blank
 frame and no placeholder tree to design — the previous page simply stays,
-then swaps. First visit to a route pays one fetch; every later visit is
-instant. If the fetch fails, the navigation doesn’t happen (and the console
-says why). For a progress indicator, bind <code>router::pending()</code> — it’s an
-ordinary <code>Signal&lt;bool&gt;</code>, so <code>show</code> (or <code>bind_text</code>, or a class) is all it
+then swaps. The boot route’s chunk starts downloading before the shell is
+even built, so first paint waits on the network and not on your own
+JavaScript. First visit to a route pays one fetch; every later visit is
+instant, and a route nobody visits is never downloaded.</p>
+<p>Navigating away from a page whose chunk is still in flight is safe: the
+LATEST navigation wins, whatever order the fetches finish in, so a slow
+chunk can never land on top of the page you moved to.</p>
+<p>Two signals are the whole surface. <code>router::pending()</code> is true while a chunk
+is in flight; <code>router::chunk_error()</code> is <code>Some(reason)</code> when the last fetch
+failed. A failed fetch means the navigation simply did not happen — the page
+you were on is still there — and nothing is remembered as in flight, so
+<strong>clicking the link again retries</strong>. There is no retry API because a link is
+one. Both are ordinary signals, so <code>show</code>, <code>bind_text</code> or a class is all it
 takes:</p>
-<pre><code class="language-vilan browser">import std::reactive::Signal;
-import std::router::{ current_path, pending, segments };
+<pre><code class="language-vilan browser">import std::option::Option::{ None, Some, self };
+import std::reactive::Signal;
+import std::router::{ chunk_error, current_path, pending, segments };
 import std::ui::{ View, mount_root, view };
 
 [derive(PartialEq)]
@@ -4593,6 +4677,11 @@ fun main() {
 			// Visible only while a route chunk is in flight; the page behind
 			// it is the one you were already on.
 			.child(view("div").class("spinner").text("Loading…").show(pending()))
+			// …and if it never arrives, say so. The next click retries.
+			.child(view("div").class("error").bind_text(chunk_error().map(|failure| match failure {
+				Some(let reason) =&gt; "Could not load that page: " + reason,
+				None =&gt; "",
+			})))
 			.swap(route, |current| match current {
 				Route::Home =&gt; home_page(),
 				Route::NotFound =&gt; missing_page(),
@@ -4600,14 +4689,47 @@ fun main() {
 	});
 }
 </code></pre>
-<p>Two things to know. <code>split</code> is a <code>browser</code> leg’s key — a Node entry has no
-navigation to gate, and the build says so rather than ignoring the line.
-And <code>--watch</code> builds ignore it: HMR swaps whole bundles, so the dev loop
-keeps working on one file. Single-file emission stays the default and is
-not going anywhere; <code>split</code> is opt-in, per leg.</p>
-<p><code>vilan build --print-chunks</code> reports what <em>would</em> split without emitting
-anything, which is the way to find out whether a leg has enough per-route
-code to be worth it.</p>
+<h3 id="serving-the-chunks"><a class="header" href="#serving-the-chunks">Serving the chunks</a></h3>
+<p>A chunk is fetched from the same directory the bundle was served from, so a
+static host needs nothing: serve <code>dist/</code> and you are done. A hand-written
+server iterates <code>dist/client.chunks.json</code> instead of hard-coding a route per
+file — it lists every artifact the build wrote, so adding, renaming or
+removing a route arm needs no server change:</p>
+<pre><code class="language-json">{
+	"entry": "client.js",
+	"chunks": [
+		{ "arm": "Route::Home", "tag": 0, "file": "client.Route_Home.js" },
+		{ "arm": "Route::Docs(..)", "tag": 1, "file": "client.Route_Docs.js" }
+	]
+}
+</code></pre>
+<p><code>examples/fullstack</code>’s server does exactly that: it reads the manifest at
+boot, keeps each named file in memory beside <code>client.js</code>, and serves them by
+path. A leg that does not split writes no manifest, and that code path is
+then simply empty — so the same server works either way.</p>
+<h3 id="is-it-worth-it"><a class="header" href="#is-it-worth-it">Is it worth it?</a></h3>
+<p>Splitting is not free. The route gate, the per-chunk forwarders and the
+embedded chunk map are a fixed cost paid once per split leg — on the order
+of 6 KB — so a leg whose pages are small ships MORE on first load than it
+would whole. The build measures this rather than leaving you to guess: it
+emits your entry both ways and, when splitting came out no smaller, warns
+with your leg’s own numbers.</p>
+<pre><code class="language-text">warning: `split` on `client`: splitting adds 1720 bytes to the first load
+and defers only 6802 — the route gate, the forwarders and the chunk map cost
+more than this leg's per-route code saves. Consider dropping it…
+</code></pre>
+<p><code>vilan build --print-chunks</code> prints the same verdict without opting in, so
+you can measure a leg before you split it.</p>
+<h3 id="the-rest-of-the-rules"><a class="header" href="#the-rest-of-the-rules">The rest of the rules</a></h3>
+<p><code>split</code> is a <code>browser</code> leg’s key — a Node entry has no navigation to gate,
+and the build says so rather than ignoring the line. <code>vilan run</code> ignores it,
+watched or not: the dev loop hot-swaps whole bundles, so it emits one file
+per leg and says so once. (It also clears any chunk files a previous
+<code>vilan build</code> left, so <code>dist/</code> never describes a build that is no longer
+there — the same sweep runs on every build, so a renamed route arm never
+leaves its old chunk behind either.) Single-file emission stays the default
+and is not going anywhere; <code>split</code> is opt-in, per leg, and a <code>vilan build</code>
+decision.</p>
 <h2 id="cleaning-up-strays"><a class="header" href="#cleaning-up-strays">Cleaning up strays</a></h2>
 <p>The swap disposes the UI root and closes the live rpc socket for you. Anything
 <em>else</em> a bundle started outside the reactive system (a raw interval, a bare
@@ -5838,14 +5960,17 @@ rollback is wrong mid-typing.</p>
 struct Draft&lt;T&gt; {
 	local: Signal&lt;T&gt;,           // bind inputs to this; read like any signal
 	state: Signal&lt;DraftState&gt;,  // bind a status label to this
-	…                           // internals: synced value, generation counter
+	…                           // internals: synced value, generation, debounce window
 }
 
 fun draft&lt;T: PartialEq&gt;(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;
 
 impl Draft&lt;type T: PartialEq&gt; {
-	fun push(self, value: T)    // set local + SPAWN the commit (returns immediately)
-	fun adopt(self, remote: T)  // fold in a remote value
+	fun push(self, value: T)              // set local + SPAWN the commit (returns immediately)
+	fun adopt(self, remote: T)            // fold in a remote value
+	fun debounce(self, millis: i32): Draft&lt;T&gt;  // coalesce pushes; returns self for chaining
+	fun commit(self)                      // send now, cancelling any pending window
+	fun repush(self)                      // re-send iff local != synced (the reconnect path)
 }
 </code></pre>
 <ul>
@@ -5862,7 +5987,41 @@ the eventual push knowingly overwrites (last-write-wins).</li>
 <li>On failure, <code>state</code> carries the reason and <code>local</code> keeps the user’s text;
 the next <code>push</code> retries naturally.</li>
 </ul>
-<p>UI wiring: <code>View.bind_draft(draft)</code>; see the <a href="#browser-modules-reference">browser reference</a>.</p>
+<h3 id="debounce--one-commit-per-burst"><a class="header" href="#debounce--one-commit-per-burst">debounce — one commit per burst</a></h3>
+<p><code>debounce(millis)</code> coalesces pushes: the commit fires <code>millis</code> after the
+<strong>last</strong> one, carrying the value as of that moment. <code>0</code> (the default) commits
+on every push.</p>
+<ul>
+<li><strong>Local-first is unaffected.</strong> <code>local</code> and the <code>Dirty</code> state are still set
+synchronously inside <code>push</code>; only the commit waits out the window.</li>
+<li><strong>Trailing edge.</strong> Three keystrokes inside the window produce one commit.</li>
+<li><code>commit()</code> — the explicit save (a blur, a Save button) — cancels a pending
+window and sends now. Exactly one commit results, not two.</li>
+<li>The window belongs to the cell, so every copy of a draft agrees about it.</li>
+</ul>
+<h3 id="repush--recover-the-edits-an-outage-swallowed"><a class="header" href="#repush--recover-the-edits-an-outage-swallowed">repush — recover the edits an outage swallowed</a></h3>
+<p><code>repush()</code> re-sends the local value <strong>iff <code>local != synced</code></strong> — an edit whose
+commit never left, or one caught in flight by a drop (a failed commit keeps
+the local value and does not advance <code>synced</code>). A clean draft sends nothing.
+A pending debounce window is cancelled and the value goes immediately.</p>
+<p>Wire it to a transport’s reconnect hook and a dropped connection stops
+losing work; it is also the “retry” behind a failure banner’s button:</p>
+<pre><code class="language-vilan fragment">client.transport.on_reconnect(|| title.repush());
+</code></pre>
+<ul>
+<li><strong>Delivery is at-least-once.</strong> A commit the server applied but could not
+acknowledge before the socket died is indistinguishable here from one that
+never arrived, so the server may see it twice. <code>Draft</code>’s own reconcile
+absorbs the duplicate (<code>adopt</code> no-ops on an echo; the generation counter
+discards the superseded commit’s outcome), but <strong>your commit closure must
+tolerate a repeat</strong>: “set the remote to this value” does, “append this
+entry” does not.</li>
+<li><strong>A failed re-push is not retried on a timer.</strong> It settles <code>Failed</code>, keeps
+<code>local</code>, and the next reconnect sends it again — so a value the server is
+permanently refusing cannot spin.</li>
+</ul>
+<p>UI wiring: <code>View.bind_draft(draft)</code>; see the <a href="#browser-modules-reference">browser reference</a>.
+The reconnect hook is in the <a href="#connection-state">rpc reference</a>.</p>
 <h2 id="reconcile-keyed-list-diffing"><a class="header" href="#reconcile-keyed-list-diffing">reconcile: keyed list diffing</a></h2>
 <pre><code class="language-vilan fragment">enum RowStep {
 	Keep(i32),     // reuse old row at index (moved into the new order)
@@ -6001,12 +6160,18 @@ one atomic rule, deduplicated build-wide.</p>
 <p>A <code>str</code>-valued method is not a weaker <code>raw</code>: it keeps the property name
 checked and completable while the <em>value</em> stays a CSS expression the compiler
 has nothing to validate (a font stack, a transform list, a shadow layer).</p>
-<p><strong>One arity per family.</strong> The name carries the arity — whole box
-(<code>padding</code>), axis (<code>padding_x</code>), edge (<code>padding_top</code>) — and there is no
-multi-value shorthand method, because <code>padding_y(v).padding_x(h)</code> already
-computes <code>padding: v h</code>. Mixing a shorthand with its own longhands leaves
-two equally specific atomic rules whose order the class-name sort decides;
-the axis and edge methods share slots and override cleanly.</p>
+<p><strong>The name carries the arity</strong> — whole box (<code>padding</code>), axis
+(<code>padding_x</code>), edge (<code>padding_top</code>) — and there is no multi-value
+shorthand method, because <code>padding_y(v).padding_x(h)</code> already computes
+<code>padding: v h</code>.</p>
+<p><strong>Arities mix, and resolve in authoring order.</strong> A property that covers
+others forms a family — <code>padding</code>, <code>margin</code>, <code>inset</code> (over <code>top</code>,
+<code>right</code>, <code>bottom</code>, <code>left</code>), <code>border</code> (over its parts and edges),
+<code>background</code>, <code>flex</code> — and last-wins applies to the whole family: a
+longhand written after the shorthand narrows it, a shorthand written
+after a longhand replaces the family outright. Per condition, so a
+<code>hover</code> or <code>dark</code> variant never disturbs the base, and through <code>raw</code>
+too, since the family is a fact about the CSS property.</p>
 <p>Escape hatches:</p>
 <pre><code class="language-vilan fragment">fun raw(self, property: str, value: str): Style
 fun with_length(self, property: str, value: Length): Style
@@ -6091,6 +6256,7 @@ rpc’s own return type (<code>Option&lt;Task&gt;</code>), not here.</p>
 
 impl SocketTransport {
 	fun connection_state(self): Signal&lt;ConnectionState&gt;
+	fun on_reconnect(self, hook: async || void)
 }
 </code></pre>
 <p>The reconnect lifecycle (automatic): on drop → <code>Reconnecting</code>, in-flight
@@ -6099,6 +6265,17 @@ calls reject with <code>Transport("connection lost")</code>, new calls fail fast
 10 attempts); on success → contract re-check, mirrors re-attach and resync,
 <code>Connected</code>. Backoff exhausted → <code>Closed</code>. Nothing is ever silently
 retried; retry is the app’s decision.</p>
+<p><code>on_reconnect</code> is where that decision goes. Hooks run after each successful
+re-dial, awaited in order, and the generated client registers its own mirror
+re-attach when it connects — so <strong>a hook you register runs after the mirrors
+have resynced</strong>, which <code>connection_state</code> cannot tell you: the state flips to
+<code>Connected</code> one beat earlier, because the re-attach’s own rpc call needs a
+usable transport first. Bind the signal for a banner; use the hook for
+anything that needs current mirrors.</p>
+<pre><code class="language-vilan fragment">client.transport.on_reconnect(|| title.repush());
+</code></pre>
+<p>Keep a hook short — it runs inside the reconnect loop’s own extent, so a long
+round-trip inside one holds the reconnect open behind it.</p>
 <h2 id="transports"><a class="header" href="#transports">Transports</a></h2>
 <pre><code class="language-vilan fragment">trait Transport {
 	fun call(self, request: Frame): Task&lt;Result&lt;Frame, str&gt;&gt;;
@@ -7783,7 +7960,9 @@ declares <code>own self</code>: <code>o.unwrap()</code> is a move of <code>o</co
 use-after-move and <code>o</code> is not torn down at scope end. A bare <code>self</code>
 receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</li>
 <li><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
-diverging leg is exempt).</li>
+diverging leg is exempt). A tail move-out is still a move on <em>that</em> path
+only — R7 reads the arms against each other, so producing a different
+binding from each arm is a conditional move, not two independent returns.</li>
 <li><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
 read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>); moving it out of a
 live aggregate is rejected; v1 has no partial moves. The sanctioned
@@ -7796,11 +7975,24 @@ holds for a <code>let</code> pattern (<code>let (handle, count) = pair</code>), 
 drop at the declaring scope’s end. Matching a loan (<code>match &amp;self.state</code>,
 and the <code>x is Some(let v)</code> test) inspects without consuming: the subject
 keeps ownership and destroys the payload itself, so its captures own
-nothing.</li>
+nothing — and, owning nothing, they may not be <strong>consumed</strong>. This is R3’s
+“a loan changes no ownership” read in the capture position: <code>own</code>-passing
+a loaned capture, returning it, or matching it by value would hand a
+second owner the payload the subject still destroys at its own scope end.
+The fix is to consume the <em>subject</em> (<code>match x</code> without the <code>&amp;</code>), not to
+redeclare the capture — a capture carries no convention to change.</li>
 <li><strong>R7: no conditional moves.</strong> A binding must be moved on every path
 through a scope or on none; moving it on one path only is an error. This
 keeps end-of-scope ownership static: there are no runtime drop flags in
-v1.</li>
+v1. <strong>Branch tails are paths too.</strong> R4 makes each arm’s tail a move-out,
+and the arms are alternatives, not a rejoin — so <code>if flag { x } else { x }</code>
+is moved on every path and fine, while <code>if flag { first } else { second }</code>
+moves each binding on one path and abandons it on the other, and is the
+same error. The one exemption is a binding that, on the path in question,
+provably carries <strong>no resource payload</strong>: after a failed <code>x is Some(_)</code>
+test <code>x</code> can only be <code>None</code>, which has nothing to destroy, so leaving it
+un-moved there leaks nothing. The exemption is granted only on proof — an
+enum whose every variant carries a payload gets none.</li>
 <li><strong>R8: no moves in repeatable interiors.</strong> Moving a binding declared
 outside a loop from inside its body is an error (the move would repeat).</li>
 <li><strong>R9: closures and spawns cannot capture resources.</strong> Capturing one would
@@ -7828,7 +8020,14 @@ the affine rules (T := the resource): every T-typed value is used at most
 once as a move, with no captures and no copies. <code>Option::unwrap(own self): T</code> passes; a body that reads its parameter twice fails <strong>at the instantiation
 site</strong>, not inside std. For an <code>own T</code> parameter the rule tightens to
 <em>exactly</em> once (a generic body is emitted once and so cannot run an
-instantiation-conditional destructor; zero moves would leak).</li>
+instantiation-conditional destructor; zero moves would leak). The tightening
+is not about parameters but about <strong>destruction</strong>: since a generic body can
+destroy nothing, <em>no</em> <code>T</code>-typed value in it may still own at the end of its
+scope — not a parameter, not a <code>let</code> local, and not a pattern capture that
+took a consumed subject’s payload (R6). Each is the same leak and is rejected
+at the instantiation site. The consequence worth stating: a combinator that
+hands a payload to a closure and then discards it — the closure only <em>loans</em>
+it — cannot be resource-clean, whatever its receiver convention.</li>
 <li><strong>R12: no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
 is an error (<code>print(db)</code> included): <code>any</code> is a data sink, and the
 discipline must not launder away. Debug-print the fields instead.</li>
@@ -7868,7 +8067,9 @@ value. <strong>Every exit runs drops</strong>: fall-through, <code>ret</code>, <
 resource-owning scope lowers to a <code>try</code>/<code>finally</code> and every exit flows
 through the <code>finally</code>. Concrete <code>own</code> resource <em>parameters</em> drop at scope
 end like locals (a generic <code>own T</code> is required to move out instead, per
-R11).</p>
+R11) — and the same split holds for pattern captures: a concrete one drops
+at its arm’s end, while inside a generic body no <code>T</code>-typed capture may be
+left owning at all.</p>
 <ul>
 <li><strong>Module-level resources never drop.</strong> A top-level <code>let</code> resource has
 process lifetime (the serve-forever server’s <code>Database</code>). It is
@@ -8044,6 +8245,29 @@ copying it refers to the same task). <code>async { … }</code> spawns a block.<
 <li><code>await expr</code>: suspend until the <code>Task&lt;T&gt;</code> (or raw host <code>Promise&lt;T&gt;</code>)
 operand settles; yields <code>T</code>.</li>
 </ul>
+<p><strong><code>Task</code> does not nest.</strong> A task settles with a <em>value</em>, and a task is not
+one: spawning a computation that produces a task yields <code>Task&lt;T&gt;</code>, not
+<code>Task&lt;Task&lt;T&gt;&gt;</code>, and one <code>await</code> reaches the value. This holds however the
+type arises — including a generic <code>T</code> that instantiates at a task — so
+<code>Task&lt;..&gt;</code> is idempotent: <code>Task&lt;Task&lt;T&gt;&gt;</code> is not a type any expression has.</p>
+<pre><code class="language-vilan">import std::print;
+import std::task::Task;
+
+fun wrap&lt;T&gt;(value: T): Task&lt;T&gt; {
+	async { value }
+}
+
+fun main() {
+	let inner: Task&lt;i32&gt; = async { 7 };
+	let outer: Task&lt;i32&gt; = async { inner };   // not `Task&lt;Task&lt;i32&gt;&gt;`
+	let value: i32 = await outer;             // one `await`, not two
+	print(value + await wrap(inner));         // generic `T` = `Task&lt;i32&gt;`: same rule
+}
+</code></pre>
+<p>The rule follows the host rather than being imposed on it: a task is a
+host thenable, and the promise resolution procedure <em>adopts</em> a thenable
+result instead of boxing it. A nested task is unrepresentable at runtime,
+so the type says so too.</p>
 <p>A spawned computation runs to its first suspension synchronously, then
 interleaves with its spawner per the host event loop. Dropping a task
 abandons nothing: the computation still runs; only its result is
@@ -8399,13 +8623,31 @@ runtime call: the answer would not be a constant.</p>
 callable <strong>only</strong> during const evaluation: it declares a build asset
 (the styling system’s CSS, for example) that the build writes beside
 the output. Asset emission is deterministic: same inputs, same files.</p>
+<p>A function that reaches <code>emit</code> is <strong>compile-time-only</strong>, transitively,
+and the compiler enforces that statically. A call from runtime code
+into compile-time-only territory is an error at the outermost crossing
+— the call that leaves ordinary code. Because a call made <em>through a
+value</em> has no statically known callee, a compile-time-only function
+also has <strong>no runtime value form</strong>: naming one as a value (passing it
+to a higher-order function, binding it, or writing a closure literal
+that reaches <code>emit</code>) is an error at that reference, outside a <code>const</code>.
+Inside a <code>const</code> the restriction lifts entirely — the interpreter makes
+the call, so <code>const apply(styled)</code> is legal where <code>apply(styled)</code> is
+not.</p>
 <h2 id="93-failure-and-resource-limits"><a class="header" href="#93-failure-and-resource-limits">9.3 Failure and resource limits</a></h2>
 <p>Const evaluation is total by construction of the budget: each run is
-bounded by the interpreter’s <strong>fuel</strong> (steps) and <strong>depth</strong> (nesting),
-shared with macro expansion and configured by the manifest’s <code>[macro]</code>
-section (§11.4). Exhausting either, or panicking during evaluation, is
-a compile error carrying the const expression’s span. A runaway
-<code>const</code> fails the build; it cannot hang it.</p>
+bounded by the interpreter’s <strong>fuel</strong> (steps) and <strong>depth</strong> (nesting).
+Exhausting either, or panicking during evaluation, is a compile error
+carrying the const expression’s span; a budget failure says so, rather
+than reading as a program error. A runaway <code>const</code> fails the build; it
+cannot hang it. The budgets are the interpreter’s own defaults — the
+manifest’s <code>[macro]</code> section (§11.4) sizes macro <em>expansion</em> only, and
+does not size <code>const</code>.</p>
+<p>The primary span is the <code>const</code> expression itself, always: the tree the
+interpreter evaluates is compiled output and carries no source
+positions, so there is no inner expression to anchor to. The diagnostic
+instead names the <strong>function</strong> the failure occurred in and notes that
+function’s declaration, with the call chain that reached it.</p>
 <h2 id="94-results"><a class="header" href="#94-results">9.4 Results</a></h2>
 <p>The result of a <code>const</code> expression is spliced as a literal of its
 type: numbers, strings, booleans, lists, tuples, structs and enums of
@@ -8562,7 +8804,10 @@ functions exactly one arm of the entry’s route <code>match</code> can reach. A
 <code>dist/&lt;name&gt;.chunks.json</code> lists them. Chunks are fetched when a
 navigation first reaches their arm, and the route value does not advance
 until one arrives; which functions land where is implementation-defined
-beyond that rule. <code>split</code> on a non-<code>browser</code> entry is a manifest error.
+beyond that rule. Overlapping navigations resolve by order of DEPARTURE,
+not of arrival: a chunk that lands after a later navigation began does not
+advance the route value. A fetch that fails leaves the route value where it
+was and is not remembered, so a later navigation to that arm fetches again. <code>split</code> on a non-<code>browser</code> entry is a manifest error.
 <code>vilan run</code> builds all entries and starts one <code>@process</code> entry: the
 only one, the designated <code>default-entry</code>, or the one <code>--entry</code> names;
 <code>vilan check</code> checks every entry, always. The emitted text beyond
@@ -8681,15 +8926,20 @@ overrides the package’s <code>target</code> (<code>--target</code> is an accep
 <code>.callgraph.out</code> dumps, for poking at the compiler’s view of your code.</li>
 <li><code>--print-chunks</code>: report the route-chunk plan — what a <code>split = true</code>
 browser leg would load lazily per route, with function counts and a byte
-estimate. Analysis only; the emitted JavaScript is unchanged, so this is
-how to measure a leg before opting it in
+estimate, plus a <code>verdict:</code> line measuring what splitting would actually
+cost the first load (the entry is emitted both ways and compared).
+Analysis only; the emitted JavaScript is unchanged, so this is how to
+measure a leg before opting it in
 (<a href="#shipping-routes-separately">the dev loop</a>).</li>
 <li><code>--backend js</code>: the only backend today; the flag exists so a future
 one has somewhere to live.</li>
 </ul>
 <p>A <code>browser</code> entry with <code>[entry.&lt;name&gt;] split = true</code> writes an eager
 bundle plus one file per route arm and a <code>&lt;name&gt;.chunks.json</code> listing
-them.</p>
+them, and warns when the split cost the first load more than it deferred.
+The leg’s chunk files belong to its last build: a build that writes none
+removes any a previous one left. <code>vilan run</code> ignores <code>split</code> — the dev
+loop swaps whole bundles — and emits the leg as one file.</p>
 <h2 id="vilan-check-file"><a class="header" href="#vilan-check-file"><code>vilan check [file]</code></a></h2>
 <p><code>build</code> without the output: type-checks and reports diagnostics, writes
 nothing, and runs no <code>[build] run</code> hooks. Same path forms and flags
@@ -9164,10 +9414,36 @@ Styles (and other build assets) are constructed at compile time. Build
 the <code>Style</code> in a <code>const</code> (<code>let card = const style()…</code>); select and merge
 already-built styles at runtime.
 → <a href="#styling">Styling</a>, <a href="#macros--const">Macros &amp; const</a></p>
+<p><strong>“… is compile-time-only; evaluate this call inside a <code>const</code> expression”</strong>
+The same rule, caught statically: some function on this call path reaches
+<code>asset::emit</code>, and the call itself sits in runtime code. The span is the
+outermost runtime crossing — the call that leaves ordinary code and enters
+style-building territory — so wrap <em>that</em> call in a <code>const</code>.</p>
+<p><strong>“… is compile-time-only; call it directly inside a <code>const</code> expression — a
+compile-time-only function has no runtime value form”</strong>
+A compile-time-only function (or a closure that reaches one) was used as a
+<em>value</em> — passed to a higher-order function, stored in a binding, built as a
+closure literal — rather than called. The compiler cannot follow a call made
+through a value, so it refuses the value instead. Call it directly inside the
+<code>const</code>: <code>const apply(styled)</code> is fine, <code>apply(styled)</code> at runtime is not.</p>
 <p><strong>“a <code>const</code> result must be plain data; this evaluates to …”</strong>
 The <code>const</code> expression produced something that can’t be baked into the
 output (a closure, a host object). Fold values, not behavior.
 → <a href="#macros--const">Macros &amp; const</a></p>
+<p><strong>“const evaluation failed in <code>f</code>: …”</strong>
+The computation ran and something inside it went wrong — a panic, a
+subscript past the end. The squiggle is on the <code>const</code> expression,
+because that is the expression the compiler is refusing to fold; the
+message names the function it failed <em>in</em>, and the note points at that
+function’s declaration with the call chain that reached it. (The
+compiler cannot point inside the callee: the tree it evaluates is the
+compiled output, which carries no source positions.)</p>
+<p><strong>“const evaluation did not finish within the compile-time budget in
+<code>f</code>: …”</strong>
+The same thing, but the computation never finished rather than failing:
+it exhausted the interpreter’s step budget (an unbounded <code>for</code>) or its
+call-depth cap (unbounded recursion). The build fails rather than
+hangs. Fix the termination condition, or move the work to runtime.</p>
 <h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
 <p><strong>A struct literal in a condition parses as the block</strong>
 Struct literals are ordinary operator operands (<code>Point { … } == q</code>

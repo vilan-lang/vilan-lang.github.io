@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -326,13 +326,22 @@ style that set one. <code>border_color</code> is its own slot, which is what let
 
 let flush = const card.border_none().margin_left(Length::auto());
 </code></pre>
-<p><strong>Write one arity per family.</strong> Mixing the box with its edges —
-<code>padding(space(4)).padding_top(space(0))</code> — leaves two rules of equal
-specificity, and which one wins is decided by the stylesheet’s ordering
-of two generated class names rather than by the order you wrote them.
-The axis and edge methods share slots, so <code>padding_x(..)</code> then
-<code>padding_left(..)</code> <em>is</em> a clean override; it is the whole-box shorthand
-that does not compose.</p>
+<p><strong>Mixing arities is fine, and it resolves in the order you wrote it.</strong>
+A property that covers others — <code>padding</code> over its edges, <code>margin</code>,
+<code>inset</code> over <code>top</code>/<code>right</code>/<code>bottom</code>/<code>left</code>, <code>border</code> over its parts,
+<code>background</code>, <code>flex</code> — forms a <em>family</em>, and last-wins holds across the
+whole family, not just one property. So
+<code>padding(space(4)).padding_top(space(0))</code> is <code>1rem</code> on three edges and
+<code>0</code> on the top, and <code>padding_top(space(0)).padding(space(4))</code> is <code>1rem</code>
+all round: the later whole-box value replaces the edge outright, exactly
+as a second <code>padding(..)</code> would. The same holds across <code>+</code>, and across
+<code>raw</code> (a <code>raw("margin-left", "auto")</code> belongs to the <code>margin</code> family
+like the method does).</p>
+<pre><code class="language-vilan fragment">// A tight box with one edge opened up, and a card whose border is
+// recoloured — both read top to bottom, like the rest of the chain.
+let panel = const style().padding(space(4)).padding_top(space(0));
+let lit = const card + style().border_color(Color::blue(600));
+</code></pre>
 <h2 id="states-and-breakpoints"><a class="header" href="#states-and-breakpoints">States and breakpoints</a></h2>
 <p>Hover, focus, and friends take an <strong>inner</strong> style. Everything in the
 inner style applies under that condition:</p>
@@ -448,12 +457,11 @@ condition.</li>
 wins — and a reactive one keeps winning every time its signal
 changes. Use one mechanism per element (custom classes can ride along
 via <code>.raw</code>).</li>
-<li>Don’t mix a shorthand with its own longhands (<code>padding</code> with
-<code>padding_top</code>, <code>border</code> with <code>border_color</code> at the <em>same</em> condition).
-Each is its own atomic rule, they are equally specific, and the winner
-is decided by class-name ordering. Under a condition there is no
-problem — a <code>hover</code> rule is more specific than the base rule it
-overrides.</li>
+<li>A shorthand and its own longhands (<code>padding</code> with <code>padding_top</code>,
+<code>border</code> with <code>border_color</code>) resolve by the order you wrote them, not
+by specificity: a later longhand narrows the shorthand, a later
+shorthand replaces the whole family. This holds per condition, so a
+<code>dark</code> or <code>hover</code> variant of one family never disturbs the base.</li>
 </ul>
 <p>Full method table: the <a href="../std/style.html">style reference</a>.</p>
 

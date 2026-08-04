@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -412,6 +412,8 @@ can safely commit through an rpc:</p>
 draft(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;
 draft.push(value)   // set local + spawn the commit (never waits on the wire)
 draft.adopt(remote) // fold in a remote change
+draft.commit()      // send now (the explicit save)
+draft.repush()      // re-send if the remote never got the current value
 </code></pre>
 <p>The commit closure returns <code>None</code> on success or <code>Some(reason)</code> on
 failure, so an rpc-calling closure drops straight in.</p>
@@ -455,6 +457,59 @@ edit, and a <strong>dirty</strong> local wins (last-write-wins: the remote value
 remembered so your eventual push knowingly overwrites it). The
 <a href="../std/reactive.html">reactive reference</a> states all of it precisely,
 and <code>bind_draft</code> in <a href="ui.html">Building UI</a> is the input-side wiring.</p>
+</blockquote>
+<h3 id="one-commit-per-burst-not-per-keystroke"><a class="header" href="#one-commit-per-burst-not-per-keystroke">One commit per burst, not per keystroke</a></h3>
+<p>Per-keystroke-<em>safe</em> is not per-keystroke-<em>cheap</em>: a bound input sends a
+frame for every character. <code>debounce(millis)</code> coalesces a burst into one
+commit, and it does <strong>not</strong> slow the typing down — <code>local</code> and the <code>Dirty</code>
+state still land the instant you press a key, so the input is as immediate
+as ever. Only the commit waits for you to stop:</p>
+<pre><code class="language-vilan">import std::print;
+import std::reactive::{ draft, Draft, DraftState };
+import std::option::Option::{ self, Some, None };
+import std::shared::Shared;
+import std::time::{ sleep_for, Duration };
+
+fun main() {
+	let saved: Shared&lt;List&lt;str&gt;&gt; = Shared::new([]);
+	let notes = draft("", |value: str| {
+		saved.write().push(value);
+		None
+	}).debounce(30);
+
+	notes.push("h");
+	notes.push("he");
+	notes.push("hey");
+	print(notes.local.get());       // "hey" — instantly, nothing was delayed
+	print(saved.read().len());      // 0 — the window is still open
+
+	sleep_for(Duration::millis(150));
+	print(saved.read().len());      // 1 — one commit for the whole burst
+	print(saved.read()[0]);         // "hey" — the value you ended on
+}
+</code></pre>
+<p>The commit fires after the last push (trailing edge). <code>commit()</code> — a blur
+handler, a Save button — cancels a pending window and sends immediately, so
+an explicit save costs one commit rather than yours plus the window’s.</p>
+<h3 id="surviving-a-dropped-connection"><a class="header" href="#surviving-a-dropped-connection">Surviving a dropped connection</a></h3>
+<p>A draft edited while the connection is down keeps the user’s text, but
+nothing re-sends it on its own: the cell holds an opaque commit closure and
+has no idea what transport it rides, so it cannot notice a reconnect. You
+connect the two, in one line:</p>
+<pre><code class="language-vilan fragment">let title = draft(page.title, |value: str| { … client.rename(value) … });
+client.transport.on_reconnect(|| title.repush());
+</code></pre>
+<p><code>repush()</code> re-sends only if the remote never got the current value — a clean
+draft does nothing, so a screen full of untouched drafts costs nothing on
+reconnect. It is also what a “retry” button in a failure banner calls.</p>
+<blockquote>
+<p><strong>The honest part.</strong> Delivery is <em>at-least-once</em>: a commit the server
+applied but could not acknowledge before the socket died looks exactly
+like one that never arrived, so it gets sent twice. That is harmless for
+the shape drafts are built for — “set this field to this value” — and it
+is not for a commit that appends. And a re-push that fails is not retried
+on a timer; it rides the next reconnect, so a value the server keeps
+refusing can’t spin.</p>
 </blockquote>
 <h2 id="keyed-reconciliation"><a class="header" href="#keyed-reconciliation">Keyed reconciliation</a></h2>
 <p><code>reconcile(old_keys, old_items, new_items, key)</code> computes a minimal

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -335,14 +335,17 @@ rollback is wrong mid-typing.</p>
 struct Draft&lt;T&gt; {
 	local: Signal&lt;T&gt;,           // bind inputs to this; read like any signal
 	state: Signal&lt;DraftState&gt;,  // bind a status label to this
-	…                           // internals: synced value, generation counter
+	…                           // internals: synced value, generation, debounce window
 }
 
 fun draft&lt;T: PartialEq&gt;(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;
 
 impl Draft&lt;type T: PartialEq&gt; {
-	fun push(self, value: T)    // set local + SPAWN the commit (returns immediately)
-	fun adopt(self, remote: T)  // fold in a remote value
+	fun push(self, value: T)              // set local + SPAWN the commit (returns immediately)
+	fun adopt(self, remote: T)            // fold in a remote value
+	fun debounce(self, millis: i32): Draft&lt;T&gt;  // coalesce pushes; returns self for chaining
+	fun commit(self)                      // send now, cancelling any pending window
+	fun repush(self)                      // re-send iff local != synced (the reconnect path)
 }
 </code></pre>
 <ul>
@@ -359,7 +362,41 @@ the eventual push knowingly overwrites (last-write-wins).</li>
 <li>On failure, <code>state</code> carries the reason and <code>local</code> keeps the user’s text;
 the next <code>push</code> retries naturally.</li>
 </ul>
-<p>UI wiring: <code>View.bind_draft(draft)</code>; see the <a href="browser.html">browser reference</a>.</p>
+<h3 id="debounce--one-commit-per-burst"><a class="header" href="#debounce--one-commit-per-burst">debounce — one commit per burst</a></h3>
+<p><code>debounce(millis)</code> coalesces pushes: the commit fires <code>millis</code> after the
+<strong>last</strong> one, carrying the value as of that moment. <code>0</code> (the default) commits
+on every push.</p>
+<ul>
+<li><strong>Local-first is unaffected.</strong> <code>local</code> and the <code>Dirty</code> state are still set
+synchronously inside <code>push</code>; only the commit waits out the window.</li>
+<li><strong>Trailing edge.</strong> Three keystrokes inside the window produce one commit.</li>
+<li><code>commit()</code> — the explicit save (a blur, a Save button) — cancels a pending
+window and sends now. Exactly one commit results, not two.</li>
+<li>The window belongs to the cell, so every copy of a draft agrees about it.</li>
+</ul>
+<h3 id="repush--recover-the-edits-an-outage-swallowed"><a class="header" href="#repush--recover-the-edits-an-outage-swallowed">repush — recover the edits an outage swallowed</a></h3>
+<p><code>repush()</code> re-sends the local value <strong>iff <code>local != synced</code></strong> — an edit whose
+commit never left, or one caught in flight by a drop (a failed commit keeps
+the local value and does not advance <code>synced</code>). A clean draft sends nothing.
+A pending debounce window is cancelled and the value goes immediately.</p>
+<p>Wire it to a transport’s reconnect hook and a dropped connection stops
+losing work; it is also the “retry” behind a failure banner’s button:</p>
+<pre><code class="language-vilan fragment">client.transport.on_reconnect(|| title.repush());
+</code></pre>
+<ul>
+<li><strong>Delivery is at-least-once.</strong> A commit the server applied but could not
+acknowledge before the socket died is indistinguishable here from one that
+never arrived, so the server may see it twice. <code>Draft</code>’s own reconcile
+absorbs the duplicate (<code>adopt</code> no-ops on an echo; the generation counter
+discards the superseded commit’s outcome), but <strong>your commit closure must
+tolerate a repeat</strong>: “set the remote to this value” does, “append this
+entry” does not.</li>
+<li><strong>A failed re-push is not retried on a timer.</strong> It settles <code>Failed</code>, keeps
+<code>local</code>, and the next reconnect sends it again — so a value the server is
+permanently refusing cannot spin.</li>
+</ul>
+<p>UI wiring: <code>View.bind_draft(draft)</code>; see the <a href="browser.html">browser reference</a>.
+The reconnect hook is in the <a href="rpc.html#connection-state">rpc reference</a>.</p>
 <h2 id="reconcile-keyed-list-diffing"><a class="header" href="#reconcile-keyed-list-diffing">reconcile: keyed list diffing</a></h2>
 <pre><code class="language-vilan fragment">enum RowStep {
 	Keep(i32),     // reuse old row at index (moved into the new order)

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -265,7 +265,10 @@ functions exactly one arm of the entry’s route <code>match</code> can reach. A
 <code>dist/&lt;name&gt;.chunks.json</code> lists them. Chunks are fetched when a
 navigation first reaches their arm, and the route value does not advance
 until one arrives; which functions land where is implementation-defined
-beyond that rule. <code>split</code> on a non-<code>browser</code> entry is a manifest error.
+beyond that rule. Overlapping navigations resolve by order of DEPARTURE,
+not of arrival: a chunk that lands after a later navigation began does not
+advance the route value. A fetch that fails leaves the route value where it
+was and is not remembered, so a later navigation to that arm fetches again. <code>split</code> on a non-<code>browser</code> entry is a manifest error.
 <code>vilan run</code> builds all entries and starts one <code>@process</code> entry: the
 only one, the designated <code>default-entry</code>, or the one <code>--entry</code> names;
 <code>vilan check</code> checks every entry, always. The emitted text beyond

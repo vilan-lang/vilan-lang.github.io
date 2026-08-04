@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -213,6 +213,7 @@ rpc’s own return type (<code>Option&lt;Task&gt;</code>), not here.</p>
 
 impl SocketTransport {
 	fun connection_state(self): Signal&lt;ConnectionState&gt;
+	fun on_reconnect(self, hook: async || void)
 }
 </code></pre>
 <p>The reconnect lifecycle (automatic): on drop → <code>Reconnecting</code>, in-flight
@@ -221,6 +222,17 @@ calls reject with <code>Transport("connection lost")</code>, new calls fail fast
 10 attempts); on success → contract re-check, mirrors re-attach and resync,
 <code>Connected</code>. Backoff exhausted → <code>Closed</code>. Nothing is ever silently
 retried; retry is the app’s decision.</p>
+<p><code>on_reconnect</code> is where that decision goes. Hooks run after each successful
+re-dial, awaited in order, and the generated client registers its own mirror
+re-attach when it connects — so <strong>a hook you register runs after the mirrors
+have resynced</strong>, which <code>connection_state</code> cannot tell you: the state flips to
+<code>Connected</code> one beat earlier, because the re-attach’s own rpc call needs a
+usable transport first. Bind the signal for a banner; use the hook for
+anything that needs current mirrors.</p>
+<pre><code class="language-vilan fragment">client.transport.on_reconnect(|| title.repush());
+</code></pre>
+<p>Keep a hook short — it runs inside the reconnect loop’s own extent, so a long
+round-trip inside one holds the reconnect open behind it.</p>
 <h2 id="transports"><a class="header" href="#transports">Transports</a></h2>
 <pre><code class="language-vilan fragment">trait Transport {
 	fun call(self, request: Frame): Task&lt;Result&lt;Frame, str&gt;&gt;;

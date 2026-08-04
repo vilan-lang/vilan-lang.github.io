@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -556,10 +556,36 @@ Styles (and other build assets) are constructed at compile time. Build
 the <code>Style</code> in a <code>const</code> (<code>let card = const style()…</code>); select and merge
 already-built styles at runtime.
 → <a href="../guide/styling.html">Styling</a>, <a href="../tour/macros-and-const.html">Macros &amp; const</a></p>
+<p><strong>“… is compile-time-only; evaluate this call inside a <code>const</code> expression”</strong>
+The same rule, caught statically: some function on this call path reaches
+<code>asset::emit</code>, and the call itself sits in runtime code. The span is the
+outermost runtime crossing — the call that leaves ordinary code and enters
+style-building territory — so wrap <em>that</em> call in a <code>const</code>.</p>
+<p><strong>“… is compile-time-only; call it directly inside a <code>const</code> expression — a
+compile-time-only function has no runtime value form”</strong>
+A compile-time-only function (or a closure that reaches one) was used as a
+<em>value</em> — passed to a higher-order function, stored in a binding, built as a
+closure literal — rather than called. The compiler cannot follow a call made
+through a value, so it refuses the value instead. Call it directly inside the
+<code>const</code>: <code>const apply(styled)</code> is fine, <code>apply(styled)</code> at runtime is not.</p>
 <p><strong>“a <code>const</code> result must be plain data; this evaluates to …”</strong>
 The <code>const</code> expression produced something that can’t be baked into the
 output (a closure, a host object). Fold values, not behavior.
 → <a href="../tour/macros-and-const.html">Macros &amp; const</a></p>
+<p><strong>“const evaluation failed in <code>f</code>: …”</strong>
+The computation ran and something inside it went wrong — a panic, a
+subscript past the end. The squiggle is on the <code>const</code> expression,
+because that is the expression the compiler is refusing to fold; the
+message names the function it failed <em>in</em>, and the note points at that
+function’s declaration with the call chain that reached it. (The
+compiler cannot point inside the callee: the tree it evaluates is the
+compiled output, which carries no source positions.)</p>
+<p><strong>“const evaluation did not finish within the compile-time budget in
+<code>f</code>: …”</strong>
+The same thing, but the computation never finished rather than failing:
+it exhausted the interpreter’s step budget (an unbounded <code>for</code>) or its
+call-depth cap (unbounded recursion). The build fails rather than
+hangs. Fix the termination condition, or move the work to runtime.</p>
 <h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
 <p><strong>A struct literal in a condition parses as the block</strong>
 Struct literals are ordinary operator operands (<code>Point { … } == q</code>

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -209,13 +209,31 @@ runtime call: the answer would not be a constant.</p>
 callable <strong>only</strong> during const evaluation: it declares a build asset
 (the styling system’s CSS, for example) that the build writes beside
 the output. Asset emission is deterministic: same inputs, same files.</p>
+<p>A function that reaches <code>emit</code> is <strong>compile-time-only</strong>, transitively,
+and the compiler enforces that statically. A call from runtime code
+into compile-time-only territory is an error at the outermost crossing
+— the call that leaves ordinary code. Because a call made <em>through a
+value</em> has no statically known callee, a compile-time-only function
+also has <strong>no runtime value form</strong>: naming one as a value (passing it
+to a higher-order function, binding it, or writing a closure literal
+that reaches <code>emit</code>) is an error at that reference, outside a <code>const</code>.
+Inside a <code>const</code> the restriction lifts entirely — the interpreter makes
+the call, so <code>const apply(styled)</code> is legal where <code>apply(styled)</code> is
+not.</p>
 <h2 id="93-failure-and-resource-limits"><a class="header" href="#93-failure-and-resource-limits">9.3 Failure and resource limits</a></h2>
 <p>Const evaluation is total by construction of the budget: each run is
-bounded by the interpreter’s <strong>fuel</strong> (steps) and <strong>depth</strong> (nesting),
-shared with macro expansion and configured by the manifest’s <code>[macro]</code>
-section (§11.4). Exhausting either, or panicking during evaluation, is
-a compile error carrying the const expression’s span. A runaway
-<code>const</code> fails the build; it cannot hang it.</p>
+bounded by the interpreter’s <strong>fuel</strong> (steps) and <strong>depth</strong> (nesting).
+Exhausting either, or panicking during evaluation, is a compile error
+carrying the const expression’s span; a budget failure says so, rather
+than reading as a program error. A runaway <code>const</code> fails the build; it
+cannot hang it. The budgets are the interpreter’s own defaults — the
+manifest’s <code>[macro]</code> section (§11.4) sizes macro <em>expansion</em> only, and
+does not size <code>const</code>.</p>
+<p>The primary span is the <code>const</code> expression itself, always: the tree the
+interpreter evaluates is compiled output and carries no source
+positions, so there is no inner expression to anchor to. The diagnostic
+instead names the <strong>function</strong> the failure occurred in and notes that
+function’s declaration, with the call chain that reached it.</p>
 <h2 id="94-results"><a class="header" href="#94-results">9.4 Results</a></h2>
 <p>The result of a <code>const</code> expression is spliced as a literal of its
 type: numbers, strings, booleans, lists, tuples, structs and enums of

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -294,12 +294,18 @@ one atomic rule, deduplicated build-wide.</p>
 <p>A <code>str</code>-valued method is not a weaker <code>raw</code>: it keeps the property name
 checked and completable while the <em>value</em> stays a CSS expression the compiler
 has nothing to validate (a font stack, a transform list, a shadow layer).</p>
-<p><strong>One arity per family.</strong> The name carries the arity — whole box
-(<code>padding</code>), axis (<code>padding_x</code>), edge (<code>padding_top</code>) — and there is no
-multi-value shorthand method, because <code>padding_y(v).padding_x(h)</code> already
-computes <code>padding: v h</code>. Mixing a shorthand with its own longhands leaves
-two equally specific atomic rules whose order the class-name sort decides;
-the axis and edge methods share slots and override cleanly.</p>
+<p><strong>The name carries the arity</strong> — whole box (<code>padding</code>), axis
+(<code>padding_x</code>), edge (<code>padding_top</code>) — and there is no multi-value
+shorthand method, because <code>padding_y(v).padding_x(h)</code> already computes
+<code>padding: v h</code>.</p>
+<p><strong>Arities mix, and resolve in authoring order.</strong> A property that covers
+others forms a family — <code>padding</code>, <code>margin</code>, <code>inset</code> (over <code>top</code>,
+<code>right</code>, <code>bottom</code>, <code>left</code>), <code>border</code> (over its parts and edges),
+<code>background</code>, <code>flex</code> — and last-wins applies to the whole family: a
+longhand written after the shorthand narrows it, a shorthand written
+after a longhand replaces the family outright. Per condition, so a
+<code>hover</code> or <code>dark</code> variant never disturbs the base, and through <code>raw</code>
+too, since the family is a fact about the CSS property.</p>
 <p>Escape hatches:</p>
 <pre><code class="language-vilan fragment">fun raw(self, property: str, value: str): Style
 fun with_length(self, property: str, value: Length): Style

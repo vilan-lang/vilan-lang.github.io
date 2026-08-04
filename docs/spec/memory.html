@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-626f3ed4.js";
+            window.path_to_searchindex_js = "../searchindex-7774ec32.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -490,7 +490,9 @@ declares <code>own self</code>: <code>o.unwrap()</code> is a move of <code>o</co
 use-after-move and <code>o</code> is not torn down at scope end. A bare <code>self</code>
 receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</li>
 <li><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
-diverging leg is exempt).</li>
+diverging leg is exempt). A tail move-out is still a move on <em>that</em> path
+only — R7 reads the arms against each other, so producing a different
+binding from each arm is a conditional move, not two independent returns.</li>
 <li><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
 read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>); moving it out of a
 live aggregate is rejected; v1 has no partial moves. The sanctioned
@@ -503,11 +505,24 @@ holds for a <code>let</code> pattern (<code>let (handle, count) = pair</code>), 
 drop at the declaring scope’s end. Matching a loan (<code>match &amp;self.state</code>,
 and the <code>x is Some(let v)</code> test) inspects without consuming: the subject
 keeps ownership and destroys the payload itself, so its captures own
-nothing.</li>
+nothing — and, owning nothing, they may not be <strong>consumed</strong>. This is R3’s
+“a loan changes no ownership” read in the capture position: <code>own</code>-passing
+a loaned capture, returning it, or matching it by value would hand a
+second owner the payload the subject still destroys at its own scope end.
+The fix is to consume the <em>subject</em> (<code>match x</code> without the <code>&amp;</code>), not to
+redeclare the capture — a capture carries no convention to change.</li>
 <li><strong>R7: no conditional moves.</strong> A binding must be moved on every path
 through a scope or on none; moving it on one path only is an error. This
 keeps end-of-scope ownership static: there are no runtime drop flags in
-v1.</li>
+v1. <strong>Branch tails are paths too.</strong> R4 makes each arm’s tail a move-out,
+and the arms are alternatives, not a rejoin — so <code>if flag { x } else { x }</code>
+is moved on every path and fine, while <code>if flag { first } else { second }</code>
+moves each binding on one path and abandons it on the other, and is the
+same error. The one exemption is a binding that, on the path in question,
+provably carries <strong>no resource payload</strong>: after a failed <code>x is Some(_)</code>
+test <code>x</code> can only be <code>None</code>, which has nothing to destroy, so leaving it
+un-moved there leaks nothing. The exemption is granted only on proof — an
+enum whose every variant carries a payload gets none.</li>
 <li><strong>R8: no moves in repeatable interiors.</strong> Moving a binding declared
 outside a loop from inside its body is an error (the move would repeat).</li>
 <li><strong>R9: closures and spawns cannot capture resources.</strong> Capturing one would
@@ -535,7 +550,14 @@ the affine rules (T := the resource): every T-typed value is used at most
 once as a move, with no captures and no copies. <code>Option::unwrap(own self): T</code> passes; a body that reads its parameter twice fails <strong>at the instantiation
 site</strong>, not inside std. For an <code>own T</code> parameter the rule tightens to
 <em>exactly</em> once (a generic body is emitted once and so cannot run an
-instantiation-conditional destructor; zero moves would leak).</li>
+instantiation-conditional destructor; zero moves would leak). The tightening
+is not about parameters but about <strong>destruction</strong>: since a generic body can
+destroy nothing, <em>no</em> <code>T</code>-typed value in it may still own at the end of its
+scope — not a parameter, not a <code>let</code> local, and not a pattern capture that
+took a consumed subject’s payload (R6). Each is the same leak and is rejected
+at the instantiation site. The consequence worth stating: a combinator that
+hands a payload to a closure and then discards it — the closure only <em>loans</em>
+it — cannot be resource-clean, whatever its receiver convention.</li>
 <li><strong>R12: no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
 is an error (<code>print(db)</code> included): <code>any</code> is a data sink, and the
 discipline must not launder away. Debug-print the fields instead.</li>
@@ -575,7 +597,9 @@ value. <strong>Every exit runs drops</strong>: fall-through, <code>ret</code>, <
 resource-owning scope lowers to a <code>try</code>/<code>finally</code> and every exit flows
 through the <code>finally</code>. Concrete <code>own</code> resource <em>parameters</em> drop at scope
 end like locals (a generic <code>own T</code> is required to move out instead, per
-R11).</p>
+R11) — and the same split holds for pattern captures: a concrete one drops
+at its arm’s end, while inside a generic body no <code>T</code>-typed capture may be
+left owning at all.</p>
 <ul>
 <li><strong>Module-level resources never drop.</strong> A top-level <code>let</code> resource has
 process lifetime (the serve-forever server’s <code>Database</code>). It is
