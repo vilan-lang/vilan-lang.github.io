@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -241,9 +241,17 @@ steps grow like Tailwind’s. It’s the usual argument to <code>padding</code>,
 <li><strong><code>Length</code></strong> covers everything else: <code>Length::px(1.0)</code>,
 <code>Length::rem(1.5)</code>, <code>Length::em(0.02)</code>, <code>Length::pct(50.0)</code>,
 <code>Length::vh(100.0)</code>, <code>Length::vw(50.0)</code>, <code>Length::auto()</code>,
-<code>Length::var("--w")</code> for a CSS variable (see dynamic values below), and
+<code>Length::zero()</code> for a bare <code>0</code>, <code>Length::var("--w")</code> for a CSS
+variable (see dynamic values below), and
 <code>Length::calc("100% - 2rem")</code> when the value is arithmetic — you write
 the expression, not the <code>calc(..)</code> wrapper.</li>
+<li><strong><code>Length::css(..)</code></strong> is the verbatim escape, <code>Color::hex</code>’s twin: a
+complete CSS value written as text, for the functional forms <code>Length</code>
+does not model — <code>Length::css("clamp(1100px, 100vw, 1920px)")</code>,
+<code>min()</code>, <code>max()</code>, <code>env()</code>, <code>fit-content()</code>. Use <code>calc</code> when you are
+writing <em>arithmetic</em> and want the wrapper supplied; use <code>css</code> when the
+value is already whole, which is also what lets one named expression be
+reused across several properties. An empty value stops the build.</li>
 <li><strong><code>Color</code></strong> has <code>Color::white()</code>, <code>Color::black()</code>,
 <code>Color::transparent()</code>, <code>Color::hex("#663399")</code>, and stepped ramps
 like <code>Color::gray(300)</code>, <code>Color::blue(600)</code>, <code>Color::red(500)</code>,
@@ -259,7 +267,10 @@ build.</li>
 <code>Gradient::linear(degrees)</code> (0 points up, 90 to the right) or
 <code>Gradient::radial(RadialExtent::ClosestSide)</code>, then <code>.stop(colour, percent)</code> per stop, handed to <code>background_gradient</code>. It is a different
 slot from <code>background</code>, so a style can set a colour <em>and</em> paint a
-gradient over it. Two stops minimum.</li>
+gradient over it. Two stops minimum. For the image values a <code>Gradient</code>
+can’t hold — a <code>url()</code> or data URI, a multi-layer list, a positioned or
+<code>repeating-*</code> gradient — <code>background_image(str)</code> writes the <em>same</em> slot,
+and <code>background_size(str)</code> sizes it.</li>
 <li>Keyword properties use enums: <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
 <code>WhiteSpace</code>, <code>UserSelect</code>, <code>RadialExtent</code>.</li>
@@ -292,11 +303,19 @@ fun main() {
 }
 </code></pre>
 <p>Some properties take a plain <code>str</code> — <code>font_family</code>, <code>transform</code>,
-<code>box_shadow</code>, <code>text_decoration</code>, <code>flex</code>, <code>grid_template_columns</code>. That
+<code>box_shadow</code>, <code>text_decoration</code>, <code>flex</code>, <code>grid_template_columns</code>,
+<code>background_image</code>, <code>background_size</code>. That
 isn’t a weaker <code>raw</code>: the property name is still checked and completable,
 and only the <em>value</em> is a CSS expression there is nothing to validate (a
 font stack, a transform list). Reach for them the same way you reach for
 <code>padding</code>.</p>
+<p><code>line-height</code> has two methods rather than one, because it takes two kinds
+of value and the language has no overloading. Prefer <strong><code>line_height(1.5)</code></strong>:
+a unitless number inherits as a <em>ratio</em> and re-computes against each
+descendant’s own font size. Reach for <strong><code>line_height_length(Length::px(24))</code></strong>
+when a design specifies a leading in absolute units — a length inherits as a
+computed length and will not track a child that resizes its text. Both write
+the same slot, so a later one simply replaces an earlier one.</p>
 <p>For anything the typed surface doesn’t cover, escape hatches:</p>
 <pre><code class="language-vilan fragment">.raw("clip-path", "polygon(0 0, 100% 0, 100% 80%)")
 .with_length("scroll-margin-top", space(4))
@@ -313,7 +332,9 @@ evidence a method should exist.</p>
 (<code>padding_top</code>, <code>margin_left</code>, and the other six). There is no
 multi-value shorthand method, because there is nothing it would buy:
 <code>padding: 8px 16px</code> is <code>padding_y(..).padding_x(..)</code>, spelled with the
-methods you already have.</p>
+methods you already have. The two axes cover all four edges between them
+— exactly what the shorthand covers — so the composed form also <em>resolves</em>
+like the shorthand wherever it meets one (see mixing arities, below).</p>
 <p>Borders match: <code>border(width, colour)</code> for all four edges,
 <code>border_top</code>/<code>border_right</code>/<code>border_bottom</code>/<code>border_left</code> for one, and
 <code>border_none()</code> to remove one. <code>border_none()</code> fills the <em>same</em> slot the

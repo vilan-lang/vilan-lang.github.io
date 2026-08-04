@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -195,8 +195,10 @@ impl Length {
 	fun vh(value: f64): Length     // viewport units
 	fun vw(value: f64): Length
 	fun auto(): Length
+	fun zero(): Length             // bare `0`, not `0px`
 	fun var(name: str): Length     // a CSS custom-property reference ("--w")
 	fun calc(expression: str): Length  // "100% - 2rem" — no calc(..) wrapper
+	fun css(expression: str): Length   // a COMPLETE value, verbatim: "clamp(..)"
 }
 
 impl Color {
@@ -224,10 +226,17 @@ so a ramp step stays a <code>var(--gray-900)</code> and keeps re-theming — whi
 8-digit hex could not do. Channels, alphas and the two-stop gradient
 minimum are checked during const evaluation, so a bad value stops the
 build naming itself.</p>
+<p><code>calc</code> wraps and <code>css</code> does not: <code>Length::calc(e)</code> is
+<code>Length::css("calc(" + e + ")")</code>. Write <code>calc</code> for arithmetic, <code>css</code> for a
+value that is already whole — <code>clamp()</code>, <code>min()</code>, <code>max()</code>, <code>env()</code>,
+<code>fit-content()</code>, or one named expression reused across properties. Both
+refuse an empty value at const time.</p>
 <p>A <code>Gradient</code> is a <strong><code>background-image</code></strong> value, not a <code>Color</code>: it reaches
 a style through <code>background_gradient</code>, which fills a different slot from
-<code>background</code>. What stays with <code>raw</code>: positioned gradients
-(<code>at 20% 40%</code>), multi-layer lists, <code>repeating-*</code>, and data-URI images.</p>
+<code>background</code>. What a <code>Gradient</code> cannot hold — positioned gradients
+(<code>at 20% 40%</code>), multi-layer lists, <code>repeating-*</code>, and data-URI images —
+goes to <code>background_image(str)</code>, which writes the <strong>same slot</strong>, so the two
+override each other instead of racing in the cascade.</p>
 <p>Keyword enums: <code>Display</code> (Flex, Block, …), <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
 <code>WhiteSpace</code> (Normal, Nowrap, Pre, PreWrap, PreLine), <code>UserSelect</code> (Auto,
@@ -275,10 +284,13 @@ one atomic rule, deduplicated build-wide.</p>
 <tr><td><code>box_shadow</code></td><td><code>str</code></td></tr>
 <tr><td><code>background</code>, <code>color</code></td><td><code>Color</code></td></tr>
 <tr><td><code>background_gradient</code></td><td><code>Gradient</code> — the <code>background-image</code> slot</td></tr>
+<tr><td><code>background_image</code></td><td><code>str</code> — the same slot, for what a <code>Gradient</code> can’t hold</td></tr>
+<tr><td><code>background_size</code></td><td><code>str</code> — up to two components, so not a <code>Length</code></td></tr>
 <tr><td><code>font_family</code></td><td><code>str</code></td></tr>
 <tr><td><code>font_size</code></td><td><code>Length</code></td></tr>
 <tr><td><code>font_weight</code></td><td><code>i32</code></td></tr>
-<tr><td><code>line_height</code></td><td><code>f64</code></td></tr>
+<tr><td><code>line_height</code></td><td><code>f64</code> — unitless, and the one to prefer (inherits as a ratio)</td></tr>
+<tr><td><code>line_height_length</code></td><td><code>Length</code> — the same slot, when the leading is absolute</td></tr>
 <tr><td><code>letter_spacing</code></td><td><code>Length</code> — usually <code>Length::em(..)</code></td></tr>
 <tr><td><code>text_align</code></td><td><code>TextAlign</code></td></tr>
 <tr><td><code>text_decoration</code></td><td><code>str</code></td></tr>

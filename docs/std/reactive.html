@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -182,7 +182,8 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 	Signal, Source, Subscription, Disposable, combine,
 	Owner, owner_scope, get_owner, run_with_owner, comp,
 	Turn, FlushPolicy, turn_scope, turn, batch, flush,
-	optimistic, draft, Draft, DraftState,
+	optimistic, Optimistic, WriteState,
+	draft, Draft, DraftState,
 	reconcile, ReconcilePlan, RowStep,
 };
 </code></pre>
@@ -200,7 +201,8 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <tr><td><code>Owner</code></td><td>struct</td><td>disposal bag; the lifetime unit</td></tr>
 <tr><td><code>run_with_owner</code>, <code>comp</code>, <code>get_owner</code>, <code>owner_scope</code></td><td>fns/context</td><td>establish/read the ambient owner</td></tr>
 <tr><td><code>turn</code>, <code>batch</code>, <code>flush</code>, <code>FlushPolicy</code>, <code>turn_scope</code></td><td>fns/context</td><td>write batching</td></tr>
-<tr><td><code>optimistic</code></td><td>fn</td><td>paint → commit → confirm-or-rollback</td></tr>
+<tr><td><code>optimistic</code></td><td>fn</td><td>paint → commit → confirm-or-rollback (one shot)</td></tr>
+<tr><td><code>Optimistic&lt;T&gt;</code>, <code>WriteState</code></td><td>struct/enum</td><td>the same lifecycle, observable and overlap-safe</td></tr>
 <tr><td><code>draft</code>, <code>Draft&lt;T&gt;</code>, <code>DraftState</code></td><td>fn/struct/enum</td><td>local-first editing cell</td></tr>
 <tr><td><code>reconcile</code>, <code>ReconcilePlan</code>, <code>RowStep</code></td><td>fn/structs</td><td>keyed list diffing engine</td></tr>
 </tbody>
@@ -325,6 +327,58 @@ landing after a settle (from spawned work) drain in per-segment microtasks.</p>
 confirmed value on <code>Ok</code>, the previous value <strong>rolled back</strong> on <code>Err</code>. Returns
 the outcome for error UX. For continuous editing, use <code>draft</code> instead:
 rollback is wrong mid-typing.</p>
+<p>The one-shot spelling: one write, no state to bind, and the rollback target
+is whatever the signal held at the call. If more than one write can be in
+flight over the same signal, or anything needs to render “saving…”, use the
+cell below.</p>
+<h2 id="optimistic--the-observable-lifecycle"><a class="header" href="#optimistic--the-observable-lifecycle">Optimistic — the observable lifecycle</a></h2>
+<pre><code class="language-vilan fragment">[derive(PartialEq, Debug)]
+enum WriteState {
+	Confirmed,      // nothing in flight; the value is the last confirmed truth
+	Pending,        // the newest write is on the wire
+	Rejected(str),  // the newest write was refused; the cell rolled back
+}
+
+struct Optimistic&lt;T&gt; {
+	value: Signal&lt;T&gt;,           // the signal you handed to `over`; bind it
+	state: Signal&lt;WriteState&gt;,  // bind a spinner, a disabled button, a banner
+	…                           // internals: the confirmed shadow, two generations
+}
+
+impl Optimistic&lt;type T&gt; {
+	fun over(signal: Signal&lt;T&gt;): Optimistic&lt;T&gt;
+	fun write(self, value: T, commit: async || Result&lt;T, str&gt;): Result&lt;T, str&gt;
+}
+</code></pre>
+<p>The same lifecycle as <code>optimistic</code>, with the two things a free function has
+nowhere to keep.</p>
+<ul>
+<li><strong><code>state</code> is observable.</strong> <code>Pending</code> while the commit is on the wire,
+<code>Rejected(reason)</code> when one is refused — so a failure has somewhere to land
+besides the return value. <code>write</code> still returns the outcome; the state is an
+addition, not a replacement. <code>Rejected</code> is sticky until the next write.</li>
+<li><strong>Overlapping writes are safe.</strong> Only the <strong>newest</strong> write paints the cell;
+a superseded write’s outcome is discarded (it still returns to its own
+caller). And a rollback lands on the last value the <strong>server</strong> confirmed,
+not on whatever the signal happened to hold — a distinction that only shows
+up once writes overlap, and one that gets a counter of its own so an
+out-of-order reply cannot walk it backwards.</li>
+<li><strong><code>over</code> wraps an existing signal</strong>, so adopting the cell changes no
+binding, and it seeds the confirmed value from it.</li>
+<li><strong>Every transition is one wave.</strong> The value and the state are published
+together, so an observer of both never sees “new value, still confirmed”.</li>
+<li><code>write</code> awaits, like <code>optimistic</code>. Fire-and-forget is
+<code>let _sent = async cell.write(..)</code>.</li>
+</ul>
+<p>The commit returns <code>Result&lt;T, str&gt;</code> — the confirmed value or a reason — so an
+rpc-calling closure maps its error the same way a <code>Draft</code> commit does.</p>
+<p>Unlike <code>Draft</code>, there is <strong>no re-push on reconnect</strong>: a re-push is
+at-least-once, which is safe for a draft’s “set this field to this value” and
+unsafe for the one-shot <em>actions</em> this cell is for. The rollback is the
+recovery; the user re-issues the action.</p>
+<p>A cell over a <strong>mirrored</strong> signal is out of scope for now — the mirror writes
+behind the cell’s back, so its confirmed value goes stale. Wrap a local
+signal (<code>proposal/optimistic-lifecycle.md</code> §8).</p>
 <h2 id="draft--local-first-cells"><a class="header" href="#draft--local-first-cells">Draft — local-first cells</a></h2>
 <pre><code class="language-vilan fragment">enum DraftState {
 	Synced,       // local matches the last pushed/adopted value

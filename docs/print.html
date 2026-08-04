@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -247,7 +247,7 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><th>Chapter</th><th>Covers</th></tr>
 </thead>
 <tbody>
-<tr><td><a href="#reactive-state">Reactive state</a></td><td>signals, derived state, effects, ownership &amp; disposal, turns, <code>optimistic</code>, <code>Draft</code></td></tr>
+<tr><td><a href="#reactive-state">Reactive state</a></td><td>signals, derived state, effects, ownership &amp; disposal, turns, <code>optimistic</code>/<code>Optimistic</code>, <code>Draft</code></td></tr>
 <tr><td><a href="#building-ui">Building UI</a></td><td><code>view</code> chaining, binds, events, lists, conditionals, mounting</td></tr>
 <tr><td><a href="#styling">Styling</a></td><td><code>const</code> typed styles, lengths/colors, dynamic values</td></tr>
 <tr><td><a href="#routing">Routing</a></td><td>enum routes, <code>parse</code>/<code>href</code>, <code>link</code>, <code>swap</code>, navigation</td></tr>
@@ -748,6 +748,26 @@ fun main() {
 <p>Tuple types are written the same way: <code>(i32, str)</code>. Positional access
 (<code>pair.0</code>, <code>pair.1</code>, chains like <code>nested.0.1</code>) types as that element;
 through a <code>mut</code> binding you can also assign one (<code>pair.0 = 5</code>).</p>
+<h3 id="building-one-out-of-another"><a class="header" href="#building-one-out-of-another">Building one out of another</a></h3>
+<p>A <code>..</code> entry <strong>spreads</strong> a tuple you already have — its elements go into
+the new tuple, so the type is the two concatenated. Spreads work in any
+position, as many as you like, mixed with ordinary entries:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	let pair = (1, 2);
+	let lead = (..pair, 3);       // (i32, i32, i32)
+	let mid = (0, ..pair, 9);     // (i32, i32, i32, i32)
+	let both = (..pair, ..pair);  // (i32, i32, i32, i32)
+	print(lead.2);
+	print(mid.3);
+	print(both.3);
+}
+</code></pre>
+<p>Note this is a <em>shallow</em> concatenation: <code>..outer</code> contributes <code>outer</code>’s
+elements, so an element that is itself a tuple stays one. And <code>..</code> only
+means this at the start of an entry — <code>a..b</code> after an expression is not
+a spread, and vilan has no range operator for it to be confused with.</p>
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <p><code>List&lt;T&gt;</code> is built in and has literal syntax. <code>Map&lt;K, V&gt;</code> and <code>Set&lt;T&gt;</code>
 come from std:</p>
@@ -897,6 +917,32 @@ Since the arguments are collected into a value the <em>call site</em> builds,
 <code>...</code> never combines with <code>own</code>, <code>&amp;</code>, or <code>&amp;mut</code>; <code>mut ...items</code> is fine,
 and means what <code>mut</code> always means. <code>...</code> belongs to a plain <code>fun</code> — not
 to a closure, a trait method, an <code>impl</code> member, or an <code>external fun</code>.</p>
+<h3 id="passing-a-pack-on"><a class="header" href="#passing-a-pack-on">Passing a pack on</a></h3>
+<p>Since <code>f(a, b)</code> means <code>f((a, b))</code>, a <code>..</code> spread at the call site means
+<code>f((..pair))</code> — the arguments you already hold, written out flat. That is
+how a pack is forwarded to another spread function, and it is not the
+same as passing the tuple itself, which would arrive as a pack of one:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun how_many&lt;T: (..)&gt;(...items: T): i32 {
+	1
+}
+
+fun forward&lt;T: (..)&gt;(...items: T): i32 {
+	how_many(..items)
+}
+
+fun main() {
+	let pair = (1, 2);
+	print(how_many(..pair));       // a pack of 2
+	print(how_many(..pair, 3));    // a pack of 3
+	print(forward(1, 2, 3));       // a pack of 3, passed on
+}
+</code></pre>
+<p>The bound is checked on what the spread actually contributes, so a
+<code>T: (3..)</code> would reject <code>how_many(..pair)</code> for having only two. A spread
+at a call to a function <em>without</em> a spread parameter builds no tuple and
+is an error — write the tuple yourself (<code>takes_a_tuple((..pair))</code>).</p>
 <h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
 <p>A closure is an inline function value. Where JavaScript writes
 <code>x =&gt; x * 2</code>, Vilan writes <code>|x| x * 2</code>. Parameter types are usually
@@ -2748,7 +2794,9 @@ difference is the point:</p>
 <p><strong><code>optimistic(signal, value, commit)</code></strong> paints the value immediately,
 runs your async commit, and on failure rolls back. Use it for
 one-shot actions like a delete button: if the delete failed, the row
-should come back.</p>
+should come back. When the write needs <em>watching</em> — a spinner, a button
+that shouldn’t fire twice, a failure banner — reach for the
+<a href="#watching-an-optimistic-write-land"><code>Optimistic</code> cell</a> below instead.</p>
 <p><strong><code>draft(initial, commit)</code></strong> is for <em>editing</em>. It keeps the user’s text
 on failure (rolling back mid-typing would eat their input) and retries
 naturally on the next push. Bind an input to a draft and every keystroke
@@ -2859,6 +2907,56 @@ the shape drafts are built for — “set this field to this value” — and it
 is not for a commit that appends. And a re-push that fails is not retried
 on a timer; it rides the next reconnect, so a value the server keeps
 refusing can’t spin.</p>
+</blockquote>
+<h3 id="watching-an-optimistic-write-land"><a class="header" href="#watching-an-optimistic-write-land">Watching an optimistic write land</a></h3>
+<p><code>optimistic</code> hands the outcome back to whoever called it, and to no one
+else. That is enough for a write you await and immediately branch on, and
+not enough for the usual case: a button that should grey out while its
+write is in flight, and a banner that should say why it failed.</p>
+<p><code>Optimistic::over(signal)</code> wraps the signal you already have — no binding
+changes — and adds a <code>state</code> signal to bind:</p>
+<pre><code class="language-vilan">import std::print;
+import std::reactive::{ Signal, Optimistic, WriteState };
+import std::result::Result::{ self, Ok, Err };
+
+fun main() {
+	let title = Signal::new("Draft post");
+	let saving = Optimistic::over(title);
+
+	// A write the server refuses. "Published" is painted first, so the UI
+	// never waits; the rejection rolls it back and says why.
+	let _refused = saving.write("Published", || {
+		let reply: Result&lt;str, str&gt; = Err("not allowed");
+		reply
+	});
+	print(title.get());
+	print(saving.state.get() == WriteState::Rejected("not allowed"));
+
+	// A write it accepts, answering with its own value — that value wins,
+	// not the one you painted.
+	let _accepted = saving.write("Published", || {
+		let reply: Result&lt;str, str&gt; = Ok("Published (v3)");
+		reply
+	});
+	print(title.get());
+	print(saving.state.get() == WriteState::Confirmed);
+}
+</code></pre>
+<p><code>state</code> is <code>Confirmed</code>, <code>Pending</code>, or <code>Rejected(reason)</code>, and the value and
+the state are always published <em>together</em> — an observer of both never
+catches the cell mid-transition.</p>
+<blockquote>
+<p><strong>Going deeper.</strong> The cell also fixes something you can’t fix from
+outside: two writes in flight over one signal. Through the free
+function, an older write failing <em>after</em> a newer one succeeded rolls the
+newer value away, leaving the screen showing something the server
+stopped holding two writes ago. The cell discards a superseded outcome —
+the newest write owns the cell — and it rolls back to the last value the
+<strong>server</strong> confirmed rather than to whatever the signal held when the
+write started. Unlike a draft, it does <strong>not</strong> re-send on reconnect: a
+re-send is at-least-once, which is fine for “set this field to this
+value” and not for an action you’d rather not perform twice. The
+rollback is the recovery.</p>
 </blockquote>
 <h2 id="keyed-reconciliation"><a class="header" href="#keyed-reconciliation">Keyed reconciliation</a></h2>
 <p><code>reconcile(old_keys, old_items, new_items, key)</code> computes a minimal
@@ -3297,9 +3395,17 @@ steps grow like Tailwind’s. It’s the usual argument to <code>padding</code>,
 <li><strong><code>Length</code></strong> covers everything else: <code>Length::px(1.0)</code>,
 <code>Length::rem(1.5)</code>, <code>Length::em(0.02)</code>, <code>Length::pct(50.0)</code>,
 <code>Length::vh(100.0)</code>, <code>Length::vw(50.0)</code>, <code>Length::auto()</code>,
-<code>Length::var("--w")</code> for a CSS variable (see dynamic values below), and
+<code>Length::zero()</code> for a bare <code>0</code>, <code>Length::var("--w")</code> for a CSS
+variable (see dynamic values below), and
 <code>Length::calc("100% - 2rem")</code> when the value is arithmetic — you write
 the expression, not the <code>calc(..)</code> wrapper.</li>
+<li><strong><code>Length::css(..)</code></strong> is the verbatim escape, <code>Color::hex</code>’s twin: a
+complete CSS value written as text, for the functional forms <code>Length</code>
+does not model — <code>Length::css("clamp(1100px, 100vw, 1920px)")</code>,
+<code>min()</code>, <code>max()</code>, <code>env()</code>, <code>fit-content()</code>. Use <code>calc</code> when you are
+writing <em>arithmetic</em> and want the wrapper supplied; use <code>css</code> when the
+value is already whole, which is also what lets one named expression be
+reused across several properties. An empty value stops the build.</li>
 <li><strong><code>Color</code></strong> has <code>Color::white()</code>, <code>Color::black()</code>,
 <code>Color::transparent()</code>, <code>Color::hex("#663399")</code>, and stepped ramps
 like <code>Color::gray(300)</code>, <code>Color::blue(600)</code>, <code>Color::red(500)</code>,
@@ -3315,7 +3421,10 @@ build.</li>
 <code>Gradient::linear(degrees)</code> (0 points up, 90 to the right) or
 <code>Gradient::radial(RadialExtent::ClosestSide)</code>, then <code>.stop(colour, percent)</code> per stop, handed to <code>background_gradient</code>. It is a different
 slot from <code>background</code>, so a style can set a colour <em>and</em> paint a
-gradient over it. Two stops minimum.</li>
+gradient over it. Two stops minimum. For the image values a <code>Gradient</code>
+can’t hold — a <code>url()</code> or data URI, a multi-layer list, a positioned or
+<code>repeating-*</code> gradient — <code>background_image(str)</code> writes the <em>same</em> slot,
+and <code>background_size(str)</code> sizes it.</li>
 <li>Keyword properties use enums: <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
 <code>WhiteSpace</code>, <code>UserSelect</code>, <code>RadialExtent</code>.</li>
@@ -3348,11 +3457,19 @@ fun main() {
 }
 </code></pre>
 <p>Some properties take a plain <code>str</code> — <code>font_family</code>, <code>transform</code>,
-<code>box_shadow</code>, <code>text_decoration</code>, <code>flex</code>, <code>grid_template_columns</code>. That
+<code>box_shadow</code>, <code>text_decoration</code>, <code>flex</code>, <code>grid_template_columns</code>,
+<code>background_image</code>, <code>background_size</code>. That
 isn’t a weaker <code>raw</code>: the property name is still checked and completable,
 and only the <em>value</em> is a CSS expression there is nothing to validate (a
 font stack, a transform list). Reach for them the same way you reach for
 <code>padding</code>.</p>
+<p><code>line-height</code> has two methods rather than one, because it takes two kinds
+of value and the language has no overloading. Prefer <strong><code>line_height(1.5)</code></strong>:
+a unitless number inherits as a <em>ratio</em> and re-computes against each
+descendant’s own font size. Reach for <strong><code>line_height_length(Length::px(24))</code></strong>
+when a design specifies a leading in absolute units — a length inherits as a
+computed length and will not track a child that resizes its text. Both write
+the same slot, so a later one simply replaces an earlier one.</p>
 <p>For anything the typed surface doesn’t cover, escape hatches:</p>
 <pre><code class="language-vilan fragment">.raw("clip-path", "polygon(0 0, 100% 0, 100% 80%)")
 .with_length("scroll-margin-top", space(4))
@@ -3369,7 +3486,9 @@ evidence a method should exist.</p>
 (<code>padding_top</code>, <code>margin_left</code>, and the other six). There is no
 multi-value shorthand method, because there is nothing it would buy:
 <code>padding: 8px 16px</code> is <code>padding_y(..).padding_x(..)</code>, spelled with the
-methods you already have.</p>
+methods you already have. The two axes cover all four edges between them
+— exactly what the shorthand covers — so the composed form also <em>resolves</em>
+like the shorthand wherever it meets one (see mixing arities, below).</p>
 <p>Borders match: <code>border(width, colour)</code> for all four edges,
 <code>border_top</code>/<code>border_right</code>/<code>border_bottom</code>/<code>border_left</code> for one, and
 <code>border_none()</code> to remove one. <code>border_none()</code> fills the <em>same</em> slot the
@@ -5907,7 +6026,8 @@ usage patterns: the <a href="#reactive-state">reactive guide</a>.</p>
 	Signal, Source, Subscription, Disposable, combine,
 	Owner, owner_scope, get_owner, run_with_owner, comp,
 	Turn, FlushPolicy, turn_scope, turn, batch, flush,
-	optimistic, draft, Draft, DraftState,
+	optimistic, Optimistic, WriteState,
+	draft, Draft, DraftState,
 	reconcile, ReconcilePlan, RowStep,
 };
 </code></pre>
@@ -5925,7 +6045,8 @@ usage patterns: the <a href="#reactive-state">reactive guide</a>.</p>
 <tr><td><code>Owner</code></td><td>struct</td><td>disposal bag; the lifetime unit</td></tr>
 <tr><td><code>run_with_owner</code>, <code>comp</code>, <code>get_owner</code>, <code>owner_scope</code></td><td>fns/context</td><td>establish/read the ambient owner</td></tr>
 <tr><td><code>turn</code>, <code>batch</code>, <code>flush</code>, <code>FlushPolicy</code>, <code>turn_scope</code></td><td>fns/context</td><td>write batching</td></tr>
-<tr><td><code>optimistic</code></td><td>fn</td><td>paint → commit → confirm-or-rollback</td></tr>
+<tr><td><code>optimistic</code></td><td>fn</td><td>paint → commit → confirm-or-rollback (one shot)</td></tr>
+<tr><td><code>Optimistic&lt;T&gt;</code>, <code>WriteState</code></td><td>struct/enum</td><td>the same lifecycle, observable and overlap-safe</td></tr>
 <tr><td><code>draft</code>, <code>Draft&lt;T&gt;</code>, <code>DraftState</code></td><td>fn/struct/enum</td><td>local-first editing cell</td></tr>
 <tr><td><code>reconcile</code>, <code>ReconcilePlan</code>, <code>RowStep</code></td><td>fn/structs</td><td>keyed list diffing engine</td></tr>
 </tbody>
@@ -6050,6 +6171,58 @@ landing after a settle (from spawned work) drain in per-segment microtasks.</p>
 confirmed value on <code>Ok</code>, the previous value <strong>rolled back</strong> on <code>Err</code>. Returns
 the outcome for error UX. For continuous editing, use <code>draft</code> instead:
 rollback is wrong mid-typing.</p>
+<p>The one-shot spelling: one write, no state to bind, and the rollback target
+is whatever the signal held at the call. If more than one write can be in
+flight over the same signal, or anything needs to render “saving…”, use the
+cell below.</p>
+<h2 id="optimistic--the-observable-lifecycle"><a class="header" href="#optimistic--the-observable-lifecycle">Optimistic — the observable lifecycle</a></h2>
+<pre><code class="language-vilan fragment">[derive(PartialEq, Debug)]
+enum WriteState {
+	Confirmed,      // nothing in flight; the value is the last confirmed truth
+	Pending,        // the newest write is on the wire
+	Rejected(str),  // the newest write was refused; the cell rolled back
+}
+
+struct Optimistic&lt;T&gt; {
+	value: Signal&lt;T&gt;,           // the signal you handed to `over`; bind it
+	state: Signal&lt;WriteState&gt;,  // bind a spinner, a disabled button, a banner
+	…                           // internals: the confirmed shadow, two generations
+}
+
+impl Optimistic&lt;type T&gt; {
+	fun over(signal: Signal&lt;T&gt;): Optimistic&lt;T&gt;
+	fun write(self, value: T, commit: async || Result&lt;T, str&gt;): Result&lt;T, str&gt;
+}
+</code></pre>
+<p>The same lifecycle as <code>optimistic</code>, with the two things a free function has
+nowhere to keep.</p>
+<ul>
+<li><strong><code>state</code> is observable.</strong> <code>Pending</code> while the commit is on the wire,
+<code>Rejected(reason)</code> when one is refused — so a failure has somewhere to land
+besides the return value. <code>write</code> still returns the outcome; the state is an
+addition, not a replacement. <code>Rejected</code> is sticky until the next write.</li>
+<li><strong>Overlapping writes are safe.</strong> Only the <strong>newest</strong> write paints the cell;
+a superseded write’s outcome is discarded (it still returns to its own
+caller). And a rollback lands on the last value the <strong>server</strong> confirmed,
+not on whatever the signal happened to hold — a distinction that only shows
+up once writes overlap, and one that gets a counter of its own so an
+out-of-order reply cannot walk it backwards.</li>
+<li><strong><code>over</code> wraps an existing signal</strong>, so adopting the cell changes no
+binding, and it seeds the confirmed value from it.</li>
+<li><strong>Every transition is one wave.</strong> The value and the state are published
+together, so an observer of both never sees “new value, still confirmed”.</li>
+<li><code>write</code> awaits, like <code>optimistic</code>. Fire-and-forget is
+<code>let _sent = async cell.write(..)</code>.</li>
+</ul>
+<p>The commit returns <code>Result&lt;T, str&gt;</code> — the confirmed value or a reason — so an
+rpc-calling closure maps its error the same way a <code>Draft</code> commit does.</p>
+<p>Unlike <code>Draft</code>, there is <strong>no re-push on reconnect</strong>: a re-push is
+at-least-once, which is safe for a draft’s “set this field to this value” and
+unsafe for the one-shot <em>actions</em> this cell is for. The rollback is the
+recovery; the user re-issues the action.</p>
+<p>A cell over a <strong>mirrored</strong> signal is out of scope for now — the mirror writes
+behind the cell’s back, so its confirmed value goes stale. Wrap a local
+signal (<code>proposal/optimistic-lifecycle.md</code> §8).</p>
 <h2 id="draft--local-first-cells"><a class="header" href="#draft--local-first-cells">Draft — local-first cells</a></h2>
 <pre><code class="language-vilan fragment">enum DraftState {
 	Synced,       // local matches the last pushed/adopted value
@@ -6161,8 +6334,10 @@ impl Length {
 	fun vh(value: f64): Length     // viewport units
 	fun vw(value: f64): Length
 	fun auto(): Length
+	fun zero(): Length             // bare `0`, not `0px`
 	fun var(name: str): Length     // a CSS custom-property reference ("--w")
 	fun calc(expression: str): Length  // "100% - 2rem" — no calc(..) wrapper
+	fun css(expression: str): Length   // a COMPLETE value, verbatim: "clamp(..)"
 }
 
 impl Color {
@@ -6190,10 +6365,17 @@ so a ramp step stays a <code>var(--gray-900)</code> and keeps re-theming — whi
 8-digit hex could not do. Channels, alphas and the two-stop gradient
 minimum are checked during const evaluation, so a bad value stops the
 build naming itself.</p>
+<p><code>calc</code> wraps and <code>css</code> does not: <code>Length::calc(e)</code> is
+<code>Length::css("calc(" + e + ")")</code>. Write <code>calc</code> for arithmetic, <code>css</code> for a
+value that is already whole — <code>clamp()</code>, <code>min()</code>, <code>max()</code>, <code>env()</code>,
+<code>fit-content()</code>, or one named expression reused across properties. Both
+refuse an empty value at const time.</p>
 <p>A <code>Gradient</code> is a <strong><code>background-image</code></strong> value, not a <code>Color</code>: it reaches
 a style through <code>background_gradient</code>, which fills a different slot from
-<code>background</code>. What stays with <code>raw</code>: positioned gradients
-(<code>at 20% 40%</code>), multi-layer lists, <code>repeating-*</code>, and data-URI images.</p>
+<code>background</code>. What a <code>Gradient</code> cannot hold — positioned gradients
+(<code>at 20% 40%</code>), multi-layer lists, <code>repeating-*</code>, and data-URI images —
+goes to <code>background_image(str)</code>, which writes the <strong>same slot</strong>, so the two
+override each other instead of racing in the cascade.</p>
 <p>Keyword enums: <code>Display</code> (Flex, Block, …), <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
 <code>WhiteSpace</code> (Normal, Nowrap, Pre, PreWrap, PreLine), <code>UserSelect</code> (Auto,
@@ -6241,10 +6423,13 @@ one atomic rule, deduplicated build-wide.</p>
 <tr><td><code>box_shadow</code></td><td><code>str</code></td></tr>
 <tr><td><code>background</code>, <code>color</code></td><td><code>Color</code></td></tr>
 <tr><td><code>background_gradient</code></td><td><code>Gradient</code> — the <code>background-image</code> slot</td></tr>
+<tr><td><code>background_image</code></td><td><code>str</code> — the same slot, for what a <code>Gradient</code> can’t hold</td></tr>
+<tr><td><code>background_size</code></td><td><code>str</code> — up to two components, so not a <code>Length</code></td></tr>
 <tr><td><code>font_family</code></td><td><code>str</code></td></tr>
 <tr><td><code>font_size</code></td><td><code>Length</code></td></tr>
 <tr><td><code>font_weight</code></td><td><code>i32</code></td></tr>
-<tr><td><code>line_height</code></td><td><code>f64</code></td></tr>
+<tr><td><code>line_height</code></td><td><code>f64</code> — unitless, and the one to prefer (inherits as a ratio)</td></tr>
+<tr><td><code>line_height_length</code></td><td><code>Length</code> — the same slot, when the leading is absolute</td></tr>
 <tr><td><code>letter_spacing</code></td><td><code>Length</code> — usually <code>Length::em(..)</code></td></tr>
 <tr><td><code>text_align</code></td><td><code>TextAlign</code></td></tr>
 <tr><td><code>text_decoration</code></td><td><code>str</code></td></tr>
@@ -7308,13 +7493,13 @@ optional.</p>
 path    = ( IDENT generic-args ␣"::"  (* generic static head *)
           | atom )
           { "::" IDENT } ;
-call-suffix = [ generic-args ] "(" [ expression { "," expression } [ "," ] ] ")" ;
+call-suffix = [ generic-args ] "(" [ entry { "," entry } [ "," ] ] ")" ;
 member  = NUMBER                          (* tuple index: .0 *)
         | IDENT [ call-suffix ] ;         (* field / ONE fused method call *)
 postfix = "." member
         | "[" expression "]"             (* index *)
         | "!"                            (* try-assert, §5.10 *)
-        | "(" [ expression { "," expression } [ "," ] ] ")"
+        | "(" [ entry { "," entry } [ "," ] ] ")"
                                           (* direct call on the chain result *)
         | "?." member ;                  (* lift link, §5.10 *)
 
@@ -7322,7 +7507,9 @@ atom    = literal | IDENT | IDENT generic-args
         | "(" expression ")" | tuple | list
         | tuple-comprehension | macro-invocation | macro-block
         | element ;
-tuple   = "(" expression "," expression { "," expression } [ "," ] ")" ;
+tuple   = "(" ( spread | expression "," entry { "," entry } [ "," ] ) ")" ;
+entry   = spread | expression ;
+spread  = ".." expression ;
 list    = "[" [ expression { "," expression } [ "," ] ] "]" ;
 tuple-comprehension = "(" IDENT "in" secondary-expr "=&gt;" expression ")" ;
 
@@ -7343,6 +7530,14 @@ chain’s result, calling a closure-typed value
 through the following plain postfixes up to the next <code>?.</code> or <code>!</code>:
 <code>a?.b.c()!</code> lifts <code>b.c()</code> into the container, then try-asserts the
 result (§5.10).</p>
+<p>A leading <code>..</code> marks a <strong>tuple-value spread</strong> (§5.9). It is recognized
+only where an <em>entry</em> begins — a tuple construction’s entry, or a call
+argument — so <code>..</code> after an expression is unaffected and remains the
+member-access dots it has always been (<code>(1..3, x)</code> is not a spread). A
+tuple construction whose only entry is a spread is still a tuple, not a
+parenthesized group: <code>(..a)</code> is the concatenation of one, and <code>(e)</code> is a
+group as before. There is no type-level spread; <code>(..T, U)</code> does not
+parse.</p>
 <p>An <strong>element</strong> appears only in atom position, where <code>&lt;</code> begins no other
 expression; after an operand, <code>&lt;</code> remains a comparison (<code>x &lt; &lt;div/&gt;</code> is
 a comparison whose right operand is an element). <code>/&gt;</code>, the closing
@@ -7727,9 +7922,32 @@ what makes 0- and 1-arity tuple <em>values</em> reachable; tuple types already
 admit them. Since the convention lives on the declaration, a spread
 function used as a <strong>value</strong> has its tuple type, and is called with a
 tuple.</p>
-<p>Grammar and the positions where <code>...</code> is rejected: §3.3. <em><code>keyof</code>, and
-spreading a tuple INTO a spread parameter (<code>f(..existing)</code>, which needs
-the tuple-value spread), are recorded future work.</em></p>
+<p>Grammar and the positions where <code>...</code> is rejected: §3.3.</p>
+<p>A <strong>tuple-value spread</strong> <code>..e</code> is an entry of a tuple construction that
+contributes the <em>elements</em> of <code>e</code>’s tuple type rather than <code>e</code> itself, so
+the construction’s type is the <strong>concatenation</strong> of its entries, in
+written order:</p>
+<pre><code class="language-vilan fragment">let pair = (1, 2);
+let lead = (..pair, 3);      //  (i32, i32, i32)
+let mid  = (0, ..pair, 9);   //  (i32, i32, i32, i32)
+let both = (..pair, ..pair); //  (i32, i32, i32, i32)
+</code></pre>
+<p>Spreads may appear in any position, in any number, mixed freely with
+ordinary entries, and a construction whose only entry is a spread is
+still a construction (<code>(..pair)</code> is the concatenation of one). The
+operand must be a tuple; anything else is an error naming the type.
+Concatenation is one level deep — a spread operand’s own nested elements
+keep their nesting, since it contributes its <em>elements</em>, not its slots.</p>
+<p>A spread is also a <strong>call argument</strong>, which is what lets a pack be
+forwarded: since <code>f(a, b)</code> means <code>f((a, b))</code>, <code>f(..pair)</code> means
+<code>f((..pair))</code>, and the arity bound is checked on the concatenation.
+Passing a spread to a function that has no spread parameter builds no
+tuple and is an error; write the construction (<code>f((..pair))</code>) instead.</p>
+<p>A tuple that is still an abstract generic pack has no known element
+sequence while the body is checked, so it may be spread only where there
+is nothing to concatenate it with — alone, as <code>inner(..items)</code>, which is
+how a pack is forwarded to another spread function. <em><code>keyof</code> and the
+type-level spread <code>(..T, U)</code> are recorded future work.</em></p>
 <p><strong>Positional access</strong> <code>t.0</code>, <code>t.1</code> (chaining as <code>t.0.1</code>) types as that
 element and, through a <code>mut</code> binding, assigns it. Tuples store flat: a
 tuple-typed element occupies its elements’ slots, so accessing one

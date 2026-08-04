@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -399,7 +399,9 @@ difference is the point:</p>
 <p><strong><code>optimistic(signal, value, commit)</code></strong> paints the value immediately,
 runs your async commit, and on failure rolls back. Use it for
 one-shot actions like a delete button: if the delete failed, the row
-should come back.</p>
+should come back. When the write needs <em>watching</em> — a spinner, a button
+that shouldn’t fire twice, a failure banner — reach for the
+<a href="#watching-an-optimistic-write-land"><code>Optimistic</code> cell</a> below instead.</p>
 <p><strong><code>draft(initial, commit)</code></strong> is for <em>editing</em>. It keeps the user’s text
 on failure (rolling back mid-typing would eat their input) and retries
 naturally on the next push. Bind an input to a draft and every keystroke
@@ -510,6 +512,56 @@ the shape drafts are built for — “set this field to this value” — and it
 is not for a commit that appends. And a re-push that fails is not retried
 on a timer; it rides the next reconnect, so a value the server keeps
 refusing can’t spin.</p>
+</blockquote>
+<h3 id="watching-an-optimistic-write-land"><a class="header" href="#watching-an-optimistic-write-land">Watching an optimistic write land</a></h3>
+<p><code>optimistic</code> hands the outcome back to whoever called it, and to no one
+else. That is enough for a write you await and immediately branch on, and
+not enough for the usual case: a button that should grey out while its
+write is in flight, and a banner that should say why it failed.</p>
+<p><code>Optimistic::over(signal)</code> wraps the signal you already have — no binding
+changes — and adds a <code>state</code> signal to bind:</p>
+<pre><code class="language-vilan">import std::print;
+import std::reactive::{ Signal, Optimistic, WriteState };
+import std::result::Result::{ self, Ok, Err };
+
+fun main() {
+	let title = Signal::new("Draft post");
+	let saving = Optimistic::over(title);
+
+	// A write the server refuses. "Published" is painted first, so the UI
+	// never waits; the rejection rolls it back and says why.
+	let _refused = saving.write("Published", || {
+		let reply: Result&lt;str, str&gt; = Err("not allowed");
+		reply
+	});
+	print(title.get());
+	print(saving.state.get() == WriteState::Rejected("not allowed"));
+
+	// A write it accepts, answering with its own value — that value wins,
+	// not the one you painted.
+	let _accepted = saving.write("Published", || {
+		let reply: Result&lt;str, str&gt; = Ok("Published (v3)");
+		reply
+	});
+	print(title.get());
+	print(saving.state.get() == WriteState::Confirmed);
+}
+</code></pre>
+<p><code>state</code> is <code>Confirmed</code>, <code>Pending</code>, or <code>Rejected(reason)</code>, and the value and
+the state are always published <em>together</em> — an observer of both never
+catches the cell mid-transition.</p>
+<blockquote>
+<p><strong>Going deeper.</strong> The cell also fixes something you can’t fix from
+outside: two writes in flight over one signal. Through the free
+function, an older write failing <em>after</em> a newer one succeeded rolls the
+newer value away, leaving the screen showing something the server
+stopped holding two writes ago. The cell discards a superseded outcome —
+the newest write owns the cell — and it rolls back to the last value the
+<strong>server</strong> confirmed rather than to whatever the signal held when the
+write started. Unlike a draft, it does <strong>not</strong> re-send on reconnect: a
+re-send is at-least-once, which is fine for “set this field to this
+value” and not for an action you’d rather not perform twice. The
+rollback is the recovery.</p>
 </blockquote>
 <h2 id="keyed-reconciliation"><a class="header" href="#keyed-reconciliation">Keyed reconciliation</a></h2>
 <p><code>reconcile(old_keys, old_items, new_items, key)</code> computes a minimal

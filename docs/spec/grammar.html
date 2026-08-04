@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -352,13 +352,13 @@ optional.</p>
 path    = ( IDENT generic-args ␣"::"  (* generic static head *)
           | atom )
           { "::" IDENT } ;
-call-suffix = [ generic-args ] "(" [ expression { "," expression } [ "," ] ] ")" ;
+call-suffix = [ generic-args ] "(" [ entry { "," entry } [ "," ] ] ")" ;
 member  = NUMBER                          (* tuple index: .0 *)
         | IDENT [ call-suffix ] ;         (* field / ONE fused method call *)
 postfix = "." member
         | "[" expression "]"             (* index *)
         | "!"                            (* try-assert, §5.10 *)
-        | "(" [ expression { "," expression } [ "," ] ] ")"
+        | "(" [ entry { "," entry } [ "," ] ] ")"
                                           (* direct call on the chain result *)
         | "?." member ;                  (* lift link, §5.10 *)
 
@@ -366,7 +366,9 @@ atom    = literal | IDENT | IDENT generic-args
         | "(" expression ")" | tuple | list
         | tuple-comprehension | macro-invocation | macro-block
         | element ;
-tuple   = "(" expression "," expression { "," expression } [ "," ] ")" ;
+tuple   = "(" ( spread | expression "," entry { "," entry } [ "," ] ) ")" ;
+entry   = spread | expression ;
+spread  = ".." expression ;
 list    = "[" [ expression { "," expression } [ "," ] ] "]" ;
 tuple-comprehension = "(" IDENT "in" secondary-expr "=&gt;" expression ")" ;
 
@@ -387,6 +389,14 @@ chain’s result, calling a closure-typed value
 through the following plain postfixes up to the next <code>?.</code> or <code>!</code>:
 <code>a?.b.c()!</code> lifts <code>b.c()</code> into the container, then try-asserts the
 result (§5.10).</p>
+<p>A leading <code>..</code> marks a <strong>tuple-value spread</strong> (§5.9). It is recognized
+only where an <em>entry</em> begins — a tuple construction’s entry, or a call
+argument — so <code>..</code> after an expression is unaffected and remains the
+member-access dots it has always been (<code>(1..3, x)</code> is not a spread). A
+tuple construction whose only entry is a spread is still a tuple, not a
+parenthesized group: <code>(..a)</code> is the concatenation of one, and <code>(e)</code> is a
+group as before. There is no type-level spread; <code>(..T, U)</code> does not
+parse.</p>
 <p>An <strong>element</strong> appears only in atom position, where <code>&lt;</code> begins no other
 expression; after an operand, <code>&lt;</code> remains a comparison (<code>x &lt; &lt;div/&gt;</code> is
 a comparison whose right operand is an element). <code>/&gt;</code>, the closing

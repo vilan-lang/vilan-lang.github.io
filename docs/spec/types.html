@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -348,9 +348,32 @@ what makes 0- and 1-arity tuple <em>values</em> reachable; tuple types already
 admit them. Since the convention lives on the declaration, a spread
 function used as a <strong>value</strong> has its tuple type, and is called with a
 tuple.</p>
-<p>Grammar and the positions where <code>...</code> is rejected: §3.3. <em><code>keyof</code>, and
-spreading a tuple INTO a spread parameter (<code>f(..existing)</code>, which needs
-the tuple-value spread), are recorded future work.</em></p>
+<p>Grammar and the positions where <code>...</code> is rejected: §3.3.</p>
+<p>A <strong>tuple-value spread</strong> <code>..e</code> is an entry of a tuple construction that
+contributes the <em>elements</em> of <code>e</code>’s tuple type rather than <code>e</code> itself, so
+the construction’s type is the <strong>concatenation</strong> of its entries, in
+written order:</p>
+<pre><code class="language-vilan fragment">let pair = (1, 2);
+let lead = (..pair, 3);      //  (i32, i32, i32)
+let mid  = (0, ..pair, 9);   //  (i32, i32, i32, i32)
+let both = (..pair, ..pair); //  (i32, i32, i32, i32)
+</code></pre>
+<p>Spreads may appear in any position, in any number, mixed freely with
+ordinary entries, and a construction whose only entry is a spread is
+still a construction (<code>(..pair)</code> is the concatenation of one). The
+operand must be a tuple; anything else is an error naming the type.
+Concatenation is one level deep — a spread operand’s own nested elements
+keep their nesting, since it contributes its <em>elements</em>, not its slots.</p>
+<p>A spread is also a <strong>call argument</strong>, which is what lets a pack be
+forwarded: since <code>f(a, b)</code> means <code>f((a, b))</code>, <code>f(..pair)</code> means
+<code>f((..pair))</code>, and the arity bound is checked on the concatenation.
+Passing a spread to a function that has no spread parameter builds no
+tuple and is an error; write the construction (<code>f((..pair))</code>) instead.</p>
+<p>A tuple that is still an abstract generic pack has no known element
+sequence while the body is checked, so it may be spread only where there
+is nothing to concatenate it with — alone, as <code>inner(..items)</code>, which is
+how a pack is forwarded to another spread function. <em><code>keyof</code> and the
+type-level spread <code>(..T, U)</code> are recorded future work.</em></p>
 <p><strong>Positional access</strong> <code>t.0</code>, <code>t.1</code> (chaining as <code>t.0.1</code>) types as that
 element and, through a <code>mut</code> binding, assigns it. Tuples store flat: a
 tuple-typed element occupies its elements’ slots, so accessing one

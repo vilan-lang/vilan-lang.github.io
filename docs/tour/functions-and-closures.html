@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -253,6 +253,32 @@ Since the arguments are collected into a value the <em>call site</em> builds,
 <code>...</code> never combines with <code>own</code>, <code>&amp;</code>, or <code>&amp;mut</code>; <code>mut ...items</code> is fine,
 and means what <code>mut</code> always means. <code>...</code> belongs to a plain <code>fun</code> — not
 to a closure, a trait method, an <code>impl</code> member, or an <code>external fun</code>.</p>
+<h3 id="passing-a-pack-on"><a class="header" href="#passing-a-pack-on">Passing a pack on</a></h3>
+<p>Since <code>f(a, b)</code> means <code>f((a, b))</code>, a <code>..</code> spread at the call site means
+<code>f((..pair))</code> — the arguments you already hold, written out flat. That is
+how a pack is forwarded to another spread function, and it is not the
+same as passing the tuple itself, which would arrive as a pack of one:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun how_many&lt;T: (..)&gt;(...items: T): i32 {
+	1
+}
+
+fun forward&lt;T: (..)&gt;(...items: T): i32 {
+	how_many(..items)
+}
+
+fun main() {
+	let pair = (1, 2);
+	print(how_many(..pair));       // a pack of 2
+	print(how_many(..pair, 3));    // a pack of 3
+	print(forward(1, 2, 3));       // a pack of 3, passed on
+}
+</code></pre>
+<p>The bound is checked on what the spread actually contributes, so a
+<code>T: (3..)</code> would reject <code>how_many(..pair)</code> for having only two. A spread
+at a call to a function <em>without</em> a spread parameter builds no tuple and
+is an error — write the tuple yourself (<code>takes_a_tuple((..pair))</code>).</p>
 <h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
 <p>A closure is an inline function value. Where JavaScript writes
 <code>x =&gt; x * 2</code>, Vilan writes <code>|x| x * 2</code>. Parameter types are usually

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53e5aa56.js";
+            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -305,6 +305,26 @@ fun main() {
 <p>Tuple types are written the same way: <code>(i32, str)</code>. Positional access
 (<code>pair.0</code>, <code>pair.1</code>, chains like <code>nested.0.1</code>) types as that element;
 through a <code>mut</code> binding you can also assign one (<code>pair.0 = 5</code>).</p>
+<h3 id="building-one-out-of-another"><a class="header" href="#building-one-out-of-another">Building one out of another</a></h3>
+<p>A <code>..</code> entry <strong>spreads</strong> a tuple you already have — its elements go into
+the new tuple, so the type is the two concatenated. Spreads work in any
+position, as many as you like, mixed with ordinary entries:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	let pair = (1, 2);
+	let lead = (..pair, 3);       // (i32, i32, i32)
+	let mid = (0, ..pair, 9);     // (i32, i32, i32, i32)
+	let both = (..pair, ..pair);  // (i32, i32, i32, i32)
+	print(lead.2);
+	print(mid.3);
+	print(both.3);
+}
+</code></pre>
+<p>Note this is a <em>shallow</em> concatenation: <code>..outer</code> contributes <code>outer</code>’s
+elements, so an element that is itself a tuple stays one. And <code>..</code> only
+means this at the start of an entry — <code>a..b</code> after an expression is not
+a spread, and vilan has no range operator for it to be confused with.</p>
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <p><code>List&lt;T&gt;</code> is built in and has literal syntax. <code>Map&lt;K, V&gt;</code> and <code>Set&lt;T&gt;</code>
 come from std:</p>
