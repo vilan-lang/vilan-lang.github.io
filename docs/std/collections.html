@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
+            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -188,6 +188,7 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun remove(&amp;mut self, index: i32): T          // panics out of bounds
 	fun len(self): i32
 	fun is_empty(self): bool
+	fun iter(self): ListIterator&lt;T&gt;              // the lazy cursor; see Iterator
 	fun get(self, index: i32): Option&lt;T&gt;
 	fun first(self): Option&lt;T&gt;
 	fun last(self): Option&lt;T&gt;
@@ -210,7 +211,24 @@ impl List&lt;type T: Display&gt; { fun join(self, separator: str): str }
 </code></pre>
 <p>Indexing is <code>list[i]</code>; iterate with <code>for item in list</code> (copies) or
 <code>for e in &amp;mut list</code> (in-place views; see the
-<a href="../tour/memory-model.html">memory model</a>).</p>
+<a href="../tour/memory-model.html">memory model</a>). <code>list.iter()</code> hands back a
+<code>ListIterator&lt;T&gt;</code> — a cursor over a <strong>snapshot</strong> of the list, and the entry to
+the <a href="#iterator">adapter chain</a>. The snapshot is rule 1 at work (the cursor
+stores the list in a slot that outlives the call, so it copies), which means a
+<code>push</code> after <code>iter()</code> is not walked, and that <code>iter()</code> itself costs a copy:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut live = [1, 2];
+	mut cursor = live.iter();
+	live.push(3);
+	mut total = 0;
+	for value in cursor {
+		total += value;   // 1 + 2 — the snapshot predates the push
+	}
+	print(total);
+}
+</code></pre>
 <p>The methods that take <code>self</code> by value are pure — they return a new list and
 leave the receiver alone. The mutating ones take <code>&amp;mut self</code>: <code>push</code>, <code>pop</code>,
 <code>insert</code>, <code>remove</code>.</p>
@@ -294,6 +312,7 @@ fun main() {
 	fun keys(self): List&lt;K&gt;
 	fun values(self): List&lt;V&gt;
 }
+impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): Map&lt;K, V&gt; }
 </code></pre>
 <p>Keys compare <strong>by value</strong>. Scalars work directly; a struct, enum, tuple, or
 <code>List</code> key works as long as it is <code>Hashable</code>. Derive it:</p>
@@ -330,6 +349,7 @@ on insert, so mutating the original afterward can’t desync the map.</p>
 	fun is_empty(self): bool
 	fun values(self): List&lt;T&gt;
 }
+impl List&lt;type T: Hashable&gt; { fun to_set(self): Set&lt;T&gt; }
 </code></pre>
 <p>Value-keyed like <code>Map</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
 iterates the elements in insertion order.</p>
@@ -361,12 +381,171 @@ fun main() {
 </code></pre>
 <h2 id="iterator"><a class="header" href="#iterator">Iterator</a></h2>
 <p>The protocol <code>for</code> consumes, and the seam for custom sequences:</p>
-<pre><code class="language-vilan fragment">trait Iterator&lt;T&gt; { fun next(self): Option&lt;T&gt;; }
-trait Iterable&lt;T&gt; { fun iter(self): Iterator&lt;T&gt;; }
+<pre><code class="language-vilan fragment">trait Iterator&lt;T&gt; { fun next(&amp;mut self): Option&lt;T&gt;; }
 Iterator::from_fn(fn: || Option&lt;T&gt;): IteratorFromFn&lt;T&gt;   // an iterator from a closure
 </code></pre>
-<p>Anything implementing <code>Iterator</code>/<code>Iterable</code> works in a <code>for</code> loop.
-<code>Range</code> is one such type.</p>
+<p><code>next</code> takes <code>&amp;mut self</code> because advancing <em>is</em> a mutation of the iterator’s own
+state — a cursor, a counter, a running total. Implement it on a struct of yours
+and the type works in a <code>for</code> loop, and satisfies an <code>I: Iterator&lt;T&gt;</code> bound:</p>
+<pre><code class="language-vilan">import std::print;
+import std::iterator::Iterator;
+import std::option::Option::{ self, Some, None };
+
+struct Countdown {
+	remaining: i32,
+}
+
+impl Countdown with Iterator&lt;i32&gt; {
+	fun next(&amp;mut self): Option&lt;i32&gt; {
+		if self.remaining &lt;= 0 {
+			None
+		} else {
+			self.remaining -= 1;
+			Some(self.remaining)
+		}
+	}
+}
+
+fun main() {
+	mut countdown = Countdown { remaining = 3 };
+	for n in countdown {
+		print(n);   // 2, 1, 0
+	}
+}
+</code></pre>
+<p><code>Range</code> implements <code>Iterator&lt;i32&gt;</code>, and so does every adapter below.</p>
+<p>One thing to know about the loop: <code>for</code> resolves the protocol on the <em>method
+name</em>, so a type with a <code>next(&amp;mut self): Option&lt;T&gt;</code> drives a loop whether or
+not it declares the trait. Declaring it is what buys the adapters below — and
+what lets a generic bound accept your type.</p>
+<h3 id="adapters"><a class="header" href="#adapters">Adapters</a></h3>
+<p>Every <code>Iterator</code> gets these, as trait defaults — implement <code>next</code> and you have
+all of them:</p>
+<pre><code class="language-vilan fragment">fun map&lt;U&gt;(self, fn: |T| U): Mapped&lt;Self, T, U&gt;
+fun filter(self, predicate: |T| bool): Filtered&lt;Self, T&gt;
+fun take(self, count: i32): Taken&lt;Self, T&gt;
+fun skip(self, count: i32): Skipped&lt;Self, T&gt;
+fun enumerate(self): Enumerated&lt;Self, T&gt;                       // (0, a), (1, b), …
+fun zip&lt;U, J: Iterator&lt;U&gt;&gt;(self, other: J): Zipped&lt;Self, J, T, U&gt;
+fun chain&lt;J: Iterator&lt;T&gt;&gt;(self, other: J): Chained&lt;Self, J, T&gt;
+</code></pre>
+<p>They are <strong>lazy</strong>: each returns a small struct holding its upstream, and nothing
+runs until something pulls. So a chain makes one pass over the source and builds
+no intermediate lists.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut pipeline = [1, 2, 3, 4, 5, 6]
+		.iter()
+		.filter(|n| n % 2 == 0)
+		.map(|n| n * 10)
+		.take(2);
+	for value in pipeline {
+		print(value);   // 20, 40
+	}
+}
+</code></pre>
+<p>Laziness is what makes <code>take</code> more than a convenience: it never pulls past its
+budget, so it bounds a source that has no end.</p>
+<pre><code class="language-vilan">import std::print;
+import std::iterator::Iterator;
+import std::option::Option::{ self, Some, None };
+
+struct Naturals {
+	at: i32,
+}
+
+impl Naturals with Iterator&lt;i32&gt; {
+	fun next(&amp;mut self): Option&lt;i32&gt; {
+		self.at += 1;
+		Some(self.at)
+	}
+}
+
+fun main() {
+	mut squares = Naturals { at = 0 }.map(|n| n * n).take(3);
+	for value in squares {
+		print(value);   // 1, 4, 9
+	}
+}
+</code></pre>
+<p><code>zip</code> stops with the <strong>shorter</strong> side, and <code>enumerate</code> numbers what reaches it —
+put it after a <code>filter</code> and you get the positions in the <em>output</em>, not in the
+source.</p>
+<p>The adapter types are named in the past participle — <code>Mapped</code>, <code>Taken</code>,
+<code>Filtered</code> — while the methods keep the plain names. That is deliberate: <code>Map</code>
+is already a std type, and vilan’s method resolution picks by registration order
+rather than reporting a collision, so the type names stay out of each other’s
+way.</p>
+<p><strong>One rough edge to know about.</strong> If an iterator’s element type is its own
+generic parameter and you instantiate it at a <em>tuple</em>, the <code>for</code> binding loses
+the tuple: <code>for pair in [(1, "a")].iter() { pair.0 }</code> is rejected with “cannot
+access field ‘0’ on type T”. Pull by hand instead —
+<code>if cursor.next() is Some(let pair) { pair.0 }</code> — or iterate the <code>List</code>
+directly, both of which work. <code>enumerate</code> and <code>zip</code> are not affected, because
+they name their tuple element structurally.</p>
+<h3 id="terminations"><a class="header" href="#terminations">Terminations</a></h3>
+<p>An adapter chain does nothing until it is <em>terminated</em>. These consume the
+iterator and hand back an ordinary value:</p>
+<pre><code class="language-vilan fragment">fun to_list(mut self): List&lt;T&gt;
+fun fold&lt;B&gt;(mut self, init: B, fn: |B, T| B): B
+fun for_each(mut self, fn: |T| void)
+fun count(mut self): i32
+fun any(mut self, predicate: |T| bool): bool     // short-circuits on the first hit
+fun all(mut self, predicate: |T| bool): bool     // short-circuits on the first miss
+fun rev(mut self): ListIterator&lt;T&gt;               // a BARRIER — see below
+</code></pre>
+<p><code>to_list</code> is the primary one, and it is deliberately explicit. A method that
+<em>names</em> what it builds needs no type annotation, reads at the call site, and
+works in the middle of an expression — <code>xs.iter().filter(f).to_list().len()</code> —
+which is exactly where an inference-driven <code>collect</code> gives up. There is no
+<code>collect</code> in vilan, by design; if one is ever added it will sit beside this
+family, never replace it.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	let evens = [1, 2, 3, 4, 5, 6].iter().filter(|n| n % 2 == 0).to_list();
+	print(evens.len());                                     // 3
+	print([1, 2, 3].iter().fold(0, |total, n| total + n));   // 6
+	print([1, 2, 3, 4].iter().filter(|n| n &gt; 2).count());    // 2
+	print([1, 2, 3].iter().any(|n| n == 2));                 // true
+	print([1, 2, 3].iter().all(|n| n &gt; 0));                  // true
+}
+</code></pre>
+<p><code>any</code> and <code>all</code> short-circuit, so they can answer over a source that has no end;
+<code>count</code>, <code>fold</code>, <code>for_each</code> and <code>to_list</code> pull everything, so bound such a source
+with <code>take</code> first.</p>
+<p><code>rev</code> is a <strong>barrier</strong>, not a lazy adapter: it drains its upstream into a <code>List</code>,
+reverses that, and hands back a <code>ListIterator</code>. So the chain continues, but the
+work up to that point has already happened — and <code>rev</code> never returns over an
+unbounded source. (A lazy reverse needs a double-ended protocol, where every
+adapter decides whether it can walk backwards. That is purely additive later:
+<code>rev</code>’s signature would not change, only its body.)</p>
+<p>For a <code>Set</code> or a <code>Map</code>, terminate with <code>to_list()</code> and convert:</p>
+<pre><code class="language-vilan fragment">impl List&lt;type T: Hashable&gt;            { fun to_set(self): Set&lt;T&gt; }
+impl List&lt;(type K: Hashable, type V)&gt;  { fun to_map(self): Map&lt;K, V&gt; }
+</code></pre>
+<pre><code class="language-vilan">import std::print;
+import std::map::Map;
+import std::set::Set;
+import std::option::Option::{ self, Some, None };
+
+fun main() {
+	let unique = [1, 2, 2, 3].iter().filter(|n| n &gt; 1).to_list().to_set();
+	print(unique.len());   // 2
+
+	let lengths = ["alpha", "hi"].iter().map(|word| (word, word.len())).to_list().to_map();
+	print(lengths.get("hi").unwrap_or(-1));   // 2
+}
+</code></pre>
+<p>These two live on <code>List</code> rather than on <code>Iterator</code>, and the reason is worth
+knowing because it shapes what you can write yourself: <code>to_set</code> needs
+<code>T: Hashable</code>, <code>Iterator&lt;T&gt;</code> does not bound <code>T</code>, and a trait default may not
+require a bound its trait does not declare — nor can a method carry one of its
+own. So a <code>to_set</code> written as a trait default is rejected at its own definition,
+before any call. Putting it beside the bound it needs is the same choice <code>join</code>
+makes with <code>Display</code>. A repeated key in <code>to_map</code> keeps the <strong>last</strong> pair, matching
+<code>insert</code>.</p>
 
                     </main>
 

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
+            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -237,6 +237,30 @@ different value was passed than you think.
 <p><strong>“‘…’ does not implement trait ‘…’: missing ‘…’”</strong>
 An <code>impl … with Trait</code> doesn’t provide every required method, or a bound
 demands a trait the type never implemented.
+→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“‘…’ is already defined for ‘…’; remove or rename this one”</strong>
+Two impls declare the same method name for the same type, and neither
+name belongs to a trait. Nothing ranks them, so one of the two would
+simply never run — the note points at the other declaration. Delete the
+copy you don’t want, or rename it. It is reported where it is defined,
+not where it is called.
+→ <a href="../spec/names.html">Names, modules, and packages</a></p>
+<p><strong>“‘…’ is ambiguous on ‘…’: both ‘…’ and ‘…’ provide it; call ‘…’ to pick one”</strong>
+Two traits supply the same method name for this receiver (or, for a
+generic receiver, two arms of its <code>T: A + B</code> bound), and the type has no
+inherent method of its own to outrank them. Say which one you mean with
+<code>Trait::method(receiver, …)</code> — the message spells both options out with
+your own receiver already substituted in.
+→ <a href="../spec/names.html">Names, modules, and packages</a></p>
+<p><strong>“‘…’ is not an inherent member of ‘…’: ‘…’ provides it; call ‘…’ instead”</strong>
+<code>Type::method(receiver)</code> means the type’s <em>own</em> method. This one comes
+from a trait, so name the trait at the path head instead:
+<code>Trait::method(receiver)</code>.
+→ <a href="../spec/names.html">Names, modules, and packages</a></p>
+<p><strong>“‘…’ does not implement ‘…’, so ‘…::…’ cannot be called on it”</strong>
+A <code>Trait::method(receiver)</code> call named a trait the receiver’s type has no
+<code>impl … with</code> for. Implement the trait, or call the method the receiver
+does have.
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“… match the receiver convention”</strong> · <strong>“… match the parameter convention”</strong> · <strong>“… match the declared type”</strong> · <strong>“… match the declared return type”</strong> · <strong>“… match the declared parameter list”</strong> · <strong>“… match the trait’s type-parameter list”</strong>
 A method an <code>impl … with Trait</code> provides must match the trait’s

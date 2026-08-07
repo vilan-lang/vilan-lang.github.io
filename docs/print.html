@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-35ddb4ab.js";
+            window.path_to_searchindex_js = "searchindex-49e884e9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -4930,6 +4930,7 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun remove(&amp;mut self, index: i32): T          // panics out of bounds
 	fun len(self): i32
 	fun is_empty(self): bool
+	fun iter(self): ListIterator&lt;T&gt;              // the lazy cursor; see Iterator
 	fun get(self, index: i32): Option&lt;T&gt;
 	fun first(self): Option&lt;T&gt;
 	fun last(self): Option&lt;T&gt;
@@ -4952,7 +4953,24 @@ impl List&lt;type T: Display&gt; { fun join(self, separator: str): str }
 </code></pre>
 <p>Indexing is <code>list[i]</code>; iterate with <code>for item in list</code> (copies) or
 <code>for e in &amp;mut list</code> (in-place views; see the
-<a href="#the-memory-model">memory model</a>).</p>
+<a href="#the-memory-model">memory model</a>). <code>list.iter()</code> hands back a
+<code>ListIterator&lt;T&gt;</code> — a cursor over a <strong>snapshot</strong> of the list, and the entry to
+the <a href="#iterator">adapter chain</a>. The snapshot is rule 1 at work (the cursor
+stores the list in a slot that outlives the call, so it copies), which means a
+<code>push</code> after <code>iter()</code> is not walked, and that <code>iter()</code> itself costs a copy:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut live = [1, 2];
+	mut cursor = live.iter();
+	live.push(3);
+	mut total = 0;
+	for value in cursor {
+		total += value;   // 1 + 2 — the snapshot predates the push
+	}
+	print(total);
+}
+</code></pre>
 <p>The methods that take <code>self</code> by value are pure — they return a new list and
 leave the receiver alone. The mutating ones take <code>&amp;mut self</code>: <code>push</code>, <code>pop</code>,
 <code>insert</code>, <code>remove</code>.</p>
@@ -5036,6 +5054,7 @@ fun main() {
 	fun keys(self): List&lt;K&gt;
 	fun values(self): List&lt;V&gt;
 }
+impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): Map&lt;K, V&gt; }
 </code></pre>
 <p>Keys compare <strong>by value</strong>. Scalars work directly; a struct, enum, tuple, or
 <code>List</code> key works as long as it is <code>Hashable</code>. Derive it:</p>
@@ -5072,6 +5091,7 @@ on insert, so mutating the original afterward can’t desync the map.</p>
 	fun is_empty(self): bool
 	fun values(self): List&lt;T&gt;
 }
+impl List&lt;type T: Hashable&gt; { fun to_set(self): Set&lt;T&gt; }
 </code></pre>
 <p>Value-keyed like <code>Map</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
 iterates the elements in insertion order.</p>
@@ -5103,12 +5123,171 @@ fun main() {
 </code></pre>
 <h2 id="iterator"><a class="header" href="#iterator">Iterator</a></h2>
 <p>The protocol <code>for</code> consumes, and the seam for custom sequences:</p>
-<pre><code class="language-vilan fragment">trait Iterator&lt;T&gt; { fun next(self): Option&lt;T&gt;; }
-trait Iterable&lt;T&gt; { fun iter(self): Iterator&lt;T&gt;; }
+<pre><code class="language-vilan fragment">trait Iterator&lt;T&gt; { fun next(&amp;mut self): Option&lt;T&gt;; }
 Iterator::from_fn(fn: || Option&lt;T&gt;): IteratorFromFn&lt;T&gt;   // an iterator from a closure
 </code></pre>
-<p>Anything implementing <code>Iterator</code>/<code>Iterable</code> works in a <code>for</code> loop.
-<code>Range</code> is one such type.</p>
+<p><code>next</code> takes <code>&amp;mut self</code> because advancing <em>is</em> a mutation of the iterator’s own
+state — a cursor, a counter, a running total. Implement it on a struct of yours
+and the type works in a <code>for</code> loop, and satisfies an <code>I: Iterator&lt;T&gt;</code> bound:</p>
+<pre><code class="language-vilan">import std::print;
+import std::iterator::Iterator;
+import std::option::Option::{ self, Some, None };
+
+struct Countdown {
+	remaining: i32,
+}
+
+impl Countdown with Iterator&lt;i32&gt; {
+	fun next(&amp;mut self): Option&lt;i32&gt; {
+		if self.remaining &lt;= 0 {
+			None
+		} else {
+			self.remaining -= 1;
+			Some(self.remaining)
+		}
+	}
+}
+
+fun main() {
+	mut countdown = Countdown { remaining = 3 };
+	for n in countdown {
+		print(n);   // 2, 1, 0
+	}
+}
+</code></pre>
+<p><code>Range</code> implements <code>Iterator&lt;i32&gt;</code>, and so does every adapter below.</p>
+<p>One thing to know about the loop: <code>for</code> resolves the protocol on the <em>method
+name</em>, so a type with a <code>next(&amp;mut self): Option&lt;T&gt;</code> drives a loop whether or
+not it declares the trait. Declaring it is what buys the adapters below — and
+what lets a generic bound accept your type.</p>
+<h3 id="adapters"><a class="header" href="#adapters">Adapters</a></h3>
+<p>Every <code>Iterator</code> gets these, as trait defaults — implement <code>next</code> and you have
+all of them:</p>
+<pre><code class="language-vilan fragment">fun map&lt;U&gt;(self, fn: |T| U): Mapped&lt;Self, T, U&gt;
+fun filter(self, predicate: |T| bool): Filtered&lt;Self, T&gt;
+fun take(self, count: i32): Taken&lt;Self, T&gt;
+fun skip(self, count: i32): Skipped&lt;Self, T&gt;
+fun enumerate(self): Enumerated&lt;Self, T&gt;                       // (0, a), (1, b), …
+fun zip&lt;U, J: Iterator&lt;U&gt;&gt;(self, other: J): Zipped&lt;Self, J, T, U&gt;
+fun chain&lt;J: Iterator&lt;T&gt;&gt;(self, other: J): Chained&lt;Self, J, T&gt;
+</code></pre>
+<p>They are <strong>lazy</strong>: each returns a small struct holding its upstream, and nothing
+runs until something pulls. So a chain makes one pass over the source and builds
+no intermediate lists.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut pipeline = [1, 2, 3, 4, 5, 6]
+		.iter()
+		.filter(|n| n % 2 == 0)
+		.map(|n| n * 10)
+		.take(2);
+	for value in pipeline {
+		print(value);   // 20, 40
+	}
+}
+</code></pre>
+<p>Laziness is what makes <code>take</code> more than a convenience: it never pulls past its
+budget, so it bounds a source that has no end.</p>
+<pre><code class="language-vilan">import std::print;
+import std::iterator::Iterator;
+import std::option::Option::{ self, Some, None };
+
+struct Naturals {
+	at: i32,
+}
+
+impl Naturals with Iterator&lt;i32&gt; {
+	fun next(&amp;mut self): Option&lt;i32&gt; {
+		self.at += 1;
+		Some(self.at)
+	}
+}
+
+fun main() {
+	mut squares = Naturals { at = 0 }.map(|n| n * n).take(3);
+	for value in squares {
+		print(value);   // 1, 4, 9
+	}
+}
+</code></pre>
+<p><code>zip</code> stops with the <strong>shorter</strong> side, and <code>enumerate</code> numbers what reaches it —
+put it after a <code>filter</code> and you get the positions in the <em>output</em>, not in the
+source.</p>
+<p>The adapter types are named in the past participle — <code>Mapped</code>, <code>Taken</code>,
+<code>Filtered</code> — while the methods keep the plain names. That is deliberate: <code>Map</code>
+is already a std type, and vilan’s method resolution picks by registration order
+rather than reporting a collision, so the type names stay out of each other’s
+way.</p>
+<p><strong>One rough edge to know about.</strong> If an iterator’s element type is its own
+generic parameter and you instantiate it at a <em>tuple</em>, the <code>for</code> binding loses
+the tuple: <code>for pair in [(1, "a")].iter() { pair.0 }</code> is rejected with “cannot
+access field ‘0’ on type T”. Pull by hand instead —
+<code>if cursor.next() is Some(let pair) { pair.0 }</code> — or iterate the <code>List</code>
+directly, both of which work. <code>enumerate</code> and <code>zip</code> are not affected, because
+they name their tuple element structurally.</p>
+<h3 id="terminations"><a class="header" href="#terminations">Terminations</a></h3>
+<p>An adapter chain does nothing until it is <em>terminated</em>. These consume the
+iterator and hand back an ordinary value:</p>
+<pre><code class="language-vilan fragment">fun to_list(mut self): List&lt;T&gt;
+fun fold&lt;B&gt;(mut self, init: B, fn: |B, T| B): B
+fun for_each(mut self, fn: |T| void)
+fun count(mut self): i32
+fun any(mut self, predicate: |T| bool): bool     // short-circuits on the first hit
+fun all(mut self, predicate: |T| bool): bool     // short-circuits on the first miss
+fun rev(mut self): ListIterator&lt;T&gt;               // a BARRIER — see below
+</code></pre>
+<p><code>to_list</code> is the primary one, and it is deliberately explicit. A method that
+<em>names</em> what it builds needs no type annotation, reads at the call site, and
+works in the middle of an expression — <code>xs.iter().filter(f).to_list().len()</code> —
+which is exactly where an inference-driven <code>collect</code> gives up. There is no
+<code>collect</code> in vilan, by design; if one is ever added it will sit beside this
+family, never replace it.</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	let evens = [1, 2, 3, 4, 5, 6].iter().filter(|n| n % 2 == 0).to_list();
+	print(evens.len());                                     // 3
+	print([1, 2, 3].iter().fold(0, |total, n| total + n));   // 6
+	print([1, 2, 3, 4].iter().filter(|n| n &gt; 2).count());    // 2
+	print([1, 2, 3].iter().any(|n| n == 2));                 // true
+	print([1, 2, 3].iter().all(|n| n &gt; 0));                  // true
+}
+</code></pre>
+<p><code>any</code> and <code>all</code> short-circuit, so they can answer over a source that has no end;
+<code>count</code>, <code>fold</code>, <code>for_each</code> and <code>to_list</code> pull everything, so bound such a source
+with <code>take</code> first.</p>
+<p><code>rev</code> is a <strong>barrier</strong>, not a lazy adapter: it drains its upstream into a <code>List</code>,
+reverses that, and hands back a <code>ListIterator</code>. So the chain continues, but the
+work up to that point has already happened — and <code>rev</code> never returns over an
+unbounded source. (A lazy reverse needs a double-ended protocol, where every
+adapter decides whether it can walk backwards. That is purely additive later:
+<code>rev</code>’s signature would not change, only its body.)</p>
+<p>For a <code>Set</code> or a <code>Map</code>, terminate with <code>to_list()</code> and convert:</p>
+<pre><code class="language-vilan fragment">impl List&lt;type T: Hashable&gt;            { fun to_set(self): Set&lt;T&gt; }
+impl List&lt;(type K: Hashable, type V)&gt;  { fun to_map(self): Map&lt;K, V&gt; }
+</code></pre>
+<pre><code class="language-vilan">import std::print;
+import std::map::Map;
+import std::set::Set;
+import std::option::Option::{ self, Some, None };
+
+fun main() {
+	let unique = [1, 2, 2, 3].iter().filter(|n| n &gt; 1).to_list().to_set();
+	print(unique.len());   // 2
+
+	let lengths = ["alpha", "hi"].iter().map(|word| (word, word.len())).to_list().to_map();
+	print(lengths.get("hi").unwrap_or(-1));   // 2
+}
+</code></pre>
+<p>These two live on <code>List</code> rather than on <code>Iterator</code>, and the reason is worth
+knowing because it shapes what you can write yourself: <code>to_set</code> needs
+<code>T: Hashable</code>, <code>Iterator&lt;T&gt;</code> does not bound <code>T</code>, and a trait default may not
+require a bound its trait does not declare — nor can a method carry one of its
+own. So a <code>to_set</code> written as a trait default is rejected at its own definition,
+before any call. Putting it beside the bound it needs is the same choice <code>join</code>
+makes with <code>Display</code>. A repeated key in <code>to_map</code> keeps the <strong>last</strong> pair, matching
+<code>insert</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="option--result-reference"><a class="header" href="#option--result-reference">Option &amp; Result reference</a></h1>
 <p><code>Option&lt;T&gt;</code> is how Vilan says “maybe a value” (there is no <code>null</code>), and
@@ -7736,11 +7915,51 @@ name does not shadow a type there.</li>
 style.</p>
 <h2 id="46-statics-and-members"><a class="header" href="#46-statics-and-members">4.6 Statics and members</a></h2>
 <p><code>Type::member</code> (§3.6) resolves <code>member</code> in <code>Type</code>’s namespace: enum
-variants, and the static functions of the type’s impls (those without
-<code>self</code>). <code>value.member</code> resolves against the value’s type: fields first,
-then methods of inherent impls, then trait members visible via the type’s
-impls (§5.7). Generic statics take their arguments at the path head:
-<code>List&lt;str&gt;::new()</code>.</p>
+variants, the static functions of the type’s impls (those without <code>self</code>),
+and the type’s own <code>self</code>-methods. Generic statics take their arguments at
+the path head: <code>List&lt;str&gt;::new()</code>.</p>
+<p><code>value.member</code> resolves against the value’s type: fields first, then
+methods, by a <strong>precedence rule</strong> — not by the order the impl blocks
+happen to be written or the modules happen to load:</p>
+<ol>
+<li>An <strong>inherent</strong> method — one declared by an impl of the type whose
+<code>with</code> clause does not declare that name — always wins, whatever the
+text order.</li>
+<li>Otherwise, the method a <strong>trait</strong> provides, whether the impl declares
+it or inherits the trait’s default (§5.7).</li>
+</ol>
+<p>Two declarations at the same level are an error rather than a silent
+pick. Two <em>inherent</em> declarations of one name for one subject are rejected
+at the definition site, before any call resolves them. Two <em>traits</em>
+providing one name, with no inherent method above them, make each call an
+ambiguity error — as does a <code>T: A + B</code> bound whose two arms supply it.</p>
+<pre><code class="language-vilan">import std::print;
+
+struct Bag { x: i32 }
+trait Iter { fun pick(self): str; }
+
+impl Bag with Iter {
+    fun pick(self): str { "the trait's" }
+}
+
+impl Bag {
+    fun pick(self): str { "the type's own" }
+}
+
+fun main() {
+    let bag = Bag { x = 1 };
+    // The inherent method wins, though the trait impl is written first.
+    print(bag.pick());
+    // Naming the trait reaches its version; naming the type means the
+    // inherent one, and never falls through to a trait's.
+    print(Iter::pick(bag));
+    print(Bag::pick(bag));
+}
+</code></pre>
+<p><code>Trait::member(receiver, args…)</code> is the disambiguator: it names which
+provider to use, and works on a concrete receiver or a trait-bounded
+generic one. <code>Type::member(receiver, args…)</code> means the type’s own member
+or nothing.</p>
 <h2 id="47-the-prelude"><a class="header" href="#47-the-prelude">4.7 The prelude</a></h2>
 <p>A small set of names is in scope without imports: the primitive types
 (<code>i32</code>, <code>str</code>, <code>bool</code>, …), <code>List</code>, <code>void</code>, and the boolean/<code>null</code>
@@ -9409,6 +9628,176 @@ compiles as a file <em>of</em> its package: <code>pkg::</code> siblings and depe
 resolve exactly as they do for the rest of the package. Each test passes
 by exiting 0; a failed <code>assert</code> panics, which fails it. Tests run on
 Node whatever the package’s <code>target</code> says. <code>--watch</code> re-runs on save.</p>
+<h2 id="vilan-bindgen-filedts"><a class="header" href="#vilan-bindgen-filedts"><code>vilan bindgen &lt;file.d.ts&gt;</code></a></h2>
+<p>Generates <code>external</code> bindings from a TypeScript declaration file, so a
+third-party JavaScript library can be reached from Vilan without
+hand-writing an <code>external struct</code> and an <code>[extern(…)]</code> <code>external fun</code>
+per member.</p>
+<p><strong>It is not a build step.</strong> You run it by hand, once, and the <code>.vl</code> it
+writes is yours: review it, edit it, commit it. Nothing in <code>build</code>,
+<code>check</code>, or <code>run</code> reaches it, no manifest key turns it on, and nothing
+regenerates it behind your back. Treat the output the way you treat
+<code>vilan init</code>’s scaffold — a starting point you own from the moment it
+lands, not a cache entry.</p>
+<ul>
+<li><code>--platform &lt;p&gt;</code>: <strong>required.</strong> <code>node</code>, <code>deno</code>, <code>bun</code>, <code>browser</code>, or
+<code>@process</code>. Every generated binding is stamped <code>[platform("&lt;p&gt;")]</code>.
+There is no default and no sniffing of the <code>.d.ts</code>: generated bindings
+land in <em>your</em> code, which is unconstrained by platform unless it is
+fenced, so an unfenced browser-only binding in a Node project would
+compile clean and fail at runtime. A library genuinely used on both
+gets two runs, into two files.</li>
+<li><code>-o, --output &lt;path&gt;</code>: where to write. Omitted: <code>&lt;stem&gt;.vl</code> beside the
+input (<code>leaflet.d.ts</code> → <code>leaflet.vl</code>).</li>
+<li><code>--stdout</code>: print instead of writing.</li>
+<li><code>--stats</code>: also report coverage — how many declarations and members
+bound, and which TypeScript constructs did not.</li>
+</ul>
+<h3 id="what-you-get"><a class="header" href="#what-you-get">What you get</a></h3>
+<pre><code class="language-ts">declare function greet(name: string, loudly?: boolean): string;
+
+interface Marker {
+    readonly id: string;
+    title: string;
+    move(dx: number, dy: number): void;
+    on(event: string, handler: (x: number) =&gt; void): void;
+}
+</code></pre>
+<p><code>vilan bindgen marker.d.ts --platform node</code> writes bindings in exactly
+the dialect <code>std</code> is written in:</p>
+<pre><code class="language-vilan norun">[extern("greet")]
+[platform("node")]
+external fun greet(name: str): str;
+
+[extern("greet")]
+[platform("node")]
+external fun greet_with_loudly(name: str, loudly: bool): str;
+
+external struct Marker;
+
+impl Marker {
+	[extern(get, "id")]
+	[platform("node")]
+	external fun id(self): str;
+
+	[extern(get, "title")]
+	[platform("node")]
+	external fun title(self): str;
+
+	[extern(set, "title")]
+	[platform("node")]
+	external fun set_title(self, value: str): void;
+
+	[extern(method, "move")]
+	[platform("node")]
+	external fun move_(self, dx: f64, dy: f64): void;
+
+	[extern(method, "on")]
+	[platform("node")]
+	external fun on(self, event: str, handler: |f64| void): void;
+}
+
+fun main() { }
+</code></pre>
+<p>Names become <code>snake_case</code> (the extern keeps the exact JS spelling), a
+<code>readonly</code> property gets only a getter, and every <code>number</code> becomes <code>f64</code>,
+because a <code>.d.ts</code> cannot say whether a number is meant as an integer.
+Narrowing to <code>i32</code> is a human edit.</p>
+<p>An <strong>optional parameter becomes one binding per call arity</strong>. TypeScript
+optionals are trailing, so <code>greet(name)</code> and <code>greet(name, loudly)</code> are two
+real host calls and become two real bindings of the same symbol — the
+short one keeps the plain name. (<code>std</code> does the same by hand: <code>append</code> and
+<code>append_text</code> both bind <code>appendChild</code>.)</p>
+<h3 id="absence-and-why-there-is-no-option"><a class="header" href="#absence-and-why-there-is-no-option">Absence, and why there is no <code>Option</code></a></h3>
+<p>Nothing bindgen emits is an <code>Option&lt;T&gt;</code>, and that is deliberate. Vilan has
+no <code>null</code>, and <code>Option</code> is a <strong>tagged array</strong> at runtime — <code>Some(v)</code> is
+<code>[0, v]</code>, <code>None</code> is <code>[1]</code> — which a third-party host neither produces nor
+reads. Both directions break:</p>
+<ul>
+<li>reading, a host returning <code>"hello"</code> is tested as <code>value[0] == 0</code>, which
+is <code>"h" == 0</code>, so a <em>present</em> value arrives as <code>None</code>;</li>
+<li>writing, <code>None</code> reaches the host as the array <code>[1]</code> — and for an
+optional <code>boolean</code> argument, <code>[1]</code> is truthy.</li>
+</ul>
+<p>So a type admitting <code>null</code>/<code>undefined</code> binds as the <strong>bare type</strong>, and the
+binding carries a <code>///</code> note saying the value may be missing. Guarding is
+yours. (<code>std</code> does use <code>Option</code> across <code>external</code> boundaries, but only
+ones it owns — compiler intrinsics and its own runtime helpers, which know
+the representation.)</p>
+<h3 id="-todobindgen"><a class="header" href="#-todobindgen"><code>// TODO(bindgen)</code></a></h3>
+<p><strong>Nothing is ever dropped silently.</strong> Every construct the generator
+cannot express becomes a comment naming it and saying why, in place:</p>
+<pre><code class="language-text">// TODO(bindgen): numeric index signature `[index: number]: string` —
+// this is an array-LIKE shape, NOT a JS array …
+</code></pre>
+<p>A generated file with TODOs is reviewable; one with silent gaps is a
+landmine. The ones you will meet most:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>TypeScript</th><th>Why it can’t map</th></tr>
+</thead>
+<tbody>
+<tr><td><code>declare const x: T</code></td><td>Every <code>[extern(…)]</code> form binds a <em>call</em> or a receiver’s property; none reads a bare global as a value. Bind its members as dotted globals: <code>[extern("x.member")]</code>.</td></tr>
+<tr><td><code>{ [key: string]: T }</code>, <code>{ [index: number]: T }</code>, <code>Record&lt;K, V&gt;</code></td><td>An open keyed or array-like host object has no Vilan type at a host boundary — see below.</td></tr>
+<tr><td>overloads</td><td>Vilan has one signature per name. The first wins; the rest are quoted so you can hand-split them into distinct names.</td></tr>
+<tr><td><code>A | B</code> (open unions), intersections</td><td>No union or structural types in Vilan; widened to <code>any</code>.</td></tr>
+<tr><td><code>namespace</code>, <code>declare module</code>, <code>declare global</code>, conditional/mapped types, <code>keyof</code></td><td>Out of v1 scope.</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="why-every-interface-becomes-an-external-struct"><a class="header" href="#why-every-interface-becomes-an-external-struct">Why every interface becomes an <code>external struct</code></a></h3>
+<p>A Vilan <code>struct</code> is a <strong>positional array</strong> at runtime: <code>struct Point { x: f64 }</code> is <code>[x]</code>, and <code>p.x</code> is <code>p[0]</code>. A host object <code>{x: 1}</code> read through
+one yields <code>undefined</code>, silently. Only an <code>external struct</code> — an opaque
+handle whose fields are reached through <code>[extern(get/set, …)]</code> — survives
+the crossing. The same fact rules out three tempting mappings:</p>
+<ul>
+<li>a TS discriminated union is a tagged <em>object</em>, while a Vilan <code>enum</code> is
+<code>[tag, …payload]</code>;</li>
+<li><code>Map&lt;str, T&gt;</code> is a Vilan struct over a hashed native map, not a plain
+host object;</li>
+<li><code>List&lt;T&gt;</code> is a real JS array, and an array-<em>like</em> (<code>{[index: number]: T}</code> — numeric keys and <code>length</code>, no <code>Symbol.iterator</code>) is not one:
+iterating it throws. Convert at the boundary with <code>Array.from</code> and bind
+the result as <code>List&lt;T&gt;</code>.</li>
+</ul>
+<p>A <code>T[]</code>/<code>Array&lt;T&gt;</code> in a <code>.d.ts</code> <em>is</em> a real array and does map to
+<code>List&lt;T&gt;</code>; a TS tuple <code>[A, B]</code> maps to <code>(A, B)</code>, since a Vilan tuple is a
+JS array too.</p>
+<h3 id="closed-string-sets"><a class="header" href="#closed-string-sets">Closed string sets</a></h3>
+<p>A named union of string literals gets a real enum plus a wrapper that
+speaks it, because the host boundary still wants the raw string:</p>
+<pre><code class="language-vilan norun">enum Align {
+	Start,
+	End,
+}
+
+external struct Chart;
+
+impl Chart {
+	[extern(set, "align")]
+	[doc(hidden)]
+	[platform("node")]
+	external fun set_align_raw(self, value: str): void;
+
+	fun set_align(self, value: Align): void {
+		self.set_align_raw(match value {
+			Align::Start =&gt; "start",
+			Align::End =&gt; "end",
+		})
+	}
+}
+
+fun main() { }
+</code></pre>
+<p>An <em>inline</em> <code>"left" | "right"</code> is widened to <code>str</code> instead — safe and
+exact, since that is what the host takes; only a union the library
+author bothered to name earns a type.</p>
+<h3 id="scope"><a class="header" href="#scope">Scope</a></h3>
+<p>bindgen targets the <strong>third-party library <code>std</code> doesn’t wrap</strong>. It is
+not for regenerating <code>std::browser::dom</code>, which is a deliberately
+curated subset reviewed line by line, and it does not resolve types
+across files: a name declared in another <code>.d.ts</code> widens to <code>any</code> with a
+TODO.</p>
 <h2 id="vilan-upgrade"><a class="header" href="#vilan-upgrade"><code>vilan upgrade</code></a></h2>
 <p>Replaces this binary (and <code>vilan-lsp</code> beside it) with the newest
 release, downloading for your platform and swapping the pair atomically
@@ -9479,6 +9868,30 @@ different value was passed than you think.
 <p><strong>“‘…’ does not implement trait ‘…’: missing ‘…’”</strong>
 An <code>impl … with Trait</code> doesn’t provide every required method, or a bound
 demands a trait the type never implemented.
+→ <a href="#data-and-traits">Data and traits</a></p>
+<p><strong>“‘…’ is already defined for ‘…’; remove or rename this one”</strong>
+Two impls declare the same method name for the same type, and neither
+name belongs to a trait. Nothing ranks them, so one of the two would
+simply never run — the note points at the other declaration. Delete the
+copy you don’t want, or rename it. It is reported where it is defined,
+not where it is called.
+→ <a href="#spec-4--names-modules-and-packages">Names, modules, and packages</a></p>
+<p><strong>“‘…’ is ambiguous on ‘…’: both ‘…’ and ‘…’ provide it; call ‘…’ to pick one”</strong>
+Two traits supply the same method name for this receiver (or, for a
+generic receiver, two arms of its <code>T: A + B</code> bound), and the type has no
+inherent method of its own to outrank them. Say which one you mean with
+<code>Trait::method(receiver, …)</code> — the message spells both options out with
+your own receiver already substituted in.
+→ <a href="#spec-4--names-modules-and-packages">Names, modules, and packages</a></p>
+<p><strong>“‘…’ is not an inherent member of ‘…’: ‘…’ provides it; call ‘…’ instead”</strong>
+<code>Type::method(receiver)</code> means the type’s <em>own</em> method. This one comes
+from a trait, so name the trait at the path head instead:
+<code>Trait::method(receiver)</code>.
+→ <a href="#spec-4--names-modules-and-packages">Names, modules, and packages</a></p>
+<p><strong>“‘…’ does not implement ‘…’, so ‘…::…’ cannot be called on it”</strong>
+A <code>Trait::method(receiver)</code> call named a trait the receiver’s type has no
+<code>impl … with</code> for. Implement the trait, or call the method the receiver
+does have.
 → <a href="#data-and-traits">Data and traits</a></p>
 <p><strong>“… match the receiver convention”</strong> · <strong>“… match the parameter convention”</strong> · <strong>“… match the declared type”</strong> · <strong>“… match the declared return type”</strong> · <strong>“… match the declared parameter list”</strong> · <strong>“… match the trait’s type-parameter list”</strong>
 A method an <code>impl … with Trait</code> provides must match the trait’s

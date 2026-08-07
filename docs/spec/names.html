@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
+            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -269,11 +269,51 @@ name does not shadow a type there.</li>
 style.</p>
 <h2 id="46-statics-and-members"><a class="header" href="#46-statics-and-members">4.6 Statics and members</a></h2>
 <p><code>Type::member</code> (§3.6) resolves <code>member</code> in <code>Type</code>’s namespace: enum
-variants, and the static functions of the type’s impls (those without
-<code>self</code>). <code>value.member</code> resolves against the value’s type: fields first,
-then methods of inherent impls, then trait members visible via the type’s
-impls (§5.7). Generic statics take their arguments at the path head:
-<code>List&lt;str&gt;::new()</code>.</p>
+variants, the static functions of the type’s impls (those without <code>self</code>),
+and the type’s own <code>self</code>-methods. Generic statics take their arguments at
+the path head: <code>List&lt;str&gt;::new()</code>.</p>
+<p><code>value.member</code> resolves against the value’s type: fields first, then
+methods, by a <strong>precedence rule</strong> — not by the order the impl blocks
+happen to be written or the modules happen to load:</p>
+<ol>
+<li>An <strong>inherent</strong> method — one declared by an impl of the type whose
+<code>with</code> clause does not declare that name — always wins, whatever the
+text order.</li>
+<li>Otherwise, the method a <strong>trait</strong> provides, whether the impl declares
+it or inherits the trait’s default (§5.7).</li>
+</ol>
+<p>Two declarations at the same level are an error rather than a silent
+pick. Two <em>inherent</em> declarations of one name for one subject are rejected
+at the definition site, before any call resolves them. Two <em>traits</em>
+providing one name, with no inherent method above them, make each call an
+ambiguity error — as does a <code>T: A + B</code> bound whose two arms supply it.</p>
+<pre><code class="language-vilan">import std::print;
+
+struct Bag { x: i32 }
+trait Iter { fun pick(self): str; }
+
+impl Bag with Iter {
+    fun pick(self): str { "the trait's" }
+}
+
+impl Bag {
+    fun pick(self): str { "the type's own" }
+}
+
+fun main() {
+    let bag = Bag { x = 1 };
+    // The inherent method wins, though the trait impl is written first.
+    print(bag.pick());
+    // Naming the trait reaches its version; naming the type means the
+    // inherent one, and never falls through to a trait's.
+    print(Iter::pick(bag));
+    print(Bag::pick(bag));
+}
+</code></pre>
+<p><code>Trait::member(receiver, args…)</code> is the disambiguator: it names which
+provider to use, and works on a concrete receiver or a trait-bounded
+generic one. <code>Type::member(receiver, args…)</code> means the type’s own member
+or nothing.</p>
 <h2 id="47-the-prelude"><a class="header" href="#47-the-prelude">4.7 The prelude</a></h2>
 <p>A small set of names is in scope without imports: the primitive types
 (<code>i32</code>, <code>str</code>, <code>bool</code>, …), <code>List</code>, <code>void</code>, and the boolean/<code>null</code>

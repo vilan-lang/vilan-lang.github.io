@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-35ddb4ab.js";
+            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -322,6 +322,176 @@ compiles as a file <em>of</em> its package: <code>pkg::</code> siblings and depe
 resolve exactly as they do for the rest of the package. Each test passes
 by exiting 0; a failed <code>assert</code> panics, which fails it. Tests run on
 Node whatever the package’s <code>target</code> says. <code>--watch</code> re-runs on save.</p>
+<h2 id="vilan-bindgen-filedts"><a class="header" href="#vilan-bindgen-filedts"><code>vilan bindgen &lt;file.d.ts&gt;</code></a></h2>
+<p>Generates <code>external</code> bindings from a TypeScript declaration file, so a
+third-party JavaScript library can be reached from Vilan without
+hand-writing an <code>external struct</code> and an <code>[extern(…)]</code> <code>external fun</code>
+per member.</p>
+<p><strong>It is not a build step.</strong> You run it by hand, once, and the <code>.vl</code> it
+writes is yours: review it, edit it, commit it. Nothing in <code>build</code>,
+<code>check</code>, or <code>run</code> reaches it, no manifest key turns it on, and nothing
+regenerates it behind your back. Treat the output the way you treat
+<code>vilan init</code>’s scaffold — a starting point you own from the moment it
+lands, not a cache entry.</p>
+<ul>
+<li><code>--platform &lt;p&gt;</code>: <strong>required.</strong> <code>node</code>, <code>deno</code>, <code>bun</code>, <code>browser</code>, or
+<code>@process</code>. Every generated binding is stamped <code>[platform("&lt;p&gt;")]</code>.
+There is no default and no sniffing of the <code>.d.ts</code>: generated bindings
+land in <em>your</em> code, which is unconstrained by platform unless it is
+fenced, so an unfenced browser-only binding in a Node project would
+compile clean and fail at runtime. A library genuinely used on both
+gets two runs, into two files.</li>
+<li><code>-o, --output &lt;path&gt;</code>: where to write. Omitted: <code>&lt;stem&gt;.vl</code> beside the
+input (<code>leaflet.d.ts</code> → <code>leaflet.vl</code>).</li>
+<li><code>--stdout</code>: print instead of writing.</li>
+<li><code>--stats</code>: also report coverage — how many declarations and members
+bound, and which TypeScript constructs did not.</li>
+</ul>
+<h3 id="what-you-get"><a class="header" href="#what-you-get">What you get</a></h3>
+<pre><code class="language-ts">declare function greet(name: string, loudly?: boolean): string;
+
+interface Marker {
+    readonly id: string;
+    title: string;
+    move(dx: number, dy: number): void;
+    on(event: string, handler: (x: number) =&gt; void): void;
+}
+</code></pre>
+<p><code>vilan bindgen marker.d.ts --platform node</code> writes bindings in exactly
+the dialect <code>std</code> is written in:</p>
+<pre><code class="language-vilan norun">[extern("greet")]
+[platform("node")]
+external fun greet(name: str): str;
+
+[extern("greet")]
+[platform("node")]
+external fun greet_with_loudly(name: str, loudly: bool): str;
+
+external struct Marker;
+
+impl Marker {
+	[extern(get, "id")]
+	[platform("node")]
+	external fun id(self): str;
+
+	[extern(get, "title")]
+	[platform("node")]
+	external fun title(self): str;
+
+	[extern(set, "title")]
+	[platform("node")]
+	external fun set_title(self, value: str): void;
+
+	[extern(method, "move")]
+	[platform("node")]
+	external fun move_(self, dx: f64, dy: f64): void;
+
+	[extern(method, "on")]
+	[platform("node")]
+	external fun on(self, event: str, handler: |f64| void): void;
+}
+
+fun main() { }
+</code></pre>
+<p>Names become <code>snake_case</code> (the extern keeps the exact JS spelling), a
+<code>readonly</code> property gets only a getter, and every <code>number</code> becomes <code>f64</code>,
+because a <code>.d.ts</code> cannot say whether a number is meant as an integer.
+Narrowing to <code>i32</code> is a human edit.</p>
+<p>An <strong>optional parameter becomes one binding per call arity</strong>. TypeScript
+optionals are trailing, so <code>greet(name)</code> and <code>greet(name, loudly)</code> are two
+real host calls and become two real bindings of the same symbol — the
+short one keeps the plain name. (<code>std</code> does the same by hand: <code>append</code> and
+<code>append_text</code> both bind <code>appendChild</code>.)</p>
+<h3 id="absence-and-why-there-is-no-option"><a class="header" href="#absence-and-why-there-is-no-option">Absence, and why there is no <code>Option</code></a></h3>
+<p>Nothing bindgen emits is an <code>Option&lt;T&gt;</code>, and that is deliberate. Vilan has
+no <code>null</code>, and <code>Option</code> is a <strong>tagged array</strong> at runtime — <code>Some(v)</code> is
+<code>[0, v]</code>, <code>None</code> is <code>[1]</code> — which a third-party host neither produces nor
+reads. Both directions break:</p>
+<ul>
+<li>reading, a host returning <code>"hello"</code> is tested as <code>value[0] == 0</code>, which
+is <code>"h" == 0</code>, so a <em>present</em> value arrives as <code>None</code>;</li>
+<li>writing, <code>None</code> reaches the host as the array <code>[1]</code> — and for an
+optional <code>boolean</code> argument, <code>[1]</code> is truthy.</li>
+</ul>
+<p>So a type admitting <code>null</code>/<code>undefined</code> binds as the <strong>bare type</strong>, and the
+binding carries a <code>///</code> note saying the value may be missing. Guarding is
+yours. (<code>std</code> does use <code>Option</code> across <code>external</code> boundaries, but only
+ones it owns — compiler intrinsics and its own runtime helpers, which know
+the representation.)</p>
+<h3 id="-todobindgen"><a class="header" href="#-todobindgen"><code>// TODO(bindgen)</code></a></h3>
+<p><strong>Nothing is ever dropped silently.</strong> Every construct the generator
+cannot express becomes a comment naming it and saying why, in place:</p>
+<pre><code class="language-text">// TODO(bindgen): numeric index signature `[index: number]: string` —
+// this is an array-LIKE shape, NOT a JS array …
+</code></pre>
+<p>A generated file with TODOs is reviewable; one with silent gaps is a
+landmine. The ones you will meet most:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>TypeScript</th><th>Why it can’t map</th></tr>
+</thead>
+<tbody>
+<tr><td><code>declare const x: T</code></td><td>Every <code>[extern(…)]</code> form binds a <em>call</em> or a receiver’s property; none reads a bare global as a value. Bind its members as dotted globals: <code>[extern("x.member")]</code>.</td></tr>
+<tr><td><code>{ [key: string]: T }</code>, <code>{ [index: number]: T }</code>, <code>Record&lt;K, V&gt;</code></td><td>An open keyed or array-like host object has no Vilan type at a host boundary — see below.</td></tr>
+<tr><td>overloads</td><td>Vilan has one signature per name. The first wins; the rest are quoted so you can hand-split them into distinct names.</td></tr>
+<tr><td><code>A | B</code> (open unions), intersections</td><td>No union or structural types in Vilan; widened to <code>any</code>.</td></tr>
+<tr><td><code>namespace</code>, <code>declare module</code>, <code>declare global</code>, conditional/mapped types, <code>keyof</code></td><td>Out of v1 scope.</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="why-every-interface-becomes-an-external-struct"><a class="header" href="#why-every-interface-becomes-an-external-struct">Why every interface becomes an <code>external struct</code></a></h3>
+<p>A Vilan <code>struct</code> is a <strong>positional array</strong> at runtime: <code>struct Point { x: f64 }</code> is <code>[x]</code>, and <code>p.x</code> is <code>p[0]</code>. A host object <code>{x: 1}</code> read through
+one yields <code>undefined</code>, silently. Only an <code>external struct</code> — an opaque
+handle whose fields are reached through <code>[extern(get/set, …)]</code> — survives
+the crossing. The same fact rules out three tempting mappings:</p>
+<ul>
+<li>a TS discriminated union is a tagged <em>object</em>, while a Vilan <code>enum</code> is
+<code>[tag, …payload]</code>;</li>
+<li><code>Map&lt;str, T&gt;</code> is a Vilan struct over a hashed native map, not a plain
+host object;</li>
+<li><code>List&lt;T&gt;</code> is a real JS array, and an array-<em>like</em> (<code>{[index: number]: T}</code> — numeric keys and <code>length</code>, no <code>Symbol.iterator</code>) is not one:
+iterating it throws. Convert at the boundary with <code>Array.from</code> and bind
+the result as <code>List&lt;T&gt;</code>.</li>
+</ul>
+<p>A <code>T[]</code>/<code>Array&lt;T&gt;</code> in a <code>.d.ts</code> <em>is</em> a real array and does map to
+<code>List&lt;T&gt;</code>; a TS tuple <code>[A, B]</code> maps to <code>(A, B)</code>, since a Vilan tuple is a
+JS array too.</p>
+<h3 id="closed-string-sets"><a class="header" href="#closed-string-sets">Closed string sets</a></h3>
+<p>A named union of string literals gets a real enum plus a wrapper that
+speaks it, because the host boundary still wants the raw string:</p>
+<pre><code class="language-vilan norun">enum Align {
+	Start,
+	End,
+}
+
+external struct Chart;
+
+impl Chart {
+	[extern(set, "align")]
+	[doc(hidden)]
+	[platform("node")]
+	external fun set_align_raw(self, value: str): void;
+
+	fun set_align(self, value: Align): void {
+		self.set_align_raw(match value {
+			Align::Start =&gt; "start",
+			Align::End =&gt; "end",
+		})
+	}
+}
+
+fun main() { }
+</code></pre>
+<p>An <em>inline</em> <code>"left" | "right"</code> is widened to <code>str</code> instead — safe and
+exact, since that is what the host takes; only a union the library
+author bothered to name earns a type.</p>
+<h3 id="scope"><a class="header" href="#scope">Scope</a></h3>
+<p>bindgen targets the <strong>third-party library <code>std</code> doesn’t wrap</strong>. It is
+not for regenerating <code>std::browser::dom</code>, which is a deliberately
+curated subset reviewed line by line, and it does not resolve types
+across files: a name declared in another <code>.d.ts</code> widens to <code>any</code> with a
+TODO.</p>
 <h2 id="vilan-upgrade"><a class="header" href="#vilan-upgrade"><code>vilan upgrade</code></a></h2>
 <p>Replaces this binary (and <code>vilan-lsp</code> beside it) with the newest
 release, downloading for your platform and swapping the pair atomically
