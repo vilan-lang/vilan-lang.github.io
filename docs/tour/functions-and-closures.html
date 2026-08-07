@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
+            window.path_to_searchindex_js = "../searchindex-6b503196.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -318,9 +318,24 @@ fun main() {
 	print(loud.get());
 }
 </code></pre>
+<p>You can also just name one and call it later. A binding holding a
+function is a function:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun exclaim(text: str): str {
+	text + "!"
+}
+
+fun main() {
+	let shout = exclaim;
+	print(shout("hey"));
+}
+</code></pre>
 <p>This works for plain Vilan functions. It does not work for generic
-functions, methods, <code>async</code> functions, or externs. For those, write the
-small wrapping closure. The compiler will tell you when you hit one.</p>
+functions, methods, <code>async</code> functions, or externs — those have no value
+form, so you can neither store one nor call it through a binding. For
+those, write the small wrapping closure. The compiler will tell you when
+you hit one, and which of the four you hit.</p>
 <h2 id="async-closures"><a class="header" href="#async-closures">Async closures</a></h2>
 <p>You can skip this section until you start storing callbacks that do
 async work.</p>

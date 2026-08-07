@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
+            window.path_to_searchindex_js = "../searchindex-6b503196.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -217,6 +217,29 @@ in non-external structs. An <code>enum</code> introduces a nominal sum type; eac
 variant is a constructor (with payload types) and a static member of the
 enum. An <code>external struct</code> declares a host type: no fields, its surface
 defined entirely by externs in impls.</p>
+<h3 id="enum-representation"><a class="header" href="#enum-representation">Enum representation</a></h3>
+<p>An enum has one of two runtime representations, and <strong>which one is a
+property of the whole declaration, not of a variant</strong>. An enum is
+<em>numeric</em> when both of these hold:</p>
+<ol>
+<li>every variant is data-less, <strong>and</strong></li>
+<li>at least one variant has an explicit discriminant.</li>
+</ol>
+<p>A numeric enum lowers to the bare discriminant: <code>Ordering::Greater</code> is
+the value <code>1</code>, comparisons and equality are native number comparisons,
+and a <code>match</code> tests <code>subject === 1</code>. Every other enum lowers to the
+tagged form <code>[index, …payload]</code>, and a <code>match</code> tests the tag slot.</p>
+<p>The conjunction is the part worth stating outright, because both halves
+are easy to trip over:</p>
+<pre><code class="language-vilan fragment">enum Level { Low, Mid, High }           // tagged: no explicit discriminant
+enum Level { Low = 0, Mid, High }       // numeric: ONE `= 0` converts all three
+enum Level { Low = 0, Mid(i32) }        // rejected: a payload and a discriminant
+</code></pre>
+<p>Adding <code>= 0</code> to a single variant changes the runtime shape of the entire
+enum — including how its values cross a host boundary, since a numeric
+enum reaches an <code>external fun</code> as a plain number. Discriminants must be
+unique across the enum, counting the values implicitly continued from
+the previous variant; see the grammar chapter for the full rule.</p>
 <h2 id="54-impls"><a class="header" href="#54-impls">5.4 Impls</a></h2>
 <p><code>impl Subject { … }</code> adds <strong>inherent</strong> members to <code>Subject</code>;
 <code>impl Subject with Trait { … }</code> provides <code>Trait</code> for <code>Subject</code>. The
@@ -301,6 +324,15 @@ arithmetic traits, <code>Self</code>). Compound assignment <code>x op= e</code> 
 <p><code>is</code> (§3.7 level 10) tests a value against a match pattern and yields
 <code>bool</code>; bindings inside an <code>is</code> pattern are scoped to nothing (use
 <code>match</code> to bind).</p>
+<p>A pattern is checked against the type of the value it matches, so an
+enum-variant pattern requires that type to be that enum. A <strong>generic
+parameter of an enclosing declaration</strong> is not: <code>T</code> is whatever each
+instantiation binds it to, and the declaration is checked once for all
+of them, so <code>value is Colour::Red</code> on a <code>T</code>-typed value is a compile
+error — in a generic function’s body, and in a trait default over the
+trait’s own parameter. Match a value of the enum’s own type, or move the
+match to where the parameter is concrete. A bound does not change this:
+a trait bound cannot make a parameter be one particular enum.</p>
 <h2 id="58-conversions-and-coercions"><a class="header" href="#58-conversions-and-coercions">5.8 Conversions and coercions</a></h2>
 <p>There are <strong>no implicit conversions</strong> between numeric types; use the
 <code>as_*</code> methods (value-converting, Rust-<code>as</code> semantics). There is <strong>one
@@ -313,6 +345,15 @@ words.map(measure);
 <code>fun</code> whose signature equals the target closure type. Everything else
 (generics, methods, async functions, externs) requires an explicit
 wrapping closure.</p>
+<p>The same eligibility decides what a <strong>function-typed binding</strong> can do. A
+binding that takes its type from the reference rather than an annotation
+keeps the function’s own type, and calling it calls that function:</p>
+<pre><code class="language-vilan fragment">let f = measure;                       // fun measure(text: str): i32
+let n = f("abc");                      // 3 — arity and argument types
+                                       // are the declaration's
+</code></pre>
+<p>An ineligible <code>fun</code> has no value form at all, so it can be neither
+stored nor called this way; the error names which rule it hit.</p>
 <p><code>any</code> unifies with every type in both directions (it is produced by
 <code>panic</code> and host boundaries; it absorbs rather than converts).</p>
 <h2 id="59-variadic-tuples"><a class="header" href="#59-variadic-tuples">5.9 Variadic tuples</a></h2>
@@ -408,6 +449,8 @@ fun main() {
 <p>Normative rejection cases (each is a compile error):</p>
 <ul>
 <li>Using a trait as a type (<code>let x: Display = …</code>).</li>
+<li>An enum-variant pattern matched against a generic parameter of an
+enclosing declaration (§5.7).</li>
 <li>An unsatisfied bound at a call (<code>generic parameter 'T' is missing the bound …</code>).</li>
 <li>A <code>match</code> whose VALUE legs’ types don’t unify. Diverging legs
 (<code>ret</code>, <code>panic</code>, <code>jump</code>) are <code>Never</code> and don’t participate (§5.1).</li>
@@ -417,7 +460,10 @@ literal).</li>
 <p><em>Implementation note (tracked gaps): a closure bound to a local and
 called directly does not infer its parameter types from the call;
 <code>effect</code>’s unannotated closure parameter can type against the impl’s
-abstract <code>T</code> (B23). Each has a pinned test; the workaround is an
+abstract <code>T</code> (B23); and a closure passed to a <strong>method’s</strong> own generic
+parameter reaches its body with that parameter still abstract, so a
+pattern inside it is not checked at all — the free-function twin
+substitutes and is. Each has a pinned test; the workaround is an
 annotation or a binding.</em></p>
 
                     </main>

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
+            window.path_to_searchindex_js = "../searchindex-6b503196.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -341,12 +341,22 @@ land in <em>your</em> code, which is unconstrained by platform unless it is
 fenced, so an unfenced browser-only binding in a Node project would
 compile clean and fail at runtime. A library genuinely used on both
 gets two runs, into two files.</li>
+<li><code>--only &lt;Type&gt;</code>: emit only this declaration and everything reachable
+from its signatures — base types it <code>extends</code>, member types, parameter
+and return types, generic arguments. Repeatable, and the flags compose
+into one closure. Omitted: the whole file. A name the file does not
+declare is an error, so a typo fails instead of quietly writing less
+than you asked for. Use it when a declaration file is far larger than
+the slice you need; see <a href="#filtering-a-large-declaration-file">Filtering</a>.</li>
 <li><code>-o, --output &lt;path&gt;</code>: where to write. Omitted: <code>&lt;stem&gt;.vl</code> beside the
 input (<code>leaflet.d.ts</code> → <code>leaflet.vl</code>).</li>
 <li><code>--stdout</code>: print instead of writing.</li>
 <li><code>--stats</code>: also report coverage — how many declarations and members
 bound, and which TypeScript constructs did not.</li>
 </ul>
+<p>Attribute order in the output is not stylistic: the parser reads
+<code>[extern(…)]</code> before <code>[platform(…)]</code>, and the other way round is a parse
+error. Keep the pair in that order if you edit a generated file.</p>
 <h3 id="what-you-get"><a class="header" href="#what-you-get">What you get</a></h3>
 <pre><code class="language-ts">declare function greet(name: string, loudly?: boolean): string;
 
@@ -402,6 +412,70 @@ optionals are trailing, so <code>greet(name)</code> and <code>greet(name, loudly
 real host calls and become two real bindings of the same symbol — the
 short one keeps the plain name. (<code>std</code> does the same by hand: <code>append</code> and
 <code>append_text</code> both bind <code>appendChild</code>.)</p>
+<h3 id="constructors"><a class="header" href="#constructors">Constructors</a></h3>
+<p>TypeScript splits a host class in two: an <code>interface</code> for what an
+instance has, and a <code>declare var</code> of the same name whose object type
+carries the <code>new(…)</code> signature — the static side. bindgen reads the pair
+back together, so a construct signature becomes a real constructor on the
+type it yields:</p>
+<pre><code class="language-ts">interface Marker {
+    readonly id: string;
+}
+
+declare var Marker: {
+    prototype: Marker;
+    new(id: string): Marker;
+    readonly count: number;
+};
+</code></pre>
+<pre><code class="language-vilan norun">external struct Marker;
+
+impl Marker {
+	[extern(new, "Marker")]
+	[platform("node")]
+	external fun new(id: str): Marker;
+
+	[extern(get, "id")]
+	[platform("node")]
+	external fun id(self): str;
+
+	[extern("Marker.count")]
+	[platform("node")]
+	external fun count(): f64;
+}
+
+fun main() { }
+</code></pre>
+<p><code>new</code> is <code>Marker::new(…)</code>; the statics beside it become dotted globals
+reached the same way, <code>Marker::count()</code>. <code>prototype</code> is the idiom’s
+marker, not a binding, and is dropped. A construct signature that names a
+<em>different</em> type — <code>declare var Image: { new(): HTMLImageElement }</code> —
+binds on that type instead, as <code>HTMLImageElement::new_image(…)</code>.</p>
+<p>An object-typed global with <strong>no</strong> construct signature is not a class and
+gets a TODO rather than an invented type; so does a global whose
+constructor object is typed by a named interface rather than written
+inline.</p>
+<h3 id="filtering-a-large-declaration-file"><a class="header" href="#filtering-a-large-declaration-file">Filtering a large declaration file</a></h3>
+<p>A declaration file is often far larger than the part you use, and
+<code>extends</code> flattening multiplies it: Vilan has no struct inheritance, so
+every base member is copied into each derived type. <code>--only</code> cuts the
+output to a named type and its transitive closure:</p>
+<pre><code class="language-sh">vilan bindgen lib.dom.d.ts --platform browser --only HTMLCanvasElement -o canvas.vl
+</code></pre>
+<p>What “reachable” means is what <em>survives</em> the mapping table, not what the
+TypeScript text mentions. An open union widens to <code>any</code>, so
+<code>RenderingContext = CanvasRenderingContext2D | WebGLRenderingContext | …</code>
+pulls in none of its members; <code>T | null</code> binds as <code>T</code>, so <code>T</code> is kept. A
+base type is followed for the members flattened out of it, but its own
+name is not emitted unless some signature names it.</p>
+<p>Cycles are fine — a <code>Node</code> has an <code>ownerDocument</code> and a <code>Document</code> has a
+<code>documentElement</code> — each declaration is visited once.</p>
+<p>A caveat worth knowing before reaching for it on the DOM specifically:
+the browser’s element types are one strongly-connected component, so
+<code>--only HTMLCanvasElement</code> against the real <code>lib.dom.d.ts</code> still keeps
+about 900 declarations. The filter is doing its job; the type graph is
+simply that dense. For a third-party library — bindgen’s actual target —
+the closure is usually a handful of types.</p>
 <h3 id="absence-and-why-there-is-no-option"><a class="header" href="#absence-and-why-there-is-no-option">Absence, and why there is no <code>Option</code></a></h3>
 <p>Nothing bindgen emits is an <code>Option&lt;T&gt;</code>, and that is deliberate. Vilan has
 no <code>null</code>, and <code>Option</code> is a <strong>tagged array</strong> at runtime — <code>Some(v)</code> is
@@ -432,7 +506,7 @@ landmine. The ones you will meet most:</p>
 <tr><th>TypeScript</th><th>Why it can’t map</th></tr>
 </thead>
 <tbody>
-<tr><td><code>declare const x: T</code></td><td>Every <code>[extern(…)]</code> form binds a <em>call</em> or a receiver’s property; none reads a bare global as a value. Bind its members as dotted globals: <code>[extern("x.member")]</code>.</td></tr>
+<tr><td><code>declare const x: T</code> (a plain global value)</td><td>Every <code>[extern(…)]</code> form binds a <em>call</em> or a receiver’s property; none reads a bare global as a value. Bind its members as dotted globals: <code>[extern("x.member")]</code>. A global that is a <em>constructor object</em> is different — see <a href="#constructors">Constructors</a>.</td></tr>
 <tr><td><code>{ [key: string]: T }</code>, <code>{ [index: number]: T }</code>, <code>Record&lt;K, V&gt;</code></td><td>An open keyed or array-like host object has no Vilan type at a host boundary — see below.</td></tr>
 <tr><td>overloads</td><td>Vilan has one signature per name. The first wins; the rest are quoted so you can hand-split them into distinct names.</td></tr>
 <tr><td><code>A | B</code> (open unions), intersections</td><td>No union or structural types in Vilan; widened to <code>any</code>.</td></tr>

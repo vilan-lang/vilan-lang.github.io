@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
+            window.path_to_searchindex_js = "../searchindex-6b503196.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -238,12 +238,22 @@ different value was passed than you think.
 An <code>impl … with Trait</code> doesn’t provide every required method, or a bound
 demands a trait the type never implemented.
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“parameter ‘…’ has bare trait type ‘…’: a trait is not a value type (vilan has no trait objects)”</strong>
+A parameter was declared with a trait as its type, and called with a
+value that implements it. Traits are <strong>bounds</strong>, not types, so the
+parameter can never accept a concrete value — the impl is fine, the
+signature is not. Write the generic the message spells out:
+<code>fun show&lt;T: A&gt;(v: T)</code>. The note points at the declaration to change.
+→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“‘…’ is already defined for ‘…’; remove or rename this one”</strong>
-Two impls declare the same method name for the same type, and neither
-name belongs to a trait. Nothing ranks them, so one of the two would
-simply never run — the note points at the other declaration. Delete the
-copy you don’t want, or rename it. It is reported where it is defined,
-not where it is called.
+Two impls declare the same name for the same type, and neither name
+belongs to a trait. Nothing ranks them, so one of the two would simply
+never run — the note points at the other declaration. Delete the copy
+you don’t want, or rename it. It is reported where it is defined, not
+where it is called.</p>
+<p>A type has one namespace, so <strong>receiver position is not part of the
+name</strong>: a static <code>fun new()</code> and a method <code>fun new(self)</code> for the same
+type collide with each other too. Give one of them a different name.
 → <a href="../spec/names.html">Names, modules, and packages</a></p>
 <p><strong>“‘…’ is ambiguous on ‘…’: both ‘…’ and ‘…’ provide it; call ‘…’ to pick one”</strong>
 Two traits supply the same method name for this receiver (or, for a

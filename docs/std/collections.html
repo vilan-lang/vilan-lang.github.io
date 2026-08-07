@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
+            window.path_to_searchindex_js = "../searchindex-6b503196.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -311,6 +311,10 @@ fun main() {
 	fun is_empty(self): bool
 	fun keys(self): List&lt;K&gt;
 	fun values(self): List&lt;V&gt;
+	fun entries(self): List&lt;(K, V)&gt;
+}
+impl Map&lt;type K: Hashable, type V: PartialEq&gt; {
+	fun contains_value(self, value: V): bool
 }
 impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): Map&lt;K, V&gt; }
 </code></pre>
@@ -339,6 +343,26 @@ fun main() {
 </code></pre>
 <p><code>keys()</code> returns the real <code>K</code>s (in insertion order), and the key is snapshot
 on insert, so mutating the original afterward can’t desync the map.</p>
+<p><code>entries()</code> pairs <code>keys()</code>/<code>values()</code> into one <code>List&lt;(K, V)&gt;</code> snapshot, so
+walking both together needs no hand-zipping; <code>contains_value</code> (needing
+<code>V: PartialEq</code>, unlike the rest of <code>Map</code>) is the value-side counterpart to
+<code>contains_key</code>:</p>
+<pre><code class="language-vilan">import std::print;
+import std::map::Map;
+
+fun main() {
+	mut scores: Map&lt;str, i32&gt; = Map::new();
+	scores.insert("alice", 1);
+	scores.insert("bob", 2);
+	mut total = 0;
+	for entry in scores.entries() {
+		total = total + entry.1;   // entry.0 is the key, entry.1 the value
+	}
+	print(total);                        // 3
+	print(scores.contains_value(2));     // true
+	print(scores.contains_value(9));     // false
+}
+</code></pre>
 <h2 id="sett"><a class="header" href="#sett"><code>Set&lt;T&gt;</code></a></h2>
 <pre><code class="language-vilan fragment">impl Set&lt;type T: Hashable&gt; {
 	fun new(): Set&lt;T&gt;
@@ -348,11 +372,33 @@ on insert, so mutating the original afterward can’t desync the map.</p>
 	fun len(self): i32
 	fun is_empty(self): bool
 	fun values(self): List&lt;T&gt;
+	fun union(self, other: Set&lt;T&gt;): Set&lt;T&gt;
+	fun intersection(self, other: Set&lt;T&gt;): Set&lt;T&gt;
+	fun difference(self, other: Set&lt;T&gt;): Set&lt;T&gt;
 }
 impl List&lt;type T: Hashable&gt; { fun to_set(self): Set&lt;T&gt; }
 </code></pre>
 <p>Value-keyed like <code>Map</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
 iterates the elements in insertion order.</p>
+<p><code>union</code>/<code>intersection</code>/<code>difference</code> are the standard set operations, each
+returning a new <code>Set</code> and leaving both receivers untouched:</p>
+<pre><code class="language-vilan">import std::print;
+import std::set::Set;
+
+fun main() {
+	mut a: Set&lt;i32&gt; = Set::new();
+	a.insert(1);
+	a.insert(2);
+	a.insert(3);
+	mut b: Set&lt;i32&gt; = Set::new();
+	b.insert(2);
+	b.insert(3);
+	b.insert(4);
+	print(a.union(b).len());          // 4 -- {1, 2, 3, 4}
+	print(a.intersection(b).len());   // 2 -- {2, 3}
+	print(a.difference(b).len());     // 1 -- {1}
+}
+</code></pre>
 <h2 id="hashable"><a class="header" href="#hashable"><code>Hashable</code></a></h2>
 <p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>.
 <code>[derive(Hashable)]</code> implements it for a struct/enum whose fields are all
@@ -418,6 +464,33 @@ fun main() {
 name</em>, so a type with a <code>next(&amp;mut self): Option&lt;T&gt;</code> drives a loop whether or
 not it declares the trait. Declaring it is what buys the adapters below — and
 what lets a generic bound accept your type.</p>
+<p>The name is what resolves, but the <strong>shape is still checked</strong>: the method has to
+return an <code>Option</code>, because the loop stops at <code>None</code>. A <code>next</code> annotated with
+anything else is a compile error rather than a loop that quietly runs zero
+times.</p>
+<h3 id="what-a-for-can-iterate"><a class="header" href="#what-a-for-can-iterate">What a <code>for</code> can iterate</a></h3>
+<p>Exactly two things:</p>
+<ul>
+<li><strong>A type with <code>next</code></strong> (or <code>next_mut</code>, for <code>for e in &amp;mut it</code>) — the protocol
+above.</li>
+<li><strong>A natively iterable value</strong>: <code>List&lt;T&gt;</code>, a fixed array <code>[T; n]</code>, a tuple, a
+<code>str</code> (yielding its characters), <code>Set&lt;T&gt;</code> (insertion order), and any host type
+an <code>external struct</code> names.</li>
+</ul>
+<p>Anything else is a compile error. A struct or enum of your own that provides no
+<code>next</code> is <em>not</em> iterable — it has no meaning to fall back on, since a struct is
+its fields and an enum is its variant tag at runtime:</p>
+<pre><code class="language-vilan fragment">struct Cursor { items: List&lt;i32&gt;, index: i32 }
+
+fun main() {
+	mut walked = Cursor { items = [1, 2], index = 0 };
+	for item in walked {   // cannot iterate `Cursor`: it has no `next`
+		print(item);
+	}
+}
+</code></pre>
+<p><code>Map</code> is in that group: walk it through <code>entries()</code>, <code>keys()</code> or <code>values()</code>, as
+the <code>Map</code> section above does.</p>
 <h3 id="adapters"><a class="header" href="#adapters">Adapters</a></h3>
 <p>Every <code>Iterator</code> gets these, as trait defaults — implement <code>next</code> and you have
 all of them:</p>
@@ -477,13 +550,24 @@ source.</p>
 is already a std type, and vilan’s method resolution picks by registration order
 rather than reporting a collision, so the type names stay out of each other’s
 way.</p>
-<p><strong>One rough edge to know about.</strong> If an iterator’s element type is its own
-generic parameter and you instantiate it at a <em>tuple</em>, the <code>for</code> binding loses
-the tuple: <code>for pair in [(1, "a")].iter() { pair.0 }</code> is rejected with “cannot
-access field ‘0’ on type T”. Pull by hand instead —
-<code>if cursor.next() is Some(let pair) { pair.0 }</code> — or iterate the <code>List</code>
-directly, both of which work. <code>enumerate</code> and <code>zip</code> are not affected, because
-they name their tuple element structurally.</p>
+<p>A <code>for</code> binding gets the element type the iterator was instantiated at, whatever
+shape it is — a tuple, a struct, another container, a closure:</p>
+<pre><code class="language-vilan">import std::print;
+
+struct Point { x: i32, y: i32 }
+
+fun main() {
+	for pair in [(1, "a"), (2, "b")].iter() {
+		print(pair.0);                          // 1, then 2
+	}
+	for point in [Point { x = 1, y = 2 }].iter() {
+		print(point.x);                         // 1
+	}
+	for inner in [[1, 2, 3], [4]].iter() {
+		print(inner.len());                     // 3, then 1
+	}
+}
+</code></pre>
 <h3 id="terminations"><a class="header" href="#terminations">Terminations</a></h3>
 <p>An adapter chain does nothing until it is <em>terminated</em>. These consume the
 iterator and hand back an ordinary value:</p>

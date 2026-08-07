@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-49e884e9.js";
+            window.path_to_searchindex_js = "../searchindex-6b503196.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -272,6 +272,10 @@ style.</p>
 variants, the static functions of the type’s impls (those without <code>self</code>),
 and the type’s own <code>self</code>-methods. Generic statics take their arguments at
 the path head: <code>List&lt;str&gt;::new()</code>.</p>
+<p>A type has <strong>one</strong> namespace, and receiver position is not part of a
+name. Two impls of one type declaring the same name — two statics, two
+methods, or one of each — are a compile error at the declaration, since
+nothing ranks them and one would simply never be reachable.</p>
 <p><code>value.member</code> resolves against the value’s type: fields first, then
 methods, by a <strong>precedence rule</strong> — not by the order the impl blocks
 happen to be written or the modules happen to load:</p>

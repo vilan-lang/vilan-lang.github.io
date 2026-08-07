@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-49e884e9.js";
+            window.path_to_searchindex_js = "searchindex-6b503196.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -982,9 +982,24 @@ fun main() {
 	print(loud.get());
 }
 </code></pre>
+<p>You can also just name one and call it later. A binding holding a
+function is a function:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun exclaim(text: str): str {
+	text + "!"
+}
+
+fun main() {
+	let shout = exclaim;
+	print(shout("hey"));
+}
+</code></pre>
 <p>This works for plain Vilan functions. It does not work for generic
-functions, methods, <code>async</code> functions, or externs. For those, write the
-small wrapping closure. The compiler will tell you when you hit one.</p>
+functions, methods, <code>async</code> functions, or externs — those have no value
+form, so you can neither store one nor call it through a binding. For
+those, write the small wrapping closure. The compiler will tell you when
+you hit one, and which of the four you hit.</p>
 <h2 id="async-closures"><a class="header" href="#async-closures">Async closures</a></h2>
 <p>You can skip this section until you start storing callbacks that do
 async work.</p>
@@ -5053,6 +5068,10 @@ fun main() {
 	fun is_empty(self): bool
 	fun keys(self): List&lt;K&gt;
 	fun values(self): List&lt;V&gt;
+	fun entries(self): List&lt;(K, V)&gt;
+}
+impl Map&lt;type K: Hashable, type V: PartialEq&gt; {
+	fun contains_value(self, value: V): bool
 }
 impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): Map&lt;K, V&gt; }
 </code></pre>
@@ -5081,6 +5100,26 @@ fun main() {
 </code></pre>
 <p><code>keys()</code> returns the real <code>K</code>s (in insertion order), and the key is snapshot
 on insert, so mutating the original afterward can’t desync the map.</p>
+<p><code>entries()</code> pairs <code>keys()</code>/<code>values()</code> into one <code>List&lt;(K, V)&gt;</code> snapshot, so
+walking both together needs no hand-zipping; <code>contains_value</code> (needing
+<code>V: PartialEq</code>, unlike the rest of <code>Map</code>) is the value-side counterpart to
+<code>contains_key</code>:</p>
+<pre><code class="language-vilan">import std::print;
+import std::map::Map;
+
+fun main() {
+	mut scores: Map&lt;str, i32&gt; = Map::new();
+	scores.insert("alice", 1);
+	scores.insert("bob", 2);
+	mut total = 0;
+	for entry in scores.entries() {
+		total = total + entry.1;   // entry.0 is the key, entry.1 the value
+	}
+	print(total);                        // 3
+	print(scores.contains_value(2));     // true
+	print(scores.contains_value(9));     // false
+}
+</code></pre>
 <h2 id="sett"><a class="header" href="#sett"><code>Set&lt;T&gt;</code></a></h2>
 <pre><code class="language-vilan fragment">impl Set&lt;type T: Hashable&gt; {
 	fun new(): Set&lt;T&gt;
@@ -5090,11 +5129,33 @@ on insert, so mutating the original afterward can’t desync the map.</p>
 	fun len(self): i32
 	fun is_empty(self): bool
 	fun values(self): List&lt;T&gt;
+	fun union(self, other: Set&lt;T&gt;): Set&lt;T&gt;
+	fun intersection(self, other: Set&lt;T&gt;): Set&lt;T&gt;
+	fun difference(self, other: Set&lt;T&gt;): Set&lt;T&gt;
 }
 impl List&lt;type T: Hashable&gt; { fun to_set(self): Set&lt;T&gt; }
 </code></pre>
 <p>Value-keyed like <code>Map</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
 iterates the elements in insertion order.</p>
+<p><code>union</code>/<code>intersection</code>/<code>difference</code> are the standard set operations, each
+returning a new <code>Set</code> and leaving both receivers untouched:</p>
+<pre><code class="language-vilan">import std::print;
+import std::set::Set;
+
+fun main() {
+	mut a: Set&lt;i32&gt; = Set::new();
+	a.insert(1);
+	a.insert(2);
+	a.insert(3);
+	mut b: Set&lt;i32&gt; = Set::new();
+	b.insert(2);
+	b.insert(3);
+	b.insert(4);
+	print(a.union(b).len());          // 4 -- {1, 2, 3, 4}
+	print(a.intersection(b).len());   // 2 -- {2, 3}
+	print(a.difference(b).len());     // 1 -- {1}
+}
+</code></pre>
 <h2 id="hashable"><a class="header" href="#hashable"><code>Hashable</code></a></h2>
 <p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>.
 <code>[derive(Hashable)]</code> implements it for a struct/enum whose fields are all
@@ -5160,6 +5221,33 @@ fun main() {
 name</em>, so a type with a <code>next(&amp;mut self): Option&lt;T&gt;</code> drives a loop whether or
 not it declares the trait. Declaring it is what buys the adapters below — and
 what lets a generic bound accept your type.</p>
+<p>The name is what resolves, but the <strong>shape is still checked</strong>: the method has to
+return an <code>Option</code>, because the loop stops at <code>None</code>. A <code>next</code> annotated with
+anything else is a compile error rather than a loop that quietly runs zero
+times.</p>
+<h3 id="what-a-for-can-iterate"><a class="header" href="#what-a-for-can-iterate">What a <code>for</code> can iterate</a></h3>
+<p>Exactly two things:</p>
+<ul>
+<li><strong>A type with <code>next</code></strong> (or <code>next_mut</code>, for <code>for e in &amp;mut it</code>) — the protocol
+above.</li>
+<li><strong>A natively iterable value</strong>: <code>List&lt;T&gt;</code>, a fixed array <code>[T; n]</code>, a tuple, a
+<code>str</code> (yielding its characters), <code>Set&lt;T&gt;</code> (insertion order), and any host type
+an <code>external struct</code> names.</li>
+</ul>
+<p>Anything else is a compile error. A struct or enum of your own that provides no
+<code>next</code> is <em>not</em> iterable — it has no meaning to fall back on, since a struct is
+its fields and an enum is its variant tag at runtime:</p>
+<pre><code class="language-vilan fragment">struct Cursor { items: List&lt;i32&gt;, index: i32 }
+
+fun main() {
+	mut walked = Cursor { items = [1, 2], index = 0 };
+	for item in walked {   // cannot iterate `Cursor`: it has no `next`
+		print(item);
+	}
+}
+</code></pre>
+<p><code>Map</code> is in that group: walk it through <code>entries()</code>, <code>keys()</code> or <code>values()</code>, as
+the <code>Map</code> section above does.</p>
 <h3 id="adapters"><a class="header" href="#adapters">Adapters</a></h3>
 <p>Every <code>Iterator</code> gets these, as trait defaults — implement <code>next</code> and you have
 all of them:</p>
@@ -5219,13 +5307,24 @@ source.</p>
 is already a std type, and vilan’s method resolution picks by registration order
 rather than reporting a collision, so the type names stay out of each other’s
 way.</p>
-<p><strong>One rough edge to know about.</strong> If an iterator’s element type is its own
-generic parameter and you instantiate it at a <em>tuple</em>, the <code>for</code> binding loses
-the tuple: <code>for pair in [(1, "a")].iter() { pair.0 }</code> is rejected with “cannot
-access field ‘0’ on type T”. Pull by hand instead —
-<code>if cursor.next() is Some(let pair) { pair.0 }</code> — or iterate the <code>List</code>
-directly, both of which work. <code>enumerate</code> and <code>zip</code> are not affected, because
-they name their tuple element structurally.</p>
+<p>A <code>for</code> binding gets the element type the iterator was instantiated at, whatever
+shape it is — a tuple, a struct, another container, a closure:</p>
+<pre><code class="language-vilan">import std::print;
+
+struct Point { x: i32, y: i32 }
+
+fun main() {
+	for pair in [(1, "a"), (2, "b")].iter() {
+		print(pair.0);                          // 1, then 2
+	}
+	for point in [Point { x = 1, y = 2 }].iter() {
+		print(point.x);                         // 1
+	}
+	for inner in [[1, 2, 3], [4]].iter() {
+		print(inner.len());                     // 3, then 1
+	}
+}
+</code></pre>
 <h3 id="terminations"><a class="header" href="#terminations">Terminations</a></h3>
 <p>An adapter chain does nothing until it is <em>terminated</em>. These consume the
 iterator and hand back an ordinary value:</p>
@@ -7589,14 +7688,31 @@ it (<code>mut ...items: T</code>).</p>
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
 field  = [ "[" "expose" "]" ] IDENT [ ":" type ] ;
 
-enum    = [ "resource" ] "enum" IDENT [ generic-params ]
-          "{" [ variant { "," variant } [ "," ] ] "}" ;
-variant = NAME [ "(" [ type { "," type } [ "," ] ] ")" ]
-          [ "=" [ "-" ] NUMBER ] ;
+enum         = [ "resource" ] "enum" IDENT [ generic-params ]
+               "{" [ variant { "," variant } [ "," ] ] "}" ;
+variant      = NAME [ "(" [ type { "," type } [ "," ] ] ")" ]
+               [ "=" discriminant ] ;
+discriminant = [ "-" ] INTEGER ;
+INTEGER      = NUMBER without a fractional part and without a SUFFIX ;
 </code></pre>
 <p>A <code>;</code>-bodied struct is legal only for <code>external</code> structs (host types). An
 explicit variant discriminant (<code>= 0</code>, <code>= -1</code>) fixes the variant’s integer
 tag.</p>
+<p>The discriminant is an <strong>integer</strong>, not a general <code>NUMBER</code>: a fractional
+part (<code>= 1.5</code>) and a type suffix (<code>= 1u32</code>, and <code>= 1_000</code>, which lexes as
+<code>1</code> with the trailer <code>_000</code>) are both errors rather than being silently
+discarded. Hex is read as hex (<code>= 0xFF</code> is 255). The value must fit a
+signed 64-bit integer, and so must the implicit continuation: a variant
+with no discriminant takes the previous variant’s plus one, starting at
+0, and running past the bound is an error rather than a wrap.</p>
+<p><strong>Two variants may not share a discriminant</strong>, whether written or
+continued — <code>enum Dup { A = 1, B = 1 }</code> and <code>enum Walked { A = 1, B = 0, C }</code> are both rejected. Sharing one would make two variants a single
+runtime value (see §5.3 of the types chapter), leaving the second
+<code>match</code> arm unreachable in an otherwise exhaustive match.</p>
+<p><strong>A discriminant is only legal when every variant is data-less.</strong> A
+variant carrying a payload may not carry one, and neither may its
+data-less siblings: an enum with any payload variant uses the tagged
+representation, in which a discriminant has nowhere to go.</p>
 <p>The leading <code>resource</code> modifier marks a type declaration as a <em>resource</em>:
 the owned-resource class, whose semantics are specified in the resources
 chapter (forthcoming; the modifier currently reserves the surface). It
@@ -7918,6 +8034,10 @@ style.</p>
 variants, the static functions of the type’s impls (those without <code>self</code>),
 and the type’s own <code>self</code>-methods. Generic statics take their arguments at
 the path head: <code>List&lt;str&gt;::new()</code>.</p>
+<p>A type has <strong>one</strong> namespace, and receiver position is not part of a
+name. Two impls of one type declaring the same name — two statics, two
+methods, or one of each — are a compile error at the declaration, since
+nothing ranks them and one would simply never be reachable.</p>
 <p><code>value.member</code> resolves against the value’s type: fields first, then
 methods, by a <strong>precedence rule</strong> — not by the order the impl blocks
 happen to be written or the modules happen to load:</p>
@@ -8010,6 +8130,29 @@ in non-external structs. An <code>enum</code> introduces a nominal sum type; eac
 variant is a constructor (with payload types) and a static member of the
 enum. An <code>external struct</code> declares a host type: no fields, its surface
 defined entirely by externs in impls.</p>
+<h3 id="enum-representation"><a class="header" href="#enum-representation">Enum representation</a></h3>
+<p>An enum has one of two runtime representations, and <strong>which one is a
+property of the whole declaration, not of a variant</strong>. An enum is
+<em>numeric</em> when both of these hold:</p>
+<ol>
+<li>every variant is data-less, <strong>and</strong></li>
+<li>at least one variant has an explicit discriminant.</li>
+</ol>
+<p>A numeric enum lowers to the bare discriminant: <code>Ordering::Greater</code> is
+the value <code>1</code>, comparisons and equality are native number comparisons,
+and a <code>match</code> tests <code>subject === 1</code>. Every other enum lowers to the
+tagged form <code>[index, …payload]</code>, and a <code>match</code> tests the tag slot.</p>
+<p>The conjunction is the part worth stating outright, because both halves
+are easy to trip over:</p>
+<pre><code class="language-vilan fragment">enum Level { Low, Mid, High }           // tagged: no explicit discriminant
+enum Level { Low = 0, Mid, High }       // numeric: ONE `= 0` converts all three
+enum Level { Low = 0, Mid(i32) }        // rejected: a payload and a discriminant
+</code></pre>
+<p>Adding <code>= 0</code> to a single variant changes the runtime shape of the entire
+enum — including how its values cross a host boundary, since a numeric
+enum reaches an <code>external fun</code> as a plain number. Discriminants must be
+unique across the enum, counting the values implicitly continued from
+the previous variant; see the grammar chapter for the full rule.</p>
 <h2 id="54-impls"><a class="header" href="#54-impls">5.4 Impls</a></h2>
 <p><code>impl Subject { … }</code> adds <strong>inherent</strong> members to <code>Subject</code>;
 <code>impl Subject with Trait { … }</code> provides <code>Trait</code> for <code>Subject</code>. The
@@ -8094,6 +8237,15 @@ arithmetic traits, <code>Self</code>). Compound assignment <code>x op= e</code> 
 <p><code>is</code> (§3.7 level 10) tests a value against a match pattern and yields
 <code>bool</code>; bindings inside an <code>is</code> pattern are scoped to nothing (use
 <code>match</code> to bind).</p>
+<p>A pattern is checked against the type of the value it matches, so an
+enum-variant pattern requires that type to be that enum. A <strong>generic
+parameter of an enclosing declaration</strong> is not: <code>T</code> is whatever each
+instantiation binds it to, and the declaration is checked once for all
+of them, so <code>value is Colour::Red</code> on a <code>T</code>-typed value is a compile
+error — in a generic function’s body, and in a trait default over the
+trait’s own parameter. Match a value of the enum’s own type, or move the
+match to where the parameter is concrete. A bound does not change this:
+a trait bound cannot make a parameter be one particular enum.</p>
 <h2 id="58-conversions-and-coercions"><a class="header" href="#58-conversions-and-coercions">5.8 Conversions and coercions</a></h2>
 <p>There are <strong>no implicit conversions</strong> between numeric types; use the
 <code>as_*</code> methods (value-converting, Rust-<code>as</code> semantics). There is <strong>one
@@ -8106,6 +8258,15 @@ words.map(measure);
 <code>fun</code> whose signature equals the target closure type. Everything else
 (generics, methods, async functions, externs) requires an explicit
 wrapping closure.</p>
+<p>The same eligibility decides what a <strong>function-typed binding</strong> can do. A
+binding that takes its type from the reference rather than an annotation
+keeps the function’s own type, and calling it calls that function:</p>
+<pre><code class="language-vilan fragment">let f = measure;                       // fun measure(text: str): i32
+let n = f("abc");                      // 3 — arity and argument types
+                                       // are the declaration's
+</code></pre>
+<p>An ineligible <code>fun</code> has no value form at all, so it can be neither
+stored nor called this way; the error names which rule it hit.</p>
 <p><code>any</code> unifies with every type in both directions (it is produced by
 <code>panic</code> and host boundaries; it absorbs rather than converts).</p>
 <h2 id="59-variadic-tuples"><a class="header" href="#59-variadic-tuples">5.9 Variadic tuples</a></h2>
@@ -8201,6 +8362,8 @@ fun main() {
 <p>Normative rejection cases (each is a compile error):</p>
 <ul>
 <li>Using a trait as a type (<code>let x: Display = …</code>).</li>
+<li>An enum-variant pattern matched against a generic parameter of an
+enclosing declaration (§5.7).</li>
 <li>An unsatisfied bound at a call (<code>generic parameter 'T' is missing the bound …</code>).</li>
 <li>A <code>match</code> whose VALUE legs’ types don’t unify. Diverging legs
 (<code>ret</code>, <code>panic</code>, <code>jump</code>) are <code>Never</code> and don’t participate (§5.1).</li>
@@ -8210,7 +8373,10 @@ literal).</li>
 <p><em>Implementation note (tracked gaps): a closure bound to a local and
 called directly does not infer its parameter types from the call;
 <code>effect</code>’s unannotated closure parameter can type against the impl’s
-abstract <code>T</code> (B23). Each has a pinned test; the workaround is an
+abstract <code>T</code> (B23); and a closure passed to a <strong>method’s</strong> own generic
+parameter reaches its body with that parameter still abstract, so a
+pattern inside it is not checked at all — the free-function twin
+substitutes and is. Each has a pinned test; the workaround is an
 annotation or a binding.</em></p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="spec-6--the-memory-model"><a class="header" href="#spec-6--the-memory-model">Spec §6 — The memory model</a></h1>
@@ -8330,6 +8496,36 @@ fun main() {
 <p>A consequence worth naming: the list a pure <code>List</code> method returns never shares
 element storage with its receiver. Writing through an element of <code>xs.map(f)</code>,
 <code>xs.filter(p)</code>, <code>xs.sort_by(c)</code>, or <code>xs.reverse()</code> cannot show up in <code>xs</code>.</p>
+<p>A <strong>pattern capture</strong> is a binding, so it copies too — and the copy is taken
+when the pattern <em>matches</em>. A capture therefore holds what its subject held at
+that moment, and no later write to the subject can reach back into it. This
+holds however the write is spelled, the two that differ underneath included:
+assigning the subject <strong>rebinds</strong> it, while assigning through a <strong>view</strong> of it
+mutates its storage in place. Neither is visible through a capture:</p>
+<pre><code class="language-vilan">import std::print;
+
+enum Feed { Ready(List&lt;str&gt;, i32), Done }
+
+impl Feed {
+	fun step(&amp;mut self): str {
+		if self is Feed::Ready(let items, let at) {
+			self = Feed::Ready(items, at + 1);
+			ret items[at];   // the index the match found, not at + 1
+		}
+		"-"
+	}
+}
+
+fun main() {
+	mut feed = Feed::Ready(["a", "b", "c"], 0);
+	print(feed.step());   // a
+	print(feed.step());   // b
+}
+</code></pre>
+<p>A capture of a <strong>resource</strong> payload is the one case that takes no copy (R1, §6.8):
+it is a loan of the payload, so it names the value the match found rather than a
+second owner of it — the timing above is what makes “the value the match found”
+well defined.</p>
 <h2 id="62-rule-2--elision-is-an-optimization-never-observable"><a class="header" href="#62-rule-2--elision-is-an-optimization-never-observable">6.2 Rule 2 — elision is an optimization, never observable</a></h2>
 <p>An implementation may skip a copy (reuse the storage) when no conforming
 program can tell, e.g. when the source is never used again. Elision must
@@ -9647,12 +9843,22 @@ land in <em>your</em> code, which is unconstrained by platform unless it is
 fenced, so an unfenced browser-only binding in a Node project would
 compile clean and fail at runtime. A library genuinely used on both
 gets two runs, into two files.</li>
+<li><code>--only &lt;Type&gt;</code>: emit only this declaration and everything reachable
+from its signatures — base types it <code>extends</code>, member types, parameter
+and return types, generic arguments. Repeatable, and the flags compose
+into one closure. Omitted: the whole file. A name the file does not
+declare is an error, so a typo fails instead of quietly writing less
+than you asked for. Use it when a declaration file is far larger than
+the slice you need; see <a href="#filtering-a-large-declaration-file">Filtering</a>.</li>
 <li><code>-o, --output &lt;path&gt;</code>: where to write. Omitted: <code>&lt;stem&gt;.vl</code> beside the
 input (<code>leaflet.d.ts</code> → <code>leaflet.vl</code>).</li>
 <li><code>--stdout</code>: print instead of writing.</li>
 <li><code>--stats</code>: also report coverage — how many declarations and members
 bound, and which TypeScript constructs did not.</li>
 </ul>
+<p>Attribute order in the output is not stylistic: the parser reads
+<code>[extern(…)]</code> before <code>[platform(…)]</code>, and the other way round is a parse
+error. Keep the pair in that order if you edit a generated file.</p>
 <h3 id="what-you-get"><a class="header" href="#what-you-get">What you get</a></h3>
 <pre><code class="language-ts">declare function greet(name: string, loudly?: boolean): string;
 
@@ -9708,6 +9914,70 @@ optionals are trailing, so <code>greet(name)</code> and <code>greet(name, loudly
 real host calls and become two real bindings of the same symbol — the
 short one keeps the plain name. (<code>std</code> does the same by hand: <code>append</code> and
 <code>append_text</code> both bind <code>appendChild</code>.)</p>
+<h3 id="constructors"><a class="header" href="#constructors">Constructors</a></h3>
+<p>TypeScript splits a host class in two: an <code>interface</code> for what an
+instance has, and a <code>declare var</code> of the same name whose object type
+carries the <code>new(…)</code> signature — the static side. bindgen reads the pair
+back together, so a construct signature becomes a real constructor on the
+type it yields:</p>
+<pre><code class="language-ts">interface Marker {
+    readonly id: string;
+}
+
+declare var Marker: {
+    prototype: Marker;
+    new(id: string): Marker;
+    readonly count: number;
+};
+</code></pre>
+<pre><code class="language-vilan norun">external struct Marker;
+
+impl Marker {
+	[extern(new, "Marker")]
+	[platform("node")]
+	external fun new(id: str): Marker;
+
+	[extern(get, "id")]
+	[platform("node")]
+	external fun id(self): str;
+
+	[extern("Marker.count")]
+	[platform("node")]
+	external fun count(): f64;
+}
+
+fun main() { }
+</code></pre>
+<p><code>new</code> is <code>Marker::new(…)</code>; the statics beside it become dotted globals
+reached the same way, <code>Marker::count()</code>. <code>prototype</code> is the idiom’s
+marker, not a binding, and is dropped. A construct signature that names a
+<em>different</em> type — <code>declare var Image: { new(): HTMLImageElement }</code> —
+binds on that type instead, as <code>HTMLImageElement::new_image(…)</code>.</p>
+<p>An object-typed global with <strong>no</strong> construct signature is not a class and
+gets a TODO rather than an invented type; so does a global whose
+constructor object is typed by a named interface rather than written
+inline.</p>
+<h3 id="filtering-a-large-declaration-file"><a class="header" href="#filtering-a-large-declaration-file">Filtering a large declaration file</a></h3>
+<p>A declaration file is often far larger than the part you use, and
+<code>extends</code> flattening multiplies it: Vilan has no struct inheritance, so
+every base member is copied into each derived type. <code>--only</code> cuts the
+output to a named type and its transitive closure:</p>
+<pre><code class="language-sh">vilan bindgen lib.dom.d.ts --platform browser --only HTMLCanvasElement -o canvas.vl
+</code></pre>
+<p>What “reachable” means is what <em>survives</em> the mapping table, not what the
+TypeScript text mentions. An open union widens to <code>any</code>, so
+<code>RenderingContext = CanvasRenderingContext2D | WebGLRenderingContext | …</code>
+pulls in none of its members; <code>T | null</code> binds as <code>T</code>, so <code>T</code> is kept. A
+base type is followed for the members flattened out of it, but its own
+name is not emitted unless some signature names it.</p>
+<p>Cycles are fine — a <code>Node</code> has an <code>ownerDocument</code> and a <code>Document</code> has a
+<code>documentElement</code> — each declaration is visited once.</p>
+<p>A caveat worth knowing before reaching for it on the DOM specifically:
+the browser’s element types are one strongly-connected component, so
+<code>--only HTMLCanvasElement</code> against the real <code>lib.dom.d.ts</code> still keeps
+about 900 declarations. The filter is doing its job; the type graph is
+simply that dense. For a third-party library — bindgen’s actual target —
+the closure is usually a handful of types.</p>
 <h3 id="absence-and-why-there-is-no-option"><a class="header" href="#absence-and-why-there-is-no-option">Absence, and why there is no <code>Option</code></a></h3>
 <p>Nothing bindgen emits is an <code>Option&lt;T&gt;</code>, and that is deliberate. Vilan has
 no <code>null</code>, and <code>Option</code> is a <strong>tagged array</strong> at runtime — <code>Some(v)</code> is
@@ -9738,7 +10008,7 @@ landmine. The ones you will meet most:</p>
 <tr><th>TypeScript</th><th>Why it can’t map</th></tr>
 </thead>
 <tbody>
-<tr><td><code>declare const x: T</code></td><td>Every <code>[extern(…)]</code> form binds a <em>call</em> or a receiver’s property; none reads a bare global as a value. Bind its members as dotted globals: <code>[extern("x.member")]</code>.</td></tr>
+<tr><td><code>declare const x: T</code> (a plain global value)</td><td>Every <code>[extern(…)]</code> form binds a <em>call</em> or a receiver’s property; none reads a bare global as a value. Bind its members as dotted globals: <code>[extern("x.member")]</code>. A global that is a <em>constructor object</em> is different — see <a href="#constructors">Constructors</a>.</td></tr>
 <tr><td><code>{ [key: string]: T }</code>, <code>{ [index: number]: T }</code>, <code>Record&lt;K, V&gt;</code></td><td>An open keyed or array-like host object has no Vilan type at a host boundary — see below.</td></tr>
 <tr><td>overloads</td><td>Vilan has one signature per name. The first wins; the rest are quoted so you can hand-split them into distinct names.</td></tr>
 <tr><td><code>A | B</code> (open unions), intersections</td><td>No union or structural types in Vilan; widened to <code>any</code>.</td></tr>
@@ -9869,12 +10139,22 @@ different value was passed than you think.
 An <code>impl … with Trait</code> doesn’t provide every required method, or a bound
 demands a trait the type never implemented.
 → <a href="#data-and-traits">Data and traits</a></p>
+<p><strong>“parameter ‘…’ has bare trait type ‘…’: a trait is not a value type (vilan has no trait objects)”</strong>
+A parameter was declared with a trait as its type, and called with a
+value that implements it. Traits are <strong>bounds</strong>, not types, so the
+parameter can never accept a concrete value — the impl is fine, the
+signature is not. Write the generic the message spells out:
+<code>fun show&lt;T: A&gt;(v: T)</code>. The note points at the declaration to change.
+→ <a href="#data-and-traits">Data and traits</a></p>
 <p><strong>“‘…’ is already defined for ‘…’; remove or rename this one”</strong>
-Two impls declare the same method name for the same type, and neither
-name belongs to a trait. Nothing ranks them, so one of the two would
-simply never run — the note points at the other declaration. Delete the
-copy you don’t want, or rename it. It is reported where it is defined,
-not where it is called.
+Two impls declare the same name for the same type, and neither name
+belongs to a trait. Nothing ranks them, so one of the two would simply
+never run — the note points at the other declaration. Delete the copy
+you don’t want, or rename it. It is reported where it is defined, not
+where it is called.</p>
+<p>A type has one namespace, so <strong>receiver position is not part of the
+name</strong>: a static <code>fun new()</code> and a method <code>fun new(self)</code> for the same
+type collide with each other too. Give one of them a different name.
 → <a href="#spec-4--names-modules-and-packages">Names, modules, and packages</a></p>
 <p><strong>“‘…’ is ambiguous on ‘…’: both ‘…’ and ‘…’ provide it; call ‘…’ to pick one”</strong>
 Two traits supply the same method name for this receiver (or, for a
