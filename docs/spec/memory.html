@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -276,9 +276,14 @@ list element, a tuple element, a struct field, or a variant payload is stored
 in a slot of a new aggregate that outlives the literal, so it copies there too.
 The same holds for a place handed to a parameter declared <code>own</code> — a signature’s
 way of saying the callee keeps it, which is how <code>List::push</code> is written — and
-for a place a body <strong>returns</strong> that it does not own, i.e. one reached through a
-by-value parameter. Together these are what make “a call owns its result” true,
-which is the premise every elision below rests on:</p>
+for a place a body <strong>returns</strong> that it does not own, which is every place
+reached through a <strong>loaned</strong> parameter: bare, <code>&amp;</code>, and <code>&amp;mut</code> alike (§6.8’s R3
+calls all three loans). What decides is the <em>return</em>, not the place: a
+signature that hands back a value hands back a value, so <code>fun make(&amp;self): (i32, i32) { self.pair }</code> copies, while a signature that hands back a <strong>view</strong>
+(<code>fun slot(&amp;mut self): &amp;mut (i32, i32) borrows self</code>) is rule 3’s sanctioned
+projection and keeps naming the receiver’s storage. Together these are what
+make “a call owns its result” true, which is the premise every elision below
+rests on:</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -294,9 +299,12 @@ element storage with its receiver. Writing through an element of <code>xs.map(f)
 <p>A <strong>pattern capture</strong> is a binding, so it copies too — and the copy is taken
 when the pattern <em>matches</em>. A capture therefore holds what its subject held at
 that moment, and no later write to the subject can reach back into it. This
-holds however the write is spelled, the two that differ underneath included:
-assigning the subject <strong>rebinds</strong> it, while assigning through a <strong>view</strong> of it
-mutates its storage in place. Neither is visible through a capture:</p>
+holds however the write is spelled, and the spellings differ underneath.
+Assigning a whole binding <strong>rebinds</strong> it: a fresh value is installed and
+everything that already read the old one keeps the old one. Every other form
+mutates the storage <strong>in place</strong> — assigning through a <strong>view</strong>, writing a
+<strong>component</strong> of a place (<code>t.1 = 9</code>, <code>h.pair.1 = 9</code>, <code>xs[0] = 9</code>), and calling
+a <code>&amp;mut self</code> method that does either. None of it is visible through a capture:</p>
 <pre><code class="language-vilan">import std::print;
 
 enum Feed { Ready(List&lt;str&gt;, i32), Done }
@@ -315,12 +323,46 @@ fun main() {
 	mut feed = Feed::Ready(["a", "b", "c"], 0);
 	print(feed.step());   // a
 	print(feed.step());   // b
+
+	mut t = (7, 3);
+	if t is (let a, let b) {
+		t.1 = 99;
+		print(b);         // 3 — the component write cannot reach the capture
+	}
 }
 </code></pre>
-<p>A capture of a <strong>resource</strong> payload is the one case that takes no copy (R1, §6.8):
-it is a loan of the payload, so it names the value the match found rather than a
-second owner of it — the timing above is what makes “the value the match found”
-well defined.</p>
+<p>The rule is about the <strong>storage the subject names</strong>, not about how the subject
+is spelled, so it holds for all three spellings that name storage someone else
+owns: a place (<code>h.pair</code>), a dereference (<code>*view</code>), and a <strong><code>borrows</code> call</strong>
+(<code>h.slot()</code>, which projects the receiver’s storage rather than producing any of
+its own). The last one asks its questions of the arguments the call projects —
+the receiver is right there at the call site — so a write reaching the receiver
+reaches the capture’s subject by the same reasoning:</p>
+<pre><code class="language-vilan">import std::print;
+
+struct Holder { cells: (List&lt;i32&gt;, i32) }
+
+impl Holder {
+	fun slot(&amp;mut self): &amp;mut (List&lt;i32&gt;, i32) borrows self { &amp;mut self.cells }
+}
+
+fun main() {
+	mut h = Holder { cells = ([1, 2], 3) };
+	if h.slot() is (let xs, let n) {
+		h.cells.0.push(9);
+		print(xs.len());   // 2 — the capture copied what the match found
+	}
+}
+</code></pre>
+<p>A call returning an <strong>owned</strong> value is not in this family: its result is
+storage of its own, with no second owner, so its captures bind without copying.</p>
+<p>Two payload shapes are the exceptions to “a capture copies”. A capture of a
+<strong>resource</strong> payload takes no copy (R1, §6.8): it is a loan of the payload, so
+it names the value the match found rather than a second owner of it — the
+timing above is what makes “the value the match found” well defined. A capture
+that is itself a <strong>view</strong> (<code>Some(let v)</code> over an <code>Option&lt;&amp;mut T&gt;</code>) takes none
+either, for the reason a view exists: it aliases on purpose, and copying it
+would mean writes through it stopped reaching the value it borrows.</p>
 <h2 id="62-rule-2--elision-is-an-optimization-never-observable"><a class="header" href="#62-rule-2--elision-is-an-optimization-never-observable">6.2 Rule 2 — elision is an optimization, never observable</a></h2>
 <p>An implementation may skip a copy (reuse the storage) when no conforming
 program can tell, e.g. when the source is never used again. Elision must
@@ -502,12 +544,75 @@ impl on a data type is an error steering to add <code>resource</code>.</li>
 existing second-class view (<code>self</code> / <code>&amp;</code> / <code>&amp;mut</code> conventions, §6.3), which
 changes no ownership and is policed by rule 4.</p>
 <ul>
-<li><strong>R1: binding moves.</strong> <code>let b = a;</code> transfers ownership; any later use of
+<li>
+<p><strong>R1: binding moves.</strong> <code>let b = a;</code> transfers ownership; any later use of
 <code>a</code> is a compile error naming the move site. No copies ever fire for a
-resource.</li>
-<li><strong>R2: overwrite drops.</strong> Assigning onto a binding that still owns a
-resource drops the old value first, then moves the new one in.</li>
-<li><strong>R3: parameters.</strong> <code>self</code> / bare <code>x</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans,
+resource.</p>
+</li>
+<li>
+<p><strong>R2: overwrite drops.</strong> Assigning onto a place that still holds a
+resource drops the old value first, then moves the new one in. A write
+<strong>through a <code>&amp;mut</code> view</strong> is such an assignment: it mutates the pointee in
+place — that is how the write reaches the caller at all — so it destroys
+what it replaces even though the loan owns nothing. The two spellings are
+indistinguishable by design, because they write the same storage under
+different names:</p>
+<pre><code class="language-vilan">import std::print;
+import std::drop::Drop;
+
+resource struct Guard { label: str }
+impl Guard with Drop {
+    fun drop(&amp;mut self) { print(self.label); }
+}
+
+enum Holder { Full(Guard), Empty }
+impl Holder {
+    fun clear(&amp;mut self) { self = Holder::Empty; }   // drops the Guard
+}
+
+fun main() {
+    mut viewed = Holder::Full(Guard { label = "viewed" });
+    viewed.clear();                                  // prints "viewed"
+
+    mut owned = Holder::Full(Guard { label = "owned" });
+    owned = Holder::Empty;                           // and so does this
+}
+</code></pre>
+<p>The loan asks no liveness question and needs none: it cannot move the
+pointee out (R5, R6), and a binding its owner already moved out of is dead,
+so lending it is use-after-move (R1). The drop runs the same per-type glue
+in the same order the owned spelling does.</p>
+<p>The rule is read over the <strong>place</strong>, all the way down: writing over a
+resource-typed <em>component</em> — a field, a tuple element, a fixed-array
+element — destroys the outgoing value too, whether the aggregate is owned
+or reached through a view.</p>
+<pre><code class="language-vilan">import std::print;
+import std::drop::Drop;
+
+resource struct Guard { label: str }
+impl Guard with Drop {
+    fun drop(&amp;mut self) { print(self.label); }
+}
+
+struct Slot { held: Guard }
+
+fun refill(slot: &amp;mut Slot) {
+    slot.held = Guard { label = "replaced" };        // prints "replaced"
+}
+
+fun main() {
+    mut slot = Slot { held = Guard { label = "held" } };
+    slot.held = Guard { label = "replaced" };        // prints "held"
+}
+</code></pre>
+<p>A component asks no liveness question either, and for R5’s reason: a
+resource field is loan-only and cannot be moved out of a live aggregate, so
+a component place always holds a live value. Only the component’s <em>own</em>
+type decides — writing an <code>i32</code> field of a struct that happens to hold a
+resource elsewhere destroys nothing.</p>
+</li>
+<li>
+<p><strong>R3: parameters.</strong> <code>self</code> / bare <code>x</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans,
 unchanged (§6.3’s table is the by-convention index of this line); <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
 not the binding’s last use is an error (where a data <code>own</code> would silently
 copy). The rule reads in both directions: because a loan changes no
@@ -518,16 +623,23 @@ and still drops at its scope end, destroying one value twice. <code>own</code> i
 only convention a body may consume, and a <strong>consuming method</strong> therefore
 declares <code>own self</code>: <code>o.unwrap()</code> is a move of <code>o</code>, so a later use of <code>o</code> is
 use-after-move and <code>o</code> is not torn down at scope end. A bare <code>self</code>
-receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</li>
-<li><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
+receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</p>
+</li>
+<li>
+<p><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
 diverging leg is exempt). A tail move-out is still a move on <em>that</em> path
 only — R7 reads the arms against each other, so producing a different
-binding from each arm is a conditional move, not two independent returns.</li>
-<li><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
+binding from each arm is a conditional move, not two independent returns.</p>
+</li>
+<li>
+<p><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
 read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>); moving it out of a
 live aggregate is rejected; v1 has no partial moves. The sanctioned
-partial move is <code>Option</code> (below).</li>
-<li><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
+partial move is <code>Option</code> (below). Writing <em>over</em> a resource field is
+permitted, and is R2’s overwrite: the outgoing value is destroyed first.</p>
+</li>
+<li>
+<p><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
 subject; pattern captures move the payloads into the arm, and each capture
 <strong>owns</strong> what it took — it is destroyed at the end of the arm that bound
 it, in reverse capture order, unless it is moved onward first. The same
@@ -540,8 +652,10 @@ nothing — and, owning nothing, they may not be <strong>consumed</strong>. This
 a loaned capture, returning it, or matching it by value would hand a
 second owner the payload the subject still destroys at its own scope end.
 The fix is to consume the <em>subject</em> (<code>match x</code> without the <code>&amp;</code>), not to
-redeclare the capture — a capture carries no convention to change.</li>
-<li><strong>R7: no conditional moves.</strong> A binding must be moved on every path
+redeclare the capture — a capture carries no convention to change.</p>
+</li>
+<li>
+<p><strong>R7: no conditional moves.</strong> A binding must be moved on every path
 through a scope or on none; moving it on one path only is an error. This
 keeps end-of-scope ownership static: there are no runtime drop flags in
 v1. <strong>Branch tails are paths too.</strong> R4 makes each arm’s tail a move-out,
@@ -552,10 +666,14 @@ same error. The one exemption is a binding that, on the path in question,
 provably carries <strong>no resource payload</strong>: after a failed <code>x is Some(_)</code>
 test <code>x</code> can only be <code>None</code>, which has nothing to destroy, so leaving it
 un-moved there leaks nothing. The exemption is granted only on proof — an
-enum whose every variant carries a payload gets none.</li>
-<li><strong>R8: no moves in repeatable interiors.</strong> Moving a binding declared
-outside a loop from inside its body is an error (the move would repeat).</li>
-<li><strong>R9: closures and spawns cannot capture resources.</strong> Capturing one would
+enum whose every variant carries a payload gets none.</p>
+</li>
+<li>
+<p><strong>R8: no moves in repeatable interiors.</strong> Moving a binding declared
+outside a loop from inside its body is an error (the move would repeat).</p>
+</li>
+<li>
+<p><strong>R9: closures and spawns cannot capture resources.</strong> Capturing one would
 give the closure a second owner. Injected <code>context</code>-clause bodies receive
 resource <em>parameters</em> as loans (parameters are per-call, not captures),
 so <code>nursery(|n| ..)</code>-shaped APIs are unaffected. A closure referencing a
@@ -563,8 +681,10 @@ so <code>nursery(|n| ..)</code>-shaped APIs are unaffected. A closure referencin
 and lives for the process (see <em>Module-level resources never drop</em>, below),
 so the closure can never own it and no second owner is created: the
 reference is a per-call loan, exactly like a parameter. Captures of a
-<strong>local</strong> or a <strong>parameter</strong> stay rejected.</li>
-<li><strong>R10: no resource elements in the native containers.</strong> <code>List</code> / <code>Map</code> /
+<strong>local</strong> or a <strong>parameter</strong> stay rejected.</p>
+</li>
+<li>
+<p><strong>R10: no resource elements in the native containers.</strong> <code>List</code> / <code>Map</code> /
 <code>Set</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
 reject resource type arguments in v1: their internals are host code the
 move checker cannot see. <code>Option</code> is the sanctioned container (it is a
@@ -573,8 +693,10 @@ not per written head: a resource that reaches a container through a
 generic aggregate’s member is rejected the same way, so <code>Signal&lt;Database&gt;</code>
 — whose storage is a <code>Shared&lt;T&gt;</code> — is refused exactly as
 <code>Shared&lt;Database&gt;</code> is. Holding the resource in a struct field of your own
-is the sanctioned alternative, and stays legal.</li>
-<li><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a
+is the sanctioned alternative, and stays legal.</p>
+</li>
+<li>
+<p><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a
 type parameter with a resource type re-checks the instantiated body under
 the affine rules (T := the resource): every T-typed value is used at most
 once as a move, with no captures and no copies. <code>Option::unwrap(own self): T</code> passes; a body that reads its parameter twice fails <strong>at the instantiation
@@ -587,10 +709,25 @@ scope — not a parameter, not a <code>let</code> local, and not a pattern captu
 took a consumed subject’s payload (R6). Each is the same leak and is rejected
 at the instantiation site. The consequence worth stating: a combinator that
 hands a payload to a closure and then discards it — the closure only <em>loans</em>
-it — cannot be resource-clean, whatever its receiver convention.</li>
-<li><strong>R12: no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
+it — cannot be resource-clean, whatever its receiver convention.</p>
+<p>Read the same sentence at R2’s seam and it reaches <strong>writes</strong>, not only
+scope ends. Overwriting a <code>T</code>-typed place destroys the outgoing value, and a
+generic body cannot run that destructor either — so a body that writes
+through a <code>&amp;mut T</code>, or over a <code>T</code>-typed component, is rejected at a resource
+instantiation:</p>
+<pre><code class="language-vilan ignore">fun set&lt;T&gt;(slot: &amp;mut T, own value: T) { slot = value; }   // rejected at T := a resource
+fun clear&lt;T&gt;(slot: &amp;mut Option&lt;T&gt;) { slot = None; }        // and so is this
+</code></pre>
+<p>A <strong>loan owns nothing</strong>, but it is not excused either: the value the write
+replaces belongs to the caller, and somebody must destroy it. The concrete
+spelling of the same body is fine — <code>fun set(slot: &amp;mut Guard, own value: Guard)</code> knows the type and emits the drop — which is the steer: move it out
+on every path, or take a concrete type.</p>
+</li>
+<li>
+<p><strong>R12: no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
 is an error (<code>print(db)</code> included): <code>any</code> is a data sink, and the
-discipline must not launder away. Debug-print the fields instead.</li>
+discipline must not launder away. Debug-print the fields instead.</p>
+</li>
 </ul>
 <h3 id="destruction--the-drop-trait"><a class="header" href="#destruction--the-drop-trait">Destruction — the <code>Drop</code> trait</a></h3>
 <pre><code class="language-vilan fragment">trait Drop {
@@ -631,6 +768,12 @@ R11) — and the same split holds for pattern captures: a concrete one drops
 at its arm’s end, while inside a generic body no <code>T</code>-typed capture may be
 left owning at all.</p>
 <ul>
+<li><strong>A loan takes no teardown.</strong> Only an owner destroys. A view <em>binding</em> of a
+resource (<code>let v = &amp;mut holder</code>) names storage another binding still owns,
+so its scope end drops nothing — its referent is destroyed once, where the
+owner’s scope ends. This is the same sentence R2’s view-write half reads in
+the other direction: a loan owns nothing, so it neither destroys at its own
+scope end nor is excused from destroying what it overwrites.</li>
 <li><strong>Module-level resources never drop.</strong> A top-level <code>let</code> resource has
 process lifetime (the serve-forever server’s <code>Database</code>). It is
 consequently <strong>loan-only</strong>: moving it into a local, an <code>own</code> argument, or

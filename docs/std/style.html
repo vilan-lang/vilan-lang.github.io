@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -242,6 +242,16 @@ override each other instead of racing in the cascade.</p>
 <code>WhiteSpace</code> (Normal, Nowrap, Pre, PreWrap, PreLine), <code>UserSelect</code> (Auto,
 Text, All, <strong>Off</strong> — <code>none</code>, named to stay clear of <code>Option::None</code>, like
 <code>Display::Hidden</code>).</p>
+<p>All eleven are <strong>backed enums</strong>: each variant carries the CSS keyword it
+stands for, so the enum <em>is</em> that keyword at runtime and <code>.value()</code> hands it
+back. That is why the names need not match the keywords — <code>AlignItems::Start</code>
+is <code>"flex-start"</code>, <code>Display::Hidden</code> is <code>"none"</code> — and why passing one costs
+nothing over passing the string.</p>
+<pre><code class="language-vilan fragment">Display::Hidden.value()          // "none"
+AlignItems::Start.value()        // "flex-start"
+Display::parse("inline-block")   // Some(Display::InlineBlock)
+Display::parse("nope")           // None
+</code></pre>
 <h2 id="style-methods"><a class="header" href="#style-methods">Style methods</a></h2>
 <p>Every method returns a new <code>Style</code> with one more property slot; each slot is
 one atomic rule, deduplicated build-wide.</p>

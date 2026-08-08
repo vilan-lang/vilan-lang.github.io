@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -254,9 +254,13 @@ exit fails the build. <code>vilan check</code> builds nothing and runs none.</li
 per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
 </ul>
 <h2 id="115-build-products"><a class="header" href="#115-build-products">11.5 Build products</a></h2>
-<p>Each entry emits <code>dist/&lt;name&gt;.js</code> for its platform (browser entries
+<p>Each entry emits <code>dist/&lt;name&gt;.&lt;ext&gt;</code> for its platform (browser entries
 first, so a server that ships bundles finds them fresh), plus
-<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).</p>
+<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).
+The extension states the module kind to the host: <code>.mjs</code> on the process
+platforms, whose runtimes classify a file as ESM or CommonJS before
+running it, and <code>.js</code> on the browser, where the loading
+<code>&lt;script type="module"&gt;</code> tag classifies it instead.</p>
 <p>A <code>browser</code> entry declaring <strong><code>split = true</code></strong> emits <strong>route chunks</strong>
 instead of one file: <code>dist/&lt;name&gt;.js</code> carries every module-level binding
 (so §7.6’s initialization order is untouched) and every function two or

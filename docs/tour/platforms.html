@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -228,9 +228,10 @@ target = "browser"
     store.vl      the service, next to its resources
     todo.vl       shared types — anything both entries import
 </code></pre>
-<p><code>vilan build</code> compiles every entry for its own target into
-<code>dist/&lt;name&gt;.js</code> (browser entries first, so a server that ships bundles
-finds them fresh); <code>vilan run</code> builds everything and starts the one
+<p><code>vilan build</code> compiles every entry for its own target into <code>dist/</code> —
+<code>&lt;name&gt;.mjs</code> for a process entry, <code>&lt;name&gt;.js</code> for a browser one
+(browser entries first, so a server that ships bundles finds them
+fresh); <code>vilan run</code> builds everything and starts the one
 Node entry; <code>vilan check</code> checks all entries, always. Reachability does
 the sorting: the same <code>store.vl</code> may use <code>std::fs</code> freely, because only
 the server entry reaches into it. If client code ever calls that far,

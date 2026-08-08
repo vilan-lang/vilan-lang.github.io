@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -220,26 +220,57 @@ defined entirely by externs in impls.</p>
 <h3 id="enum-representation"><a class="header" href="#enum-representation">Enum representation</a></h3>
 <p>An enum has one of two runtime representations, and <strong>which one is a
 property of the whole declaration, not of a variant</strong>. An enum is
-<em>numeric</em> when both of these hold:</p>
+<em>backed</em> when both of these hold:</p>
 <ol>
 <li>every variant is data-less, <strong>and</strong></li>
-<li>at least one variant has an explicit discriminant.</li>
+<li>at least one variant has an explicit backing value.</li>
 </ol>
-<p>A numeric enum lowers to the bare discriminant: <code>Ordering::Greater</code> is
-the value <code>1</code>, comparisons and equality are native number comparisons,
-and a <code>match</code> tests <code>subject === 1</code>. Every other enum lowers to the
-tagged form <code>[index, …payload]</code>, and a <code>match</code> tests the tag slot.</p>
+<p>A backed enum lowers to the bare backing value: <code>Ordering::Greater</code> <em>is</em>
+the value <code>1</code> and <code>Align::Start</code> <em>is</em> the string <code>"flex-start"</code>,
+comparisons and equality are native scalar comparisons, and a <code>match</code>
+tests <code>subject === 1</code> / <code>subject === "flex-start"</code>. Every other enum
+lowers to the tagged form <code>[index, …payload]</code>, and a <code>match</code> tests the
+tag slot.</p>
 <p>The conjunction is the part worth stating outright, because both halves
 are easy to trip over:</p>
-<pre><code class="language-vilan fragment">enum Level { Low, Mid, High }           // tagged: no explicit discriminant
-enum Level { Low = 0, Mid, High }       // numeric: ONE `= 0` converts all three
-enum Level { Low = 0, Mid(i32) }        // rejected: a payload and a discriminant
+<pre><code class="language-vilan fragment">enum Level { Low, Mid, High }           // tagged: no explicit backing value
+enum Level { Low = 0, Mid, High }       // backed: ONE `= 0` converts all three
+enum Level { Low = 0, Mid(i32) }        // rejected: a payload and a backing value
 </code></pre>
 <p>Adding <code>= 0</code> to a single variant changes the runtime shape of the entire
-enum — including how its values cross a host boundary, since a numeric
-enum reaches an <code>external fun</code> as a plain number. Discriminants must be
-unique across the enum, counting the values implicitly continued from
-the previous variant; see the grammar chapter for the full rule.</p>
+enum — including how its values cross a host boundary, since a backed
+enum reaches an <code>external fun</code> as a plain number or string. Backing
+values must be unique across the enum, counting the values implicitly
+continued from the previous variant; see the grammar chapter for the full
+rule.</p>
+<h3 id="backed-enum-conversions"><a class="header" href="#backed-enum-conversions">Backed-enum conversions</a></h3>
+<p>Every backed enum gets two members, synthesized by the compiler — no
+<code>derive</code> marker, because writing <code>= "start"</code> is already the opt-in:</p>
+<pre><code class="language-vilan fragment">enum Align { Start = "flex-start", End = "flex-end" }
+
+Align::Start.value()            // "flex-start" — the backing type
+Align::parse("flex-start")      // Some(Align::Start)
+Align::parse("middle")          // None
+</code></pre>
+<p><code>value()</code> returns the enum’s backing type (<code>str</code>, or the narrowest of
+<code>i32</code>/<code>i53</code> that holds every discriminant) and costs nothing: the
+receiver already <em>is</em> that value, so the call lowers to the receiver.
+<code>parse</code> is a static returning <code>Option&lt;Self&gt;</code> — the house form for a
+fallible parse, matching <code>str::parse_i32</code>. Declaring your own <code>value</code> or
+<code>parse</code> on a backed enum is a duplicate-member error.</p>
+<p>Two rules follow from the backing value being a <em>representation</em> rather
+than a second name for the variant. A <code>match</code> still matches variants, not
+values — <code>match align { "flex-start" =&gt; … }</code> is an error, exactly as
+<code>match ordering { 1 =&gt; … }</code> already was. And <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code> are
+rejected on a <strong>string</strong> backing: they would compare the strings
+lexicographically (<code>Size::Large &lt; Size::Small</code> because <code>"lg" &lt; "sm"</code>),
+and ordering by declaration index cannot be offered, because bare
+lowering erases the index. Integer backings order as before.</p>
+<p>An <code>external fun</code> may take a backed enum but may <strong>not return one</strong>: the
+host can answer with a value outside the set, and an exhaustive <code>match</code>
+compiles its last arm to a bare <code>else</code>, so a bogus value would silently
+become whichever variant happened to be last. Bind the backing type and
+convert with <code>parse</code>, which answers <code>None</code>.</p>
 <h2 id="54-impls"><a class="header" href="#54-impls">5.4 Impls</a></h2>
 <p><code>impl Subject { … }</code> adds <strong>inherent</strong> members to <code>Subject</code>;
 <code>impl Subject with Trait { … }</code> provides <code>Trait</code> for <code>Subject</code>. The
@@ -253,6 +284,22 @@ impl type T: Display { … }              // blanket: every T that is Display
 binder’s bounds hold. Members may be functions (with or without
 <code>self</code>). A function without <code>self</code> is a <strong>static</strong>, reached as
 <code>Subject::name(…)</code>.</p>
+<p>A trait has <strong>one implementation per subject</strong>: writing
+<code>impl Bag with Show</code> twice is a compile error at the second one, since
+nothing would rank them and the second would never run. Two impls are the
+same implementation when they name the same trait with the same
+arguments for the same subject, up to the naming of their own binders —
+so <code>impl Pair&lt;type T&gt; with Show</code> and <code>impl Pair&lt;type U&gt; with Show</code> are one
+impl written twice, and an argument left to a <code>= Self</code> default is the type
+it defaults to (<code>with Combine</code> is <code>with Combine&lt;Bag&gt;</code> on subject <code>Bag</code>).
+A trait parameterized differently is a different implementation:
+<code>impl Bag with Into&lt;Cup&gt;</code> and <code>impl Bag with Into&lt;Mug&gt;</code> both stand.</p>
+<p><em>Implementation note (tracked): the rule refuses only exact repeats, not
+OVERLAP. A blanket impl and a specific one that both match a type — the
+<code>impl type T with Into&lt;T&gt;</code> of <code>std::into</code> beside a type’s own <code>Into</code> impl,
+or two conditional impls with different bounds — are accepted, and which
+one a call selects is still decided by declaration order. A specificity
+rule is owed.</em></p>
 <p><em>Implementation note (soundness gap, tracked): a conditional impl’s
 bounds are not yet re-checked when the impl is selected through a
 GENERIC bound: <code>List&lt;B&gt;</code> can satisfy a <code>Marker</code> bound via
@@ -267,6 +314,17 @@ requires <code>Y</code>. A trait’s generic parameters may carry defaults
 <code>Self</code> in a trait body denotes the implementing type. Traits are used as
 <strong>bounds</strong>; a trait is not a type: <code>let x: Display</code> is a compile error
 (no trait objects).</p>
+<p>That rule is enforced <strong>at the annotation</strong>, in every value position — a
+binding, a parameter, a return type, a field, a generic argument
+(<code>List&lt;Display&gt;</code>) — and reported where the trait’s name is written,
+whether or not the declaration is ever used. A trait’s name stays legal
+in the positions that name a bound or a namespace rather than a value’s
+type: a generic parameter’s bound (<code>&lt;T: Display&gt;</code>), a supertrait, an
+<code>impl</code> subject (<code>impl Iterator&lt;type T&gt;</code>, which blankets over a bound),
+and the head of a qualified path (<code>Display::show(x)</code>). Inside a trait’s
+own declaration, write <code>Self</code> for “the implementing type”; a generic
+parameter defaulted to it (<code>trait PartialEq&lt;B = Self&gt;</code>) is a parameter,
+not the trait, and is unaffected.</p>
 <p>A trait parameter’s bound is in scope inside the trait’s own default
 bodies, exactly as a function’s or impl’s is inside theirs (§5.6): a
 default may call the bound trait’s members on a value of that parameter’s
@@ -448,7 +506,8 @@ fun main() {
 <h2 id="511-type-errors-of-note"><a class="header" href="#511-type-errors-of-note">5.11 Type errors of note</a></h2>
 <p>Normative rejection cases (each is a compile error):</p>
 <ul>
-<li>Using a trait as a type (<code>let x: Display = …</code>).</li>
+<li>Using a trait as a type, in any value position — a binding, a
+parameter, a return type, a field, a generic argument (<code>let x: Display = …</code>, <code>fun f(v: Display)</code>, <code>fun make(): Display</code>, <code>struct H { item: Display }</code>, <code>List&lt;Display&gt;</code>). Reported at the annotation (§5.5).</li>
 <li>An enum-variant pattern matched against a generic parameter of an
 enclosing declaration (§5.7).</li>
 <li>An unsatisfied bound at a call (<code>generic parameter 'T' is missing the bound …</code>).</li>

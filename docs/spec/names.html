@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -290,7 +290,10 @@ it or inherits the trait’s default (§5.7).</li>
 pick. Two <em>inherent</em> declarations of one name for one subject are rejected
 at the definition site, before any call resolves them. Two <em>traits</em>
 providing one name, with no inherent method above them, make each call an
-ambiguity error — as does a <code>T: A + B</code> bound whose two arms supply it.</p>
+ambiguity error — as does a <code>T: A + B</code> bound whose two arms supply it. Two
+impls of <strong>one</strong> trait for one subject are rejected at the definition site
+too, by the coherence rule of §5.4: rule 2 above says “the method a trait
+provides”, and a trait provides one.</p>
 <pre><code class="language-vilan">import std::print;
 
 struct Bag { x: i32 }

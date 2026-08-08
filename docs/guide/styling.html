@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -273,7 +273,10 @@ can’t hold — a <code>url()</code> or data URI, a multi-layer list, a positio
 and <code>background_size(str)</code> sizes it.</li>
 <li>Keyword properties use enums: <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
-<code>WhiteSpace</code>, <code>UserSelect</code>, <code>RadialExtent</code>.</li>
+<code>WhiteSpace</code>, <code>UserSelect</code>, <code>RadialExtent</code>. Each is a <strong>backed enum</strong>
+carrying its CSS keyword (<code>AlignItems::Start</code> is <code>"flex-start"</code>), so the
+variant <em>is</em> the keyword the browser reads — <code>.value()</code> hands it back and
+<code>Display::parse(text)</code> goes the other way, <code>None</code> outside the set.</li>
 </ul>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
 import std::style::{ style, space, Style, Color, Gradient, Length, RadialExtent };

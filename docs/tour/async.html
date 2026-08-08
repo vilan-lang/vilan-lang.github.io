@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -420,16 +420,55 @@ cancelled, and that verdict is remembered for every later waiter.
 Details in the <a href="../std/time.html">time reference</a>.</p>
 <h2 id="what-async-does-not-do"><a class="header" href="#what-async-does-not-do">What async does NOT do</a></h2>
 <ul>
-<li><strong>No promise-colored signatures.</strong> Return types are the plain values.
-A <code>Task&lt;T&gt;</code> appears only where you spawned and kept one.</li>
-<li><strong>No hidden concurrency.</strong> Everything waits, in order, unless you
-spawn. Same single-threaded event loop as JS underneath.</li>
-<li><strong>No views across a suspension.</strong> A <code>&amp;</code>/<code>&amp;mut</code> view held across an
+<li>
+<p><strong>No promise-colored signatures.</strong> Return types are the plain values.
+A <code>Task&lt;T&gt;</code> appears only where you spawned and kept one.</p>
+</li>
+<li>
+<p><strong>No hidden concurrency.</strong> Everything waits, in order, unless you
+spawn. Same single-threaded event loop as JS underneath.</p>
+</li>
+<li>
+<p><strong>No views across a suspension.</strong> A <code>&amp;</code>/<code>&amp;mut</code> view held across an
 await is rejected. Re-derive after; see
-<a href="memory-model.html">the memory model</a>.</li>
+<a href="memory-model.html">the memory model</a>.</p>
+</li>
+<li>
+<p><strong>No top-level await.</strong> Module initialization is synchronous, on
+purpose: the order bindings initialize in is derived from what they
+read, and a suspension there would stall bindings that never asked to
+wait. An <code>await</code> in a module-level initializer is a compile error in
+every spelling.</p>
+<p>The idiom is to <strong>spawn at load and await in <code>main</code></strong>, which starts
+the work just as early and keeps independent work overlapping:</p>
+<pre><code class="language-vilan norun">import std::print;
+import std::time::sleep;
+import std::task::Task;
+
+fun load(ms: i32): i32 {
+	sleep(ms);
+	7
+}
+
+let config: Task&lt;i32&gt; = async load(10);   // starts at load
+let catalog: Task&lt;i32&gt; = async load(20);  // ... and so does this, concurrently
+
+async fun main() {
+	print(await config + await catalog);   // the wait is visible, and here
+}
+</code></pre>
+<p>Creating a closure or an <code>async { .. }</code> block in an initializer is
+fine too — its body is not the initializer, and nothing runs it at
+load.</p>
+</li>
 </ul>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
+<li>A failure that escapes <code>async fun main()</code> <strong>reports the error and
+exits non-zero</strong>, the same as a panic out of a sync <code>main</code> — it is
+not left to the host’s unhandled-rejection policy. Attaching that
+outcome costs nothing at runtime: a <code>main</code> that keeps running (a
+server holding a listener) is not hurried along by it.</li>
 <li>On Node, <strong>the process exits when nothing is left to do</strong>: once
 <code>main</code> finishes, only live host handles (a running timer, a socket, a
 listening server) keep it alive. A dropped task that is merely

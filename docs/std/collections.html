@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -464,15 +464,48 @@ fun main() {
 name</em>, so a type with a <code>next(&amp;mut self): Option&lt;T&gt;</code> drives a loop whether or
 not it declares the trait. Declaring it is what buys the adapters below — and
 what lets a generic bound accept your type.</p>
+<p>That resolution is ordinary method resolution, which means an <strong>inherited
+default counts</strong>. If the trait supplies a <code>next</code> body and your impl block is
+empty, your type still iterates — the same <code>next</code> you would reach by writing
+<code>value.next()</code>:</p>
+<pre><code class="language-vilan">import std::print;
+import std::option::Option::{ self, Some, None };
+
+trait Countdown&lt;T&gt; {
+	fun tick(&amp;mut self): Option&lt;T&gt;;
+	fun next(&amp;mut self): Option&lt;T&gt; { self.tick() }   // inherited by every impl
+}
+
+struct Down { at: i32 }
+
+impl Down with Countdown&lt;i32&gt; {
+	fun tick(&amp;mut self): Option&lt;i32&gt; {
+		if self.at &lt;= 0 { None } else { self.at -= 1; Some(self.at) }
+	}
+}
+
+fun main() {
+	mut down = Down { at = 3 };
+	for n in down {
+		print(n);   // 2, 1, 0
+	}
+}
+</code></pre>
+<p>Precedence is the usual one: a <code>next</code> declared on the type itself beats an
+inherited one, and two <em>different</em> traits offering same-named defaults is an
+ambiguity the loop reports rather than resolving for you — a <code>for</code> has no way to
+name a provider, so declare <code>next</code> on the type to settle it.</p>
 <p>The name is what resolves, but the <strong>shape is still checked</strong>: the method has to
-return an <code>Option</code>, because the loop stops at <code>None</code>. A <code>next</code> annotated with
-anything else is a compile error rather than a loop that quietly runs zero
-times.</p>
+return an <code>Option</code>, because the loop stops at <code>None</code>. A <code>next</code> that returns
+anything else is a compile error rather than a loop that quietly runs zero times
+— or, worse, throws. The return annotation is optional and the rule does not
+care: annotate it and the annotation is checked, leave it off and the <em>body</em> is,
+so <code>fun next(&amp;mut self) { (self.fn)() }</code> is fine (it yields an <code>Option</code>) and <code>fun next(&amp;mut self) { self.count += 1; }</code> is not (it yields nothing).</p>
 <h3 id="what-a-for-can-iterate"><a class="header" href="#what-a-for-can-iterate">What a <code>for</code> can iterate</a></h3>
 <p>Exactly two things:</p>
 <ul>
 <li><strong>A type with <code>next</code></strong> (or <code>next_mut</code>, for <code>for e in &amp;mut it</code>) — the protocol
-above.</li>
+above, declared on the type or inherited from a trait default.</li>
 <li><strong>A natively iterable value</strong>: <code>List&lt;T&gt;</code>, a fixed array <code>[T; n]</code>, a tuple, a
 <code>str</code> (yielding its characters), <code>Set&lt;T&gt;</code> (insertion order), and any host type
 an <code>external struct</code> names.</li>

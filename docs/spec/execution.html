@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -205,6 +205,22 @@ that same package order, and the entry file is last. Within one file,
 bindings initialize in declaration order. Nothing here depends on how a
 file spells its imports, so reordering import statements, or the names
 inside a <code>{ .. }</code> list, cannot change what a program does.</p>
+<p><strong>Module initialization is synchronous.</strong> An initializer may not
+suspend: an <code>await</code> reachable in a module-level binding’s own
+initializer is a compile error, in every spelling — the implicit await
+of a call to an async function, and the explicit <code>await</code> whatever its
+operand (a <code>Task</code>-valued binding, a spawn, a <code>Task</code> returned by a plain
+function). This is a design position, not a limit of the emission
+model. The order above is <em>derived</em> from the dependency relation, and
+suspending a derived sequence makes one binding’s completion wait on an
+ordering the program never wrote and cannot see.</p>
+<p><em>Spawning</em> at module level stays legal, and is the idiom the rule
+steers to: <code>let pending: Task&lt;T&gt; = async work();</code> starts the work at
+load without suspending, and <code>main</code> — which may be <code>async</code> — awaits it
+where the wait is visible. Independent spawns overlap, where a sequence
+of awaited initializers would serialize. Creating an async closure or
+an <code>async { .. }</code> block is legal for the same reason: the body is not
+the initializer, and nothing runs it at load.</p>
 <p>Only a binding something reachable from <code>main</code> references initializes at
 all (§11.2’s reachability rule): an unreferenced binding’s initializer
 never runs, so load-time side effects are not a promise.</p>
@@ -220,6 +236,15 @@ must await something that ends with the app). On the browser platform,
 <code>main</code>’s completion leaves installed handlers and subscriptions live.</p>
 <p><code>panic(message)</code> aborts execution with the message; it types as <code>any</code>
 (§5.1). Failed <code>assert</code>s panic.</p>
+<p><strong>A failing <code>main</code> terminates with a non-zero status</strong>, whether <code>main</code>
+is sync or <code>async</code>. A panic that escapes a sync <code>main</code> aborts the
+process; an <code>async fun main()</code> whose work fails reports the error and
+exits non-zero on the process platforms, rather than leaving the
+outcome to the host’s unhandled-rejection policy. Attaching that
+outcome does not make the entrypoint wait: a <code>main</code> that never settles
+— a server holding a listener — is unaffected and keeps running. The
+browser has no exit status, so a failure there surfaces through the
+host’s own reporting.</p>
 <h2 id="72-evaluation-order"><a class="header" href="#72-evaluation-order">7.2 Evaluation order</a></h2>
 <p>Within an expression, evaluation is <strong>left-to-right</strong>: operands before
 operators apply, the callee before its arguments, arguments in source
@@ -346,7 +371,8 @@ host code cannot await a Vilan closure;</li>
 <li>a trait/generic-dispatched call: there is no statically-known callee
 to instantiate (bind the receiver concretely, or declare the trait
 parameter <code>async</code>);</li>
-<li>a module-level initializer: it cannot await (§7.6’s J.3 rule).</li>
+<li>a module-level initializer: it cannot suspend, in any spelling
+(§7.1) — spawn at load and await in <code>main</code> instead.</li>
 </ul>
 <p><strong>The divergence rule</strong> (the remaining stores). An async closure flowing
 where a plain closure type is declared on a struct <strong>field</strong> or a

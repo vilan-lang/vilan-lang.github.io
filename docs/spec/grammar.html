@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -269,31 +269,52 @@ it (<code>mut ...items: T</code>).</p>
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
 field  = [ "[" "expose" "]" ] IDENT [ ":" type ] ;
 
-enum         = [ "resource" ] "enum" IDENT [ generic-params ]
-               "{" [ variant { "," variant } [ "," ] ] "}" ;
-variant      = NAME [ "(" [ type { "," type } [ "," ] ] ")" ]
-               [ "=" discriminant ] ;
-discriminant = [ "-" ] INTEGER ;
-INTEGER      = NUMBER without a fractional part and without a SUFFIX ;
+enum          = [ "resource" ] "enum" IDENT [ generic-params ]
+                "{" [ variant { "," variant } [ "," ] ] "}" ;
+variant       = NAME [ "(" [ type { "," type } [ "," ] ] ")" ]
+                [ "=" backing-value ] ;
+backing-value = [ "-" ] INTEGER | STRING ;
+INTEGER       = NUMBER without a fractional part and without a SUFFIX ;
 </code></pre>
 <p>A <code>;</code>-bodied struct is legal only for <code>external</code> structs (host types). An
-explicit variant discriminant (<code>= 0</code>, <code>= -1</code>) fixes the variant’s integer
-tag.</p>
-<p>The discriminant is an <strong>integer</strong>, not a general <code>NUMBER</code>: a fractional
-part (<code>= 1.5</code>) and a type suffix (<code>= 1u32</code>, and <code>= 1_000</code>, which lexes as
-<code>1</code> with the trailer <code>_000</code>) are both errors rather than being silently
-discarded. Hex is read as hex (<code>= 0xFF</code> is 255). The value must fit a
-signed 64-bit integer, and so must the implicit continuation: a variant
-with no discriminant takes the previous variant’s plus one, starting at
-0, and running past the bound is an error rather than a wrap.</p>
-<p><strong>Two variants may not share a discriminant</strong>, whether written or
-continued — <code>enum Dup { A = 1, B = 1 }</code> and <code>enum Walked { A = 1, B = 0, C }</code> are both rejected. Sharing one would make two variants a single
-runtime value (see §5.3 of the types chapter), leaving the second
-<code>match</code> arm unreachable in an otherwise exhaustive match.</p>
-<p><strong>A discriminant is only legal when every variant is data-less.</strong> A
+explicit variant <strong>backing value</strong> — <code>= 0</code>, <code>= -1</code>, <code>= "start"</code> — fixes
+what the variant <em>is</em> at runtime. An enum whose variants carry one is a
+<em>backed enum</em> and lowers to that bare value; see §5.3 of the types
+chapter.</p>
+<p>The two backing types are the integers and <code>str</code>, and nothing else. A
+float is rejected for the same reason its equality is: the lowering is
+<code>===</code>, on which <code>0.1 + 0.2</code> is a footgun and <code>NaN</code> is not even equal to
+itself. <code>bool</code> is rejected because <code>bool</code> is itself an enum that already
+lowers to native <code>true</code>/<code>false</code>, so a two-variant bool-backed enum is
+<code>bool</code> with extra steps.</p>
+<p>An integer backing value is an <strong>integer</strong>, not a general <code>NUMBER</code>: a
+fractional part (<code>= 1.5</code>) and a type suffix (<code>= 1u32</code>, and <code>= 1_000</code>,
+which lexes as <code>1</code> with the trailer <code>_000</code>) are both errors rather than
+being silently discarded. Hex is read as hex (<code>= 0xFF</code> is 255). The value
+must fit a signed 64-bit integer, and so must the implicit continuation:
+a variant with no backing value takes the previous variant’s plus one,
+starting at 0, and running past the bound is an error rather than a wrap.</p>
+<p><strong>A string backing must be written on every variant.</strong> There is no
+successor of <code>"start"</code> for the continuation rule to hand out, and the
+string is deliberately not derived from the variant name — the two are
+independent (<code>AlignItems::Start</code> is <code>"flex-start"</code>, <code>Display::Hidden</code> is
+<code>"none"</code>), and a naming convention that is right most of the time would
+be silently wrong the rest.</p>
+<p><strong>One enum has one backing type.</strong> The type is fixed by the first
+explicit value in declaration order and every later value must agree:
+<code>enum X { A = 1, B = "two" }</code> is rejected. An enum has one runtime
+representation, and a value that is sometimes a number and sometimes a
+string is not a vilan type.</p>
+<p><strong>Two variants may not share a backing value</strong>, whether written or
+continued — <code>enum Dup { A = 1, B = 1 }</code>, <code>enum Walked { A = 1, B = 0, C }</code>, and <code>enum Align { Start = "a", End = "a" }</code> are all rejected.
+Sharing one would make two variants a single runtime value (see §5.3 of
+the types chapter), leaving the second <code>match</code> arm unreachable in an
+otherwise exhaustive match.</p>
+<p><strong>A backing value is only legal when every variant is data-less.</strong> A
 variant carrying a payload may not carry one, and neither may its
 data-less siblings: an enum with any payload variant uses the tagged
-representation, in which a discriminant has nowhere to go.</p>
+representation, in which a bare backing value has nowhere to put a
+payload.</p>
 <p>The leading <code>resource</code> modifier marks a type declaration as a <em>resource</em>:
 the owned-resource class, whose semantics are specified in the resources
 chapter (forthcoming; the modifier currently reserves the surface). It

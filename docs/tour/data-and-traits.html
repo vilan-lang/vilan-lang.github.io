@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -227,6 +227,38 @@ every variant. Add a variant later and every <code>match</code> that misses it
 becomes a compile error. That’s the feature.</p>
 <p><code>Option</code> and <code>Result</code> are ordinary enums from std, with no special
 cases.</p>
+<h3 id="backed-enums"><a class="header" href="#backed-enums">Backed enums</a></h3>
+<p>A variant with no payload can instead carry the value it stands for —
+the number or string the outside world already speaks:</p>
+<pre><code class="language-vilan">import std::print;
+import std::option::Option;
+
+enum Align {
+	Start = "flex-start",
+	Center = "center",
+	End = "flex-end",
+}
+
+fun main() {
+	// The variant IS its backing value at runtime, so `.value()` is free.
+	print(Align::Start.value());
+
+	// And back, for a value you did not construct — `None` outside the set.
+	print(match Align::parse("center") {
+		Option::Some(let align) =&gt; align.value(),
+		Option::None =&gt; "unknown",
+	});
+}
+</code></pre>
+<p>The backing value is written, never derived from the name: <code>Start</code> is
+<code>"flex-start"</code> because that is what CSS calls it. Integers work the same
+way (<code>enum Ordering { Less = -1, Equal = 0, Greater = 1 }</code>) and are the
+older half of the same feature.</p>
+<p>Two variants may not share a backing value, an enum may not mix strings
+and integers, and a variant with a payload may not have one at all —
+there is nowhere to put a payload in a bare string. <code>match</code> still matches
+<em>variants</em>: <code>match align { "flex-start" =&gt; … }</code> is an error, because the
+backing value is a representation, not a second spelling of the name.</p>
 <h2 id="impl-methods-and-statics"><a class="header" href="#impl-methods-and-statics">impl: methods and statics</a></h2>
 <p>Methods live in <code>impl</code> blocks, separate from the data:</p>
 <pre><code class="language-vilan">import std::print;
@@ -372,6 +404,11 @@ fun main() {
 against the bound there. The one <code>describe</code> body is then specialized per
 implementing type, so <code>self.item().label()</code> reaches <code>Dog</code>’s <code>label</code> in one
 and <code>Cat</code>’s in the other.</p>
+<p>Each impl picks its own argument, but a type implements a given trait
+<strong>once</strong>: a second <code>impl Robot with Greet</code> is a compile error at the
+second block, because nothing would rank the two and one of them would
+simply never run. Merge the bodies, or delete the copy you don’t want.
+Different arguments are different implementations, so <code>impl DogBox with Holder&lt;Dog&gt;</code> and <code>impl DogBox with Holder&lt;Cat&gt;</code> would both be fine.</p>
 <p>Traits are like interfaces, with two differences. They’re implemented
 explicitly (<code>impl Robot with Greet</code>), never structurally. And they
 appear as <em>bounds</em> on generics (<code>T: Greet</code>) rather than as standalone

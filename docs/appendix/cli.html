@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -209,8 +209,11 @@ scaffold that stops working fails Vilan’s build before it reaches yours.</p>
 <h2 id="vilan-build-file"><a class="header" href="#vilan-build-file"><code>vilan build [file]</code></a></h2>
 <p>Compiles to JavaScript. The path may be a <code>.vl</code> file, a project
 directory, or omitted; then the nearest <code>vilan.toml</code> decides what to
-build. A single-entry package writes <code>&lt;file&gt;.js</code> beside the entry; a
-multi-entry package writes <code>dist/&lt;name&gt;.js</code> per entry. Assets emitted at
+build. A single-entry package writes the bundle beside the entry; a
+multi-entry package writes one into <code>dist/</code> per entry. The extension is
+the target’s: <code>.mjs</code> on a process runtime (Node/Deno/Bun), so the host
+classifies the emitted ESM without inspecting it, and <code>.js</code> on the
+browser, whose <code>&lt;script type="module"&gt;</code> already declares it. Assets emitted at
 compile time (the styling system’s CSS) land beside the output.
 <code>[build] run</code> hooks execute first; a failing hook fails the build.</p>
 <ul>
@@ -521,7 +524,9 @@ handle whose fields are reached through <code>[extern(get/set, …)]</code> — 
 the crossing. The same fact rules out three tempting mappings:</p>
 <ul>
 <li>a TS discriminated union is a tagged <em>object</em>, while a Vilan <code>enum</code> is
-<code>[tag, …payload]</code>;</li>
+<code>[tag, …payload]</code> — unless it is a <strong>backed</strong> enum, which is the bare
+backing value and <em>does</em> cross (that is what a closed string set maps to,
+below);</li>
 <li><code>Map&lt;str, T&gt;</code> is a Vilan struct over a hashed native map, not a plain
 host object;</li>
 <li><code>List&lt;T&gt;</code> is a real JS array, and an array-<em>like</em> (<code>{[index: number]: T}</code> — numeric keys and <code>length</code>, no <code>Symbol.iterator</code>) is not one:
@@ -532,26 +537,33 @@ the result as <code>List&lt;T&gt;</code>.</li>
 <code>List&lt;T&gt;</code>; a TS tuple <code>[A, B]</code> maps to <code>(A, B)</code>, since a Vilan tuple is a
 JS array too.</p>
 <h3 id="closed-string-sets"><a class="header" href="#closed-string-sets">Closed string sets</a></h3>
-<p>A named union of string literals gets a real enum plus a wrapper that
-speaks it, because the host boundary still wants the raw string:</p>
-<pre><code class="language-vilan norun">enum Align {
-	Start,
-	End,
+<p>A named union of string literals becomes a <strong>backed enum</strong> — each variant
+carries the host string it stands for, so the enum <em>is</em> that string at
+runtime and crosses the boundary unchanged. A parameter takes the enum
+directly, with no wrapper:</p>
+<pre><code class="language-vilan norun">import std::option::Option;
+
+enum Align {
+	Start = "start",
+	End = "end",
 }
 
 external struct Chart;
 
 impl Chart {
 	[extern(set, "align")]
+	[platform("node")]
+	external fun set_align(self, value: Align): void;
+
+	// The read direction keeps a guard: the host may answer outside the
+	// set, so the raw `str` is bound and `parse` returns `Option`.
+	[extern(get, "align")]
 	[doc(hidden)]
 	[platform("node")]
-	external fun set_align_raw(self, value: str): void;
+	external fun align_raw(self): str;
 
-	fun set_align(self, value: Align): void {
-		self.set_align_raw(match value {
-			Align::Start =&gt; "start",
-			Align::End =&gt; "end",
-		})
+	fun align(self): Option&lt;Align&gt; {
+		Align::parse(self.align_raw())
 	}
 }
 

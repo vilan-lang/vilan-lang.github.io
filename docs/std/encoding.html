@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6b503196.js";
+            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -248,6 +248,16 @@ server must agree.</li>
 <p><code>[derive(Wire)]</code> requires every field to be Wire, recursively, checked at
 the derive site. You implement <code>Serialize</code>/<code>Deserialize</code> by hand only for
 types with a custom encoding.</p>
+<h3 id="backed-enums-on-the-wire"><a class="header" href="#backed-enums-on-the-wire">Backed enums on the wire</a></h3>
+<p>A <strong>backed enum</strong> — one whose variants carry an explicit value, <code>enum Align { Start = "flex-start", … }</code> — encodes as that value rather than as
+its variant name, for both <code>Json</code> and <code>Wire</code>. <code>Align::Start</code> is
+<code>"flex-start"</code> on the wire, not <code>"Start"</code>, and it decodes through
+<code>Align::parse</code>, so a peer sending a value outside the set is a decode
+error rather than a confidently-wrong variant.</p>
+<p><strong>Adding a backing value to an existing derived enum is a wire-format
+break, and so is removing one.</strong> An enum with no backing value keeps the
+externally-tagged form (<code>"Start"</code>, or <code>{"Text":…}</code> with a payload), so
+the two shapes are not interchangeable across a version.</p>
 <h2 id="bytes"><a class="header" href="#bytes">Bytes</a></h2>
 <p>An immutable-length byte array (<code>Uint8Array</code> underneath), the currency of
 the binary codec, crypto, and websockets:</p>

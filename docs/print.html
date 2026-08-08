@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-6b503196.js";
+            window.path_to_searchindex_js = "searchindex-d88d3d6d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -427,7 +427,7 @@ fun main() {
 </code></pre>
 <p>Save that as <code>hello.vl</code> and run it:</p>
 <pre><code class="language-sh">vilan run hello.vl      # build + run
-vilan build hello.vl    # just compile — writes hello.js
+vilan build hello.vl    # just compile — writes hello.mjs
 vilan check hello.vl    # just type-check — writes nothing
 </code></pre>
 <p><code>fun main</code> is the entrypoint. It runs automatically, so there is no
@@ -477,7 +477,7 @@ yours.</p>
 </thead>
 <tbody>
 <tr><td><code>vilan init [name]</code></td><td>scaffold a project; <code>--template</code> picks <code>node</code>, <code>browser</code>, or <code>fullstack</code></td></tr>
-<tr><td><code>vilan build [path]</code></td><td>compile to <code>&lt;file&gt;.js</code> (no path: use the nearest <code>vilan.toml</code>)</td></tr>
+<tr><td><code>vilan build [path]</code></td><td>compile to <code>&lt;file&gt;.mjs</code> — <code>.js</code> for a browser entry (no path: use the nearest <code>vilan.toml</code>)</td></tr>
 <tr><td><code>vilan check [path]</code></td><td>type-check and report problems, write nothing</td></tr>
 <tr><td><code>vilan run [path] [args…]</code></td><td>build and run; extra args reach <code>process::args()</code></td></tr>
 <tr><td><code>vilan fmt [paths…]</code></td><td>format source files in place (<code>--check</code> to verify only)</td></tr>
@@ -1106,6 +1106,38 @@ every variant. Add a variant later and every <code>match</code> that misses it
 becomes a compile error. That’s the feature.</p>
 <p><code>Option</code> and <code>Result</code> are ordinary enums from std, with no special
 cases.</p>
+<h3 id="backed-enums"><a class="header" href="#backed-enums">Backed enums</a></h3>
+<p>A variant with no payload can instead carry the value it stands for —
+the number or string the outside world already speaks:</p>
+<pre><code class="language-vilan">import std::print;
+import std::option::Option;
+
+enum Align {
+	Start = "flex-start",
+	Center = "center",
+	End = "flex-end",
+}
+
+fun main() {
+	// The variant IS its backing value at runtime, so `.value()` is free.
+	print(Align::Start.value());
+
+	// And back, for a value you did not construct — `None` outside the set.
+	print(match Align::parse("center") {
+		Option::Some(let align) =&gt; align.value(),
+		Option::None =&gt; "unknown",
+	});
+}
+</code></pre>
+<p>The backing value is written, never derived from the name: <code>Start</code> is
+<code>"flex-start"</code> because that is what CSS calls it. Integers work the same
+way (<code>enum Ordering { Less = -1, Equal = 0, Greater = 1 }</code>) and are the
+older half of the same feature.</p>
+<p>Two variants may not share a backing value, an enum may not mix strings
+and integers, and a variant with a payload may not have one at all —
+there is nowhere to put a payload in a bare string. <code>match</code> still matches
+<em>variants</em>: <code>match align { "flex-start" =&gt; … }</code> is an error, because the
+backing value is a representation, not a second spelling of the name.</p>
 <h2 id="impl-methods-and-statics"><a class="header" href="#impl-methods-and-statics">impl: methods and statics</a></h2>
 <p>Methods live in <code>impl</code> blocks, separate from the data:</p>
 <pre><code class="language-vilan">import std::print;
@@ -1251,6 +1283,11 @@ fun main() {
 against the bound there. The one <code>describe</code> body is then specialized per
 implementing type, so <code>self.item().label()</code> reaches <code>Dog</code>’s <code>label</code> in one
 and <code>Cat</code>’s in the other.</p>
+<p>Each impl picks its own argument, but a type implements a given trait
+<strong>once</strong>: a second <code>impl Robot with Greet</code> is a compile error at the
+second block, because nothing would rank the two and one of them would
+simply never run. Merge the bodies, or delete the copy you don’t want.
+Different arguments are different implementations, so <code>impl DogBox with Holder&lt;Dog&gt;</code> and <code>impl DogBox with Holder&lt;Cat&gt;</code> would both be fine.</p>
 <p>Traits are like interfaces, with two differences. They’re implemented
 explicitly (<code>impl Robot with Greet</code>), never structurally. And they
 appear as <em>bounds</em> on generics (<code>T: Greet</code>) rather than as standalone
@@ -1971,16 +2008,55 @@ cancelled, and that verdict is remembered for every later waiter.
 Details in the <a href="#stdtime-reference">time reference</a>.</p>
 <h2 id="what-async-does-not-do"><a class="header" href="#what-async-does-not-do">What async does NOT do</a></h2>
 <ul>
-<li><strong>No promise-colored signatures.</strong> Return types are the plain values.
-A <code>Task&lt;T&gt;</code> appears only where you spawned and kept one.</li>
-<li><strong>No hidden concurrency.</strong> Everything waits, in order, unless you
-spawn. Same single-threaded event loop as JS underneath.</li>
-<li><strong>No views across a suspension.</strong> A <code>&amp;</code>/<code>&amp;mut</code> view held across an
+<li>
+<p><strong>No promise-colored signatures.</strong> Return types are the plain values.
+A <code>Task&lt;T&gt;</code> appears only where you spawned and kept one.</p>
+</li>
+<li>
+<p><strong>No hidden concurrency.</strong> Everything waits, in order, unless you
+spawn. Same single-threaded event loop as JS underneath.</p>
+</li>
+<li>
+<p><strong>No views across a suspension.</strong> A <code>&amp;</code>/<code>&amp;mut</code> view held across an
 await is rejected. Re-derive after; see
-<a href="#the-memory-model">the memory model</a>.</li>
+<a href="#the-memory-model">the memory model</a>.</p>
+</li>
+<li>
+<p><strong>No top-level await.</strong> Module initialization is synchronous, on
+purpose: the order bindings initialize in is derived from what they
+read, and a suspension there would stall bindings that never asked to
+wait. An <code>await</code> in a module-level initializer is a compile error in
+every spelling.</p>
+<p>The idiom is to <strong>spawn at load and await in <code>main</code></strong>, which starts
+the work just as early and keeps independent work overlapping:</p>
+<pre><code class="language-vilan norun">import std::print;
+import std::time::sleep;
+import std::task::Task;
+
+fun load(ms: i32): i32 {
+	sleep(ms);
+	7
+}
+
+let config: Task&lt;i32&gt; = async load(10);   // starts at load
+let catalog: Task&lt;i32&gt; = async load(20);  // ... and so does this, concurrently
+
+async fun main() {
+	print(await config + await catalog);   // the wait is visible, and here
+}
+</code></pre>
+<p>Creating a closure or an <code>async { .. }</code> block in an initializer is
+fine too — its body is not the initializer, and nothing runs it at
+load.</p>
+</li>
 </ul>
 <h2 id="traps-1"><a class="header" href="#traps-1">Traps</a></h2>
 <ul>
+<li>A failure that escapes <code>async fun main()</code> <strong>reports the error and
+exits non-zero</strong>, the same as a panic out of a sync <code>main</code> — it is
+not left to the host’s unhandled-rejection policy. Attaching that
+outcome costs nothing at runtime: a <code>main</code> that keeps running (a
+server holding a listener) is not hurried along by it.</li>
 <li>On Node, <strong>the process exits when nothing is left to do</strong>: once
 <code>main</code> finishes, only live host handles (a running timer, a socket, a
 listening server) keep it alive. A dropped task that is merely
@@ -2500,9 +2576,10 @@ target = "browser"
     store.vl      the service, next to its resources
     todo.vl       shared types — anything both entries import
 </code></pre>
-<p><code>vilan build</code> compiles every entry for its own target into
-<code>dist/&lt;name&gt;.js</code> (browser entries first, so a server that ships bundles
-finds them fresh); <code>vilan run</code> builds everything and starts the one
+<p><code>vilan build</code> compiles every entry for its own target into <code>dist/</code> —
+<code>&lt;name&gt;.mjs</code> for a process entry, <code>&lt;name&gt;.js</code> for a browser one
+(browser entries first, so a server that ships bundles finds them
+fresh); <code>vilan run</code> builds everything and starts the one
 Node entry; <code>vilan check</code> checks all entries, always. Reachability does
 the sorting: the same <code>store.vl</code> may use <code>std::fs</code> freely, because only
 the server entry reaches into it. If client code ever calls that far,
@@ -3442,7 +3519,10 @@ can’t hold — a <code>url()</code> or data URI, a multi-layer list, a positio
 and <code>background_size(str)</code> sizes it.</li>
 <li>Keyword properties use enums: <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
 <code>AlignItems</code>, <code>JustifyContent</code>, <code>TextAlign</code>, <code>Cursor</code>, <code>Overflow</code>,
-<code>WhiteSpace</code>, <code>UserSelect</code>, <code>RadialExtent</code>.</li>
+<code>WhiteSpace</code>, <code>UserSelect</code>, <code>RadialExtent</code>. Each is a <strong>backed enum</strong>
+carrying its CSS keyword (<code>AlignItems::Start</code> is <code>"flex-start"</code>), so the
+variant <em>is</em> the keyword the browser reads — <code>.value()</code> hands it back and
+<code>Display::parse(text)</code> goes the other way, <code>None</code> outside the set.</li>
 </ul>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
 import std::style::{ style, space, Style, Color, Gradient, Length, RadialExtent };
@@ -5221,15 +5301,48 @@ fun main() {
 name</em>, so a type with a <code>next(&amp;mut self): Option&lt;T&gt;</code> drives a loop whether or
 not it declares the trait. Declaring it is what buys the adapters below — and
 what lets a generic bound accept your type.</p>
+<p>That resolution is ordinary method resolution, which means an <strong>inherited
+default counts</strong>. If the trait supplies a <code>next</code> body and your impl block is
+empty, your type still iterates — the same <code>next</code> you would reach by writing
+<code>value.next()</code>:</p>
+<pre><code class="language-vilan">import std::print;
+import std::option::Option::{ self, Some, None };
+
+trait Countdown&lt;T&gt; {
+	fun tick(&amp;mut self): Option&lt;T&gt;;
+	fun next(&amp;mut self): Option&lt;T&gt; { self.tick() }   // inherited by every impl
+}
+
+struct Down { at: i32 }
+
+impl Down with Countdown&lt;i32&gt; {
+	fun tick(&amp;mut self): Option&lt;i32&gt; {
+		if self.at &lt;= 0 { None } else { self.at -= 1; Some(self.at) }
+	}
+}
+
+fun main() {
+	mut down = Down { at = 3 };
+	for n in down {
+		print(n);   // 2, 1, 0
+	}
+}
+</code></pre>
+<p>Precedence is the usual one: a <code>next</code> declared on the type itself beats an
+inherited one, and two <em>different</em> traits offering same-named defaults is an
+ambiguity the loop reports rather than resolving for you — a <code>for</code> has no way to
+name a provider, so declare <code>next</code> on the type to settle it.</p>
 <p>The name is what resolves, but the <strong>shape is still checked</strong>: the method has to
-return an <code>Option</code>, because the loop stops at <code>None</code>. A <code>next</code> annotated with
-anything else is a compile error rather than a loop that quietly runs zero
-times.</p>
+return an <code>Option</code>, because the loop stops at <code>None</code>. A <code>next</code> that returns
+anything else is a compile error rather than a loop that quietly runs zero times
+— or, worse, throws. The return annotation is optional and the rule does not
+care: annotate it and the annotation is checked, leave it off and the <em>body</em> is,
+so <code>fun next(&amp;mut self) { (self.fn)() }</code> is fine (it yields an <code>Option</code>) and <code>fun next(&amp;mut self) { self.count += 1; }</code> is not (it yields nothing).</p>
 <h3 id="what-a-for-can-iterate"><a class="header" href="#what-a-for-can-iterate">What a <code>for</code> can iterate</a></h3>
 <p>Exactly two things:</p>
 <ul>
 <li><strong>A type with <code>next</code></strong> (or <code>next_mut</code>, for <code>for e in &amp;mut it</code>) — the protocol
-above.</li>
+above, declared on the type or inherited from a trait default.</li>
 <li><strong>A natively iterable value</strong>: <code>List&lt;T&gt;</code>, a fixed array <code>[T; n]</code>, a tuple, a
 <code>str</code> (yielding its characters), <code>Set&lt;T&gt;</code> (insertion order), and any host type
 an <code>external struct</code> names.</li>
@@ -6202,6 +6315,16 @@ server must agree.</li>
 <p><code>[derive(Wire)]</code> requires every field to be Wire, recursively, checked at
 the derive site. You implement <code>Serialize</code>/<code>Deserialize</code> by hand only for
 types with a custom encoding.</p>
+<h3 id="backed-enums-on-the-wire"><a class="header" href="#backed-enums-on-the-wire">Backed enums on the wire</a></h3>
+<p>A <strong>backed enum</strong> — one whose variants carry an explicit value, <code>enum Align { Start = "flex-start", … }</code> — encodes as that value rather than as
+its variant name, for both <code>Json</code> and <code>Wire</code>. <code>Align::Start</code> is
+<code>"flex-start"</code> on the wire, not <code>"Start"</code>, and it decodes through
+<code>Align::parse</code>, so a peer sending a value outside the set is a decode
+error rather than a confidently-wrong variant.</p>
+<p><strong>Adding a backing value to an existing derived enum is a wire-format
+break, and so is removing one.</strong> An enum with no backing value keeps the
+externally-tagged form (<code>"Start"</code>, or <code>{"Text":…}</code> with a payload), so
+the two shapes are not interchangeable across a version.</p>
 <h2 id="bytes"><a class="header" href="#bytes">Bytes</a></h2>
 <p>An immutable-length byte array (<code>Uint8Array</code> underneath), the currency of
 the binary codec, crypto, and websockets:</p>
@@ -6659,6 +6782,16 @@ override each other instead of racing in the cascade.</p>
 <code>WhiteSpace</code> (Normal, Nowrap, Pre, PreWrap, PreLine), <code>UserSelect</code> (Auto,
 Text, All, <strong>Off</strong> — <code>none</code>, named to stay clear of <code>Option::None</code>, like
 <code>Display::Hidden</code>).</p>
+<p>All eleven are <strong>backed enums</strong>: each variant carries the CSS keyword it
+stands for, so the enum <em>is</em> that keyword at runtime and <code>.value()</code> hands it
+back. That is why the names need not match the keywords — <code>AlignItems::Start</code>
+is <code>"flex-start"</code>, <code>Display::Hidden</code> is <code>"none"</code> — and why passing one costs
+nothing over passing the string.</p>
+<pre><code class="language-vilan fragment">Display::Hidden.value()          // "none"
+AlignItems::Start.value()        // "flex-start"
+Display::parse("inline-block")   // Some(Display::InlineBlock)
+Display::parse("nope")           // None
+</code></pre>
 <h2 id="style-methods"><a class="header" href="#style-methods">Style methods</a></h2>
 <p>Every method returns a new <code>Style</code> with one more property slot; each slot is
 one atomic rule, deduplicated build-wide.</p>
@@ -7363,7 +7496,8 @@ fun decode_claims&lt;C: Wire&gt;(segment: str): Option&lt;C&gt;   // decode WITH
 </code></pre>
 <p>Callable only from <code>const</code> evaluation: it’s how <code>std::style</code> writes the
 CSS file (<code>emit("css", rule)</code>). A browser build with emissions produces
-<code>&lt;entry&gt;.css</code> beside <code>&lt;entry&gt;.js</code>.</p>
+<code>&lt;entry&gt;.css</code> beside <code>&lt;entry&gt;.js</code> (beside <code>&lt;entry&gt;.mjs</code> on a process
+target).</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="spec-1--introduction--conformance"><a class="header" href="#spec-1--introduction--conformance">Spec §1 — Introduction &amp; conformance</a></h1>
 <p>This is the Vilan language specification: the normative definition of what
@@ -7688,31 +7822,52 @@ it (<code>mut ...items: T</code>).</p>
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
 field  = [ "[" "expose" "]" ] IDENT [ ":" type ] ;
 
-enum         = [ "resource" ] "enum" IDENT [ generic-params ]
-               "{" [ variant { "," variant } [ "," ] ] "}" ;
-variant      = NAME [ "(" [ type { "," type } [ "," ] ] ")" ]
-               [ "=" discriminant ] ;
-discriminant = [ "-" ] INTEGER ;
-INTEGER      = NUMBER without a fractional part and without a SUFFIX ;
+enum          = [ "resource" ] "enum" IDENT [ generic-params ]
+                "{" [ variant { "," variant } [ "," ] ] "}" ;
+variant       = NAME [ "(" [ type { "," type } [ "," ] ] ")" ]
+                [ "=" backing-value ] ;
+backing-value = [ "-" ] INTEGER | STRING ;
+INTEGER       = NUMBER without a fractional part and without a SUFFIX ;
 </code></pre>
 <p>A <code>;</code>-bodied struct is legal only for <code>external</code> structs (host types). An
-explicit variant discriminant (<code>= 0</code>, <code>= -1</code>) fixes the variant’s integer
-tag.</p>
-<p>The discriminant is an <strong>integer</strong>, not a general <code>NUMBER</code>: a fractional
-part (<code>= 1.5</code>) and a type suffix (<code>= 1u32</code>, and <code>= 1_000</code>, which lexes as
-<code>1</code> with the trailer <code>_000</code>) are both errors rather than being silently
-discarded. Hex is read as hex (<code>= 0xFF</code> is 255). The value must fit a
-signed 64-bit integer, and so must the implicit continuation: a variant
-with no discriminant takes the previous variant’s plus one, starting at
-0, and running past the bound is an error rather than a wrap.</p>
-<p><strong>Two variants may not share a discriminant</strong>, whether written or
-continued — <code>enum Dup { A = 1, B = 1 }</code> and <code>enum Walked { A = 1, B = 0, C }</code> are both rejected. Sharing one would make two variants a single
-runtime value (see §5.3 of the types chapter), leaving the second
-<code>match</code> arm unreachable in an otherwise exhaustive match.</p>
-<p><strong>A discriminant is only legal when every variant is data-less.</strong> A
+explicit variant <strong>backing value</strong> — <code>= 0</code>, <code>= -1</code>, <code>= "start"</code> — fixes
+what the variant <em>is</em> at runtime. An enum whose variants carry one is a
+<em>backed enum</em> and lowers to that bare value; see §5.3 of the types
+chapter.</p>
+<p>The two backing types are the integers and <code>str</code>, and nothing else. A
+float is rejected for the same reason its equality is: the lowering is
+<code>===</code>, on which <code>0.1 + 0.2</code> is a footgun and <code>NaN</code> is not even equal to
+itself. <code>bool</code> is rejected because <code>bool</code> is itself an enum that already
+lowers to native <code>true</code>/<code>false</code>, so a two-variant bool-backed enum is
+<code>bool</code> with extra steps.</p>
+<p>An integer backing value is an <strong>integer</strong>, not a general <code>NUMBER</code>: a
+fractional part (<code>= 1.5</code>) and a type suffix (<code>= 1u32</code>, and <code>= 1_000</code>,
+which lexes as <code>1</code> with the trailer <code>_000</code>) are both errors rather than
+being silently discarded. Hex is read as hex (<code>= 0xFF</code> is 255). The value
+must fit a signed 64-bit integer, and so must the implicit continuation:
+a variant with no backing value takes the previous variant’s plus one,
+starting at 0, and running past the bound is an error rather than a wrap.</p>
+<p><strong>A string backing must be written on every variant.</strong> There is no
+successor of <code>"start"</code> for the continuation rule to hand out, and the
+string is deliberately not derived from the variant name — the two are
+independent (<code>AlignItems::Start</code> is <code>"flex-start"</code>, <code>Display::Hidden</code> is
+<code>"none"</code>), and a naming convention that is right most of the time would
+be silently wrong the rest.</p>
+<p><strong>One enum has one backing type.</strong> The type is fixed by the first
+explicit value in declaration order and every later value must agree:
+<code>enum X { A = 1, B = "two" }</code> is rejected. An enum has one runtime
+representation, and a value that is sometimes a number and sometimes a
+string is not a vilan type.</p>
+<p><strong>Two variants may not share a backing value</strong>, whether written or
+continued — <code>enum Dup { A = 1, B = 1 }</code>, <code>enum Walked { A = 1, B = 0, C }</code>, and <code>enum Align { Start = "a", End = "a" }</code> are all rejected.
+Sharing one would make two variants a single runtime value (see §5.3 of
+the types chapter), leaving the second <code>match</code> arm unreachable in an
+otherwise exhaustive match.</p>
+<p><strong>A backing value is only legal when every variant is data-less.</strong> A
 variant carrying a payload may not carry one, and neither may its
 data-less siblings: an enum with any payload variant uses the tagged
-representation, in which a discriminant has nowhere to go.</p>
+representation, in which a bare backing value has nowhere to put a
+payload.</p>
 <p>The leading <code>resource</code> modifier marks a type declaration as a <em>resource</em>:
 the owned-resource class, whose semantics are specified in the resources
 chapter (forthcoming; the modifier currently reserves the surface). It
@@ -8052,7 +8207,10 @@ it or inherits the trait’s default (§5.7).</li>
 pick. Two <em>inherent</em> declarations of one name for one subject are rejected
 at the definition site, before any call resolves them. Two <em>traits</em>
 providing one name, with no inherent method above them, make each call an
-ambiguity error — as does a <code>T: A + B</code> bound whose two arms supply it.</p>
+ambiguity error — as does a <code>T: A + B</code> bound whose two arms supply it. Two
+impls of <strong>one</strong> trait for one subject are rejected at the definition site
+too, by the coherence rule of §5.4: rule 2 above says “the method a trait
+provides”, and a trait provides one.</p>
 <pre><code class="language-vilan">import std::print;
 
 struct Bag { x: i32 }
@@ -8133,26 +8291,57 @@ defined entirely by externs in impls.</p>
 <h3 id="enum-representation"><a class="header" href="#enum-representation">Enum representation</a></h3>
 <p>An enum has one of two runtime representations, and <strong>which one is a
 property of the whole declaration, not of a variant</strong>. An enum is
-<em>numeric</em> when both of these hold:</p>
+<em>backed</em> when both of these hold:</p>
 <ol>
 <li>every variant is data-less, <strong>and</strong></li>
-<li>at least one variant has an explicit discriminant.</li>
+<li>at least one variant has an explicit backing value.</li>
 </ol>
-<p>A numeric enum lowers to the bare discriminant: <code>Ordering::Greater</code> is
-the value <code>1</code>, comparisons and equality are native number comparisons,
-and a <code>match</code> tests <code>subject === 1</code>. Every other enum lowers to the
-tagged form <code>[index, …payload]</code>, and a <code>match</code> tests the tag slot.</p>
+<p>A backed enum lowers to the bare backing value: <code>Ordering::Greater</code> <em>is</em>
+the value <code>1</code> and <code>Align::Start</code> <em>is</em> the string <code>"flex-start"</code>,
+comparisons and equality are native scalar comparisons, and a <code>match</code>
+tests <code>subject === 1</code> / <code>subject === "flex-start"</code>. Every other enum
+lowers to the tagged form <code>[index, …payload]</code>, and a <code>match</code> tests the
+tag slot.</p>
 <p>The conjunction is the part worth stating outright, because both halves
 are easy to trip over:</p>
-<pre><code class="language-vilan fragment">enum Level { Low, Mid, High }           // tagged: no explicit discriminant
-enum Level { Low = 0, Mid, High }       // numeric: ONE `= 0` converts all three
-enum Level { Low = 0, Mid(i32) }        // rejected: a payload and a discriminant
+<pre><code class="language-vilan fragment">enum Level { Low, Mid, High }           // tagged: no explicit backing value
+enum Level { Low = 0, Mid, High }       // backed: ONE `= 0` converts all three
+enum Level { Low = 0, Mid(i32) }        // rejected: a payload and a backing value
 </code></pre>
 <p>Adding <code>= 0</code> to a single variant changes the runtime shape of the entire
-enum — including how its values cross a host boundary, since a numeric
-enum reaches an <code>external fun</code> as a plain number. Discriminants must be
-unique across the enum, counting the values implicitly continued from
-the previous variant; see the grammar chapter for the full rule.</p>
+enum — including how its values cross a host boundary, since a backed
+enum reaches an <code>external fun</code> as a plain number or string. Backing
+values must be unique across the enum, counting the values implicitly
+continued from the previous variant; see the grammar chapter for the full
+rule.</p>
+<h3 id="backed-enum-conversions"><a class="header" href="#backed-enum-conversions">Backed-enum conversions</a></h3>
+<p>Every backed enum gets two members, synthesized by the compiler — no
+<code>derive</code> marker, because writing <code>= "start"</code> is already the opt-in:</p>
+<pre><code class="language-vilan fragment">enum Align { Start = "flex-start", End = "flex-end" }
+
+Align::Start.value()            // "flex-start" — the backing type
+Align::parse("flex-start")      // Some(Align::Start)
+Align::parse("middle")          // None
+</code></pre>
+<p><code>value()</code> returns the enum’s backing type (<code>str</code>, or the narrowest of
+<code>i32</code>/<code>i53</code> that holds every discriminant) and costs nothing: the
+receiver already <em>is</em> that value, so the call lowers to the receiver.
+<code>parse</code> is a static returning <code>Option&lt;Self&gt;</code> — the house form for a
+fallible parse, matching <code>str::parse_i32</code>. Declaring your own <code>value</code> or
+<code>parse</code> on a backed enum is a duplicate-member error.</p>
+<p>Two rules follow from the backing value being a <em>representation</em> rather
+than a second name for the variant. A <code>match</code> still matches variants, not
+values — <code>match align { "flex-start" =&gt; … }</code> is an error, exactly as
+<code>match ordering { 1 =&gt; … }</code> already was. And <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code> are
+rejected on a <strong>string</strong> backing: they would compare the strings
+lexicographically (<code>Size::Large &lt; Size::Small</code> because <code>"lg" &lt; "sm"</code>),
+and ordering by declaration index cannot be offered, because bare
+lowering erases the index. Integer backings order as before.</p>
+<p>An <code>external fun</code> may take a backed enum but may <strong>not return one</strong>: the
+host can answer with a value outside the set, and an exhaustive <code>match</code>
+compiles its last arm to a bare <code>else</code>, so a bogus value would silently
+become whichever variant happened to be last. Bind the backing type and
+convert with <code>parse</code>, which answers <code>None</code>.</p>
 <h2 id="54-impls"><a class="header" href="#54-impls">5.4 Impls</a></h2>
 <p><code>impl Subject { … }</code> adds <strong>inherent</strong> members to <code>Subject</code>;
 <code>impl Subject with Trait { … }</code> provides <code>Trait</code> for <code>Subject</code>. The
@@ -8166,6 +8355,22 @@ impl type T: Display { … }              // blanket: every T that is Display
 binder’s bounds hold. Members may be functions (with or without
 <code>self</code>). A function without <code>self</code> is a <strong>static</strong>, reached as
 <code>Subject::name(…)</code>.</p>
+<p>A trait has <strong>one implementation per subject</strong>: writing
+<code>impl Bag with Show</code> twice is a compile error at the second one, since
+nothing would rank them and the second would never run. Two impls are the
+same implementation when they name the same trait with the same
+arguments for the same subject, up to the naming of their own binders —
+so <code>impl Pair&lt;type T&gt; with Show</code> and <code>impl Pair&lt;type U&gt; with Show</code> are one
+impl written twice, and an argument left to a <code>= Self</code> default is the type
+it defaults to (<code>with Combine</code> is <code>with Combine&lt;Bag&gt;</code> on subject <code>Bag</code>).
+A trait parameterized differently is a different implementation:
+<code>impl Bag with Into&lt;Cup&gt;</code> and <code>impl Bag with Into&lt;Mug&gt;</code> both stand.</p>
+<p><em>Implementation note (tracked): the rule refuses only exact repeats, not
+OVERLAP. A blanket impl and a specific one that both match a type — the
+<code>impl type T with Into&lt;T&gt;</code> of <code>std::into</code> beside a type’s own <code>Into</code> impl,
+or two conditional impls with different bounds — are accepted, and which
+one a call selects is still decided by declaration order. A specificity
+rule is owed.</em></p>
 <p><em>Implementation note (soundness gap, tracked): a conditional impl’s
 bounds are not yet re-checked when the impl is selected through a
 GENERIC bound: <code>List&lt;B&gt;</code> can satisfy a <code>Marker</code> bound via
@@ -8180,6 +8385,17 @@ requires <code>Y</code>. A trait’s generic parameters may carry defaults
 <code>Self</code> in a trait body denotes the implementing type. Traits are used as
 <strong>bounds</strong>; a trait is not a type: <code>let x: Display</code> is a compile error
 (no trait objects).</p>
+<p>That rule is enforced <strong>at the annotation</strong>, in every value position — a
+binding, a parameter, a return type, a field, a generic argument
+(<code>List&lt;Display&gt;</code>) — and reported where the trait’s name is written,
+whether or not the declaration is ever used. A trait’s name stays legal
+in the positions that name a bound or a namespace rather than a value’s
+type: a generic parameter’s bound (<code>&lt;T: Display&gt;</code>), a supertrait, an
+<code>impl</code> subject (<code>impl Iterator&lt;type T&gt;</code>, which blankets over a bound),
+and the head of a qualified path (<code>Display::show(x)</code>). Inside a trait’s
+own declaration, write <code>Self</code> for “the implementing type”; a generic
+parameter defaulted to it (<code>trait PartialEq&lt;B = Self&gt;</code>) is a parameter,
+not the trait, and is unaffected.</p>
 <p>A trait parameter’s bound is in scope inside the trait’s own default
 bodies, exactly as a function’s or impl’s is inside theirs (§5.6): a
 default may call the bound trait’s members on a value of that parameter’s
@@ -8361,7 +8577,8 @@ fun main() {
 <h2 id="511-type-errors-of-note"><a class="header" href="#511-type-errors-of-note">5.11 Type errors of note</a></h2>
 <p>Normative rejection cases (each is a compile error):</p>
 <ul>
-<li>Using a trait as a type (<code>let x: Display = …</code>).</li>
+<li>Using a trait as a type, in any value position — a binding, a
+parameter, a return type, a field, a generic argument (<code>let x: Display = …</code>, <code>fun f(v: Display)</code>, <code>fun make(): Display</code>, <code>struct H { item: Display }</code>, <code>List&lt;Display&gt;</code>). Reported at the annotation (§5.5).</li>
 <li>An enum-variant pattern matched against a generic parameter of an
 enclosing declaration (§5.7).</li>
 <li>An unsatisfied bound at a call (<code>generic parameter 'T' is missing the bound …</code>).</li>
@@ -8481,9 +8698,14 @@ list element, a tuple element, a struct field, or a variant payload is stored
 in a slot of a new aggregate that outlives the literal, so it copies there too.
 The same holds for a place handed to a parameter declared <code>own</code> — a signature’s
 way of saying the callee keeps it, which is how <code>List::push</code> is written — and
-for a place a body <strong>returns</strong> that it does not own, i.e. one reached through a
-by-value parameter. Together these are what make “a call owns its result” true,
-which is the premise every elision below rests on:</p>
+for a place a body <strong>returns</strong> that it does not own, which is every place
+reached through a <strong>loaned</strong> parameter: bare, <code>&amp;</code>, and <code>&amp;mut</code> alike (§6.8’s R3
+calls all three loans). What decides is the <em>return</em>, not the place: a
+signature that hands back a value hands back a value, so <code>fun make(&amp;self): (i32, i32) { self.pair }</code> copies, while a signature that hands back a <strong>view</strong>
+(<code>fun slot(&amp;mut self): &amp;mut (i32, i32) borrows self</code>) is rule 3’s sanctioned
+projection and keeps naming the receiver’s storage. Together these are what
+make “a call owns its result” true, which is the premise every elision below
+rests on:</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -8499,9 +8721,12 @@ element storage with its receiver. Writing through an element of <code>xs.map(f)
 <p>A <strong>pattern capture</strong> is a binding, so it copies too — and the copy is taken
 when the pattern <em>matches</em>. A capture therefore holds what its subject held at
 that moment, and no later write to the subject can reach back into it. This
-holds however the write is spelled, the two that differ underneath included:
-assigning the subject <strong>rebinds</strong> it, while assigning through a <strong>view</strong> of it
-mutates its storage in place. Neither is visible through a capture:</p>
+holds however the write is spelled, and the spellings differ underneath.
+Assigning a whole binding <strong>rebinds</strong> it: a fresh value is installed and
+everything that already read the old one keeps the old one. Every other form
+mutates the storage <strong>in place</strong> — assigning through a <strong>view</strong>, writing a
+<strong>component</strong> of a place (<code>t.1 = 9</code>, <code>h.pair.1 = 9</code>, <code>xs[0] = 9</code>), and calling
+a <code>&amp;mut self</code> method that does either. None of it is visible through a capture:</p>
 <pre><code class="language-vilan">import std::print;
 
 enum Feed { Ready(List&lt;str&gt;, i32), Done }
@@ -8520,12 +8745,46 @@ fun main() {
 	mut feed = Feed::Ready(["a", "b", "c"], 0);
 	print(feed.step());   // a
 	print(feed.step());   // b
+
+	mut t = (7, 3);
+	if t is (let a, let b) {
+		t.1 = 99;
+		print(b);         // 3 — the component write cannot reach the capture
+	}
 }
 </code></pre>
-<p>A capture of a <strong>resource</strong> payload is the one case that takes no copy (R1, §6.8):
-it is a loan of the payload, so it names the value the match found rather than a
-second owner of it — the timing above is what makes “the value the match found”
-well defined.</p>
+<p>The rule is about the <strong>storage the subject names</strong>, not about how the subject
+is spelled, so it holds for all three spellings that name storage someone else
+owns: a place (<code>h.pair</code>), a dereference (<code>*view</code>), and a <strong><code>borrows</code> call</strong>
+(<code>h.slot()</code>, which projects the receiver’s storage rather than producing any of
+its own). The last one asks its questions of the arguments the call projects —
+the receiver is right there at the call site — so a write reaching the receiver
+reaches the capture’s subject by the same reasoning:</p>
+<pre><code class="language-vilan">import std::print;
+
+struct Holder { cells: (List&lt;i32&gt;, i32) }
+
+impl Holder {
+	fun slot(&amp;mut self): &amp;mut (List&lt;i32&gt;, i32) borrows self { &amp;mut self.cells }
+}
+
+fun main() {
+	mut h = Holder { cells = ([1, 2], 3) };
+	if h.slot() is (let xs, let n) {
+		h.cells.0.push(9);
+		print(xs.len());   // 2 — the capture copied what the match found
+	}
+}
+</code></pre>
+<p>A call returning an <strong>owned</strong> value is not in this family: its result is
+storage of its own, with no second owner, so its captures bind without copying.</p>
+<p>Two payload shapes are the exceptions to “a capture copies”. A capture of a
+<strong>resource</strong> payload takes no copy (R1, §6.8): it is a loan of the payload, so
+it names the value the match found rather than a second owner of it — the
+timing above is what makes “the value the match found” well defined. A capture
+that is itself a <strong>view</strong> (<code>Some(let v)</code> over an <code>Option&lt;&amp;mut T&gt;</code>) takes none
+either, for the reason a view exists: it aliases on purpose, and copying it
+would mean writes through it stopped reaching the value it borrows.</p>
 <h2 id="62-rule-2--elision-is-an-optimization-never-observable"><a class="header" href="#62-rule-2--elision-is-an-optimization-never-observable">6.2 Rule 2 — elision is an optimization, never observable</a></h2>
 <p>An implementation may skip a copy (reuse the storage) when no conforming
 program can tell, e.g. when the source is never used again. Elision must
@@ -8707,12 +8966,75 @@ impl on a data type is an error steering to add <code>resource</code>.</li>
 existing second-class view (<code>self</code> / <code>&amp;</code> / <code>&amp;mut</code> conventions, §6.3), which
 changes no ownership and is policed by rule 4.</p>
 <ul>
-<li><strong>R1: binding moves.</strong> <code>let b = a;</code> transfers ownership; any later use of
+<li>
+<p><strong>R1: binding moves.</strong> <code>let b = a;</code> transfers ownership; any later use of
 <code>a</code> is a compile error naming the move site. No copies ever fire for a
-resource.</li>
-<li><strong>R2: overwrite drops.</strong> Assigning onto a binding that still owns a
-resource drops the old value first, then moves the new one in.</li>
-<li><strong>R3: parameters.</strong> <code>self</code> / bare <code>x</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans,
+resource.</p>
+</li>
+<li>
+<p><strong>R2: overwrite drops.</strong> Assigning onto a place that still holds a
+resource drops the old value first, then moves the new one in. A write
+<strong>through a <code>&amp;mut</code> view</strong> is such an assignment: it mutates the pointee in
+place — that is how the write reaches the caller at all — so it destroys
+what it replaces even though the loan owns nothing. The two spellings are
+indistinguishable by design, because they write the same storage under
+different names:</p>
+<pre><code class="language-vilan">import std::print;
+import std::drop::Drop;
+
+resource struct Guard { label: str }
+impl Guard with Drop {
+    fun drop(&amp;mut self) { print(self.label); }
+}
+
+enum Holder { Full(Guard), Empty }
+impl Holder {
+    fun clear(&amp;mut self) { self = Holder::Empty; }   // drops the Guard
+}
+
+fun main() {
+    mut viewed = Holder::Full(Guard { label = "viewed" });
+    viewed.clear();                                  // prints "viewed"
+
+    mut owned = Holder::Full(Guard { label = "owned" });
+    owned = Holder::Empty;                           // and so does this
+}
+</code></pre>
+<p>The loan asks no liveness question and needs none: it cannot move the
+pointee out (R5, R6), and a binding its owner already moved out of is dead,
+so lending it is use-after-move (R1). The drop runs the same per-type glue
+in the same order the owned spelling does.</p>
+<p>The rule is read over the <strong>place</strong>, all the way down: writing over a
+resource-typed <em>component</em> — a field, a tuple element, a fixed-array
+element — destroys the outgoing value too, whether the aggregate is owned
+or reached through a view.</p>
+<pre><code class="language-vilan">import std::print;
+import std::drop::Drop;
+
+resource struct Guard { label: str }
+impl Guard with Drop {
+    fun drop(&amp;mut self) { print(self.label); }
+}
+
+struct Slot { held: Guard }
+
+fun refill(slot: &amp;mut Slot) {
+    slot.held = Guard { label = "replaced" };        // prints "replaced"
+}
+
+fun main() {
+    mut slot = Slot { held = Guard { label = "held" } };
+    slot.held = Guard { label = "replaced" };        // prints "held"
+}
+</code></pre>
+<p>A component asks no liveness question either, and for R5’s reason: a
+resource field is loan-only and cannot be moved out of a live aggregate, so
+a component place always holds a live value. Only the component’s <em>own</em>
+type decides — writing an <code>i32</code> field of a struct that happens to hold a
+resource elsewhere destroys nothing.</p>
+</li>
+<li>
+<p><strong>R3: parameters.</strong> <code>self</code> / bare <code>x</code> / <code>&amp;x</code> / <code>&amp;mut x</code> are loans,
 unchanged (§6.3’s table is the by-convention index of this line); <code>own x</code> is a move, and for a resource <em>only</em> a move: an <code>own</code> argument that is
 not the binding’s last use is an error (where a data <code>own</code> would silently
 copy). The rule reads in both directions: because a loan changes no
@@ -8723,16 +9045,23 @@ and still drops at its scope end, destroying one value twice. <code>own</code> i
 only convention a body may consume, and a <strong>consuming method</strong> therefore
 declares <code>own self</code>: <code>o.unwrap()</code> is a move of <code>o</code>, so a later use of <code>o</code> is
 use-after-move and <code>o</code> is not torn down at scope end. A bare <code>self</code>
-receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</li>
-<li><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
+receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</p>
+</li>
+<li>
+<p><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
 diverging leg is exempt). A tail move-out is still a move on <em>that</em> path
 only — R7 reads the arms against each other, so producing a different
-binding from each arm is a conditional move, not two independent returns.</li>
-<li><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
+binding from each arm is a conditional move, not two independent returns.</p>
+</li>
+<li>
+<p><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
 read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>); moving it out of a
 live aggregate is rejected; v1 has no partial moves. The sanctioned
-partial move is <code>Option</code> (below).</li>
-<li><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
+partial move is <code>Option</code> (below). Writing <em>over</em> a resource field is
+permitted, and is R2’s overwrite: the outgoing value is destroyed first.</p>
+</li>
+<li>
+<p><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
 subject; pattern captures move the payloads into the arm, and each capture
 <strong>owns</strong> what it took — it is destroyed at the end of the arm that bound
 it, in reverse capture order, unless it is moved onward first. The same
@@ -8745,8 +9074,10 @@ nothing — and, owning nothing, they may not be <strong>consumed</strong>. This
 a loaned capture, returning it, or matching it by value would hand a
 second owner the payload the subject still destroys at its own scope end.
 The fix is to consume the <em>subject</em> (<code>match x</code> without the <code>&amp;</code>), not to
-redeclare the capture — a capture carries no convention to change.</li>
-<li><strong>R7: no conditional moves.</strong> A binding must be moved on every path
+redeclare the capture — a capture carries no convention to change.</p>
+</li>
+<li>
+<p><strong>R7: no conditional moves.</strong> A binding must be moved on every path
 through a scope or on none; moving it on one path only is an error. This
 keeps end-of-scope ownership static: there are no runtime drop flags in
 v1. <strong>Branch tails are paths too.</strong> R4 makes each arm’s tail a move-out,
@@ -8757,10 +9088,14 @@ same error. The one exemption is a binding that, on the path in question,
 provably carries <strong>no resource payload</strong>: after a failed <code>x is Some(_)</code>
 test <code>x</code> can only be <code>None</code>, which has nothing to destroy, so leaving it
 un-moved there leaks nothing. The exemption is granted only on proof — an
-enum whose every variant carries a payload gets none.</li>
-<li><strong>R8: no moves in repeatable interiors.</strong> Moving a binding declared
-outside a loop from inside its body is an error (the move would repeat).</li>
-<li><strong>R9: closures and spawns cannot capture resources.</strong> Capturing one would
+enum whose every variant carries a payload gets none.</p>
+</li>
+<li>
+<p><strong>R8: no moves in repeatable interiors.</strong> Moving a binding declared
+outside a loop from inside its body is an error (the move would repeat).</p>
+</li>
+<li>
+<p><strong>R9: closures and spawns cannot capture resources.</strong> Capturing one would
 give the closure a second owner. Injected <code>context</code>-clause bodies receive
 resource <em>parameters</em> as loans (parameters are per-call, not captures),
 so <code>nursery(|n| ..)</code>-shaped APIs are unaffected. A closure referencing a
@@ -8768,8 +9103,10 @@ so <code>nursery(|n| ..)</code>-shaped APIs are unaffected. A closure referencin
 and lives for the process (see <em>Module-level resources never drop</em>, below),
 so the closure can never own it and no second owner is created: the
 reference is a per-call loan, exactly like a parameter. Captures of a
-<strong>local</strong> or a <strong>parameter</strong> stay rejected.</li>
-<li><strong>R10: no resource elements in the native containers.</strong> <code>List</code> / <code>Map</code> /
+<strong>local</strong> or a <strong>parameter</strong> stay rejected.</p>
+</li>
+<li>
+<p><strong>R10: no resource elements in the native containers.</strong> <code>List</code> / <code>Map</code> /
 <code>Set</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
 reject resource type arguments in v1: their internals are host code the
 move checker cannot see. <code>Option</code> is the sanctioned container (it is a
@@ -8778,8 +9115,10 @@ not per written head: a resource that reaches a container through a
 generic aggregate’s member is rejected the same way, so <code>Signal&lt;Database&gt;</code>
 — whose storage is a <code>Shared&lt;T&gt;</code> — is refused exactly as
 <code>Shared&lt;Database&gt;</code> is. Holding the resource in a struct field of your own
-is the sanctioned alternative, and stays legal.</li>
-<li><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a
+is the sanctioned alternative, and stays legal.</p>
+</li>
+<li>
+<p><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a
 type parameter with a resource type re-checks the instantiated body under
 the affine rules (T := the resource): every T-typed value is used at most
 once as a move, with no captures and no copies. <code>Option::unwrap(own self): T</code> passes; a body that reads its parameter twice fails <strong>at the instantiation
@@ -8792,10 +9131,25 @@ scope — not a parameter, not a <code>let</code> local, and not a pattern captu
 took a consumed subject’s payload (R6). Each is the same leak and is rejected
 at the instantiation site. The consequence worth stating: a combinator that
 hands a payload to a closure and then discards it — the closure only <em>loans</em>
-it — cannot be resource-clean, whatever its receiver convention.</li>
-<li><strong>R12: no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
+it — cannot be resource-clean, whatever its receiver convention.</p>
+<p>Read the same sentence at R2’s seam and it reaches <strong>writes</strong>, not only
+scope ends. Overwriting a <code>T</code>-typed place destroys the outgoing value, and a
+generic body cannot run that destructor either — so a body that writes
+through a <code>&amp;mut T</code>, or over a <code>T</code>-typed component, is rejected at a resource
+instantiation:</p>
+<pre><code class="language-vilan ignore">fun set&lt;T&gt;(slot: &amp;mut T, own value: T) { slot = value; }   // rejected at T := a resource
+fun clear&lt;T&gt;(slot: &amp;mut Option&lt;T&gt;) { slot = None; }        // and so is this
+</code></pre>
+<p>A <strong>loan owns nothing</strong>, but it is not excused either: the value the write
+replaces belongs to the caller, and somebody must destroy it. The concrete
+spelling of the same body is fine — <code>fun set(slot: &amp;mut Guard, own value: Guard)</code> knows the type and emits the drop — which is the steer: move it out
+on every path, or take a concrete type.</p>
+</li>
+<li>
+<p><strong>R12: no coercion to <code>any</code>.</strong> A resource passed where <code>any</code> is expected
 is an error (<code>print(db)</code> included): <code>any</code> is a data sink, and the
-discipline must not launder away. Debug-print the fields instead.</li>
+discipline must not launder away. Debug-print the fields instead.</p>
+</li>
 </ul>
 <h3 id="destruction--the-drop-trait"><a class="header" href="#destruction--the-drop-trait">Destruction — the <code>Drop</code> trait</a></h3>
 <pre><code class="language-vilan fragment">trait Drop {
@@ -8836,6 +9190,12 @@ R11) — and the same split holds for pattern captures: a concrete one drops
 at its arm’s end, while inside a generic body no <code>T</code>-typed capture may be
 left owning at all.</p>
 <ul>
+<li><strong>A loan takes no teardown.</strong> Only an owner destroys. A view <em>binding</em> of a
+resource (<code>let v = &amp;mut holder</code>) names storage another binding still owns,
+so its scope end drops nothing — its referent is destroyed once, where the
+owner’s scope ends. This is the same sentence R2’s view-write half reads in
+the other direction: a loan owns nothing, so it neither destroys at its own
+scope end nor is excused from destroying what it overwrites.</li>
 <li><strong>Module-level resources never drop.</strong> A top-level <code>let</code> resource has
 process lifetime (the serve-forever server’s <code>Database</code>). It is
 consequently <strong>loan-only</strong>: moving it into a local, an <code>own</code> argument, or
@@ -8954,6 +9314,22 @@ that same package order, and the entry file is last. Within one file,
 bindings initialize in declaration order. Nothing here depends on how a
 file spells its imports, so reordering import statements, or the names
 inside a <code>{ .. }</code> list, cannot change what a program does.</p>
+<p><strong>Module initialization is synchronous.</strong> An initializer may not
+suspend: an <code>await</code> reachable in a module-level binding’s own
+initializer is a compile error, in every spelling — the implicit await
+of a call to an async function, and the explicit <code>await</code> whatever its
+operand (a <code>Task</code>-valued binding, a spawn, a <code>Task</code> returned by a plain
+function). This is a design position, not a limit of the emission
+model. The order above is <em>derived</em> from the dependency relation, and
+suspending a derived sequence makes one binding’s completion wait on an
+ordering the program never wrote and cannot see.</p>
+<p><em>Spawning</em> at module level stays legal, and is the idiom the rule
+steers to: <code>let pending: Task&lt;T&gt; = async work();</code> starts the work at
+load without suspending, and <code>main</code> — which may be <code>async</code> — awaits it
+where the wait is visible. Independent spawns overlap, where a sequence
+of awaited initializers would serialize. Creating an async closure or
+an <code>async { .. }</code> block is legal for the same reason: the body is not
+the initializer, and nothing runs it at load.</p>
 <p>Only a binding something reachable from <code>main</code> references initializes at
 all (§11.2’s reachability rule): an unreferenced binding’s initializer
 never runs, so load-time side effects are not a promise.</p>
@@ -8969,6 +9345,15 @@ must await something that ends with the app). On the browser platform,
 <code>main</code>’s completion leaves installed handlers and subscriptions live.</p>
 <p><code>panic(message)</code> aborts execution with the message; it types as <code>any</code>
 (§5.1). Failed <code>assert</code>s panic.</p>
+<p><strong>A failing <code>main</code> terminates with a non-zero status</strong>, whether <code>main</code>
+is sync or <code>async</code>. A panic that escapes a sync <code>main</code> aborts the
+process; an <code>async fun main()</code> whose work fails reports the error and
+exits non-zero on the process platforms, rather than leaving the
+outcome to the host’s unhandled-rejection policy. Attaching that
+outcome does not make the entrypoint wait: a <code>main</code> that never settles
+— a server holding a listener — is unaffected and keeps running. The
+browser has no exit status, so a failure there surfaces through the
+host’s own reporting.</p>
 <h2 id="72-evaluation-order"><a class="header" href="#72-evaluation-order">7.2 Evaluation order</a></h2>
 <p>Within an expression, evaluation is <strong>left-to-right</strong>: operands before
 operators apply, the callee before its arguments, arguments in source
@@ -9095,7 +9480,8 @@ host code cannot await a Vilan closure;</li>
 <li>a trait/generic-dispatched call: there is no statically-known callee
 to instantiate (bind the receiver concretely, or declare the trait
 parameter <code>async</code>);</li>
-<li>a module-level initializer: it cannot await (§7.6’s J.3 rule).</li>
+<li>a module-level initializer: it cannot suspend, in any spelling
+(§7.1) — spawn at load and await in <code>main</code> instead.</li>
 </ul>
 <p><strong>The divergence rule</strong> (the remaining stores). An async closure flowing
 where a plain closure type is declared on a struct <strong>field</strong> or a
@@ -9592,9 +9978,13 @@ exit fails the build. <code>vilan check</code> builds nothing and runs none.</li
 per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
 </ul>
 <h2 id="115-build-products"><a class="header" href="#115-build-products">11.5 Build products</a></h2>
-<p>Each entry emits <code>dist/&lt;name&gt;.js</code> for its platform (browser entries
+<p>Each entry emits <code>dist/&lt;name&gt;.&lt;ext&gt;</code> for its platform (browser entries
 first, so a server that ships bundles finds them fresh), plus
-<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).</p>
+<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).
+The extension states the module kind to the host: <code>.mjs</code> on the process
+platforms, whose runtimes classify a file as ESM or CommonJS before
+running it, and <code>.js</code> on the browser, where the loading
+<code>&lt;script type="module"&gt;</code> tag classifies it instead.</p>
 <p>A <code>browser</code> entry declaring <strong><code>split = true</code></strong> emits <strong>route chunks</strong>
 instead of one file: <code>dist/&lt;name&gt;.js</code> carries every module-level binding
 (so §7.6’s initialization order is untouched) and every function two or
@@ -9711,8 +10101,11 @@ scaffold that stops working fails Vilan’s build before it reaches yours.</p>
 <h2 id="vilan-build-file"><a class="header" href="#vilan-build-file"><code>vilan build [file]</code></a></h2>
 <p>Compiles to JavaScript. The path may be a <code>.vl</code> file, a project
 directory, or omitted; then the nearest <code>vilan.toml</code> decides what to
-build. A single-entry package writes <code>&lt;file&gt;.js</code> beside the entry; a
-multi-entry package writes <code>dist/&lt;name&gt;.js</code> per entry. Assets emitted at
+build. A single-entry package writes the bundle beside the entry; a
+multi-entry package writes one into <code>dist/</code> per entry. The extension is
+the target’s: <code>.mjs</code> on a process runtime (Node/Deno/Bun), so the host
+classifies the emitted ESM without inspecting it, and <code>.js</code> on the
+browser, whose <code>&lt;script type="module"&gt;</code> already declares it. Assets emitted at
 compile time (the styling system’s CSS) land beside the output.
 <code>[build] run</code> hooks execute first; a failing hook fails the build.</p>
 <ul>
@@ -10023,7 +10416,9 @@ handle whose fields are reached through <code>[extern(get/set, …)]</code> — 
 the crossing. The same fact rules out three tempting mappings:</p>
 <ul>
 <li>a TS discriminated union is a tagged <em>object</em>, while a Vilan <code>enum</code> is
-<code>[tag, …payload]</code>;</li>
+<code>[tag, …payload]</code> — unless it is a <strong>backed</strong> enum, which is the bare
+backing value and <em>does</em> cross (that is what a closed string set maps to,
+below);</li>
 <li><code>Map&lt;str, T&gt;</code> is a Vilan struct over a hashed native map, not a plain
 host object;</li>
 <li><code>List&lt;T&gt;</code> is a real JS array, and an array-<em>like</em> (<code>{[index: number]: T}</code> — numeric keys and <code>length</code>, no <code>Symbol.iterator</code>) is not one:
@@ -10034,26 +10429,33 @@ the result as <code>List&lt;T&gt;</code>.</li>
 <code>List&lt;T&gt;</code>; a TS tuple <code>[A, B]</code> maps to <code>(A, B)</code>, since a Vilan tuple is a
 JS array too.</p>
 <h3 id="closed-string-sets"><a class="header" href="#closed-string-sets">Closed string sets</a></h3>
-<p>A named union of string literals gets a real enum plus a wrapper that
-speaks it, because the host boundary still wants the raw string:</p>
-<pre><code class="language-vilan norun">enum Align {
-	Start,
-	End,
+<p>A named union of string literals becomes a <strong>backed enum</strong> — each variant
+carries the host string it stands for, so the enum <em>is</em> that string at
+runtime and crosses the boundary unchanged. A parameter takes the enum
+directly, with no wrapper:</p>
+<pre><code class="language-vilan norun">import std::option::Option;
+
+enum Align {
+	Start = "start",
+	End = "end",
 }
 
 external struct Chart;
 
 impl Chart {
 	[extern(set, "align")]
+	[platform("node")]
+	external fun set_align(self, value: Align): void;
+
+	// The read direction keeps a guard: the host may answer outside the
+	// set, so the raw `str` is bound and `parse` returns `Option`.
+	[extern(get, "align")]
 	[doc(hidden)]
 	[platform("node")]
-	external fun set_align_raw(self, value: str): void;
+	external fun align_raw(self): str;
 
-	fun set_align(self, value: Align): void {
-		self.set_align_raw(match value {
-			Align::Start =&gt; "start",
-			Align::End =&gt; "end",
-		})
+	fun align(self): Option&lt;Align&gt; {
+		Align::parse(self.align_raw())
 	}
 }
 
@@ -10139,12 +10541,23 @@ different value was passed than you think.
 An <code>impl … with Trait</code> doesn’t provide every required method, or a bound
 demands a trait the type never implemented.
 → <a href="#data-and-traits">Data and traits</a></p>
-<p><strong>“parameter ‘…’ has bare trait type ‘…’: a trait is not a value type (vilan has no trait objects)”</strong>
-A parameter was declared with a trait as its type, and called with a
-value that implements it. Traits are <strong>bounds</strong>, not types, so the
-parameter can never accept a concrete value — the impl is fine, the
-signature is not. Write the generic the message spells out:
-<code>fun show&lt;T: A&gt;(v: T)</code>. The note points at the declaration to change.
+<p><strong>“‘…’ is a trait, not a type: a trait is not a value type (vilan has no trait objects)”</strong>
+A trait’s name was written where a type belongs — a binding’s
+annotation, a parameter, a return type, a struct field, or a generic
+argument like <code>List&lt;Display&gt;</code>. Traits are <strong>bounds</strong>, not types, so no
+value can ever have that type: the impl is fine, the signature is not.
+Write the generic the message spells out — <code>fun show&lt;T: A&gt;(v: T)</code> — or,
+inside the trait’s own declaration, write <code>Self</code>, which is what a trait
+naming itself in a return position always meant. The note points at the
+trait, which may live in another module. For “one of several things at
+runtime”, use an enum.
+→ <a href="#data-and-traits">Data and traits</a></p>
+<p><strong>“cannot call ‘…’ on a value of bare trait type ‘…’”</strong>
+The same rule reached from the other side: a receiver whose type is a
+bare trait has no concrete implementation to dispatch to. Reachable
+inside an <code>impl</code> whose subject is itself a trait, where <code>self</code> is
+abstract; elsewhere the annotation that produced the value is refused
+first.
 → <a href="#data-and-traits">Data and traits</a></p>
 <p><strong>“‘…’ is already defined for ‘…’; remove or rename this one”</strong>
 Two impls declare the same name for the same type, and neither name
@@ -10156,6 +10569,19 @@ where it is called.</p>
 name</strong>: a static <code>fun new()</code> and a method <code>fun new(self)</code> for the same
 type collide with each other too. Give one of them a different name.
 → <a href="#spec-4--names-modules-and-packages">Names, modules, and packages</a></p>
+<p><strong>“‘…’ is already implemented for ‘…’; remove or merge this impl”</strong>
+The same trait is implemented twice for the same type. A trait has one
+implementation per type, so the second block would simply never run —
+neither at <code>value.method()</code> nor through a <code>T: Trait</code> bound. Merge the two
+bodies into one impl, or delete the one you don’t want; the note points
+at the first, and names its module when it lives in another file.</p>
+<p>Only an exact repeat is refused. A parameterized trait may be
+implemented once per set of arguments — <code>impl Bag with Into&lt;Cup&gt;</code> and
+<code>impl Bag with Into&lt;Mug&gt;</code> are two implementations, not one written twice
+— and an argument you leave to a <code>= Self</code> default counts as the one it
+defaults to, so <code>with Combine</code> and <code>with Combine&lt;Bag&gt;</code> are the same
+implementation of <code>Combine</code> for <code>Bag</code>.
+→ <a href="#data-and-traits">Data and traits</a></p>
 <p><strong>“‘…’ is ambiguous on ‘…’: both ‘…’ and ‘…’ provide it; call ‘…’ to pick one”</strong>
 Two traits supply the same method name for this receiver (or, for a
 generic receiver, two arms of its <code>T: A + B</code> bound), and the type has no
@@ -10163,6 +10589,15 @@ inherent method of its own to outrank them. Say which one you mean with
 <code>Trait::method(receiver, …)</code> — the message spells both options out with
 your own receiver already substituted in.
 → <a href="#spec-4--names-modules-and-packages">Names, modules, and packages</a></p>
+<p><strong>“<code>next</code> is ambiguous on ‘…’: both ‘…’ and ‘…’ provide it, and a <code>for</code> loop has no spelling that names one”</strong>
+The loop’s counterpart to the message above, for the iterator protocol
+(<code>next</code>, or <code>next_mut</code> for <code>for x in &amp;mut subject</code>). Two traits provide
+the member — declaring it, or supplying it as an inherited default — and
+no inherent member outranks them. A call can pick a provider with
+<code>Trait::next(receiver)</code>; a <code>for</code> has no such spelling, so the fix is the
+one the message names: declare <code>next</code> on the type itself, where it beats
+every trait-provided one.
+→ <a href="#collections-reference">Collections</a></p>
 <p><strong>“‘…’ is not an inherent member of ‘…’: ‘…’ provides it; call ‘…’ instead”</strong>
 <code>Type::method(receiver)</code> means the type’s <em>own</em> method. This one comes
 from a trait, so name the trait at the path head instead:
@@ -10427,6 +10862,17 @@ thing has no name: an adopted async closure applied directly, a
 <code>run(value, body)</code> whose body suspends, or a <code>nursery</code> at top level.
 (Creating an async closure at top level is fine; it awaits nothing
 until called.)
+→ <a href="#async">Async</a></p>
+<p><strong>“the initializer of <code>…</code> awaits: a module-level binding cannot suspend”</strong>
+The same rule, reported at an explicit <code>await</code> whose operand is not an
+async call — a <code>Task</code>-valued binding, a spawn (<code>await async f()</code>), or a
+<code>Task</code> returned by a plain function. Module initialization is
+synchronous by design, so every one of these is refused wherever the
+<code>await</code> sits in the initializer’s expression. The note names the fix:
+<em>spawn</em> at module level (<code>let pending: Task&lt;T&gt; = async work();</code>), which
+starts the work at load without suspending, and <code>await</code> the <code>Task</code> in
+<code>main</code>. An <code>await</code> inside a closure the initializer merely <em>creates</em> is
+not the initializer’s own and stays legal.
 → <a href="#async">Async</a></p>
 <p><strong>“<code>…</code> form an initialization cycle: module-level bindings initialize in dependency order, and a cycle has no such order”</strong>
 Module-level bindings initialize in dependency order (spec §7.1): each
