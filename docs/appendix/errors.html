@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -324,8 +324,22 @@ impl of a synchronous trait method is allowed (dispatch is monomorphized,
 so callers await it regardless).
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“match is not exhaustive: missing …”</strong> · <strong>“match is not exhaustive: add a catch-all <code>_</code> leg”</strong>
-Some variants have no arm. Handle them or add <code>_ =&gt; …</code>. This error is
-the feature: it’s what fires everywhere when you add a variant.
+Some values have no arm. Handle them or add <code>_ =&gt; …</code>. This error is
+the feature: it’s what fires everywhere when you add a variant. A
+<strong>guarded</strong> leg does not count towards it — a guard tests the value, and
+the check reasons about the type — so <code>B if ready =&gt; …</code> leaves <code>B</code>
+missing, and a note points at the guard to say so. That also means the
+last leg may not be guarded: give it a <code>_ =&gt; …</code> after it, so the value
+the guard rejects has somewhere to go.</p>
+<p>The hole may be <strong>below</strong> the top level, and then the message names one
+uncovered value as a pattern that would cover it —
+<em>“missing <code>Pair::Of(Align::End)</code>”</em>, <em>“missing <code>Wrapped::Of(_)</code>”</em>,
+<em>“missing <code>(Align::End, Align::Start)</code>”</em>. Coverage is judged over the
+whole pattern tree: a payload or tuple element tested with a literal
+proves nothing about the values it does not equal, and only a binder or
+<code>_</code> covers an unbounded one. Where the hole is the subject’s whole
+domain the message asks for a catch-all instead, since naming a value
+there would say nothing the <code>_</code> does not.
 → <a href="../tour/control-flow.html">Control flow</a></p>
 <p><strong>“struct ‘…’ has no field ‘…’”</strong> · <strong>“variant ‘…’ does not belong to the matched enum”</strong>
 A field or variant name is off. For the variant case inside <code>match</code>,
@@ -488,6 +502,16 @@ A resource is not plain data: it cannot be sent over the wire, hashed by
 value, or compared by copy. Drop it from the derived type, or carry a
 plain-data handle (an id, a key) in its place.
 → <a href="../tour/resources.html">Resources</a></p>
+<p><strong>“<code>Wire</code> / <code>Json</code> cannot be derived for the resource struct / enum <code>…</code>: …”</strong>
+The same rule with the resource in the other position — the derived type
+<em>is</em> the resource. Serializing it copies a handle out of its owner, and the
+reading half is worse: <code>Wire</code>’s <code>rebuild</code> and <code>Json</code>’s <code>from_json</code> build a
+value out of bytes, which for a resource is a second handle nothing owns
+and nothing will close. Send a plain-data name for the resource instead
+(an id, an <code>Arena</code> handle) and keep the resource on the side that owns it.
+The other derives are unaffected: <code>PartialEq</code> and <code>Debug</code> read a resource’s
+fields through the loan and stay available.
+→ <a href="../tour/resources.html">Resources</a>, <a href="../guide/services.html">Services</a></p>
 <p><strong>“<code>…</code> implements <code>Drop</code> but is not a resource: … declare it a <code>resource</code> …”</strong>
 <code>Drop</code> (the destruction hook) may be implemented only for a <code>resource</code>
 type. A destructor without move discipline is the double-close bug:

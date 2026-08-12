@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -183,10 +183,10 @@ codec (<code>std::binary</code>), raw bytes (<code>std::bytes</code>), and base6
 “Derives” here is plumbing you only meet when building custom transports or
 parsers.</p>
 <h2 id="json"><a class="header" href="#json">JSON</a></h2>
-<pre><code class="language-vilan fragment">trait Json { fun to_json(self): str; }        // encode
-trait FromJson {                              // decode
-	fun from_json(text: str): FromJson;
-	fun from_json_value(value: JsonValue): FromJson;
+<pre><code class="language-vilan fragment">trait Json { fun to_json(self): str; }                     // encode
+trait FromJson {                                           // decode
+	fun from_json(text: str): Result&lt;Self, str&gt;;
+	fun from_json_value(value: JsonValue): Result&lt;Self, str&gt;;
 }
 </code></pre>
 <p><code>[derive(Json)]</code> implements both from a struct/enum’s shape; scalars,
@@ -195,9 +195,14 @@ trait FromJson {                              // decode
 untrusted, so a missing field, a wrong-shaped value, or text that isn’t
 JSON is a decode error rather than silent garbage or a crash. Both
 <code>from_json(text)</code> and <code>from_json_value(value)</code> return <code>Result&lt;Self, str&gt;</code>;
-handle it with <code>!</code>, <code>match</code>, or <code>is Ok(..)</code>:</p>
+handle it with <code>!</code>, <code>match</code>, or <code>is Ok(..)</code>.</p>
+<p>The two decode methods differ in what they take, not in what they answer:
+<code>from_json</code> parses the text (non-crashing) and hands off to
+<code>from_json_value</code>, which validates an already-parsed value’s shape. That
+is the one to call when a value is nested inside another decode, and the
+one to write when implementing the trait by hand.</p>
 <pre><code class="language-vilan">import std::print;
-import std::json::{ Json, FromJson };
+import std::json::{ Json, FromJson, JsonValue, parse_json_value };
 import std::result::Result::{ self, Ok, Err };
 
 [derive(Json)]
@@ -216,21 +221,110 @@ fun main() {
 		Err(let reason) =&gt; print(reason),
 	}
 
+	// The already-parsed form, same `Result`.
+	match Point::from_json_value(parse_json_value("{\"x\":3,\"y\":4}")) {
+		Ok(let back) =&gt; print(back.y), // 4
+		Err(let reason) =&gt; print(reason),
+	}
+
 	// A missing field is a decode error naming the field.
 	match Point::from_json("{\"x\":1}") {
 		Ok(_) =&gt; print("decoded"),
 		Err(let reason) =&gt; print(reason), // missing field y
 	}
+
+	// So is text that isn't JSON at all.
+	match Point::from_json("not json") {
+		Ok(_) =&gt; print("decoded"),
+		Err(let reason) =&gt; print(reason), // not valid JSON
+	}
+}
+</code></pre>
+<p>Written by hand — for a type whose encoding isn’t its shape — the
+signatures are the trait’s, <code>Self</code> included:</p>
+<pre><code class="language-vilan">import std::print;
+import std::json::{ Json, FromJson, JsonValue };
+import std::result::Result::{ self, Ok, Err };
+
+// A newtype that encodes as the bare string it wraps, not as an object.
+struct Tag {
+	name: str,
+}
+
+impl Tag with Json {
+	fun to_json(self): str {
+		self.name.to_json()
+	}
+}
+
+impl Tag with FromJson {
+	fun from_json(text: str): Result&lt;Self, str&gt; {
+		Tag::from_json_value(text.try_parse_json().ok_or("not valid JSON")!)
+	}
+	fun from_json_value(value: JsonValue): Result&lt;Self, str&gt; {
+		Ok(Tag { name = str::from_json_value(value)! })
+	}
+}
+
+fun main() {
+	print(Tag { name = "ada" }.to_json()); // "ada"
+	match Tag::from_json("\"ada\"") {
+		Ok(let tag) =&gt; print(tag.name),    // ada
+		Err(let reason) =&gt; print(reason),
+	}
 }
 </code></pre>
 <p>Untyped inspection, when the shape isn’t known up front:</p>
 <pre><code class="language-vilan fragment">external struct JsonValue;
-fun parse_json_value(text: str): JsonValue    // panics on bad JSON
-str.try_parse_json(): Option&lt;JsonValue&gt;       // the safe form
-value.field(name: str): JsonValue
-value.tag(): str                              // "object" | "array" | "string" | …
-value.elements(): List&lt;JsonValue&gt;
+fun parse_json_value(text: str): JsonValue  // throws on malformed text
+str.try_parse_json(): Option&lt;JsonValue&gt;     // the safe form
+
+enum JsonKind { Null, Bool, Number, String, Array, Object }
+
+value.kind(): JsonKind
 value.is_null(): bool
+value.field(name: str): JsonValue
+value.has_field(name: str): bool
+value.elements(): List&lt;JsonValue&gt;
+value.tag(): str         // an enum discriminator, NOT a type — see below
+</code></pre>
+<p><code>kind()</code> is the value’s JSON type, normalized: the host’s <code>typeof</code> calls
+both an array and <code>null</code> an <code>"object"</code>, so the intrinsic names those two
+itself. <code>JsonKind</code> is a <strong>backed enum</strong> carrying exactly those strings, so
+<code>value.kind() == JsonKind::Number</code> is one comparison against <code>"number"</code> —
+the set is closed in the type system rather than in a doc comment, and
+<code>Object</code> and <code>Null</code> are as usable as the other four. <code>is_null()</code> is a
+separate intrinsic: it tests the value against <code>null</code> directly.</p>
+<p>The set is closed over JSON, not over every <code>JsonValue</code>. <code>value.field(name)</code>
+for a key the object does not have is the host’s <code>undefined</code>, whose kind is
+none of the six — <code>==</code> answers <code>false</code> for it, as it always did, and an
+exhaustive <code>match</code> over <code>JsonKind</code> panics naming it. <code>has_field</code> is the
+check that keeps you out of that case.</p>
+<p><code>tag()</code> answers a different question and is not a spelling of <code>kind()</code>: it
+reads an <strong>externally-tagged enum’s discriminator</strong> — the string itself for a
+bare <code>"Variant"</code>, the single key for a <code>{"Variant":…}</code> object. That is what a
+derived decoder calls to pick a variant, so it only means anything on those
+two shapes: on a number or a bool it yields <code>"undefined"</code>, and on <code>null</code> it
+throws. Reach for <code>kind()</code> unless you are decoding an enum by hand.</p>
+<pre><code class="language-vilan">import std::print;
+import std::json::{ JsonKind, parse_json_value };
+
+fun main() {
+	let value = parse_json_value("{\"name\":\"ada\",\"tags\":[\"x\",\"y\"]}");
+	print(value.kind() == JsonKind::Object);        // true
+	print(value.field("name").kind().value());      // string
+	print(value.has_field("age"));                  // false
+
+	for element in value.field("tags").elements() {
+		if element.kind() == JsonKind::String {
+			print(element.kind().value()); // string, twice
+		}
+	}
+
+	// `tag()` is the other question: an externally-tagged enum's discriminator.
+	print(parse_json_value("\"Start\"").tag());         // Start
+	print(parse_json_value("{\"Text\":\"hi\"}").tag()); // Text
+}
 </code></pre>
 <p><code>json_codec(): Codec</code> is the JSON wire codec for rpc (see below).</p>
 <h2 id="the-wire-layer-stdwire"><a class="header" href="#the-wire-layer-stdwire">The wire layer (<code>std::wire</code>)</a></h2>
@@ -253,7 +347,9 @@ types with a custom encoding.</p>
 its variant name, for both <code>Json</code> and <code>Wire</code>. <code>Align::Start</code> is
 <code>"flex-start"</code> on the wire, not <code>"Start"</code>, and it decodes through
 <code>Align::parse</code>, so a peer sending a value outside the set is a decode
-error rather than a confidently-wrong variant.</p>
+error rather than a confidently-wrong variant. One explicit value backs
+the whole enum, so <code>enum Level { Low = 0, Mid, High }</code> puts <code>1</code> on the
+wire for <code>Mid</code>, not <code>"Mid"</code>.</p>
 <p><strong>Adding a backing value to an existing derived enum is a wire-format
 break, and so is removing one.</strong> An enum with no backing value keeps the
 externally-tagged form (<code>"Start"</code>, or <code>{"Text":…}</code> with a payload), so

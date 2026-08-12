@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -318,7 +318,23 @@ impl Map&lt;type K: Hashable, type V: PartialEq&gt; {
 }
 impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): Map&lt;K, V&gt; }
 </code></pre>
-<p>Keys compare <strong>by value</strong>. Scalars work directly; a struct, enum, tuple, or
+<p>Keys compare <strong>by value</strong>. Scalars work directly, and so does a <strong>backed enum</strong>
+— one with explicit backing values, which <em>is</em> that value at runtime, so the
+backing value is the key and no derive is needed:</p>
+<pre><code class="language-vilan">import std::print;
+import std::map::Map;
+
+enum Align { Start = "flex-start", End = "flex-end" }
+
+fun main() {
+	mut widths: Map&lt;Align, i32&gt; = Map::new();
+	widths.insert(Align::Start, 1);
+	print(widths.get(Align::Start).unwrap_or(0)); // 1
+}
+</code></pre>
+<p>An <strong>unbacked</strong> enum (<code>enum Plain { A, B }</code>) is not a key on its own: without a
+backing value it lowers to an array, like a struct, so it needs the derive along
+with every other aggregate. A struct, an unbacked or payload-carrying enum, or a
 <code>List</code> key works as long as it is <code>Hashable</code>. Derive it:</p>
 <pre><code class="language-vilan">import std::print;
 import std::map::Map;
@@ -400,12 +416,47 @@ fun main() {
 }
 </code></pre>
 <h2 id="hashable"><a class="header" href="#hashable"><code>Hashable</code></a></h2>
-<p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>.
-<code>[derive(Hashable)]</code> implements it for a struct/enum whose fields are all
-<code>Hashable</code> (scalars, <code>str</code>, <code>bool</code>, <code>List</code>/<code>Option</code> of <code>Hashable</code>, or another
-derived type); a closure, <code>Set</code>, <code>Map</code>, or <code>Shared</code> field is rejected. You can
-also hand-write <code>impl Hashable</code> to key by a subset of fields, and build your own
+<p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>. Three
+routes reach it:</p>
+<ul>
+<li><strong>Scalars</strong> (<code>str</code>, <code>bool</code>, every sized numeric) and <code>List</code>/<code>Option</code> of a
+<code>Hashable</code> — implemented by std.</li>
+<li><strong>A backed enum</strong> — implemented by the compiler beside its <code>value()</code>/<code>parse()</code>
+(see the types chapter), off the same opt-in: writing <code>= "flex-start"</code> is what
+makes the enum that value, and the value is the key. So <code>Align::Start.hash()</code>
+and <code>Align::Start.value().hash()</code> are the same key, and a backed enum is
+accepted as a <em>field</em> of a derived type too. A <code>resource</code> enum is excluded — a
+resource cannot be hashed by value.</li>
+<li><strong><code>[derive(Hashable)]</code></strong> — for a struct or an enum whose fields are all
+<code>Hashable</code> (scalars, <code>str</code>, <code>bool</code>, <code>List</code>/<code>Option</code> of <code>Hashable</code>, a backed
+enum, or another derived type); a closure, <code>Set</code>, <code>Map</code>, or <code>Shared</code> field is
+rejected. Writing it on a backed enum is harmless and does nothing.</li>
+</ul>
+<p>You can also hand-write <code>impl Hashable</code> to key by a subset of fields — except on
+a backed enum, whose impl the compiler already provides — and build your own
 container by bounding on <code>K: Hashable</code> and keying a <code>Map&lt;Hash, …&gt;</code> yourself.</p>
+<p>A <code>Hash</code> is opaque: you can hold it, compare two with <code>==</code>, hash it again (it is
+itself <code>Hashable</code>, being already a canonical key), and use it as a key. You
+cannot read the value inside, which is what keeps the representation free to
+change. Equal values hash equal, so <code>==</code> on two hashes answers “same key?”:</p>
+<pre><code class="language-vilan">import std::print;
+import std::hash::Hashable;
+
+[derive(Hashable)]
+struct Point {
+	x: i32,
+	y: i32,
+}
+
+fun main() {
+	let here = Point { x = 1, y = 2 };
+	print(here.hash() == Point { x = 1, y = 2 }.hash()); // true
+	print(here.hash() == Point { x = 9, y = 2 }.hash()); // false
+}
+</code></pre>
+<p>Equality is the whole of a <code>Hash</code>’s operator surface — there is no order on a
+canonical key, so <code>&lt;</code> is a compile error rather than a lexicographic compare of
+the underlying JSON.</p>
 <p>One corner: a float <em>inside</em> an aggregate key canonicalizes through JSON, where
 <code>NaN</code> becomes <code>null</code> and <code>-0</code>/<code>+0</code> collapse to <code>0</code>, so those collide. Bare
 numeric keys don’t have this (they key by JS value directly).</p>

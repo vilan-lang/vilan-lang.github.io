@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -308,30 +308,35 @@ account (pbkdf2-hashed password), a known one checks it, and either path
 opens a session row whose token identifies later calls (<a href="services.html#authentication">Services &amp;
 RPC</a>). <code>open_database()</code> creates the tables at
 startup; <code>boot()</code> loads the mirror once from the already-open database.</p>
-<h2 id="the-server-entry-read-boot-serve"><a class="header" href="#the-server-entry-read-boot-serve">The server entry: read, boot, serve</a></h2>
+<h2 id="the-server-entry-describe-boot-serve"><a class="header" href="#the-server-entry-describe-boot-serve">The server entry: describe, boot, serve</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/server.vl"><code>src/server.vl</code></a>
 is now the boring file, which is the point:</p>
 <pre><code class="language-vilan fragment">async fun main() {
-	let client_js = fs::read_file_to_str("dist/client.js");
-	let client_css = fs::read_file_to_str("dist/client.css");
+	let build = require_build("client");
 	let app_html = fs::read_file_to_str("src/app.html");
 
 	let store = boot();
 
-	serve_service(4600, store.dispatcher().into_protocol(json_codec()), |request| {
-		match request.path() {
-			"/client.js" =&gt; Response::builder().set_header("Content-Type", "text/javascript").body(client_js).build(),
-			"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
-			_ =&gt; Response::builder().set_header("Content-Type", "text/html").body(app_html).build(),
-		}
-	}, |server| print(i"notes server listening on {server.url()}"));
+	serve_service(
+		4600,
+		store.dispatcher().into_protocol(json_codec()),
+		build_handler(build, |request| Response::builder().set_header("Content-Type", "text/html").body(app_html).build()),
+		|server| print(i"notes server listening on {server.url()}"),
+	);
 }
 </code></pre>
-<p>The catch-all serves the shell for every unknown path. That’s what makes
-deep links like <code>/note/7</code> load (<a href="routing.html#deep-links-and-the-server">Routing</a>).
-The client bundle it ships is <code>dist/client.js</code>. <code>vilan build</code> compiles
-browser entries first, so the file is always fresh by the time the
-server entry builds.</p>
+<p><code>require_build("client")</code> asks what the client leg’s build emitted — the
+bundle, and the stylesheet its <code>const</code> styles produced — and
+<code>build_handler</code> turns that into one route per artifact, with the content
+type each extension implies. No <code>dist/</code> path is spelled here, so renaming
+the leg cannot leave this file compiling and the page blank. (When the app
+owns its builder, <code>Server::builder().serve_build(build)</code> is the same thing
+installed on the chain.)</p>
+<p>The fallback then serves the shell for every path the build does not
+claim. That’s what makes deep links like <code>/note/7</code> load
+(<a href="routing.html#deep-links-and-the-server">Routing</a>). <code>vilan build</code> compiles
+browser entries first, so the client’s artifacts are always there by the
+time the server entry builds.</p>
 <h2 id="the-client-entry-four-signals-and-a-mount"><a class="header" href="#the-client-entry-four-signals-and-a-mount">The client entry: four signals and a mount</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/client.vl"><code>src/client.vl</code></a> is
 the whole wiring diagram:</p>

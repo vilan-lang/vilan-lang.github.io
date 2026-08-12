@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -176,8 +176,8 @@
                     <main>
                         <h1 id="process-modules-reference"><a class="header" href="#process-modules-reference">Process modules reference</a></h1>
 <p>The process layer (Node/Deno/Bun builds): <code>std::db</code>, <code>std::http</code>,
-<code>std::fs</code>, <code>std::process</code>, <code>std::rpc_server</code>. Task-oriented usage:
-<a href="../guide/persistence.html">Persistence and the server</a>.</p>
+<code>std::fs</code>, <code>std::process</code>, <code>std::rpc_server</code>, <code>std::watch</code>. Task-oriented
+usage: <a href="../guide/persistence.html">Persistence and the server</a>.</p>
 <h2 id="stddb-sqlite"><a class="header" href="#stddb-sqlite">std::db: SQLite</a></h2>
 <pre><code class="language-vilan fragment">resource external struct Database;       // a resource: moves, closes on drop
 
@@ -220,10 +220,15 @@ impl ServerBuilder {
 	fun on_upgrade(own self, handler: |NodeRequest, NodeSocket, Bytes| void): ServerBuilder
 	fun on_start(own self, callback: |Server| void): ServerBuilder
 	fun on_stop(own self, callback: |Server| void): ServerBuilder
+	fun serve_build(own self, build: LegBuild): ServerBuilder   // one route per artifact
 	fun build(self): Server
 }
+// The same routing for a boot function that hands you only a fallback
+// (`serve_service`, `serve_connected`):
+fun build_handler(build: LegBuild, fallback: |Request| Response): |Request| Response
 impl Server {
 	fun start(self)        // begin listening; holds the event loop
+	fun stop(self)         // stop listening; fires on_stop once the listener has closed
 	fun port(self): i32    // the bound port (see below)
 	fun url(self): str
 }
@@ -266,6 +271,25 @@ fun main() {
 		.start();
 }
 </code></pre>
+<p><code>serve_build</code> is the one call that replaces the boot reads and the
+content-type table a full-stack server used to write by hand. It takes a
+<a href="#stdbuild"><code>LegBuild</code></a> and installs one route per artifact at
+<code>/&lt;file name&gt;</code> — the bundle, the style sidecar if the leg emitted one, and
+every route chunk — in front of <code>on_request</code>, whatever order the chain was
+written in. So the app’s catch-all still answers every path the build does
+not claim, and a leg that gains <code>split = true</code> gains its chunk routes with
+no server edit.</p>
+<p>Three details are decisions, not defaults. The route shape is
+<code>/&lt;file name&gt;</code>, which is what every shell already asks for, so adopting it
+moves no HTML. Content types come from a short fixed table (<code>.js</code>/<code>.mjs</code>,
+<code>.css</code>, <code>.json</code>, <code>.html</code>); anything else is not served, because
+<code>serve_build</code> serves a <em>build</em>, not a directory. And an artifact the build
+named but did not write <strong>stops the server at boot</strong>, naming the file and
+the leg, rather than 404ing for the life of the process.</p>
+<p>Freshness is its dev-mode policy: under <code>vilan run --watch</code>
+(<a href="#stdwatch"><code>is_watching</code></a>) each asset is re-read per request, so a
+rebuild is served without a restart; otherwise the copy read at boot is
+served from memory.</p>
 <p>A <strong>streaming</strong> response holds the connection open: once the status and
 headers are written, <code>on_open</code> receives the live <code>ResponseStream</code> and
 writes chunks over time (SSE’s shape; a suspending <code>on_open</code> runs as
@@ -273,6 +297,11 @@ spawned work). <code>on_upgrade</code> mounts a WebSocket-style handshake handle
 over the raw bindings (<code>NodeRequest</code>/<code>NodeSocket</code>). For an rpc-serving
 app you won’t touch any of this directly: <code>serve_service</code> wraps it
 (below), and <code>serve_connected</code> itself now rides this surface.</p>
+<p><code>Server::stop()</code> closes the listener and fires <code>on_stop</code> once it has
+actually closed — call it from <code>on_start</code> (stash the <code>Server</code> value
+somewhere reachable, e.g. behind a signal handler or a <code>/shutdown</code>
+route) or from inside a request handler. Stopping a <code>Server</code> value
+<code>start()</code> never populated (built but never started) is a no-op.</p>
 <h2 id="stdrpc_server"><a class="header" href="#stdrpc_server">std::rpc_server</a></h2>
 <pre><code class="language-vilan fragment">fun serve_service(
 	port: i32,
@@ -283,23 +312,241 @@ app you won’t touch any of this directly: <code>serve_service</code> wraps it
 
 fun serve_connected(port, protocol, on_connection, fallback, on_ready)
 	// the same server with the per-connection hook exposed (custom attach/auth)
+
+impl Service {
+	fun new(protocol: RpcProtocol): Service   // mounted at "/"; the session-registry lifecycle
+	fun at(own self, prefix: str): Service    // mount elsewhere instead, e.g. "/admin/"
+	fun on_connect(own self, handler: |i32, DuplexEnd| void): Service
+	fun on_disconnect(own self, handler: |i32| void): Service
+}
+impl ServerBuilder {
+	fun with_service(own self, service: Service): ServerBuilder   // repeatable
+}
 </code></pre>
 <p>Websocket upgrade + session registry (mirror attach/detach) + rpc dispatch;
-each handler runs in a turn (<code>AtEnd</code>). Details and the client side:
-<a href="../guide/services.html">Services &amp; RPC</a> and the <a href="rpc.html">rpc reference</a>.</p>
+each handler runs in a turn (<code>AtEnd</code>). <code>serve_rpc</code>/<code>serve_service</code>/
+<code>serve_connected</code> are sugar over <code>Server::builder().with_service(…)</code> —
+the underlying layer a server can grow into: install a second service on
+its own mount, or a plain page alongside one, by adding a call rather
+than swapping to a different <code>serve_*</code> function. Details and the client
+side: <a href="../guide/services.html">Services &amp; RPC</a> and the
+<a href="rpc.html">rpc reference</a>.</p>
 <h2 id="stdfs"><a class="header" href="#stdfs">std::fs</a></h2>
-<pre><code class="language-vilan fragment">fun exists(path: str): bool                // sync
-fun read_file_to_str(path: str): str       // async, UTF-8
-fun write_file(path: str, contents: str)   // async
+<pre><code class="language-vilan fragment">fun exists(path: str): bool                     // sync
+fun read_file_to_str(path: str): str            // async, UTF-8
+fun read_file_to_str_sync(path: str): str       // sync, UTF-8 — blocks the event loop
+fun read_bytes(path: str): Bytes                // async, true binary read
+fun write_file(path: str, contents: str)        // async
+fun read_dir(path: str): List&lt;str&gt;              // async, entry NAMES, flat (v1)
+fun stat(path: str): Option&lt;Stat&gt;               // async — None if `path` doesn't exist; every other failure throws
+struct Stat {
+    size: i32,
+    modified_at_ms: f64,   // epoch milliseconds
+    is_directory: bool,
+}
 </code></pre>
+<p><code>read_bytes</code>, <code>read_dir</code>, and <code>read_file_to_str</code> throw host-side on any
+failure, missing path included — the same posture <code>read_file_to_str</code> always
+had. <code>stat</code> alone is a non-throwing probe: it exists to let a caller ask
+“is this here yet, and what does it look like” (a poller’s use case), so a
+missing path is <code>None</code>, not a thrown exception. Prefer the async read; the
+sync one exists for a read that must complete inside a callback that cannot
+suspend — <code>serve_build</code>’s dev-mode revalidation is the case it was added
+for.</p>
+<h2 id="stdbuild"><a class="header" href="#stdbuild">std::build</a></h2>
+<p>What a browser leg’s build emitted, as the build itself knows it — the
+value that lets a server stop restating <code>"dist/client.js"</code> from memory.</p>
+<pre><code class="language-vilan fragment">struct LegBuild {
+	leg: str,               // `client`, for `[entry.client]`
+	dist: str,              // where its artifacts live — `dist`
+	bundle: str,            // `client.js`
+	styles: Option&lt;str&gt;,    // `client.css`, or None if the leg compiled no styles
+	chunks: List&lt;str&gt;,      // route chunks, empty unless the leg splits
+	classic_script: bool,   // true exactly when it splits
+}
+
+fun build_of(leg: str): Result&lt;LegBuild, BuildError&gt;   // async
+fun require_build(leg: str): LegBuild                  // async; stops if it can't
+</code></pre>
+<p><code>build_of</code> reads <code>dist/&lt;leg&gt;.chunks.json</code>, which every build of a browser
+leg writes. A leg that was never built is <code>Err(BuildError::NotBuilt)</code> and
+not an empty build — the manifest’s presence is the difference, which is
+why it is written even when the leg does not split. <code>require_build</code> is the
+boot idiom: a server that cannot describe its own build has nothing to
+serve, so it stops with the error’s message instead of starting.</p>
+<p><code>LegBuild::artifacts()</code> gives <code>(url, file)</code> pairs — <code>("/client.js", "dist/client.js")</code> — in serving order. <code>std::http</code>’s
+<a href="#stdhttp-the-server"><code>serve_build</code></a> is the consumer that makes them routes.</p>
+<h2 id="stddocument"><a class="header" href="#stddocument">std::document</a></h2>
+<p>The HTML document a browser leg is loaded by, held against what that leg’s
+build emitted — so the <code>&lt;script&gt;</code>, the <code>&lt;link&gt;</code> and the mount element
+cannot disagree with the artifacts they name.</p>
+<pre><code class="language-vilan fragment">enum ShellFault {
+	StylesNotLinked(str),         // the build emitted styles; the document links none
+	LinkedStyleMissing(str),      // it links a stylesheet this build did not emit
+	ScriptNotEmitted(str),        // it loads a script this build did not emit
+	BundleNotLoaded(str),         // this build's bundle is loaded by no &lt;script&gt;
+	MountMissing(str),            // nothing carries the id the client mounts into
+	ModuleScriptWithChunks(str),  // a splitting leg loaded as a module script
+}
+impl ShellFault {
+	fun message(self): str        // what is wrong, and what to do about it
+}
+
+fun check_shell(shell: str, build: LegBuild, mount: str): Result&lt;void, List&lt;ShellFault&gt;&gt;
+
+impl Document {
+	fun of(build: LegBuild): Document                     // generate one from the build
+	fun from_shell(shell: str, build: LegBuild): Result&lt;Document, List&lt;ShellFault&gt;&gt;
+
+	fun title(own self, title: str): Document
+	fun lang(own self, lang: str): Document
+	fun mount(own self, id: str): Document                // the other end of mount_root
+	fun head(own self, markup: str): Document             // raw, appended inside &lt;head&gt;
+	fun body(own self, markup: str): Document             // raw, before the script tag
+	fun render(self, view: View): Document                // SSR markup, inside the mount element
+
+	fun html(self): str
+}
+
+fun require_shell(path: str, build: LegBuild): Document   // async; stops if it can't
+</code></pre>
+<p><strong>The check is the primitive.</strong> <code>check_shell</code> takes a plain <code>str</code>, so it
+works on a shell produced any way at all — read from disk, templated,
+fetched from a CMS — and reports <em>every</em> fault, not the first. That
+ordering matters: a generator only protects documents it generated, and
+the page most likely to be wrong is the hand-written one somebody dropped
+to for a CSP header or a font preload.</p>
+<p><strong>A fault stops the server from starting.</strong> <code>require_shell</code> is the boot
+idiom: it reads the file, checks it, and either hands back a <code>Document</code> or
+stops with the file, the leg, and one line per fault. Refusing is
+defensible because the check is cheap, total, and about the <em>build</em> rather
+than about a request — it cannot fail intermittently, and a server that
+starts with a document that cannot work is worse than one that does not
+start.</p>
+<pre><code class="language-vilan norun">import std::build::require_build;
+import std::document::require_shell;
+import std::http::{ Response, Server };
+
+async fun main() {
+	let build = require_build("client");
+	// src/app.html is yours; it is checked against what the build wrote.
+	let page = require_shell("src/app.html", build).html();
+
+	Server::builder()
+		.port(8080)
+		.serve_build(build)
+		.on_request(|request| Response::builder().set_header("Content-Type", "text/html").body(page).build())
+		.build()
+		.start();
+}
+</code></pre>
+<p>An app that genuinely means it says so, once, in code — <code>check_shell</code>
+returns a <code>Result</code>, so the decision is yours:</p>
+<pre><code class="language-vilan fragment">match check_shell(shell, build, "app") {
+	Ok(let _checked) =&gt; {},
+	// Report and carry on instead of stopping.
+	Err(let faults) =&gt; faults.for_each(|fault| print(i"warning: {fault.message()}")),
+}
+</code></pre>
+<p>What it will and will not have an opinion about is bounded by what a
+build knows. This leg’s artifacts are <code>&lt;leg&gt;.js</code>, <code>&lt;leg&gt;.css</code> and
+<code>&lt;leg&gt;.&lt;Arm&gt;.js</code>, and the leg’s last build owns that namespace, so a
+document loading <code>&lt;leg&gt;.…</code> files this build did not emit is loading its
+own stale output and is told so. A <code>/theme.css</code> your application serves
+itself is outside that namespace — the check says nothing about it, and a
+stylesheet on another origin (a font CDN) is nobody’s business but yours.
+Comments and <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code> bodies are skipped rather than searched,
+so a commented-out <code>&lt;link&gt;</code> links nothing and a <code>&lt;div id="app"&gt;</code> inside a
+script’s own string is not a mount element.</p>
+<p><strong><code>Document::of(build)</code> writes the document instead.</strong> Same value, same
+rules — every document it can produce passes <code>check_shell</code>, which is what
+keeps the generator and the checker from drifting apart. It emits a
+doctype, <code>&lt;html lang&gt;</code>, charset, viewport, <code>&lt;title&gt;</code>, the stylesheet link
+<em>if and only if</em> the build emitted styles, the mount element, and the
+bundle’s script tag in the form the build requires (a classic script for a
+leg that splits, since chunk resolution reads <code>document.currentScript</code>):</p>
+<pre><code class="language-vilan norun">import std::build::require_build;
+import std::document::Document;
+import std::http::{ Response, Server };
+
+async fun main() {
+	let build = require_build("client");
+	let page = Document::of(build)
+		.title("Notes")
+		.head("&lt;style&gt;body { font: 16px/1.5 system-ui; }&lt;/style&gt;")
+		.html();
+
+	Server::builder()
+		.port(8080)
+		.serve_build(build)
+		.on_request(|request| Response::builder().set_header("Content-Type", "text/html").body(page).build())
+		.build()
+		.start();
+}
+</code></pre>
+<p><code>head</code>/<code>body</code> take raw markup and append (a favicon, an <code>og:</code> tag, a CSP,
+a <code>&lt;noscript&gt;</code>), which is what keeps the generated document small enough
+to be worth having: everything else is derived. They are an escape hatch,
+not an exemption — markup you add there is checked like any other, so a
+<code>&lt;link&gt;</code> to a stylesheet the build did not emit is caught wherever it came
+from.</p>
+<p><code>render(view)</code> is the server-rendering splice (<a href="../guide/ssr.html">SSR</a>):
+the markup goes <em>inside the mount element</em>, because the document already
+knows where that is. It takes <code>self</code> rather than <code>own self</code> — it is the
+one method called per request, on a document the handler built once at
+boot:</p>
+<pre><code class="language-vilan fragment">.on_request(|request| Response::builder().body(page.render(app()).html()).build())
+</code></pre>
+<p><code>html()</code> returns a <code>str</code>, at every rung — a generated document can be
+post-processed with the same string operations an app already uses, which
+is what keeps the hand-written shell (rung 0) and the generated one made
+of the same material.</p>
 <h2 id="stdprocess"><a class="header" href="#stdprocess">std::process</a></h2>
 <pre><code class="language-vilan fragment">fun args(): List&lt;str&gt;            // CLI arguments
 fun env(key: str): Option&lt;str&gt;   // environment variable
 fun exit(code: i32)
 fun scan(): str                  // read a line from stdin
 </code></pre>
+<p>Server-side hot-swapping of code is not a thing
+here and is not planned — the node leg restarts.</p>
 <p>A completed <code>main</code> ends the process; long-lived programs must hold it open
 (a listening server does; a socket-holding client needs an explicit wait).</p>
+<h2 id="stdwatch"><a class="header" href="#stdwatch">std::watch</a></h2>
+<pre><code class="language-vilan fragment">fun is_watching(): bool     // is this a `vilan run --watch` child?
+fun force_refresh(): void   // ask every connected browser to reload once
+</code></pre>
+<p><code>is_watching()</code> is defined under every run and is <code>true</code> only under
+<code>vilan run --watch</code>, so a program branches on it without knowing how it
+was started. It is about <em>data</em> freshness, not code: <code>serve_build</code> uses it
+to revalidate its assets per request while watching, and a hand-rolled
+server can do the same.</p>
+<p>The process layer’s dev-mode surface (<code>dev-refresh.md</code> §5 item 2) — the
+manual channel for a hand-rolled server’s own freshness: re-read whatever
+changed on disk yourself, then call <code>force_refresh()</code> so every browser
+connected to the dev channel reloads once and re-pulls it.
+<code>force_refresh()</code> is a <strong>no-op outside <code>vilan run --watch</code></strong> — it costs
+nothing to leave the call in a shipped build. (Named apart from the
+browser’s <a href="dev.html"><code>std::dev</code></a> on purpose — the two share no component
+source the way, say, <code>std::ui</code>’s browser and process halves do, so they
+are not the same surface under two names.)</p>
+<pre><code class="language-vilan norun">import std::fs;
+import std::http::{ Response, Server };
+import std::watch;
+
+fun main() {
+	Server::builder()
+		.port(0)
+		.on_request(|request| {
+			// Re-read whatever this route serves fresh on every request,
+			// then ask the browser to pick it up.
+			let shell = fs::read_file_to_str("dist/app.html");
+			watch::force_refresh();
+			Response::builder().body(shell).build()
+		})
+		.build()
+		.start();
+}
+</code></pre>
 
                     </main>
 

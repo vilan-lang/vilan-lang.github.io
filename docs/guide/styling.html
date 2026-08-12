@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -216,13 +216,26 @@ shell is yours, not the compiler’s.</p>
 <pre><code class="language-text">&lt;link rel="stylesheet" href="app.css" /&gt;
 </code></pre>
 <p>Both <code>vilan init</code> browser templates already carry the line, and the
-fullstack one also carries the route that serves it:</p>
-<pre><code class="language-vilan fragment">"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
+fullstack one serves the sidecar without naming it — <code>serve_build</code> routes
+every artifact the build wrote, the stylesheet among them:</p>
+<pre><code class="language-vilan fragment">Server::builder().port(8080).serve_build(require_build("client"))
 </code></pre>
-<p>Miss the link and nothing announces it — the app runs, unstyled, while
-the compiler faithfully rebuilds a stylesheet nobody loads. A <code>&lt;link&gt;</code>
-(rather than an inlined <code>&lt;style&gt;</code>) is also what lets <code>--watch</code> hot-swap
-CSS without reloading the page; see
+<p>That also means a leg that stops emitting styles stops having them
+served, with no <code>fs::exists</code> guard to remember: the build says whether it
+wrote a sidecar, and the server believes it.</p>
+<p>Miss the link and the app runs unstyled while the compiler faithfully
+rebuilds a stylesheet nobody loads — which is why a server can hold its
+shell against its build and refuse to start over exactly that:</p>
+<pre><code class="language-vilan fragment">let page = require_shell("src/app.html", build).html();
+</code></pre>
+<p><code>require_shell</code> (<code>std::document</code>, the
+<a href="../std/process.html#stddocument">reference</a>) checks the file every boot: a
+shell that links no stylesheet over a build that emitted one stops the
+server, naming the file and the fix. The fullstack template ships that
+line. Nothing checks a browser-only project’s <code>index.html</code> — there is no
+server to check it — so that one is still on you.</p>
+<p>A <code>&lt;link&gt;</code> (rather than an inlined <code>&lt;style&gt;</code>) is also what lets <code>--watch</code>
+hot-swap CSS without reloading the page; see
 <a href="dev-loop.html#the-css-link-idiom">the dev loop</a>.</p>
 <p>At runtime you can still <em>select and combine</em> styles you already built.
 <code>a + b</code> merges two styles (per property, the right side wins), and

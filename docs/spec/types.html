@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -243,6 +243,10 @@ enum reaches an <code>external fun</code> as a plain number or string. Backing
 values must be unique across the enum, counting the values implicitly
 continued from the previous variant; see the grammar chapter for the full
 rule.</p>
+<p>An <strong>integer</strong> backing value must lie in <code>-9007199254740991 ..= 9007199254740991</code> (<code>i53</code>), because that is the widest integer a runtime
+number holds exactly and the variant <em>is</em> that number: a discriminant
+past the bound would cross a host boundary as a different value than the
+source wrote. The continuation stops at the same edge.</p>
 <h3 id="backed-enum-conversions"><a class="header" href="#backed-enum-conversions">Backed-enum conversions</a></h3>
 <p>Every backed enum gets two members, synthesized by the compiler — no
 <code>derive</code> marker, because writing <code>= "start"</code> is already the opt-in:</p>
@@ -258,6 +262,37 @@ receiver already <em>is</em> that value, so the call lowers to the receiver.
 <code>parse</code> is a static returning <code>Option&lt;Self&gt;</code> — the house form for a
 fallible parse, matching <code>str::parse_i32</code>. Declaring your own <code>value</code> or
 <code>parse</code> on a backed enum is a duplicate-member error.</p>
+<p>Every variant takes part, including one that <em>continued</em> the sequence
+instead of writing a value. There is one rule about what a variant is
+worth, and the conversions read the same answer the lowering does:</p>
+<pre><code class="language-vilan">import std::print;
+import std::option::Option::{ self, Some, None };
+
+enum Level { Low = 0, Mid, High }
+
+fun main() {
+	print(Level::Mid.value());  // 1 — continued from Low
+	print(match Level::parse(2) {
+		Some(let level) =&gt; level.value(),
+		None =&gt; -1,
+	});                         // 2 — High
+}
+</code></pre>
+<p>(A <strong>string</strong> backing is the exception, and not a new one: there is no
+successor of <code>"start"</code>, so every variant must write its own.)</p>
+<p>A backed enum is also <strong><code>Hashable</code></strong>, implemented by the compiler on the
+same opt-in and for the same reason <code>value()</code> costs nothing: the enum IS
+its backing value, and that value is already a key.</p>
+<pre><code class="language-vilan fragment">mut widths: Map&lt;Align, i32&gt; = Map::new();
+widths.insert(Align::Start, 1);          // keyed by "flex-start"
+</code></pre>
+<p>So <code>Map&lt;Align, V&gt;</code> and <code>Set&lt;Align&gt;</code> need no <code>[derive(Hashable)]</code>, and
+<code>Align::Start.hash()</code> is <code>Align::Start.value().hash()</code>. Writing the derive
+anyway is harmless and does nothing; a hand-written <code>impl Align with Hashable</code> is a duplicate-impl error, because the compiler’s is already
+there. An <strong>unbacked</strong> enum is unaffected — it lowers to the tagged array,
+so it is an aggregate and needs the derive like a struct.</p>
+<p>A <code>resource</code> enum gets none of the three — no <code>value()</code>, no <code>parse</code>, no
+<code>Hashable</code>. Its identity is not its copyable backing value.</p>
 <p>Two rules follow from the backing value being a <em>representation</em> rather
 than a second name for the variant. A <code>match</code> still matches variants, not
 values — <code>match align { "flex-start" =&gt; … }</code> is an error, exactly as
@@ -266,11 +301,78 @@ rejected on a <strong>string</strong> backing: they would compare the strings
 lexicographically (<code>Size::Large &lt; Size::Small</code> because <code>"lg" &lt; "sm"</code>),
 and ordering by declaration index cannot be offered, because bare
 lowering erases the index. Integer backings order as before.</p>
-<p>An <code>external fun</code> may take a backed enum but may <strong>not return one</strong>: the
-host can answer with a value outside the set, and an exhaustive <code>match</code>
-compiles its last arm to a bare <code>else</code>, so a bogus value would silently
-become whichever variant happened to be last. Bind the backing type and
-convert with <code>parse</code>, which answers <code>None</code>.</p>
+<h3 id="the-trap-arm"><a class="header" href="#the-trap-arm">The trap arm</a></h3>
+<p>A backed enum lowers to a bare host value, so its runtime domain is the
+<em>host’s</em> and not the variant set. Exhaustiveness is checked over that
+variant set, by name — which is a proof about the vilan side of the
+boundary and never was one about the value. So an <strong>exhaustive</strong> <code>match</code>
+over a backed enum tests every variant, including the last, and its
+<code>else</code> traps:</p>
+<pre><code class="language-vilan fragment">match align {
+    Align::Start =&gt; "s",
+    Align::End   =&gt; "e",       // tested, not assumed
+}
+// a value outside the set panics:
+//   Align: "middle" is not one of its values
+</code></pre>
+<p>The trap follows the backed enum <strong>wherever the pattern tests it</strong>, not
+only when it is the subject. A backed enum reached through a payload is
+the same value on the same boundary:</p>
+<pre><code class="language-vilan fragment">match pair {
+    Pair::Of(Align::Start) =&gt; "s",
+    Pair::Of(Align::End)   =&gt; "e",   // tested, not assumed
+}
+// an out-of-set payload panics, naming the payload's own value:
+//   Align: "middle" is not one of its values
+</code></pre>
+<p>If one arm tests <strong>more than one</strong> backed enum, the panic names whichever
+value actually left its set.</p>
+<p>A backed test can also live in an EARLIER arm than the one that becomes the
+<code>else</code> — a different variant’s payload, tested across several arms with no
+arm of its own left over for it:</p>
+<pre><code class="language-vilan fragment">match pair {
+    Pair::Of(Align::Start) =&gt; "s",
+    Pair::Of(Align::End)   =&gt; "e",   // together, `Of`'s only handler
+    Pair::Other            =&gt; "o",
+}
+// an out-of-set `Of` payload traps instead of silently answering `Other`:
+//   Align: "middle" is not one of its values
+</code></pre>
+<p><code>Other</code>’s own arm carries no backed test, so the exhaustiveness proof that
+drops its condition is still a proof about <code>Pair</code>’s VARIANT set, not about
+<code>Align</code>’s runtime domain — the same gap the payload form above closes, one
+level up. The two <code>Of</code> arms above are the only place <code>Align</code> is ever tested,
+so reaching the <code>else</code> with the subject’s tag actually <code>Of</code> is possible only
+when its payload left <code>Align</code>’s set; the trap fires there, naming <code>Align</code>
+and the raw value, and <code>Other</code>’s own arm still answers for a genuine
+<code>Pair::Other</code>.</p>
+<p>Only the exhaustive form is affected. A <code>match</code> you gave a <code>_</code> arm keeps
+it — an out-of-set value takes the arm you wrote, which is the answer you
+asked for — and <code>is</code> and <code>==</code> compare against a literal, so they answer
+<code>false</code> outside the set, as they always did. An enum with no backing
+value keeps the tagged array form and no trap: the language itself writes
+that tag, so there its exhaustiveness proof <em>is</em> a proof about the value.
+That holds nested too — a <code>match</code> whose arms test only unbacked enums
+emits exactly what it always did, at any depth.</p>
+<p>An <code>external fun</code> may both <strong>take and return</strong> a backed enum, and so may
+a callback it is handed. Nothing checks the boundary: a host value
+outside the set enters unremarked, exactly as it does for an
+<code>external fun f(): i32</code> that answers <code>"hello"</code>. What the trap arm buys is
+that such a value can no longer become a <em>confident</em> variant — the first
+exhaustive <code>match</code> to meet it panics with the raw value.</p>
+<p>Which of the two shapes to write is a question about the value, not about
+safety:</p>
+<pre><code class="language-vilan fragment">[extern("getAlign")]
+external fun get_align(): Align;              // out of set is a BUG — trap
+
+[extern("getAlign")]
+[doc(hidden)]
+external fun get_align_raw(): str;            // out of set is an INPUT
+fun read_align(): Option&lt;Align&gt; { Align::parse(get_align_raw()) }
+</code></pre>
+<p>Return the enum where the host’s set is genuinely closed and a value
+outside it means something is wrong; bind the backing type and <code>parse</code>
+where an unrecognized value is one of the answers you expect.</p>
 <h2 id="54-impls"><a class="header" href="#54-impls">5.4 Impls</a></h2>
 <p><code>impl Subject { … }</code> adds <strong>inherent</strong> members to <code>Subject</code>;
 <code>impl Subject with Trait { … }</code> provides <code>Trait</code> for <code>Subject</code>. The

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -299,14 +299,13 @@ and the page change land together as one update.</p>
 <em>server</em>, which has to answer with the app shell no matter the path.
 That’s the standard history-API fallback, and the catch-all in your http
 handler does it:</p>
-<pre><code class="language-vilan fragment">serve_service(4000, protocol, |request| {
-	match request.path() {
-		"/client.js" =&gt; …,
-		"/client.css" =&gt; …,
-		_ =&gt; …app shell html…,   // every route serves the shell
-	}
-})
+<pre><code class="language-vilan fragment">serve_service(4000, protocol, build_handler(build, |request| {
+	…app shell html…   // every path the build does not claim serves the shell
+}))
 </code></pre>
+<p><code>build_handler(build, …)</code> answers the build’s own artifacts (<code>/client.js</code>,
+<code>/client.css</code>, and any route chunks) and hands everything else to your
+fallback, which is the catch-all deep links need.</p>
 <p>On the client side, a deep-linked page usually needs data that hasn’t
 synced yet. Mount it under <code>when(present)</code> so it appears when the data
 does (see <a href="services.html">Services &amp; RPC</a>).</p>

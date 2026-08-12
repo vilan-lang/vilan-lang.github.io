@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -291,9 +291,13 @@ lowers to native <code>true</code>/<code>false</code>, so a two-variant bool-bac
 fractional part (<code>= 1.5</code>) and a type suffix (<code>= 1u32</code>, and <code>= 1_000</code>,
 which lexes as <code>1</code> with the trailer <code>_000</code>) are both errors rather than
 being silently discarded. Hex is read as hex (<code>= 0xFF</code> is 255). The value
-must fit a signed 64-bit integer, and so must the implicit continuation:
-a variant with no backing value takes the previous variant’s plus one,
-starting at 0, and running past the bound is an error rather than a wrap.</p>
+must lie in <strong><code>-9007199254740991 ..= 9007199254740991</code></strong> — <code>i53</code>, the
+widest integer a runtime number holds exactly — because a backed enum <em>is</em>
+that number at runtime, and a discriminant past the bound would reach the
+host as a different value than the source wrote. The bound is symmetric.
+The implicit continuation obeys it too: a variant with no backing value
+takes the previous variant’s plus one, starting at 0, and running past the
+bound is an error rather than a wrap.</p>
 <p><strong>A string backing must be written on every variant.</strong> There is no
 successor of <code>"start"</code> for the continuation rule to hand out, and the
 string is deliberately not derived from the variant name — the two are
@@ -536,7 +540,38 @@ bare name is always a <strong>variant</strong> reference, never a fresh binding:
 classic mistyped-variant trap is a resolution error instead of a silent
 catch-all. <code>bool</code> and <code>null</code> literals match as variants of their enums.
 The <code>let</code>/parameter binder grammar (names and tuples, §3.3) is the
-irrefutable subset; refutable forms (literals, variants) are match-only.</p>
+irrefutable subset; refutable forms (literals, variants) are match-only.
+A tuple pattern is irrefutable only when its elements are: <code>(let a, let b)</code>
+is a destructure and matches everything, <code>(1, 2)</code> is a test.</p>
+<p>A <code>match</code> must be <strong>exhaustive</strong>, and exhaustiveness is proven by
+<strong>unguarded</strong> legs only — a guard tests the value, which the check does
+not reason about, so a guarded leg proves nothing about what the match
+covers. What an unguarded leg proves is the value-space its whole pattern
+<strong>tree</strong> covers, not its root, and the check descends accordingly:</p>
+<ul>
+<li>an <strong>enum</strong> position needs every variant named, and each named
+variant’s payload positions covered in turn, so
+<code>Pair::Of(Align::Start)</code> alone leaves <code>Pair::Of(Align::End)</code> missing
+however few variants <code>Pair</code> has;</li>
+<li>a <strong>tuple</strong> position needs its elements covered — as a product, so
+<code>(1, 2)</code> and <code>(3, 4)</code> leave every other pair missing;</li>
+<li>an <strong>open</strong> position (<code>i32</code>, <code>str</code>, a struct, a still-abstract type
+parameter) is covered only by a binder or <code>_</code>. No number of literals
+exhausts it: <code>Wrapped::Of(1)</code>, <code>Wrapped::Of(2)</code>, … is never total.</li>
+</ul>
+<p>A subject whose type is not yet known, or is <code>any</code>, <code>never</code>, or a generic
+parameter, is exempt: the question is which values the subject can take,
+and there is no answer to give. The diagnostic names one uncovered value
+as a pattern that would cover it — <em>“missing <code>Pair::Of(Align::End)</code>”</em> —
+or asks for a catch-all where the hole is the whole domain. The
+consequence lands on the <strong>last</strong> leg, the one that answers for whatever
+the legs above it did not take: a <code>match</code> whose final leg is guarded must
+be exhaustive without it, so <code>match a { A =&gt; …, B if c =&gt; … }</code> is refused
+whatever the subject’s type (“match is not exhaustive”). Write the guard
+with a catch-all after it — <code>B if c =&gt; …, _ =&gt; …</code> — and the value the
+guard rejects has somewhere to go. A guard is tested wherever its leg
+stands, the last one included; no leg is silently promoted to a
+catch-all.</p>
 
                     </main>
 

@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -211,6 +211,17 @@ fun main() {
 </code></pre>
 <p>If you forget a variant, the compiler tells you. That’s most of the
 reason enums plus <code>match</code> replace flag fields and <code>null</code> checks.</p>
+<p>Completeness is judged over the whole pattern, not just its outermost
+name, so a payload you narrow has to be handled too:</p>
+<pre><code class="language-vilan fragment">match slot {
+	Some(0) =&gt; "zero",          // an i32 payload: no list of numbers covers it
+	Some(let value) =&gt; "some",  // this is what covers it
+	None =&gt; "empty",
+}
+</code></pre>
+<p>Drop the middle arm and the compiler says <em>“match is not exhaustive:
+missing <code>Option::Some(_)</code>”</em> — it names a value that has nowhere to go,
+spelled as the arm that would take it.</p>
 <p>When you only need a yes/no answer instead of a full match, <code>is</code> tests a
 pattern as a boolean:</p>
 <pre><code class="language-vilan fragment">let present = entry.map(|current| current is Some(let _task));

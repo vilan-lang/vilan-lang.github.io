@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -249,11 +249,15 @@ host’s own reporting.</p>
 <p>Within an expression, evaluation is <strong>left-to-right</strong>: operands before
 operators apply, the callee before its arguments, arguments in source
 order, the receiver before method arguments. A compound assignment
-evaluates its target place once. Short-circuit: <code>&amp;&amp;</code> and <code>||</code> evaluate
+evaluates its target place once — <strong>subscripts included</strong>, so
+<code>ys[bump()] += 1</code> calls <code>bump()</code> exactly once, before the read.
+Short-circuit: <code>&amp;&amp;</code> and <code>||</code> evaluate
 the right operand only when needed. <code>if</code>/<code>match</code> evaluate exactly the
 taken branch; a <code>match</code> evaluates its subject once, then tests legs top
 to bottom (first matching leg wins; its guard is evaluated only when the
-pattern matches).</p>
+pattern matches). Every guard is tested where its leg stands, the last
+leg’s included — exhaustiveness never rests on a guard (§3.10 of the
+grammar chapter), so no leg is treated as a catch-all it did not spell.</p>
 <h2 id="72a-integer-overflow"><a class="header" href="#72a-integer-overflow">7.2a Integer overflow</a></h2>
 <p>Arithmetic whose mathematical result exceeds the operand type’s range is
 <strong>undefined behavior</strong>: a conforming program does not overflow, and an

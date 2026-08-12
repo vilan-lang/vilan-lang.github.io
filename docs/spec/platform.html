@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -265,8 +265,11 @@ running it, and <code>.js</code> on the browser, where the loading
 instead of one file: <code>dist/&lt;name&gt;.js</code> carries every module-level binding
 (so §7.6’s initialization order is untouched) and every function two or
 more route arms can reach, and <code>dist/&lt;name&gt;.&lt;arm&gt;.js</code> carries the
-functions exactly one arm of the entry’s route <code>match</code> can reach. A
-<code>dist/&lt;name&gt;.chunks.json</code> lists them. Chunks are fetched when a
+functions exactly one arm of the entry’s route <code>match</code> can reach. Every
+build of a <code>browser</code> entry writes <code>dist/&lt;name&gt;.chunks.json</code>, the leg’s
+<strong>build manifest</strong>: its bundle’s file name, the style sidecar’s file name
+or <code>null</code>, whether the bundle must be loaded as a classic script, and the
+chunks it emitted (empty unless it split). Chunks are fetched when a
 navigation first reaches their arm, and the route value does not advance
 until one arrives; which functions land where is implementation-defined
 beyond that rule. Overlapping navigations resolve by order of DEPARTURE,

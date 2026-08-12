@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -263,19 +263,19 @@ fun main() {
 <p><code>Request</code> gives you <code>path()</code>, <code>method()</code>, and <code>body()</code>. Responses come
 from a builder: <code>.code(i32)</code> (200 by default),
 <code>.set_header(name, value)</code>, <code>.body(str)</code>, <code>.build()</code>.</p>
-<p>Here is the standard full-stack fallback. It serves the client bundle
-and answers <em>every other path</em> with the HTML shell, so deep links load
-(see <a href="routing.html">Routing</a>):</p>
-<pre><code class="language-vilan fragment">|request| match request.path() {
-	"/client.js" =&gt; Response::builder().set_header("Content-Type", "text/javascript").body(client_js).build(),
-	"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
-	_ =&gt; Response::builder().set_header("Content-Type", "text/html").body(app_html).build(),
-}
+<p>Here is the standard full-stack fallback. <code>build_handler</code> serves the
+client leg’s own artifacts — the bundle, its stylesheet, any route chunks
+— and your closure answers <em>every other path</em> with the HTML shell, so deep
+links load (see <a href="routing.html">Routing</a>):</p>
+<pre><code class="language-vilan fragment">build_handler(require_build("client"), |request| {
+	Response::builder().set_header("Content-Type", "text/html").body(app_html).build()
+})
 </code></pre>
 <h2 id="files-stdfs"><a class="header" href="#files-stdfs">Files: <code>std::fs</code></a></h2>
-<pre><code class="language-vilan fragment">fun exists(path: str): bool               // sync — boot code can branch on it
-fun read_file_to_str(path: str): str      // async (implicitly awaited), UTF-8
-fun write_file(path: str, contents: str)  // async
+<pre><code class="language-vilan fragment">fun exists(path: str): bool                 // sync — boot code can branch on it
+fun read_file_to_str(path: str): str        // async (implicitly awaited), UTF-8
+fun read_file_to_str_sync(path: str): str   // sync — for a callback that can't suspend
+fun write_file(path: str, contents: str)    // async
 </code></pre>
 <p>The typical server reads the client bundle and shell into memory once at
 boot, then serves from the strings.</p>

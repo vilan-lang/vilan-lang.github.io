@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -284,6 +284,15 @@ signature that hands back a value hands back a value, so <code>fun make(&amp;sel
 projection and keeps naming the receiver’s storage. Together these are what
 make “a call owns its result” true, which is the premise every elision below
 rests on:</p>
+<p>The return reads <strong>through</strong> a view to reach the place, because a returned
+expression can name storage without being a place: <code>fun grab(&amp;self): Inner { &amp;self.inner }</code> hands back a reference, and <code>fun get(h: &amp;Holder): (i32, i32) { peek(h) }</code> hands back what the <code>borrows</code> callee projected — which is <code>h</code>’s
+storage, named in the call. Both copy, exactly as the bare <code>self.inner</code> /
+<code>h.pair</code> spellings do; only the return type tells them apart from the
+projections one line away. And a <strong>scalar</strong>’s copy is its <em>read</em>: a scalar view
+is a <code>(base, key)</code> pair at runtime, so <code>fun same(v: &amp;mut i32): i32 { v }</code> hands
+back the <code>i32</code> it promises rather than the pair. A <strong>resource</strong> crosses no such
+seam at all — it cannot copy (§6.8’s R1), so handing one back out of a loan is
+a move out of a loan and is refused, with or without the <code>&amp;</code>.</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -454,6 +463,18 @@ evident (a method returning a view of <code>self</code> needs no clause):</p>
 <pre><code class="language-vilan fragment">fun write(self): &amp;mut T borrows self;   // Shared::write — explicit
 fun get(&amp;mut self, i: i32): &amp;mut T      // inferred: borrows self
 </code></pre>
+<p>What is inferred is a <em>projection</em>, so the <strong>return type decides</strong>, exactly as
+it does for the copy in §6.1: <code>fun copy(&amp;self): Holder { self }</code> hands back a
+value — the return copies it out of the loan — and projects nothing, so its
+result is an ordinary owned binding (<code>mut c = h.copy()</code> is legal). Change the
+return type to <code>&amp;mut Holder</code> and the same body is a projection.</p>
+<p>That agreement is exact for a <strong>forwarded parameter</strong> and conservative for the
+other leaf shapes: a by-value return whose tail is <code>&amp;self.inner</code>, a <code>borrows</code>
+call, or a wrapped <code>Some(&amp;mut self.x)</code> still <em>projects</em> at the call site, even
+though §6.1’s copy has already taken the value out of the loan. The result is
+therefore a value that is treated as a view — <code>mut</code> is refused on it, and rule
+4 counts it live — which restricts more programs than it must and mis-copies
+none.</p>
 <p>At the call site the returned view obeys the same second-class rules,
 with the borrow anchored to the projected argument: the argument’s place
 is treated as viewed while the result is live (rule 4 applies to it).
@@ -694,6 +715,19 @@ generic aggregate’s member is rejected the same way, so <code>Signal&lt;Databa
 — whose storage is a <code>Shared&lt;T&gt;</code> — is refused exactly as
 <code>Shared&lt;Database&gt;</code> is. Holding the resource in a struct field of your own
 is the sanctioned alternative, and stays legal.</p>
+<p>It is read per instantiation whatever the type’s <strong>provenance</strong>: an
+inferred container is a container. Deleting the annotation changes
+nothing, and neither does never writing one —</p>
+<pre><code class="language-vilan ignore">mut arr: List&lt;Guard&gt; = [Guard { .. }];   // rejected
+mut arr = [Guard { .. }];                // rejected, identically
+let cell = Shared::new(Guard { .. });    // and so is this
+fun stash&lt;T&gt;(own value: T) { let items = [value]; }   // rejected at T := Guard
+</code></pre>
+<p>— because containment is a question about a type, not about a spelling.
+The nesting is read the same way: a container inside a container, a tuple,
+or a fixed array is found wherever it sits. A <strong>fixed array</strong> of resources
+(<code>[Guard; 2]</code>) is not a container in this sense: it is a value aggregate,
+a resource by containment, and it drops its elements in reverse order.</p>
 </li>
 <li>
 <p><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a

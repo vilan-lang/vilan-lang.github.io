@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4e9f39d.js"></script>
@@ -383,9 +383,10 @@ with the element count checked against the type (works in parameter
 position too).</p>
 <blockquote>
 <p><strong>Going deeper.</strong> <code>Map</code> and <code>Set</code> key <strong>by value</strong>. Scalar keys (<code>i32</code>,
-<code>str</code>) work directly; a struct, enum, or <code>List</code> key works once it derives
-<code>Hashable</code> (<code>[derive(Hashable)]</code>), so two equal values are the same key.
-See <a href="../std/collections.html">collections</a>.</p>
+<code>str</code>) and backed enums (<code>enum Align { Start = "flex-start" }</code> — the enum
+<em>is</em> the string) work directly; a struct, an unbacked enum, or a <code>List</code>
+key works once it derives <code>Hashable</code> (<code>[derive(Hashable)]</code>), so two equal
+values are the same key. See <a href="../std/collections.html">collections</a>.</p>
 </blockquote>
 <h2 id="wheres-null"><a class="header" href="#wheres-null">Where’s <code>null</code>?</a></h2>
 <p>There isn’t one. A value that might be absent is an <code>Option&lt;T&gt;</code>, and the

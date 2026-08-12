@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d88d3d6d.js";
+            window.path_to_searchindex_js = "searchindex-e6ab13b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4e9f39d.js"></script>
@@ -826,9 +826,10 @@ with the element count checked against the type (works in parameter
 position too).</p>
 <blockquote>
 <p><strong>Going deeper.</strong> <code>Map</code> and <code>Set</code> key <strong>by value</strong>. Scalar keys (<code>i32</code>,
-<code>str</code>) work directly; a struct, enum, or <code>List</code> key works once it derives
-<code>Hashable</code> (<code>[derive(Hashable)]</code>), so two equal values are the same key.
-See <a href="#collections-reference">collections</a>.</p>
+<code>str</code>) and backed enums (<code>enum Align { Start = "flex-start" }</code> — the enum
+<em>is</em> the string) work directly; a struct, an unbacked enum, or a <code>List</code>
+key works once it derives <code>Hashable</code> (<code>[derive(Hashable)]</code>), so two equal
+values are the same key. See <a href="#collections-reference">collections</a>.</p>
 </blockquote>
 <h2 id="wheres-null"><a class="header" href="#wheres-null">Where’s <code>null</code>?</a></h2>
 <p>There isn’t one. A value that might be absent is an <code>Option&lt;T&gt;</code>, and the
@@ -1138,6 +1139,14 @@ and integers, and a variant with a payload may not have one at all —
 there is nowhere to put a payload in a bare string. <code>match</code> still matches
 <em>variants</em>: <code>match align { "flex-start" =&gt; … }</code> is an error, because the
 backing value is a representation, not a second spelling of the name.</p>
+<p>Because the variant <em>is</em> the host’s own value, an <code>external fun</code> can take
+one and return one — no wrapper, no conversion. That also means a host
+can hand you a value that is none of the variants, and an exhaustive
+<code>match</code> says so rather than guessing: it tests every variant and panics
+on anything else, with the value in the message
+(<code>Align: "middle" is not one of its values</code>). Where an unrecognized value
+is an answer you expect rather than a bug, bind the <code>str</code> and use
+<code>parse</code>, which gives you <code>None</code> instead.</p>
 <h2 id="impl-methods-and-statics"><a class="header" href="#impl-methods-and-statics">impl: methods and statics</a></h2>
 <p>Methods live in <code>impl</code> blocks, separate from the data:</p>
 <pre><code class="language-vilan">import std::print;
@@ -1309,7 +1318,7 @@ write the boilerplate:</p>
 <tr><td><code>PartialEq</code></td><td>structural <code>==</code></td></tr>
 <tr><td><code>Debug</code></td><td><code>.debug()</code>: a developer-facing rendering</td></tr>
 <tr><td><code>Default</code></td><td><code>Default::default()</code> built from the fields’ defaults</td></tr>
-<tr><td><code>Hashable</code></td><td>usability as a <code>Map</code> key or <code>Set</code> member (<code>std::hash</code>)</td></tr>
+<tr><td><code>Hashable</code></td><td>usability as a <code>Map</code> key or <code>Set</code> member (<code>std::hash</code>) — a backed enum already has it</td></tr>
 <tr><td><code>Json</code></td><td>JSON encode/decode (<code>std::json</code>)</td></tr>
 <tr><td><code>Wire</code></td><td>serialization for rpc payloads (<code>std::wire</code>)</td></tr>
 </tbody>
@@ -1377,6 +1386,17 @@ fun main() {
 </code></pre>
 <p>If you forget a variant, the compiler tells you. That’s most of the
 reason enums plus <code>match</code> replace flag fields and <code>null</code> checks.</p>
+<p>Completeness is judged over the whole pattern, not just its outermost
+name, so a payload you narrow has to be handled too:</p>
+<pre><code class="language-vilan fragment">match slot {
+	Some(0) =&gt; "zero",          // an i32 payload: no list of numbers covers it
+	Some(let value) =&gt; "some",  // this is what covers it
+	None =&gt; "empty",
+}
+</code></pre>
+<p>Drop the middle arm and the compiler says <em>“match is not exhaustive:
+missing <code>Option::Some(_)</code>”</em> — it names a value that has nowhere to go,
+spelled as the arm that would take it.</p>
 <p>When you only need a yes/no answer instead of a full match, <code>is</code> tests a
 pattern as a boolean:</p>
 <pre><code class="language-vilan fragment">let present = entry.map(|current| current is Some(let _task));
@@ -3462,13 +3482,26 @@ shell is yours, not the compiler’s.</p>
 <pre><code class="language-text">&lt;link rel="stylesheet" href="app.css" /&gt;
 </code></pre>
 <p>Both <code>vilan init</code> browser templates already carry the line, and the
-fullstack one also carries the route that serves it:</p>
-<pre><code class="language-vilan fragment">"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
+fullstack one serves the sidecar without naming it — <code>serve_build</code> routes
+every artifact the build wrote, the stylesheet among them:</p>
+<pre><code class="language-vilan fragment">Server::builder().port(8080).serve_build(require_build("client"))
 </code></pre>
-<p>Miss the link and nothing announces it — the app runs, unstyled, while
-the compiler faithfully rebuilds a stylesheet nobody loads. A <code>&lt;link&gt;</code>
-(rather than an inlined <code>&lt;style&gt;</code>) is also what lets <code>--watch</code> hot-swap
-CSS without reloading the page; see
+<p>That also means a leg that stops emitting styles stops having them
+served, with no <code>fs::exists</code> guard to remember: the build says whether it
+wrote a sidecar, and the server believes it.</p>
+<p>Miss the link and the app runs unstyled while the compiler faithfully
+rebuilds a stylesheet nobody loads — which is why a server can hold its
+shell against its build and refuse to start over exactly that:</p>
+<pre><code class="language-vilan fragment">let page = require_shell("src/app.html", build).html();
+</code></pre>
+<p><code>require_shell</code> (<code>std::document</code>, the
+<a href="#stddocument">reference</a>) checks the file every boot: a
+shell that links no stylesheet over a build that emitted one stops the
+server, naming the file and the fix. The fullstack template ships that
+line. Nothing checks a browser-only project’s <code>index.html</code> — there is no
+server to check it — so that one is still on you.</p>
+<p>A <code>&lt;link&gt;</code> (rather than an inlined <code>&lt;style&gt;</code>) is also what lets <code>--watch</code>
+hot-swap CSS without reloading the page; see
 <a href="#the-css-link-idiom">the dev loop</a>.</p>
 <p>At runtime you can still <em>select and combine</em> styles you already built.
 <code>a + b</code> merges two styles (per property, the right side wins), and
@@ -3860,14 +3893,13 @@ and the page change land together as one update.</p>
 <em>server</em>, which has to answer with the app shell no matter the path.
 That’s the standard history-API fallback, and the catch-all in your http
 handler does it:</p>
-<pre><code class="language-vilan fragment">serve_service(4000, protocol, |request| {
-	match request.path() {
-		"/client.js" =&gt; …,
-		"/client.css" =&gt; …,
-		_ =&gt; …app shell html…,   // every route serves the shell
-	}
-})
+<pre><code class="language-vilan fragment">serve_service(4000, protocol, build_handler(build, |request| {
+	…app shell html…   // every path the build does not claim serves the shell
+}))
 </code></pre>
+<p><code>build_handler(build, …)</code> answers the build’s own artifacts (<code>/client.js</code>,
+<code>/client.css</code>, and any route chunks) and hands everything else to your
+fallback, which is the catch-all deep links need.</p>
 <p>On the client side, a deep-linked page usually needs data that hasn’t
 synced yet. Mount it under <code>when(present)</code> so it appears when the data
 does (see <a href="#services--rpc">Services &amp; RPC</a>).</p>
@@ -4007,6 +4039,12 @@ struct Note { id: i32, text: str }
 <p><code>derive(Wire)</code> checks every field recursively. A closure or a <code>Signal</code>
 hiding inside a payload type is a compile error at the derive, which is
 exactly where you want to find out.</p>
+<p>A <code>resource</code> never travels, in either position: not as a field, and not as
+the derived type itself — <code>derive(Wire)</code> and <code>derive(Json)</code> are both refused
+for a <code>resource</code> struct or enum. A resource is an owned handle, and the
+receiving side would rebuild one out of bytes: a second handle to the same
+thing, owned by nobody. Send a name for it instead, which is what the next
+section is about.</p>
 <p>The codec is chosen at connect time: <code>json_codec()</code> for a readable wire,
 <code>binary_codec()</code> for a compact one. Client and server must use the same
 one.</p>
@@ -4156,10 +4194,58 @@ longer the only legal home for anything.</p>
 )
 </code></pre>
 <p><code>dispatcher()</code> is generated by <code>[service]</code>. The fallback answers every
-plain http request: serve <code>client.js</code> and <code>client.css</code>, and return the
-app shell for anything else so deep links work (see
-<a href="#routing">Routing</a>). For custom per-connection state, drop down to
-<code>serve_connected</code> (see the <a href="#stdrpc-reference">rpc reference</a>).</p>
+plain http request; wrap it in <code>build_handler(require_build("client"), …)</code>
+so the client leg’s own artifacts are served from the build’s description
+rather than from paths you typed, and your closure returns the app shell
+for anything else so deep links work (see <a href="#routing">Routing</a>). For
+custom per-connection state, drop down to <code>serve_connected</code> (see the
+<a href="#stdrpc-reference">rpc reference</a>).</p>
+<h2 id="growing-past-one-service"><a class="header" href="#growing-past-one-service">Growing past one service</a></h2>
+<p><code>serve_service</code> is sugar over a <code>ServerBuilder</code> layer you can reach
+directly: <code>Service::new(protocol)</code>, installed with
+<code>ServerBuilder::with_service</code>. Its routes answer before <code>on_request</code>,
+which is what lets a page and a service sit on the same builder chain
+instead of one replacing the other:</p>
+<pre><code class="language-vilan norun">import std::print;
+import std::shared::Shared;
+import std::json::json_codec;
+import std::http::{ Response, Server };
+import std::rpc_server::Service;
+
+[service(TodosClient)]
+struct Todos {
+	count: Shared&lt;i32&gt;,
+}
+
+impl Todos {
+	[rpc]
+	fun add(self, by: i32): i32 {
+		self.count.write() = self.count.read() + by;
+		self.count.read()
+	}
+}
+
+fun main() {
+	let todos = Todos { count = Shared::new(0) };
+	Server::builder()
+		.port(4600)
+		.with_service(Service::new(todos.dispatcher().into_protocol(json_codec())))
+		.on_request(|request| Response::builder().body("app shell here").build())
+		.on_start(|server| print(i"listening on {server.url()}"))
+		.build()
+		.start();
+}
+</code></pre>
+<p>Delete the <code>.with_service(…)</code> line and the program still compiles and
+still serves the page — the property a boot function built around
+<code>serve_service</code> can’t have. <code>with_service</code> is repeatable: a second
+service goes on its own mount, <code>.at("/admin/")</code>, so
+<code>Client::connect("/admin/", codec)</code> reaches it and the first service’s
+routes are untouched. Two constants either way: services always answer
+before <code>on_request</code> (so an app route can’t accidentally shadow a
+service route), and <code>serve_rpc</code>/<code>serve_service</code>/<code>serve_connected</code> keep
+working unchanged — they’re this same layer with the registry lifecycle
+(or a custom one) already wired in.</p>
 <h2 id="traps-7"><a class="header" href="#traps-7">Traps</a></h2>
 <ul>
 <li>Mysterious contract-mismatch failures while developing usually mean an
@@ -4262,19 +4348,19 @@ fun main() {
 <p><code>Request</code> gives you <code>path()</code>, <code>method()</code>, and <code>body()</code>. Responses come
 from a builder: <code>.code(i32)</code> (200 by default),
 <code>.set_header(name, value)</code>, <code>.body(str)</code>, <code>.build()</code>.</p>
-<p>Here is the standard full-stack fallback. It serves the client bundle
-and answers <em>every other path</em> with the HTML shell, so deep links load
-(see <a href="#routing">Routing</a>):</p>
-<pre><code class="language-vilan fragment">|request| match request.path() {
-	"/client.js" =&gt; Response::builder().set_header("Content-Type", "text/javascript").body(client_js).build(),
-	"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
-	_ =&gt; Response::builder().set_header("Content-Type", "text/html").body(app_html).build(),
-}
+<p>Here is the standard full-stack fallback. <code>build_handler</code> serves the
+client leg’s own artifacts — the bundle, its stylesheet, any route chunks
+— and your closure answers <em>every other path</em> with the HTML shell, so deep
+links load (see <a href="#routing">Routing</a>):</p>
+<pre><code class="language-vilan fragment">build_handler(require_build("client"), |request| {
+	Response::builder().set_header("Content-Type", "text/html").body(app_html).build()
+})
 </code></pre>
 <h2 id="files-stdfs"><a class="header" href="#files-stdfs">Files: <code>std::fs</code></a></h2>
-<pre><code class="language-vilan fragment">fun exists(path: str): bool               // sync — boot code can branch on it
-fun read_file_to_str(path: str): str      // async (implicitly awaited), UTF-8
-fun write_file(path: str, contents: str)  // async
+<pre><code class="language-vilan fragment">fun exists(path: str): bool                 // sync — boot code can branch on it
+fun read_file_to_str(path: str): str        // async (implicitly awaited), UTF-8
+fun read_file_to_str_sync(path: str): str   // sync — for a callback that can't suspend
+fun write_file(path: str, contents: str)    // async
 </code></pre>
 <p>The typical server reads the client bundle and shell into memory once at
 boot, then serves from the strings.</p>
@@ -4350,38 +4436,49 @@ fun main() {
 	// &lt;main&gt;&lt;h1&gt;Tasks&lt;/h1&gt;&lt;ul&gt;&lt;li&gt;Render on the server&lt;/li&gt;&lt;li&gt;Replace on boot&lt;/li&gt;&lt;/ul&gt;&lt;/main&gt;
 }
 </code></pre>
-<h2 id="on-the-server-render-and-splice"><a class="header" href="#on-the-server-render-and-splice">On the server: render and splice</a></h2>
-<p>The server reads the client bundle and an HTML shell from disk, then serves. The
-shell has a marker where the app goes; the handler replaces it with the render.
-The splice is plain user code (one <code>str::replace</code>, no framework):</p>
-<pre><code class="language-vilan norun">import std::fs;
+<h2 id="on-the-server-render-into-the-document"><a class="header" href="#on-the-server-render-into-the-document">On the server: render into the document</a></h2>
+<p>The server serves the client leg’s build and an HTML shell. <code>require_shell</code>
+reads that shell and checks it against the build (<a href="#stddocument">the
+reference</a>); <code>render(view)</code> puts the markup
+<em>inside the mount element</em> — the same <code>&lt;div id="app"&gt;</code> the client mounts into:</p>
+<pre><code class="language-vilan norun">import std::build::require_build;
+import std::document::require_shell;
 import std::http::{ Server, Request, Response };
-import std::ui::{ view, View, render };
+import std::ui::{ view, View };
 
 fun app(): View {
 	view("main").child(view("h1").text("Tasks"))
 }
 
-fun main() {
-	let client_js = fs::read_file_to_str("dist/client.js");
-	let shell = fs::read_file_to_str("src/app.html");
+async fun main() {
+	let build = require_build("client");
+	let page = require_shell("src/app.html", build);
 	Server::builder()
 		.port(8791)
-		.on_request(|request| {
-			match request.path() {
-				"/client.js" =&gt; Response::builder().set_header("Content-Type", "text/javascript").body(client_js).build(),
-				// Create, serialize, discard: a fresh render per request, spliced
-				// into the shell. No effects, no subscriptions survive the response.
-				_ =&gt; Response::builder().set_header("Content-Type", "text/html").body(shell.replace("&lt;!--ssr--&gt;", render(app()))).build(),
-			}
-		})
+		.serve_build(build)
+		// Create, serialize, discard: a fresh render per request, into a copy
+		// of the document. No effects, no subscriptions survive the response.
+		.on_request(|request| Response::builder().set_header("Content-Type", "text/html").body(page.render(app()).html()).build())
 		.build()
 		.start();
 }
 </code></pre>
-<p>The shell puts the marker inside the mount point:</p>
-<pre><code class="language-html">&lt;div id="app"&gt;&lt;!--ssr--&gt;&lt;/div&gt;
+<p><code>serve_build</code> installs the client leg’s artifacts — here just <code>/client.js</code> —
+in front of <code>on_request</code>, so the handler is only ever asked about the page.</p>
+<p>The shell needs no marker, only the mount point it already had:</p>
+<pre><code class="language-html">&lt;div id="app"&gt;&lt;/div&gt;
 &lt;script type="module" src="/client.js"&gt;&lt;/script&gt;
+</code></pre>
+<p>There used to be a <code>&lt;!--ssr--&gt;</code> comment in there, replaced by hand with one
+<code>str::replace</code>. It is gone, and the reason is the reason this page’s advice
+changed: the marker was a string literal in <code>.vl</code> that had to equal a string
+literal in <code>.html</code>, and a mismatch was a <em>silent no-op</em> — the client still
+rendered the page correctly, so the only observer of the bug was a crawler.
+The document knows where the mount element is, so there is nothing left to
+spell wrong.</p>
+<p>If you would rather not write the shell at all, <code>Document::of(build)</code> generates
+one from the build — the same value, the same <code>render</code>:</p>
+<pre><code class="language-vilan fragment">let page = Document::of(build).title("Tasks").render(app()).html();
 </code></pre>
 <h2 id="on-the-client-mount-replaces"><a class="header" href="#on-the-client-mount-replaces">On the client: mount replaces</a></h2>
 <p>The client entry is the shared <code>app()</code> and one <code>mount_root</code>. There is no server
@@ -4445,8 +4542,8 @@ vilan run vilan/examples/ssr
 script runs. Load it in a browser and the client boots and replaces it in place.</p>
 <p>To build the same thing from nothing instead, <code>vilan init my-app --template fullstack</code> gives you the one-package/two-entries scaffold this page assumes
 (see <a href="#start-a-project">Start a project</a>); add the
-shared <code>app()</code> module, <code>render</code> on the server leg, and the <code>&lt;!--ssr--&gt;</code> marker
-in the shell, as above.</p>
+shared <code>app()</code> module and <code>page.render(app())</code> on the server leg, as above —
+the scaffold’s shell already carries the mount element the render lands in.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="a-full-stack-walkthrough"><a class="header" href="#a-full-stack-walkthrough">A full-stack walkthrough</a></h1>
 <p>Every guide so far taught one layer. This chapter builds a whole app, so
@@ -4582,30 +4679,35 @@ account (pbkdf2-hashed password), a known one checks it, and either path
 opens a session row whose token identifies later calls (<a href="#authentication">Services &amp;
 RPC</a>). <code>open_database()</code> creates the tables at
 startup; <code>boot()</code> loads the mirror once from the already-open database.</p>
-<h2 id="the-server-entry-read-boot-serve"><a class="header" href="#the-server-entry-read-boot-serve">The server entry: read, boot, serve</a></h2>
+<h2 id="the-server-entry-describe-boot-serve"><a class="header" href="#the-server-entry-describe-boot-serve">The server entry: describe, boot, serve</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/server.vl"><code>src/server.vl</code></a>
 is now the boring file, which is the point:</p>
 <pre><code class="language-vilan fragment">async fun main() {
-	let client_js = fs::read_file_to_str("dist/client.js");
-	let client_css = fs::read_file_to_str("dist/client.css");
+	let build = require_build("client");
 	let app_html = fs::read_file_to_str("src/app.html");
 
 	let store = boot();
 
-	serve_service(4600, store.dispatcher().into_protocol(json_codec()), |request| {
-		match request.path() {
-			"/client.js" =&gt; Response::builder().set_header("Content-Type", "text/javascript").body(client_js).build(),
-			"/client.css" =&gt; Response::builder().set_header("Content-Type", "text/css").body(client_css).build(),
-			_ =&gt; Response::builder().set_header("Content-Type", "text/html").body(app_html).build(),
-		}
-	}, |server| print(i"notes server listening on {server.url()}"));
+	serve_service(
+		4600,
+		store.dispatcher().into_protocol(json_codec()),
+		build_handler(build, |request| Response::builder().set_header("Content-Type", "text/html").body(app_html).build()),
+		|server| print(i"notes server listening on {server.url()}"),
+	);
 }
 </code></pre>
-<p>The catch-all serves the shell for every unknown path. That’s what makes
-deep links like <code>/note/7</code> load (<a href="#deep-links-and-the-server">Routing</a>).
-The client bundle it ships is <code>dist/client.js</code>. <code>vilan build</code> compiles
-browser entries first, so the file is always fresh by the time the
-server entry builds.</p>
+<p><code>require_build("client")</code> asks what the client leg’s build emitted — the
+bundle, and the stylesheet its <code>const</code> styles produced — and
+<code>build_handler</code> turns that into one route per artifact, with the content
+type each extension implies. No <code>dist/</code> path is spelled here, so renaming
+the leg cannot leave this file compiling and the page blank. (When the app
+owns its builder, <code>Server::builder().serve_build(build)</code> is the same thing
+installed on the chain.)</p>
+<p>The fallback then serves the shell for every path the build does not
+claim. That’s what makes deep links like <code>/note/7</code> load
+(<a href="#deep-links-and-the-server">Routing</a>). <code>vilan build</code> compiles
+browser entries first, so the client’s artifacts are always there by the
+time the server entry builds.</p>
 <h2 id="the-client-entry-four-signals-and-a-mount"><a class="header" href="#the-client-entry-four-signals-and-a-mount">The client entry: four signals and a mount</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/client.vl"><code>src/client.vl</code></a> is
 the whole wiring diagram:</p>
@@ -4848,6 +4950,37 @@ writes the emitted JS to stdout, a chatty hook shares that stream; redirect
 it in the command if you pipe the build.)</li>
 <li><code>vilan check</code> produces no artifacts, so it runs no hooks.</li>
 </ul>
+<h2 id="freshness-for-a-hand-rolled-server"><a class="header" href="#freshness-for-a-hand-rolled-server">Freshness for a hand-rolled server</a></h2>
+<p>A running server that reads a file once at boot (<code>fs::read_file_to_str</code>
+before <code>Server::builder()...start()</code>, say) keeps serving those bytes for
+the life of the process — editing that file produces no round the server
+itself ever sees. <code>std::watch</code> closes that gap for code you wrote by hand:</p>
+<pre><code class="language-vilan norun">import std::fs;
+import std::http::{ Response, Server };
+import std::watch;
+
+fun main() {
+	Server::builder()
+		.port(0)
+		.on_request(|request| {
+			// Cheap: re-read on every request instead of once at boot.
+			let shell = fs::read_file_to_str("dist/app.html");
+			// Tell every connected browser to reload once it has the fresh
+			// bytes. A no-op outside `run --watch`, so it costs nothing to
+			// leave the call in a shipped build.
+			watch::force_refresh();
+			Response::builder().body(shell).build()
+		})
+		.build()
+		.start();
+}
+</code></pre>
+<p><code>force_refresh()</code> only ever reloads a browser connected to the SAME dev
+channel this server’s <code>run --watch</code> session started — it has no effect on
+a plain <code>vilan run</code>, and it is not how <code>run --watch</code>’s own <code>swap</code>/<code>css</code>
+push works (those fire automatically, on a round; this is the manual,
+explicit escape hatch for state a round can’t see). Reference:
+<a href="#process-modules-reference"><code>std::watch</code></a>.</p>
 <h2 id="picking-which-server-to-run"><a class="header" href="#picking-which-server-to-run">Picking which server to run</a></h2>
 <p>You only need this section if your project has two or more runnable Node
 legs: a <code>[project]</code> of several packages, or one package with several Node
@@ -4965,22 +5098,30 @@ fun main() {
 </code></pre>
 <h3 id="serving-the-chunks"><a class="header" href="#serving-the-chunks">Serving the chunks</a></h3>
 <p>A chunk is fetched from the same directory the bundle was served from, so a
-static host needs nothing: serve <code>dist/</code> and you are done. A hand-written
-server iterates <code>dist/client.chunks.json</code> instead of hard-coding a route per
-file — it lists every artifact the build wrote, so adding, renaming or
-removing a route arm needs no server change:</p>
+static host needs nothing: serve <code>dist/</code> and you are done. A vilan server
+needs nothing either — <code>dist/client.chunks.json</code> is the leg’s <strong>build
+manifest</strong>, and <code>serve_build</code> turns it into routes:</p>
 <pre><code class="language-json">{
+	"leg": "client",
 	"entry": "client.js",
+	"styles": "client.css",
+	"classic_script": true,
 	"chunks": [
 		{ "arm": "Route::Home", "tag": 0, "file": "client.Route_Home.js" },
 		{ "arm": "Route::Docs(..)", "tag": 1, "file": "client.Route_Docs.js" }
 	]
 }
 </code></pre>
-<p><code>examples/fullstack</code>’s server does exactly that: it reads the manifest at
-boot, keeps each named file in memory beside <code>client.js</code>, and serves them by
-path. A leg that does not split writes no manifest, and that code path is
-then simply empty — so the same server works either way.</p>
+<p>Every build of a browser leg writes it, split or not — a leg that does not
+split gets <code>"chunks": []</code> and <code>"classic_script": false</code>. That is deliberate:
+an absent file cannot tell “did not split” from “was never built”, and
+<code>build_of</code> needs the difference. <code>styles</code> is <code>null</code> when the leg compiled no
+<code>const style()</code>, which is the one thing an <code>fs::exists</code> probe could never
+answer in both directions.</p>
+<p><code>examples/fullstack</code>’s server reads it with <code>build_of("client")</code> and hands
+the result to <code>serve_build</code>, which installs one route per artifact — so
+adding, renaming or removing a route arm needs no server change, and neither
+does turning <code>split</code> on.</p>
 <h3 id="is-it-worth-it"><a class="header" href="#is-it-worth-it">Is it worth it?</a></h3>
 <p>Splitting is not free. The route gate, the per-chunk forwarders and the
 embedded chunk map are a fixed cost paid once per split leg — on the order
@@ -5155,7 +5296,23 @@ impl Map&lt;type K: Hashable, type V: PartialEq&gt; {
 }
 impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): Map&lt;K, V&gt; }
 </code></pre>
-<p>Keys compare <strong>by value</strong>. Scalars work directly; a struct, enum, tuple, or
+<p>Keys compare <strong>by value</strong>. Scalars work directly, and so does a <strong>backed enum</strong>
+— one with explicit backing values, which <em>is</em> that value at runtime, so the
+backing value is the key and no derive is needed:</p>
+<pre><code class="language-vilan">import std::print;
+import std::map::Map;
+
+enum Align { Start = "flex-start", End = "flex-end" }
+
+fun main() {
+	mut widths: Map&lt;Align, i32&gt; = Map::new();
+	widths.insert(Align::Start, 1);
+	print(widths.get(Align::Start).unwrap_or(0)); // 1
+}
+</code></pre>
+<p>An <strong>unbacked</strong> enum (<code>enum Plain { A, B }</code>) is not a key on its own: without a
+backing value it lowers to an array, like a struct, so it needs the derive along
+with every other aggregate. A struct, an unbacked or payload-carrying enum, or a
 <code>List</code> key works as long as it is <code>Hashable</code>. Derive it:</p>
 <pre><code class="language-vilan">import std::print;
 import std::map::Map;
@@ -5237,12 +5394,47 @@ fun main() {
 }
 </code></pre>
 <h2 id="hashable"><a class="header" href="#hashable"><code>Hashable</code></a></h2>
-<p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>.
-<code>[derive(Hashable)]</code> implements it for a struct/enum whose fields are all
-<code>Hashable</code> (scalars, <code>str</code>, <code>bool</code>, <code>List</code>/<code>Option</code> of <code>Hashable</code>, or another
-derived type); a closure, <code>Set</code>, <code>Map</code>, or <code>Shared</code> field is rejected. You can
-also hand-write <code>impl Hashable</code> to key by a subset of fields, and build your own
+<p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>. Three
+routes reach it:</p>
+<ul>
+<li><strong>Scalars</strong> (<code>str</code>, <code>bool</code>, every sized numeric) and <code>List</code>/<code>Option</code> of a
+<code>Hashable</code> — implemented by std.</li>
+<li><strong>A backed enum</strong> — implemented by the compiler beside its <code>value()</code>/<code>parse()</code>
+(see the types chapter), off the same opt-in: writing <code>= "flex-start"</code> is what
+makes the enum that value, and the value is the key. So <code>Align::Start.hash()</code>
+and <code>Align::Start.value().hash()</code> are the same key, and a backed enum is
+accepted as a <em>field</em> of a derived type too. A <code>resource</code> enum is excluded — a
+resource cannot be hashed by value.</li>
+<li><strong><code>[derive(Hashable)]</code></strong> — for a struct or an enum whose fields are all
+<code>Hashable</code> (scalars, <code>str</code>, <code>bool</code>, <code>List</code>/<code>Option</code> of <code>Hashable</code>, a backed
+enum, or another derived type); a closure, <code>Set</code>, <code>Map</code>, or <code>Shared</code> field is
+rejected. Writing it on a backed enum is harmless and does nothing.</li>
+</ul>
+<p>You can also hand-write <code>impl Hashable</code> to key by a subset of fields — except on
+a backed enum, whose impl the compiler already provides — and build your own
 container by bounding on <code>K: Hashable</code> and keying a <code>Map&lt;Hash, …&gt;</code> yourself.</p>
+<p>A <code>Hash</code> is opaque: you can hold it, compare two with <code>==</code>, hash it again (it is
+itself <code>Hashable</code>, being already a canonical key), and use it as a key. You
+cannot read the value inside, which is what keeps the representation free to
+change. Equal values hash equal, so <code>==</code> on two hashes answers “same key?”:</p>
+<pre><code class="language-vilan">import std::print;
+import std::hash::Hashable;
+
+[derive(Hashable)]
+struct Point {
+	x: i32,
+	y: i32,
+}
+
+fun main() {
+	let here = Point { x = 1, y = 2 };
+	print(here.hash() == Point { x = 1, y = 2 }.hash()); // true
+	print(here.hash() == Point { x = 9, y = 2 }.hash()); // false
+}
+</code></pre>
+<p>Equality is the whole of a <code>Hash</code>’s operator surface — there is no order on a
+canonical key, so <code>&lt;</code> is a compile error rather than a lexicographic compare of
+the underlying JSON.</p>
 <p>One corner: a float <em>inside</em> an aggregate key canonicalizes through JSON, where
 <code>NaN</code> becomes <code>null</code> and <code>-0</code>/<code>+0</code> collapse to <code>0</code>, so those collide. Bare
 numeric keys don’t have this (they key by JS value directly).</p>
@@ -6250,10 +6442,10 @@ codec (<code>std::binary</code>), raw bytes (<code>std::bytes</code>), and base6
 “Derives” here is plumbing you only meet when building custom transports or
 parsers.</p>
 <h2 id="json"><a class="header" href="#json">JSON</a></h2>
-<pre><code class="language-vilan fragment">trait Json { fun to_json(self): str; }        // encode
-trait FromJson {                              // decode
-	fun from_json(text: str): FromJson;
-	fun from_json_value(value: JsonValue): FromJson;
+<pre><code class="language-vilan fragment">trait Json { fun to_json(self): str; }                     // encode
+trait FromJson {                                           // decode
+	fun from_json(text: str): Result&lt;Self, str&gt;;
+	fun from_json_value(value: JsonValue): Result&lt;Self, str&gt;;
 }
 </code></pre>
 <p><code>[derive(Json)]</code> implements both from a struct/enum’s shape; scalars,
@@ -6262,9 +6454,14 @@ trait FromJson {                              // decode
 untrusted, so a missing field, a wrong-shaped value, or text that isn’t
 JSON is a decode error rather than silent garbage or a crash. Both
 <code>from_json(text)</code> and <code>from_json_value(value)</code> return <code>Result&lt;Self, str&gt;</code>;
-handle it with <code>!</code>, <code>match</code>, or <code>is Ok(..)</code>:</p>
+handle it with <code>!</code>, <code>match</code>, or <code>is Ok(..)</code>.</p>
+<p>The two decode methods differ in what they take, not in what they answer:
+<code>from_json</code> parses the text (non-crashing) and hands off to
+<code>from_json_value</code>, which validates an already-parsed value’s shape. That
+is the one to call when a value is nested inside another decode, and the
+one to write when implementing the trait by hand.</p>
 <pre><code class="language-vilan">import std::print;
-import std::json::{ Json, FromJson };
+import std::json::{ Json, FromJson, JsonValue, parse_json_value };
 import std::result::Result::{ self, Ok, Err };
 
 [derive(Json)]
@@ -6283,21 +6480,110 @@ fun main() {
 		Err(let reason) =&gt; print(reason),
 	}
 
+	// The already-parsed form, same `Result`.
+	match Point::from_json_value(parse_json_value("{\"x\":3,\"y\":4}")) {
+		Ok(let back) =&gt; print(back.y), // 4
+		Err(let reason) =&gt; print(reason),
+	}
+
 	// A missing field is a decode error naming the field.
 	match Point::from_json("{\"x\":1}") {
 		Ok(_) =&gt; print("decoded"),
 		Err(let reason) =&gt; print(reason), // missing field y
 	}
+
+	// So is text that isn't JSON at all.
+	match Point::from_json("not json") {
+		Ok(_) =&gt; print("decoded"),
+		Err(let reason) =&gt; print(reason), // not valid JSON
+	}
+}
+</code></pre>
+<p>Written by hand — for a type whose encoding isn’t its shape — the
+signatures are the trait’s, <code>Self</code> included:</p>
+<pre><code class="language-vilan">import std::print;
+import std::json::{ Json, FromJson, JsonValue };
+import std::result::Result::{ self, Ok, Err };
+
+// A newtype that encodes as the bare string it wraps, not as an object.
+struct Tag {
+	name: str,
+}
+
+impl Tag with Json {
+	fun to_json(self): str {
+		self.name.to_json()
+	}
+}
+
+impl Tag with FromJson {
+	fun from_json(text: str): Result&lt;Self, str&gt; {
+		Tag::from_json_value(text.try_parse_json().ok_or("not valid JSON")!)
+	}
+	fun from_json_value(value: JsonValue): Result&lt;Self, str&gt; {
+		Ok(Tag { name = str::from_json_value(value)! })
+	}
+}
+
+fun main() {
+	print(Tag { name = "ada" }.to_json()); // "ada"
+	match Tag::from_json("\"ada\"") {
+		Ok(let tag) =&gt; print(tag.name),    // ada
+		Err(let reason) =&gt; print(reason),
+	}
 }
 </code></pre>
 <p>Untyped inspection, when the shape isn’t known up front:</p>
 <pre><code class="language-vilan fragment">external struct JsonValue;
-fun parse_json_value(text: str): JsonValue    // panics on bad JSON
-str.try_parse_json(): Option&lt;JsonValue&gt;       // the safe form
-value.field(name: str): JsonValue
-value.tag(): str                              // "object" | "array" | "string" | …
-value.elements(): List&lt;JsonValue&gt;
+fun parse_json_value(text: str): JsonValue  // throws on malformed text
+str.try_parse_json(): Option&lt;JsonValue&gt;     // the safe form
+
+enum JsonKind { Null, Bool, Number, String, Array, Object }
+
+value.kind(): JsonKind
 value.is_null(): bool
+value.field(name: str): JsonValue
+value.has_field(name: str): bool
+value.elements(): List&lt;JsonValue&gt;
+value.tag(): str         // an enum discriminator, NOT a type — see below
+</code></pre>
+<p><code>kind()</code> is the value’s JSON type, normalized: the host’s <code>typeof</code> calls
+both an array and <code>null</code> an <code>"object"</code>, so the intrinsic names those two
+itself. <code>JsonKind</code> is a <strong>backed enum</strong> carrying exactly those strings, so
+<code>value.kind() == JsonKind::Number</code> is one comparison against <code>"number"</code> —
+the set is closed in the type system rather than in a doc comment, and
+<code>Object</code> and <code>Null</code> are as usable as the other four. <code>is_null()</code> is a
+separate intrinsic: it tests the value against <code>null</code> directly.</p>
+<p>The set is closed over JSON, not over every <code>JsonValue</code>. <code>value.field(name)</code>
+for a key the object does not have is the host’s <code>undefined</code>, whose kind is
+none of the six — <code>==</code> answers <code>false</code> for it, as it always did, and an
+exhaustive <code>match</code> over <code>JsonKind</code> panics naming it. <code>has_field</code> is the
+check that keeps you out of that case.</p>
+<p><code>tag()</code> answers a different question and is not a spelling of <code>kind()</code>: it
+reads an <strong>externally-tagged enum’s discriminator</strong> — the string itself for a
+bare <code>"Variant"</code>, the single key for a <code>{"Variant":…}</code> object. That is what a
+derived decoder calls to pick a variant, so it only means anything on those
+two shapes: on a number or a bool it yields <code>"undefined"</code>, and on <code>null</code> it
+throws. Reach for <code>kind()</code> unless you are decoding an enum by hand.</p>
+<pre><code class="language-vilan">import std::print;
+import std::json::{ JsonKind, parse_json_value };
+
+fun main() {
+	let value = parse_json_value("{\"name\":\"ada\",\"tags\":[\"x\",\"y\"]}");
+	print(value.kind() == JsonKind::Object);        // true
+	print(value.field("name").kind().value());      // string
+	print(value.has_field("age"));                  // false
+
+	for element in value.field("tags").elements() {
+		if element.kind() == JsonKind::String {
+			print(element.kind().value()); // string, twice
+		}
+	}
+
+	// `tag()` is the other question: an externally-tagged enum's discriminator.
+	print(parse_json_value("\"Start\"").tag());         // Start
+	print(parse_json_value("{\"Text\":\"hi\"}").tag()); // Text
+}
 </code></pre>
 <p><code>json_codec(): Codec</code> is the JSON wire codec for rpc (see below).</p>
 <h2 id="the-wire-layer-stdwire"><a class="header" href="#the-wire-layer-stdwire">The wire layer (<code>std::wire</code>)</a></h2>
@@ -6320,7 +6606,9 @@ types with a custom encoding.</p>
 its variant name, for both <code>Json</code> and <code>Wire</code>. <code>Align::Start</code> is
 <code>"flex-start"</code> on the wire, not <code>"Start"</code>, and it decodes through
 <code>Align::parse</code>, so a peer sending a value outside the set is a decode
-error rather than a confidently-wrong variant.</p>
+error rather than a confidently-wrong variant. One explicit value backs
+the whole enum, so <code>enum Level { Low = 0, Mid, High }</code> puts <code>1</code> on the
+wire for <code>Mid</code>, not <code>"Mid"</code>.</p>
 <p><strong>Adding a backing value to an existing derived enum is a wire-format
 break, and so is removing one.</strong> An enum with no backing value keeps the
 externally-tagged form (<code>"Start"</code>, or <code>{"Text":…}</code> with a payload), so
@@ -7158,7 +7446,9 @@ fun main() {
 live-update loop <code>vilan run --watch</code> runs for a full-stack project (see
 <a href="#the-dev-loop">The dev loop</a> for the whole picture). Browser-only,
 and every hook here is a <strong>no-op outside a hot reload</strong>: importing it costs
-nothing in a production build, so you can leave the calls in place.</p>
+nothing in a production build, so you can leave the calls in place. For a
+hand-rolled <em>server’s</em> own dev-mode surface — asking a connected browser
+to reload — see <a href="#process-modules-reference"><code>std::watch</code></a>.</p>
 <pre><code class="language-vilan fragment">fun hmr_active(): bool                       // is a hot-reload session live?
 fun on_teardown(cleanup: || void)            // run before the next swap
 fun stash&lt;type T&gt;(key: str, value: T)        // carry plain data across a swap
@@ -7249,8 +7539,8 @@ doubt, pick a new key, or refresh, which clears the stash entirely.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="process-modules-reference"><a class="header" href="#process-modules-reference">Process modules reference</a></h1>
 <p>The process layer (Node/Deno/Bun builds): <code>std::db</code>, <code>std::http</code>,
-<code>std::fs</code>, <code>std::process</code>, <code>std::rpc_server</code>. Task-oriented usage:
-<a href="#persistence-and-the-server">Persistence and the server</a>.</p>
+<code>std::fs</code>, <code>std::process</code>, <code>std::rpc_server</code>, <code>std::watch</code>. Task-oriented
+usage: <a href="#persistence-and-the-server">Persistence and the server</a>.</p>
 <h2 id="stddb-sqlite"><a class="header" href="#stddb-sqlite">std::db: SQLite</a></h2>
 <pre><code class="language-vilan fragment">resource external struct Database;       // a resource: moves, closes on drop
 
@@ -7293,10 +7583,15 @@ impl ServerBuilder {
 	fun on_upgrade(own self, handler: |NodeRequest, NodeSocket, Bytes| void): ServerBuilder
 	fun on_start(own self, callback: |Server| void): ServerBuilder
 	fun on_stop(own self, callback: |Server| void): ServerBuilder
+	fun serve_build(own self, build: LegBuild): ServerBuilder   // one route per artifact
 	fun build(self): Server
 }
+// The same routing for a boot function that hands you only a fallback
+// (`serve_service`, `serve_connected`):
+fun build_handler(build: LegBuild, fallback: |Request| Response): |Request| Response
 impl Server {
 	fun start(self)        // begin listening; holds the event loop
+	fun stop(self)         // stop listening; fires on_stop once the listener has closed
 	fun port(self): i32    // the bound port (see below)
 	fun url(self): str
 }
@@ -7339,6 +7634,25 @@ fun main() {
 		.start();
 }
 </code></pre>
+<p><code>serve_build</code> is the one call that replaces the boot reads and the
+content-type table a full-stack server used to write by hand. It takes a
+<a href="#stdbuild"><code>LegBuild</code></a> and installs one route per artifact at
+<code>/&lt;file name&gt;</code> — the bundle, the style sidecar if the leg emitted one, and
+every route chunk — in front of <code>on_request</code>, whatever order the chain was
+written in. So the app’s catch-all still answers every path the build does
+not claim, and a leg that gains <code>split = true</code> gains its chunk routes with
+no server edit.</p>
+<p>Three details are decisions, not defaults. The route shape is
+<code>/&lt;file name&gt;</code>, which is what every shell already asks for, so adopting it
+moves no HTML. Content types come from a short fixed table (<code>.js</code>/<code>.mjs</code>,
+<code>.css</code>, <code>.json</code>, <code>.html</code>); anything else is not served, because
+<code>serve_build</code> serves a <em>build</em>, not a directory. And an artifact the build
+named but did not write <strong>stops the server at boot</strong>, naming the file and
+the leg, rather than 404ing for the life of the process.</p>
+<p>Freshness is its dev-mode policy: under <code>vilan run --watch</code>
+(<a href="#stdwatch"><code>is_watching</code></a>) each asset is re-read per request, so a
+rebuild is served without a restart; otherwise the copy read at boot is
+served from memory.</p>
 <p>A <strong>streaming</strong> response holds the connection open: once the status and
 headers are written, <code>on_open</code> receives the live <code>ResponseStream</code> and
 writes chunks over time (SSE’s shape; a suspending <code>on_open</code> runs as
@@ -7346,6 +7660,11 @@ spawned work). <code>on_upgrade</code> mounts a WebSocket-style handshake handle
 over the raw bindings (<code>NodeRequest</code>/<code>NodeSocket</code>). For an rpc-serving
 app you won’t touch any of this directly: <code>serve_service</code> wraps it
 (below), and <code>serve_connected</code> itself now rides this surface.</p>
+<p><code>Server::stop()</code> closes the listener and fires <code>on_stop</code> once it has
+actually closed — call it from <code>on_start</code> (stash the <code>Server</code> value
+somewhere reachable, e.g. behind a signal handler or a <code>/shutdown</code>
+route) or from inside a request handler. Stopping a <code>Server</code> value
+<code>start()</code> never populated (built but never started) is a no-op.</p>
 <h2 id="stdrpc_server"><a class="header" href="#stdrpc_server">std::rpc_server</a></h2>
 <pre><code class="language-vilan fragment">fun serve_service(
 	port: i32,
@@ -7356,23 +7675,241 @@ app you won’t touch any of this directly: <code>serve_service</code> wraps it
 
 fun serve_connected(port, protocol, on_connection, fallback, on_ready)
 	// the same server with the per-connection hook exposed (custom attach/auth)
+
+impl Service {
+	fun new(protocol: RpcProtocol): Service   // mounted at "/"; the session-registry lifecycle
+	fun at(own self, prefix: str): Service    // mount elsewhere instead, e.g. "/admin/"
+	fun on_connect(own self, handler: |i32, DuplexEnd| void): Service
+	fun on_disconnect(own self, handler: |i32| void): Service
+}
+impl ServerBuilder {
+	fun with_service(own self, service: Service): ServerBuilder   // repeatable
+}
 </code></pre>
 <p>Websocket upgrade + session registry (mirror attach/detach) + rpc dispatch;
-each handler runs in a turn (<code>AtEnd</code>). Details and the client side:
-<a href="#services--rpc">Services &amp; RPC</a> and the <a href="#stdrpc-reference">rpc reference</a>.</p>
+each handler runs in a turn (<code>AtEnd</code>). <code>serve_rpc</code>/<code>serve_service</code>/
+<code>serve_connected</code> are sugar over <code>Server::builder().with_service(…)</code> —
+the underlying layer a server can grow into: install a second service on
+its own mount, or a plain page alongside one, by adding a call rather
+than swapping to a different <code>serve_*</code> function. Details and the client
+side: <a href="#services--rpc">Services &amp; RPC</a> and the
+<a href="#stdrpc-reference">rpc reference</a>.</p>
 <h2 id="stdfs"><a class="header" href="#stdfs">std::fs</a></h2>
-<pre><code class="language-vilan fragment">fun exists(path: str): bool                // sync
-fun read_file_to_str(path: str): str       // async, UTF-8
-fun write_file(path: str, contents: str)   // async
+<pre><code class="language-vilan fragment">fun exists(path: str): bool                     // sync
+fun read_file_to_str(path: str): str            // async, UTF-8
+fun read_file_to_str_sync(path: str): str       // sync, UTF-8 — blocks the event loop
+fun read_bytes(path: str): Bytes                // async, true binary read
+fun write_file(path: str, contents: str)        // async
+fun read_dir(path: str): List&lt;str&gt;              // async, entry NAMES, flat (v1)
+fun stat(path: str): Option&lt;Stat&gt;               // async — None if `path` doesn't exist; every other failure throws
+struct Stat {
+    size: i32,
+    modified_at_ms: f64,   // epoch milliseconds
+    is_directory: bool,
+}
 </code></pre>
+<p><code>read_bytes</code>, <code>read_dir</code>, and <code>read_file_to_str</code> throw host-side on any
+failure, missing path included — the same posture <code>read_file_to_str</code> always
+had. <code>stat</code> alone is a non-throwing probe: it exists to let a caller ask
+“is this here yet, and what does it look like” (a poller’s use case), so a
+missing path is <code>None</code>, not a thrown exception. Prefer the async read; the
+sync one exists for a read that must complete inside a callback that cannot
+suspend — <code>serve_build</code>’s dev-mode revalidation is the case it was added
+for.</p>
+<h2 id="stdbuild"><a class="header" href="#stdbuild">std::build</a></h2>
+<p>What a browser leg’s build emitted, as the build itself knows it — the
+value that lets a server stop restating <code>"dist/client.js"</code> from memory.</p>
+<pre><code class="language-vilan fragment">struct LegBuild {
+	leg: str,               // `client`, for `[entry.client]`
+	dist: str,              // where its artifacts live — `dist`
+	bundle: str,            // `client.js`
+	styles: Option&lt;str&gt;,    // `client.css`, or None if the leg compiled no styles
+	chunks: List&lt;str&gt;,      // route chunks, empty unless the leg splits
+	classic_script: bool,   // true exactly when it splits
+}
+
+fun build_of(leg: str): Result&lt;LegBuild, BuildError&gt;   // async
+fun require_build(leg: str): LegBuild                  // async; stops if it can't
+</code></pre>
+<p><code>build_of</code> reads <code>dist/&lt;leg&gt;.chunks.json</code>, which every build of a browser
+leg writes. A leg that was never built is <code>Err(BuildError::NotBuilt)</code> and
+not an empty build — the manifest’s presence is the difference, which is
+why it is written even when the leg does not split. <code>require_build</code> is the
+boot idiom: a server that cannot describe its own build has nothing to
+serve, so it stops with the error’s message instead of starting.</p>
+<p><code>LegBuild::artifacts()</code> gives <code>(url, file)</code> pairs — <code>("/client.js", "dist/client.js")</code> — in serving order. <code>std::http</code>’s
+<a href="#stdhttp-the-server"><code>serve_build</code></a> is the consumer that makes them routes.</p>
+<h2 id="stddocument"><a class="header" href="#stddocument">std::document</a></h2>
+<p>The HTML document a browser leg is loaded by, held against what that leg’s
+build emitted — so the <code>&lt;script&gt;</code>, the <code>&lt;link&gt;</code> and the mount element
+cannot disagree with the artifacts they name.</p>
+<pre><code class="language-vilan fragment">enum ShellFault {
+	StylesNotLinked(str),         // the build emitted styles; the document links none
+	LinkedStyleMissing(str),      // it links a stylesheet this build did not emit
+	ScriptNotEmitted(str),        // it loads a script this build did not emit
+	BundleNotLoaded(str),         // this build's bundle is loaded by no &lt;script&gt;
+	MountMissing(str),            // nothing carries the id the client mounts into
+	ModuleScriptWithChunks(str),  // a splitting leg loaded as a module script
+}
+impl ShellFault {
+	fun message(self): str        // what is wrong, and what to do about it
+}
+
+fun check_shell(shell: str, build: LegBuild, mount: str): Result&lt;void, List&lt;ShellFault&gt;&gt;
+
+impl Document {
+	fun of(build: LegBuild): Document                     // generate one from the build
+	fun from_shell(shell: str, build: LegBuild): Result&lt;Document, List&lt;ShellFault&gt;&gt;
+
+	fun title(own self, title: str): Document
+	fun lang(own self, lang: str): Document
+	fun mount(own self, id: str): Document                // the other end of mount_root
+	fun head(own self, markup: str): Document             // raw, appended inside &lt;head&gt;
+	fun body(own self, markup: str): Document             // raw, before the script tag
+	fun render(self, view: View): Document                // SSR markup, inside the mount element
+
+	fun html(self): str
+}
+
+fun require_shell(path: str, build: LegBuild): Document   // async; stops if it can't
+</code></pre>
+<p><strong>The check is the primitive.</strong> <code>check_shell</code> takes a plain <code>str</code>, so it
+works on a shell produced any way at all — read from disk, templated,
+fetched from a CMS — and reports <em>every</em> fault, not the first. That
+ordering matters: a generator only protects documents it generated, and
+the page most likely to be wrong is the hand-written one somebody dropped
+to for a CSP header or a font preload.</p>
+<p><strong>A fault stops the server from starting.</strong> <code>require_shell</code> is the boot
+idiom: it reads the file, checks it, and either hands back a <code>Document</code> or
+stops with the file, the leg, and one line per fault. Refusing is
+defensible because the check is cheap, total, and about the <em>build</em> rather
+than about a request — it cannot fail intermittently, and a server that
+starts with a document that cannot work is worse than one that does not
+start.</p>
+<pre><code class="language-vilan norun">import std::build::require_build;
+import std::document::require_shell;
+import std::http::{ Response, Server };
+
+async fun main() {
+	let build = require_build("client");
+	// src/app.html is yours; it is checked against what the build wrote.
+	let page = require_shell("src/app.html", build).html();
+
+	Server::builder()
+		.port(8080)
+		.serve_build(build)
+		.on_request(|request| Response::builder().set_header("Content-Type", "text/html").body(page).build())
+		.build()
+		.start();
+}
+</code></pre>
+<p>An app that genuinely means it says so, once, in code — <code>check_shell</code>
+returns a <code>Result</code>, so the decision is yours:</p>
+<pre><code class="language-vilan fragment">match check_shell(shell, build, "app") {
+	Ok(let _checked) =&gt; {},
+	// Report and carry on instead of stopping.
+	Err(let faults) =&gt; faults.for_each(|fault| print(i"warning: {fault.message()}")),
+}
+</code></pre>
+<p>What it will and will not have an opinion about is bounded by what a
+build knows. This leg’s artifacts are <code>&lt;leg&gt;.js</code>, <code>&lt;leg&gt;.css</code> and
+<code>&lt;leg&gt;.&lt;Arm&gt;.js</code>, and the leg’s last build owns that namespace, so a
+document loading <code>&lt;leg&gt;.…</code> files this build did not emit is loading its
+own stale output and is told so. A <code>/theme.css</code> your application serves
+itself is outside that namespace — the check says nothing about it, and a
+stylesheet on another origin (a font CDN) is nobody’s business but yours.
+Comments and <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code> bodies are skipped rather than searched,
+so a commented-out <code>&lt;link&gt;</code> links nothing and a <code>&lt;div id="app"&gt;</code> inside a
+script’s own string is not a mount element.</p>
+<p><strong><code>Document::of(build)</code> writes the document instead.</strong> Same value, same
+rules — every document it can produce passes <code>check_shell</code>, which is what
+keeps the generator and the checker from drifting apart. It emits a
+doctype, <code>&lt;html lang&gt;</code>, charset, viewport, <code>&lt;title&gt;</code>, the stylesheet link
+<em>if and only if</em> the build emitted styles, the mount element, and the
+bundle’s script tag in the form the build requires (a classic script for a
+leg that splits, since chunk resolution reads <code>document.currentScript</code>):</p>
+<pre><code class="language-vilan norun">import std::build::require_build;
+import std::document::Document;
+import std::http::{ Response, Server };
+
+async fun main() {
+	let build = require_build("client");
+	let page = Document::of(build)
+		.title("Notes")
+		.head("&lt;style&gt;body { font: 16px/1.5 system-ui; }&lt;/style&gt;")
+		.html();
+
+	Server::builder()
+		.port(8080)
+		.serve_build(build)
+		.on_request(|request| Response::builder().set_header("Content-Type", "text/html").body(page).build())
+		.build()
+		.start();
+}
+</code></pre>
+<p><code>head</code>/<code>body</code> take raw markup and append (a favicon, an <code>og:</code> tag, a CSP,
+a <code>&lt;noscript&gt;</code>), which is what keeps the generated document small enough
+to be worth having: everything else is derived. They are an escape hatch,
+not an exemption — markup you add there is checked like any other, so a
+<code>&lt;link&gt;</code> to a stylesheet the build did not emit is caught wherever it came
+from.</p>
+<p><code>render(view)</code> is the server-rendering splice (<a href="#server-side-rendering-1">SSR</a>):
+the markup goes <em>inside the mount element</em>, because the document already
+knows where that is. It takes <code>self</code> rather than <code>own self</code> — it is the
+one method called per request, on a document the handler built once at
+boot:</p>
+<pre><code class="language-vilan fragment">.on_request(|request| Response::builder().body(page.render(app()).html()).build())
+</code></pre>
+<p><code>html()</code> returns a <code>str</code>, at every rung — a generated document can be
+post-processed with the same string operations an app already uses, which
+is what keeps the hand-written shell (rung 0) and the generated one made
+of the same material.</p>
 <h2 id="stdprocess"><a class="header" href="#stdprocess">std::process</a></h2>
 <pre><code class="language-vilan fragment">fun args(): List&lt;str&gt;            // CLI arguments
 fun env(key: str): Option&lt;str&gt;   // environment variable
 fun exit(code: i32)
 fun scan(): str                  // read a line from stdin
 </code></pre>
+<p>Server-side hot-swapping of code is not a thing
+here and is not planned — the node leg restarts.</p>
 <p>A completed <code>main</code> ends the process; long-lived programs must hold it open
 (a listening server does; a socket-holding client needs an explicit wait).</p>
+<h2 id="stdwatch"><a class="header" href="#stdwatch">std::watch</a></h2>
+<pre><code class="language-vilan fragment">fun is_watching(): bool     // is this a `vilan run --watch` child?
+fun force_refresh(): void   // ask every connected browser to reload once
+</code></pre>
+<p><code>is_watching()</code> is defined under every run and is <code>true</code> only under
+<code>vilan run --watch</code>, so a program branches on it without knowing how it
+was started. It is about <em>data</em> freshness, not code: <code>serve_build</code> uses it
+to revalidate its assets per request while watching, and a hand-rolled
+server can do the same.</p>
+<p>The process layer’s dev-mode surface (<code>dev-refresh.md</code> §5 item 2) — the
+manual channel for a hand-rolled server’s own freshness: re-read whatever
+changed on disk yourself, then call <code>force_refresh()</code> so every browser
+connected to the dev channel reloads once and re-pulls it.
+<code>force_refresh()</code> is a <strong>no-op outside <code>vilan run --watch</code></strong> — it costs
+nothing to leave the call in a shipped build. (Named apart from the
+browser’s <a href="#dev--hmr-reference"><code>std::dev</code></a> on purpose — the two share no component
+source the way, say, <code>std::ui</code>’s browser and process halves do, so they
+are not the same surface under two names.)</p>
+<pre><code class="language-vilan norun">import std::fs;
+import std::http::{ Response, Server };
+import std::watch;
+
+fun main() {
+	Server::builder()
+		.port(0)
+		.on_request(|request| {
+			// Re-read whatever this route serves fresh on every request,
+			// then ask the browser to pick it up.
+			let shell = fs::read_file_to_str("dist/app.html");
+			watch::force_refresh();
+			Response::builder().body(shell).build()
+		})
+		.build()
+		.start();
+}
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="misc-reference"><a class="header" href="#misc-reference">Misc reference</a></h1>
 <p>The small modules that don’t need a page of their own: <code>std::io</code>,
@@ -7844,9 +8381,13 @@ lowers to native <code>true</code>/<code>false</code>, so a two-variant bool-bac
 fractional part (<code>= 1.5</code>) and a type suffix (<code>= 1u32</code>, and <code>= 1_000</code>,
 which lexes as <code>1</code> with the trailer <code>_000</code>) are both errors rather than
 being silently discarded. Hex is read as hex (<code>= 0xFF</code> is 255). The value
-must fit a signed 64-bit integer, and so must the implicit continuation:
-a variant with no backing value takes the previous variant’s plus one,
-starting at 0, and running past the bound is an error rather than a wrap.</p>
+must lie in <strong><code>-9007199254740991 ..= 9007199254740991</code></strong> — <code>i53</code>, the
+widest integer a runtime number holds exactly — because a backed enum <em>is</em>
+that number at runtime, and a discriminant past the bound would reach the
+host as a different value than the source wrote. The bound is symmetric.
+The implicit continuation obeys it too: a variant with no backing value
+takes the previous variant’s plus one, starting at 0, and running past the
+bound is an error rather than a wrap.</p>
 <p><strong>A string backing must be written on every variant.</strong> There is no
 successor of <code>"start"</code> for the continuation rule to hand out, and the
 string is deliberately not derived from the variant name — the two are
@@ -8089,7 +8630,38 @@ bare name is always a <strong>variant</strong> reference, never a fresh binding:
 classic mistyped-variant trap is a resolution error instead of a silent
 catch-all. <code>bool</code> and <code>null</code> literals match as variants of their enums.
 The <code>let</code>/parameter binder grammar (names and tuples, §3.3) is the
-irrefutable subset; refutable forms (literals, variants) are match-only.</p>
+irrefutable subset; refutable forms (literals, variants) are match-only.
+A tuple pattern is irrefutable only when its elements are: <code>(let a, let b)</code>
+is a destructure and matches everything, <code>(1, 2)</code> is a test.</p>
+<p>A <code>match</code> must be <strong>exhaustive</strong>, and exhaustiveness is proven by
+<strong>unguarded</strong> legs only — a guard tests the value, which the check does
+not reason about, so a guarded leg proves nothing about what the match
+covers. What an unguarded leg proves is the value-space its whole pattern
+<strong>tree</strong> covers, not its root, and the check descends accordingly:</p>
+<ul>
+<li>an <strong>enum</strong> position needs every variant named, and each named
+variant’s payload positions covered in turn, so
+<code>Pair::Of(Align::Start)</code> alone leaves <code>Pair::Of(Align::End)</code> missing
+however few variants <code>Pair</code> has;</li>
+<li>a <strong>tuple</strong> position needs its elements covered — as a product, so
+<code>(1, 2)</code> and <code>(3, 4)</code> leave every other pair missing;</li>
+<li>an <strong>open</strong> position (<code>i32</code>, <code>str</code>, a struct, a still-abstract type
+parameter) is covered only by a binder or <code>_</code>. No number of literals
+exhausts it: <code>Wrapped::Of(1)</code>, <code>Wrapped::Of(2)</code>, … is never total.</li>
+</ul>
+<p>A subject whose type is not yet known, or is <code>any</code>, <code>never</code>, or a generic
+parameter, is exempt: the question is which values the subject can take,
+and there is no answer to give. The diagnostic names one uncovered value
+as a pattern that would cover it — <em>“missing <code>Pair::Of(Align::End)</code>”</em> —
+or asks for a catch-all where the hole is the whole domain. The
+consequence lands on the <strong>last</strong> leg, the one that answers for whatever
+the legs above it did not take: a <code>match</code> whose final leg is guarded must
+be exhaustive without it, so <code>match a { A =&gt; …, B if c =&gt; … }</code> is refused
+whatever the subject’s type (“match is not exhaustive”). Write the guard
+with a catch-all after it — <code>B if c =&gt; …, _ =&gt; …</code> — and the value the
+guard rejects has somewhere to go. A guard is tested wherever its leg
+stands, the last one included; no leg is silently promoted to a
+catch-all.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="spec-4--names-modules-and-packages"><a class="header" href="#spec-4--names-modules-and-packages">Spec §4 — Names, modules, and packages</a></h1>
 <h2 id="41-modules"><a class="header" href="#41-modules">4.1 Modules</a></h2>
@@ -8314,6 +8886,10 @@ enum reaches an <code>external fun</code> as a plain number or string. Backing
 values must be unique across the enum, counting the values implicitly
 continued from the previous variant; see the grammar chapter for the full
 rule.</p>
+<p>An <strong>integer</strong> backing value must lie in <code>-9007199254740991 ..= 9007199254740991</code> (<code>i53</code>), because that is the widest integer a runtime
+number holds exactly and the variant <em>is</em> that number: a discriminant
+past the bound would cross a host boundary as a different value than the
+source wrote. The continuation stops at the same edge.</p>
 <h3 id="backed-enum-conversions"><a class="header" href="#backed-enum-conversions">Backed-enum conversions</a></h3>
 <p>Every backed enum gets two members, synthesized by the compiler — no
 <code>derive</code> marker, because writing <code>= "start"</code> is already the opt-in:</p>
@@ -8329,6 +8905,37 @@ receiver already <em>is</em> that value, so the call lowers to the receiver.
 <code>parse</code> is a static returning <code>Option&lt;Self&gt;</code> — the house form for a
 fallible parse, matching <code>str::parse_i32</code>. Declaring your own <code>value</code> or
 <code>parse</code> on a backed enum is a duplicate-member error.</p>
+<p>Every variant takes part, including one that <em>continued</em> the sequence
+instead of writing a value. There is one rule about what a variant is
+worth, and the conversions read the same answer the lowering does:</p>
+<pre><code class="language-vilan">import std::print;
+import std::option::Option::{ self, Some, None };
+
+enum Level { Low = 0, Mid, High }
+
+fun main() {
+	print(Level::Mid.value());  // 1 — continued from Low
+	print(match Level::parse(2) {
+		Some(let level) =&gt; level.value(),
+		None =&gt; -1,
+	});                         // 2 — High
+}
+</code></pre>
+<p>(A <strong>string</strong> backing is the exception, and not a new one: there is no
+successor of <code>"start"</code>, so every variant must write its own.)</p>
+<p>A backed enum is also <strong><code>Hashable</code></strong>, implemented by the compiler on the
+same opt-in and for the same reason <code>value()</code> costs nothing: the enum IS
+its backing value, and that value is already a key.</p>
+<pre><code class="language-vilan fragment">mut widths: Map&lt;Align, i32&gt; = Map::new();
+widths.insert(Align::Start, 1);          // keyed by "flex-start"
+</code></pre>
+<p>So <code>Map&lt;Align, V&gt;</code> and <code>Set&lt;Align&gt;</code> need no <code>[derive(Hashable)]</code>, and
+<code>Align::Start.hash()</code> is <code>Align::Start.value().hash()</code>. Writing the derive
+anyway is harmless and does nothing; a hand-written <code>impl Align with Hashable</code> is a duplicate-impl error, because the compiler’s is already
+there. An <strong>unbacked</strong> enum is unaffected — it lowers to the tagged array,
+so it is an aggregate and needs the derive like a struct.</p>
+<p>A <code>resource</code> enum gets none of the three — no <code>value()</code>, no <code>parse</code>, no
+<code>Hashable</code>. Its identity is not its copyable backing value.</p>
 <p>Two rules follow from the backing value being a <em>representation</em> rather
 than a second name for the variant. A <code>match</code> still matches variants, not
 values — <code>match align { "flex-start" =&gt; … }</code> is an error, exactly as
@@ -8337,11 +8944,78 @@ rejected on a <strong>string</strong> backing: they would compare the strings
 lexicographically (<code>Size::Large &lt; Size::Small</code> because <code>"lg" &lt; "sm"</code>),
 and ordering by declaration index cannot be offered, because bare
 lowering erases the index. Integer backings order as before.</p>
-<p>An <code>external fun</code> may take a backed enum but may <strong>not return one</strong>: the
-host can answer with a value outside the set, and an exhaustive <code>match</code>
-compiles its last arm to a bare <code>else</code>, so a bogus value would silently
-become whichever variant happened to be last. Bind the backing type and
-convert with <code>parse</code>, which answers <code>None</code>.</p>
+<h3 id="the-trap-arm"><a class="header" href="#the-trap-arm">The trap arm</a></h3>
+<p>A backed enum lowers to a bare host value, so its runtime domain is the
+<em>host’s</em> and not the variant set. Exhaustiveness is checked over that
+variant set, by name — which is a proof about the vilan side of the
+boundary and never was one about the value. So an <strong>exhaustive</strong> <code>match</code>
+over a backed enum tests every variant, including the last, and its
+<code>else</code> traps:</p>
+<pre><code class="language-vilan fragment">match align {
+    Align::Start =&gt; "s",
+    Align::End   =&gt; "e",       // tested, not assumed
+}
+// a value outside the set panics:
+//   Align: "middle" is not one of its values
+</code></pre>
+<p>The trap follows the backed enum <strong>wherever the pattern tests it</strong>, not
+only when it is the subject. A backed enum reached through a payload is
+the same value on the same boundary:</p>
+<pre><code class="language-vilan fragment">match pair {
+    Pair::Of(Align::Start) =&gt; "s",
+    Pair::Of(Align::End)   =&gt; "e",   // tested, not assumed
+}
+// an out-of-set payload panics, naming the payload's own value:
+//   Align: "middle" is not one of its values
+</code></pre>
+<p>If one arm tests <strong>more than one</strong> backed enum, the panic names whichever
+value actually left its set.</p>
+<p>A backed test can also live in an EARLIER arm than the one that becomes the
+<code>else</code> — a different variant’s payload, tested across several arms with no
+arm of its own left over for it:</p>
+<pre><code class="language-vilan fragment">match pair {
+    Pair::Of(Align::Start) =&gt; "s",
+    Pair::Of(Align::End)   =&gt; "e",   // together, `Of`'s only handler
+    Pair::Other            =&gt; "o",
+}
+// an out-of-set `Of` payload traps instead of silently answering `Other`:
+//   Align: "middle" is not one of its values
+</code></pre>
+<p><code>Other</code>’s own arm carries no backed test, so the exhaustiveness proof that
+drops its condition is still a proof about <code>Pair</code>’s VARIANT set, not about
+<code>Align</code>’s runtime domain — the same gap the payload form above closes, one
+level up. The two <code>Of</code> arms above are the only place <code>Align</code> is ever tested,
+so reaching the <code>else</code> with the subject’s tag actually <code>Of</code> is possible only
+when its payload left <code>Align</code>’s set; the trap fires there, naming <code>Align</code>
+and the raw value, and <code>Other</code>’s own arm still answers for a genuine
+<code>Pair::Other</code>.</p>
+<p>Only the exhaustive form is affected. A <code>match</code> you gave a <code>_</code> arm keeps
+it — an out-of-set value takes the arm you wrote, which is the answer you
+asked for — and <code>is</code> and <code>==</code> compare against a literal, so they answer
+<code>false</code> outside the set, as they always did. An enum with no backing
+value keeps the tagged array form and no trap: the language itself writes
+that tag, so there its exhaustiveness proof <em>is</em> a proof about the value.
+That holds nested too — a <code>match</code> whose arms test only unbacked enums
+emits exactly what it always did, at any depth.</p>
+<p>An <code>external fun</code> may both <strong>take and return</strong> a backed enum, and so may
+a callback it is handed. Nothing checks the boundary: a host value
+outside the set enters unremarked, exactly as it does for an
+<code>external fun f(): i32</code> that answers <code>"hello"</code>. What the trap arm buys is
+that such a value can no longer become a <em>confident</em> variant — the first
+exhaustive <code>match</code> to meet it panics with the raw value.</p>
+<p>Which of the two shapes to write is a question about the value, not about
+safety:</p>
+<pre><code class="language-vilan fragment">[extern("getAlign")]
+external fun get_align(): Align;              // out of set is a BUG — trap
+
+[extern("getAlign")]
+[doc(hidden)]
+external fun get_align_raw(): str;            // out of set is an INPUT
+fun read_align(): Option&lt;Align&gt; { Align::parse(get_align_raw()) }
+</code></pre>
+<p>Return the enum where the host’s set is genuinely closed and a value
+outside it means something is wrong; bind the backing type and <code>parse</code>
+where an unrecognized value is one of the answers you expect.</p>
 <h2 id="54-impls"><a class="header" href="#54-impls">5.4 Impls</a></h2>
 <p><code>impl Subject { … }</code> adds <strong>inherent</strong> members to <code>Subject</code>;
 <code>impl Subject with Trait { … }</code> provides <code>Trait</code> for <code>Subject</code>. The
@@ -8706,6 +9380,15 @@ signature that hands back a value hands back a value, so <code>fun make(&amp;sel
 projection and keeps naming the receiver’s storage. Together these are what
 make “a call owns its result” true, which is the premise every elision below
 rests on:</p>
+<p>The return reads <strong>through</strong> a view to reach the place, because a returned
+expression can name storage without being a place: <code>fun grab(&amp;self): Inner { &amp;self.inner }</code> hands back a reference, and <code>fun get(h: &amp;Holder): (i32, i32) { peek(h) }</code> hands back what the <code>borrows</code> callee projected — which is <code>h</code>’s
+storage, named in the call. Both copy, exactly as the bare <code>self.inner</code> /
+<code>h.pair</code> spellings do; only the return type tells them apart from the
+projections one line away. And a <strong>scalar</strong>’s copy is its <em>read</em>: a scalar view
+is a <code>(base, key)</code> pair at runtime, so <code>fun same(v: &amp;mut i32): i32 { v }</code> hands
+back the <code>i32</code> it promises rather than the pair. A <strong>resource</strong> crosses no such
+seam at all — it cannot copy (§6.8’s R1), so handing one back out of a loan is
+a move out of a loan and is refused, with or without the <code>&amp;</code>.</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -8876,6 +9559,18 @@ evident (a method returning a view of <code>self</code> needs no clause):</p>
 <pre><code class="language-vilan fragment">fun write(self): &amp;mut T borrows self;   // Shared::write — explicit
 fun get(&amp;mut self, i: i32): &amp;mut T      // inferred: borrows self
 </code></pre>
+<p>What is inferred is a <em>projection</em>, so the <strong>return type decides</strong>, exactly as
+it does for the copy in §6.1: <code>fun copy(&amp;self): Holder { self }</code> hands back a
+value — the return copies it out of the loan — and projects nothing, so its
+result is an ordinary owned binding (<code>mut c = h.copy()</code> is legal). Change the
+return type to <code>&amp;mut Holder</code> and the same body is a projection.</p>
+<p>That agreement is exact for a <strong>forwarded parameter</strong> and conservative for the
+other leaf shapes: a by-value return whose tail is <code>&amp;self.inner</code>, a <code>borrows</code>
+call, or a wrapped <code>Some(&amp;mut self.x)</code> still <em>projects</em> at the call site, even
+though §6.1’s copy has already taken the value out of the loan. The result is
+therefore a value that is treated as a view — <code>mut</code> is refused on it, and rule
+4 counts it live — which restricts more programs than it must and mis-copies
+none.</p>
 <p>At the call site the returned view obeys the same second-class rules,
 with the borrow anchored to the projected argument: the argument’s place
 is treated as viewed while the result is live (rule 4 applies to it).
@@ -9116,6 +9811,19 @@ generic aggregate’s member is rejected the same way, so <code>Signal&lt;Databa
 — whose storage is a <code>Shared&lt;T&gt;</code> — is refused exactly as
 <code>Shared&lt;Database&gt;</code> is. Holding the resource in a struct field of your own
 is the sanctioned alternative, and stays legal.</p>
+<p>It is read per instantiation whatever the type’s <strong>provenance</strong>: an
+inferred container is a container. Deleting the annotation changes
+nothing, and neither does never writing one —</p>
+<pre><code class="language-vilan ignore">mut arr: List&lt;Guard&gt; = [Guard { .. }];   // rejected
+mut arr = [Guard { .. }];                // rejected, identically
+let cell = Shared::new(Guard { .. });    // and so is this
+fun stash&lt;T&gt;(own value: T) { let items = [value]; }   // rejected at T := Guard
+</code></pre>
+<p>— because containment is a question about a type, not about a spelling.
+The nesting is read the same way: a container inside a container, a tuple,
+or a fixed array is found wherever it sits. A <strong>fixed array</strong> of resources
+(<code>[Guard; 2]</code>) is not a container in this sense: it is a value aggregate,
+a resource by containment, and it drops its elements in reverse order.</p>
 </li>
 <li>
 <p><strong>R11: generics must be move-clean per instantiation.</strong> Instantiating a
@@ -9358,11 +10066,15 @@ host’s own reporting.</p>
 <p>Within an expression, evaluation is <strong>left-to-right</strong>: operands before
 operators apply, the callee before its arguments, arguments in source
 order, the receiver before method arguments. A compound assignment
-evaluates its target place once. Short-circuit: <code>&amp;&amp;</code> and <code>||</code> evaluate
+evaluates its target place once — <strong>subscripts included</strong>, so
+<code>ys[bump()] += 1</code> calls <code>bump()</code> exactly once, before the read.
+Short-circuit: <code>&amp;&amp;</code> and <code>||</code> evaluate
 the right operand only when needed. <code>if</code>/<code>match</code> evaluate exactly the
 taken branch; a <code>match</code> evaluates its subject once, then tests legs top
 to bottom (first matching leg wins; its guard is evaluated only when the
-pattern matches).</p>
+pattern matches). Every guard is tested where its leg stands, the last
+leg’s included — exhaustiveness never rests on a guard (§3.10 of the
+grammar chapter), so no leg is treated as a catch-all it did not spell.</p>
 <h2 id="72a-integer-overflow"><a class="header" href="#72a-integer-overflow">7.2a Integer overflow</a></h2>
 <p>Arithmetic whose mathematical result exceeds the operand type’s range is
 <strong>undefined behavior</strong>: a conforming program does not overflow, and an
@@ -9989,8 +10701,11 @@ running it, and <code>.js</code> on the browser, where the loading
 instead of one file: <code>dist/&lt;name&gt;.js</code> carries every module-level binding
 (so §7.6’s initialization order is untouched) and every function two or
 more route arms can reach, and <code>dist/&lt;name&gt;.&lt;arm&gt;.js</code> carries the
-functions exactly one arm of the entry’s route <code>match</code> can reach. A
-<code>dist/&lt;name&gt;.chunks.json</code> lists them. Chunks are fetched when a
+functions exactly one arm of the entry’s route <code>match</code> can reach. Every
+build of a <code>browser</code> entry writes <code>dist/&lt;name&gt;.chunks.json</code>, the leg’s
+<strong>build manifest</strong>: its bundle’s file name, the style sidecar’s file name
+or <code>null</code>, whether the bundle must be loaded as a classic script, and the
+chunks it emitted (empty unless it split). Chunks are fetched when a
 navigation first reaches their arm, and the route value does not advance
 until one arrives; which functions land where is implementation-defined
 beyond that rule. Overlapping navigations resolve by order of DEPARTURE,
@@ -10126,18 +10841,30 @@ measure a leg before opting it in
 <li><code>--backend js</code>: the only backend today; the flag exists so a future
 one has somewhere to live.</li>
 </ul>
-<p>A <code>browser</code> entry with <code>[entry.&lt;name&gt;] split = true</code> writes an eager
-bundle plus one file per route arm and a <code>&lt;name&gt;.chunks.json</code> listing
-them, and warns when the split cost the first load more than it deferred.
-The leg’s chunk files belong to its last build: a build that writes none
-removes any a previous one left. <code>vilan run</code> ignores <code>split</code> — the dev
-loop swaps whole bundles — and emits the leg as one file.</p>
+<p>Every build of a <code>browser</code> entry writes <code>&lt;name&gt;.chunks.json</code>, the leg’s
+build manifest — what it emitted, for <code>std::build::build_of</code> to read. A
+<code>browser</code> entry with <code>[entry.&lt;name&gt;] split = true</code> additionally writes one
+file per route arm, lists them in that manifest, and warns when the split
+cost the first load more than it deferred. The leg’s chunk files belong to
+its last build: a build that writes none removes any a previous one left,
+and rewrites the manifest to say the leg emitted none. <code>vilan run</code> ignores
+<code>split</code> — the dev loop swaps whole bundles — and emits the leg as one file.</p>
 <h2 id="vilan-check-file"><a class="header" href="#vilan-check-file"><code>vilan check [file]</code></a></h2>
 <p><code>build</code> without the output: type-checks and reports diagnostics, writes
 nothing, and runs no <code>[build] run</code> hooks. Same path forms and flags
 (<code>--platform</code>, <code>--watch</code>, <code>-d</code>). In a multi-entry package it checks
 every entry, each under its own platform. Exit is non-zero when
 diagnostics were reported.</p>
+<p>One thing it does that <code>build</code> does not: when the file has a <strong>syntax
+error</strong>, <code>check</code> reports it and then type-checks the rest of the file
+anyway. The parser recovers at the next statement or item boundary, so a
+half-written statement no longer hides the type errors above and below
+it — which is the state a file is in most of the time it is being
+edited. <code>build</code> stops at the syntax errors, because a recovered file is
+not something to emit from. Diagnostics that are <em>consequences</em> of the
+skipped statement — a function body that lost its result, a name whose
+declaration did not parse — are reported too, beside the syntax error
+that explains them.</p>
 <h2 id="vilan-run-file-args"><a class="header" href="#vilan-run-file-args"><code>vilan run [file] [args…]</code></a></h2>
 <p>Builds and runs. Anything after the file is forwarded to the program.
 Reach it with <code>process::args()</code>. Under <code>--watch</code> it rebuilds and
@@ -10431,11 +11158,11 @@ JS array too.</p>
 <h3 id="closed-string-sets"><a class="header" href="#closed-string-sets">Closed string sets</a></h3>
 <p>A named union of string literals becomes a <strong>backed enum</strong> — each variant
 carries the host string it stands for, so the enum <em>is</em> that string at
-runtime and crosses the boundary unchanged. A parameter takes the enum
-directly, with no wrapper:</p>
-<pre><code class="language-vilan norun">import std::option::Option;
-
-enum Align {
+runtime and crosses the boundary unchanged. Every position takes it
+directly, with no wrapper and no forwarder: a parameter, a return, a
+property’s getter and setter, a <code>List&lt;Align&gt;</code>, a callback’s own parameter.
+bindgen emits signatures only; there is never a generated body.</p>
+<pre><code class="language-vilan norun">enum Align {
 	Start = "start",
 	End = "end",
 }
@@ -10447,20 +11174,25 @@ impl Chart {
 	[platform("node")]
 	external fun set_align(self, value: Align): void;
 
-	// The read direction keeps a guard: the host may answer outside the
-	// set, so the raw `str` is bound and `parse` returns `Option`.
 	[extern(get, "align")]
-	[doc(hidden)]
 	[platform("node")]
-	external fun align_raw(self): str;
+	external fun align(self): Align;
 
-	fun align(self): Option&lt;Align&gt; {
-		Align::parse(self.align_raw())
-	}
+	[extern(method, "onAlign")]
+	[platform("node")]
+	external fun on_align(self, handler: |Align| void): void;
 }
 
 fun main() { }
 </code></pre>
+<p>Nothing checks the read direction at the boundary — the host can answer
+with a string that is none of the variants — but nothing has to: an
+exhaustive <code>match</code> on a backed enum traps and names the value rather than
+returning a confident wrong variant. Where an unrecognized value is an
+answer you expect rather than a bug, hand-edit the binding to the guarded
+shape: bind the raw <code>str</code> under a <code>[doc(hidden)]</code> name and forward through
+<code>Align::parse</code>, which returns <code>Option&lt;Align&gt;</code>. The generated file is
+ordinary source, and that edit is one of the reasons it is yours to keep.</p>
 <p>An <em>inline</em> <code>"left" | "right"</code> is widened to <code>str</code> instead — safe and
 exact, since that is what the host takes; only a union the library
 author bothered to name earns a type.</p>
@@ -10627,8 +11359,22 @@ impl of a synchronous trait method is allowed (dispatch is monomorphized,
 so callers await it regardless).
 → <a href="#data-and-traits">Data and traits</a></p>
 <p><strong>“match is not exhaustive: missing …”</strong> · <strong>“match is not exhaustive: add a catch-all <code>_</code> leg”</strong>
-Some variants have no arm. Handle them or add <code>_ =&gt; …</code>. This error is
-the feature: it’s what fires everywhere when you add a variant.
+Some values have no arm. Handle them or add <code>_ =&gt; …</code>. This error is
+the feature: it’s what fires everywhere when you add a variant. A
+<strong>guarded</strong> leg does not count towards it — a guard tests the value, and
+the check reasons about the type — so <code>B if ready =&gt; …</code> leaves <code>B</code>
+missing, and a note points at the guard to say so. That also means the
+last leg may not be guarded: give it a <code>_ =&gt; …</code> after it, so the value
+the guard rejects has somewhere to go.</p>
+<p>The hole may be <strong>below</strong> the top level, and then the message names one
+uncovered value as a pattern that would cover it —
+<em>“missing <code>Pair::Of(Align::End)</code>”</em>, <em>“missing <code>Wrapped::Of(_)</code>”</em>,
+<em>“missing <code>(Align::End, Align::Start)</code>”</em>. Coverage is judged over the
+whole pattern tree: a payload or tuple element tested with a literal
+proves nothing about the values it does not equal, and only a binder or
+<code>_</code> covers an unbounded one. Where the hole is the subject’s whole
+domain the message asks for a catch-all instead, since naming a value
+there would say nothing the <code>_</code> does not.
 → <a href="#control-flow">Control flow</a></p>
 <p><strong>“struct ‘…’ has no field ‘…’”</strong> · <strong>“variant ‘…’ does not belong to the matched enum”</strong>
 A field or variant name is off. For the variant case inside <code>match</code>,
@@ -10791,6 +11537,16 @@ A resource is not plain data: it cannot be sent over the wire, hashed by
 value, or compared by copy. Drop it from the derived type, or carry a
 plain-data handle (an id, a key) in its place.
 → <a href="#resources">Resources</a></p>
+<p><strong>“<code>Wire</code> / <code>Json</code> cannot be derived for the resource struct / enum <code>…</code>: …”</strong>
+The same rule with the resource in the other position — the derived type
+<em>is</em> the resource. Serializing it copies a handle out of its owner, and the
+reading half is worse: <code>Wire</code>’s <code>rebuild</code> and <code>Json</code>’s <code>from_json</code> build a
+value out of bytes, which for a resource is a second handle nothing owns
+and nothing will close. Send a plain-data name for the resource instead
+(an id, an <code>Arena</code> handle) and keep the resource on the side that owns it.
+The other derives are unaffected: <code>PartialEq</code> and <code>Debug</code> read a resource’s
+fields through the loan and stay available.
+→ <a href="#resources">Resources</a>, <a href="#services--rpc">Services</a></p>
 <p><strong>“<code>…</code> implements <code>Drop</code> but is not a resource: … declare it a <code>resource</code> …”</strong>
 <code>Drop</code> (the destruction hook) may be implemented only for a <code>resource</code>
 type. A destructor without move discipline is the double-close bug:
