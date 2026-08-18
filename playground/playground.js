@@ -191,111 +191,111 @@ function dispose2(self) {
 	}
 	self[0].v = [  ];
 }
-function get_owner($ag) {
-	return $ag;
+function get_owner($ah) {
+	return $ah;
 }
 function after(ms) {
 	return [ __timer(ms) ];
 }
-async function wait(self, $x) {
-	return await (self[0].wait(ambient_signal($x)));
+async function wait(self, $y) {
+	return await (self[0].wait(ambient_signal($y)));
 }
 function cancel(self) {
 	self[0].cancel();
 }
-function ambient_signal($y) {
-	const $z = $y;
-	let $A = null;
-	if ($z[0] === 0) {
-		const n = $z[1];
-		$A = [ 0, n.signal_of() ];
+function ambient_signal($z) {
+	const $A = $z;
+	let $B = null;
+	if ($A[0] === 0) {
+		const n = $A[1];
+		$B = [ 0, n.signal_of() ];
 	} else {
-		$A = [ 1 ];
+		$B = [ 1 ];
 	}
-	return $A;
+	return $B;
 }
 function view(tag) {
-	let $M = null;
+	let $N = null;
 	if (is_svg_tag(tag)) {
-		$M = [ document.createElementNS("http://www.w3.org/2000/svg", tag) ];
+		$N = [ document.createElementNS("http://www.w3.org/2000/svg", tag) ];
 	} else {
-		$M = [ document.createElement(tag) ];
+		$N = [ document.createElement(tag) ];
 	}
-	return $M;
+	return $N;
 }
 function is_svg_tag(tag) {
-	const $K = tag;
-	let $L = null;
-	if ($K === "svg") {
-		$L = true;
-	} else if ($K === "path") {
-		$L = true;
-	} else if ($K === "circle") {
-		$L = true;
-	} else if ($K === "ellipse") {
-		$L = true;
-	} else if ($K === "rect") {
-		$L = true;
-	} else if ($K === "line") {
-		$L = true;
-	} else if ($K === "polyline") {
-		$L = true;
-	} else if ($K === "polygon") {
-		$L = true;
-	} else if ($K === "g") {
-		$L = true;
-	} else if ($K === "defs") {
-		$L = true;
-	} else if ($K === "use") {
-		$L = true;
-	} else if ($K === "symbol") {
-		$L = true;
-	} else if ($K === "marker") {
-		$L = true;
-	} else if ($K === "pattern") {
-		$L = true;
-	} else if ($K === "mask") {
-		$L = true;
-	} else if ($K === "clipPath") {
-		$L = true;
-	} else if ($K === "linearGradient") {
-		$L = true;
-	} else if ($K === "radialGradient") {
-		$L = true;
-	} else if ($K === "stop") {
-		$L = true;
-	} else if ($K === "text") {
-		$L = true;
-	} else if ($K === "tspan") {
-		$L = true;
-	} else if ($K === "textPath") {
-		$L = true;
-	} else if ($K === "filter") {
-		$L = true;
-	} else if ($K === "foreignObject") {
-		$L = true;
-	} else if ($K === "feGaussianBlur") {
-		$L = true;
-	} else if ($K === "feColorMatrix") {
-		$L = true;
-	} else if ($K === "feOffset") {
-		$L = true;
-	} else if ($K === "feMerge") {
-		$L = true;
-	} else if ($K === "feMergeNode") {
-		$L = true;
-	} else if ($K === "feFlood") {
-		$L = true;
-	} else if ($K === "feComposite") {
-		$L = true;
-	} else if ($K === "feBlend") {
-		$L = true;
-	} else if ($K === "feDropShadow") {
-		$L = true;
+	const $L = tag;
+	let $M = null;
+	if ($L === "svg") {
+		$M = true;
+	} else if ($L === "path") {
+		$M = true;
+	} else if ($L === "circle") {
+		$M = true;
+	} else if ($L === "ellipse") {
+		$M = true;
+	} else if ($L === "rect") {
+		$M = true;
+	} else if ($L === "line") {
+		$M = true;
+	} else if ($L === "polyline") {
+		$M = true;
+	} else if ($L === "polygon") {
+		$M = true;
+	} else if ($L === "g") {
+		$M = true;
+	} else if ($L === "defs") {
+		$M = true;
+	} else if ($L === "use") {
+		$M = true;
+	} else if ($L === "symbol") {
+		$M = true;
+	} else if ($L === "marker") {
+		$M = true;
+	} else if ($L === "pattern") {
+		$M = true;
+	} else if ($L === "mask") {
+		$M = true;
+	} else if ($L === "clipPath") {
+		$M = true;
+	} else if ($L === "linearGradient") {
+		$M = true;
+	} else if ($L === "radialGradient") {
+		$M = true;
+	} else if ($L === "stop") {
+		$M = true;
+	} else if ($L === "text") {
+		$M = true;
+	} else if ($L === "tspan") {
+		$M = true;
+	} else if ($L === "textPath") {
+		$M = true;
+	} else if ($L === "filter") {
+		$M = true;
+	} else if ($L === "foreignObject") {
+		$M = true;
+	} else if ($L === "feGaussianBlur") {
+		$M = true;
+	} else if ($L === "feColorMatrix") {
+		$M = true;
+	} else if ($L === "feOffset") {
+		$M = true;
+	} else if ($L === "feMerge") {
+		$M = true;
+	} else if ($L === "feMergeNode") {
+		$M = true;
+	} else if ($L === "feFlood") {
+		$M = true;
+	} else if ($L === "feComposite") {
+		$M = true;
+	} else if ($L === "feBlend") {
+		$M = true;
+	} else if ($L === "feDropShadow") {
+		$M = true;
 	} else {
-		$L = false;
+		$M = false;
 	}
-	return $L;
+	return $M;
 }
 function text(self, content) {
 	self[0].textContent = content;
@@ -305,12 +305,12 @@ function styled(self, style) {
 	self[0].setAttribute("class", class_list(style));
 	return __clone(self);
 }
-function style_var(self, name, source, $ab, $ac) {
+function style_var(self, name, source, $ac, $ad) {
 	const element = __clone(self[0]);
-	$ad(source, (value) => {
+	$ae(source, (value) => {
 		element.style.setProperty(name, value);
 		return;
-	}, $ab, $ac);
+	}, $ac, $ad);
 	return __clone(self);
 }
 function on(self, event, handler) {
@@ -323,7 +323,7 @@ function on(self, event, handler) {
 }
 function bind_text(self, source, $ay, $az) {
 	const element = __clone(self[0]);
-	$ad(source, (value) => {
+	$ae(source, (value) => {
 		element.textContent = value;
 		return;
 	}, $ay, $az);
@@ -358,11 +358,11 @@ function mount(id, view2) {
 	element.appendChild(view2[0]);
 }
 function mount_root(id, body) {
-	const $bB = $bA([ 1 ], ($by) => {
-		return $bz(body);
+	const $bI = $bH([ 1 ], ($bF) => {
+		return $bG(body);
 	});
-	const built = $bB[0];
-	const root = $bB[1];
+	const built = $bI[0];
+	const root = $bI[1];
 	mount(id, built);
 	if (__hmr_active()) {
 		const element = document.getElementById(id);
@@ -380,24 +380,24 @@ function on_teardown(cleanup) {
 	}
 }
 function family_longhands(property) {
-	const $T = property;
-	let $U = null;
-	if ($T === "padding") {
-		$U = ";padding-top;padding-right;padding-bottom;padding-left;";
-	} else if ($T === "margin") {
-		$U = ";margin-top;margin-right;margin-bottom;margin-left;";
-	} else if ($T === "inset") {
-		$U = ";top;right;bottom;left;";
-	} else if ($T === "flex") {
-		$U = ";flex-grow;flex-shrink;flex-basis;";
-	} else if ($T === "background") {
-		$U = ";background-color;background-image;background-position;background-size;background-repeat;background-attachment;background-origin;background-clip;";
-	} else if ($T === "border") {
-		$U = border_longhands();
+	const $U = property;
+	let $V = null;
+	if ($U === "padding") {
+		$V = ";padding-top;padding-right;padding-bottom;padding-left;";
+	} else if ($U === "margin") {
+		$V = ";margin-top;margin-right;margin-bottom;margin-left;";
+	} else if ($U === "inset") {
+		$V = ";top;right;bottom;left;";
+	} else if ($U === "flex") {
+		$V = ";flex-grow;flex-shrink;flex-basis;";
+	} else if ($U === "background") {
+		$V = ";background-color;background-image;background-position;background-size;background-repeat;background-attachment;background-origin;background-clip;";
+	} else if ($U === "border") {
+		$V = border_longhands();
 	} else {
-		$U = "";
+		$V = "";
 	}
-	return $U;
+	return $V;
 }
 function border_longhands() {
 	let out = ";border-width;border-style;border-color;";
@@ -415,20 +415,20 @@ function without_covered(rules, media, condition, property) {
 		return __clone(rules);
 	}
 	let out = __clone(rules);
-	for (const key of $N(rules)) {
+	for (const key of $O(rules)) {
 		const parts = key.split(":");
 		if (__at(parts, 0) === media && __at(parts, 1) === condition && longhands.includes(";" + __at(parts, 2) + ";")) {
-			$V(out, key);
+			$W(out, key);
 		}
 	}
 	return out;
 }
 function class_list(self) {
 	let out = "";
-	for (const entry of $X(self[0])) {
-		const $Y = entry;
-		const class2 = $Y[0];
-		const _declaration = $Y[1];
+	for (const entry of $Y(self[0])) {
+		const $Z = entry;
+		const class2 = $Z[0];
+		const _declaration = $Z[1];
 		if (out === "") {
 			out = class2;
 		} else {
@@ -439,58 +439,74 @@ function class_list(self) {
 }
 function add(self, b) {
 	let rules = __clone(self[0]);
-	for (const key of $N(b[0])) {
-		const $R = $O(b[0], key);
-		let $S = null;
-		if ($R[0] === 0) {
-			const entry = $R[1];
+	for (const key of $O(b[0])) {
+		const $S = $P(b[0], key);
+		let $T = null;
+		if ($S[0] === 0) {
+			const entry = $S[1];
 			const parts = key.split(":");
 			rules = without_covered(rules, __at(parts, 0), __at(parts, 1), __at(parts, 2));
-			$W(rules, key, entry);
-			$S = undefined;
+			$X(rules, key, entry);
+			$T = undefined;
 		} else {
-			$S = undefined;
+			$T = undefined;
 		}
-		$S;
+		$T;
 	}
 	return [ __clone(rules) ];
 }
 function template_option(value, label, $aI, $aJ) {
 	return text($ao(view("option"), "value", value, $aI, $aJ), label);
 }
-function severity_tag(row) {
-	const $aX = row[1];
-	let $aY = null;
-	if ($aX === "error") {
-		$aY = text(styled(view("span"), diag_error), "error");
+function template_title(name) {
+	const $aO = name;
+	let $aP = null;
+	if ($aO === "counter") {
+		$aP = "Counter";
+	} else if ($aO === "hello") {
+		$aP = "Hello";
+	} else if ($aO === "styles") {
+		$aP = "Styles";
+	} else if ($aO === "server") {
+		$aP = "Server";
 	} else {
-		$aY = text(styled(view("span"), diag_warning), "warning");
+		$aP = name;
 	}
-	return $aY;
+	return $aP;
 }
-function diagnostic_row(row, $aV, $aW) {
-	const head = $ar($ar($ar(view("div"), severity_tag(row), $aV, $aW), text(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " "), $aV, $aW), text(view("span"), row[5]), $aV, $aW);
-	const $aZ = row[6];
-	let $ba = null;
-	if ($aZ === "") {
-		$ba = head;
+function severity_tag(row) {
+	const $be = row[1];
+	let $bf = null;
+	if ($be === "error") {
+		$bf = text(styled(view("span"), diag_error), "error");
 	} else {
-		$ba = $ar($ar(view("div"), head, $aV, $aW), text(styled(view("div"), diag_note), "  note: " + row[6]), $aV, $aW);
+		$bf = text(styled(view("span"), diag_warning), "warning");
 	}
-	return $ba;
+	return $bf;
+}
+function diagnostic_row(row, $bc, $bd) {
+	const head = $ar($ar($ar(view("div"), severity_tag(row), $bc, $bd), text(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " "), $bc, $bd), text(view("span"), row[5]), $bc, $bd);
+	const $bg = row[6];
+	let $bh = null;
+	if ($bg === "") {
+		$bh = head;
+	} else {
+		$bh = $ar($ar(view("div"), head, $bc, $bd), text(styled(view("div"), diag_note), "  note: " + row[6]), $bc, $bd);
+	}
+	return $bh;
 }
 function console_row(row) {
-	const $br = row[1];
-	let $bs = null;
-	if ($br === "error") {
-		$bs = text(styled(view("div"), console_error), row[2]);
+	const $by = row[1];
+	let $bz = null;
+	if ($by === "error") {
+		$bz = text(styled(view("div"), console_error), row[2]);
 	} else {
-		$bs = text(view("div"), row[2]);
+		$bz = text(view("div"), row[2]);
 	}
-	return $bs;
+	return $bz;
 }
-function playground_page(status2, diagnostics2, console_lines2, can_format2, can_platform2, share_label2, mode2, run2, format2, share2, $I, $J) {
-	return $ar($ar(styled(view("div"), add(shell, page_fill)), top_bar($a("1"), $I, $J), $I, $J), $ar($ar($ar(styled(view("main"), add(wide_column, workbench)), text(styled(view("h1"), pane_label), "Playground: vilan in the browser"), $I, $J), $ar($ar($ar($ar($ar($ar(styled(view("div"), controls), on(bind_text(styled(view("button"), run_button), $aw(mode2, (current) => {
+function playground_page(status2, diagnostics2, console_lines2, can_format2, can_platform2, share_label2, mode2, modified_from2, confirm_target2, run2, format2, share2, confirm_replace2, cancel_replace2, $J, $K) {
+	return $ar($ar(styled(view("div"), add(shell, page_fill)), top_bar($a("1"), $J, $K), $J, $K), $ar($ar($ar(styled(view("main"), add(wide_column, workbench)), text(styled(view("h1"), pane_label), "Playground: vilan in the browser"), $J, $K), $ar($ar($ar($ar($ar($ar(styled(view("div"), controls), on(bind_text(styled(view("button"), run_button), $aw(mode2, (current) => {
 		const $au = current;
 		let $av = null;
 		if ($au === "node") {
@@ -499,25 +515,42 @@ function playground_page(status2, diagnostics2, console_lines2, can_format2, can
 			$av = "Run";
 		}
 		return $av;
-	}, $I), $I, $J), "click", ($aA) => {
+	}, $J), $J, $K), "click", ($aA) => {
 		return run2();
-	}), $I, $J), $ar($ar(show($ao($ao(styled(view("select"), template_select), "id", "mode", $I, $J), "aria-label", "Compile mode", $I, $J), can_platform2, $I, $J), template_option("browser", "Browser: compile and run", $I, $J), $I, $J), template_option("node", "Server: check the process leg", $I, $J), $I, $J), $I, $J), show(on(text(styled(view("button"), example_button), "Format"), "click", ($aK) => {
+	}), $J, $K), $ar($ar(show($ao($ao(styled(view("select"), template_select), "id", "mode", $J, $K), "aria-label", "Compile mode", $J, $K), can_platform2, $J, $K), template_option("browser", "Browser: compile and run", $J, $K), $J, $K), template_option("node", "Server: check the process leg", $J, $K), $J, $K), $J, $K), show(on(text(styled(view("button"), example_button), "Format"), "click", ($aK) => {
 		return format2();
-	}), can_format2, $I, $J), $I, $J), on(bind_text(styled(view("button"), example_button), share_label2, $I, $J), "click", ($aL) => {
+	}), can_format2, $J, $K), $J, $K), on(bind_text(styled(view("button"), example_button), share_label2, $J, $K), "click", ($aL) => {
 		return share2();
-	}), $I, $J), bind_text($ao(styled(view("p"), status_line), "role", "status", $I, $J), status2, $I, $J), $I, $J), $ao($ao(styled(view("select"), template_select), "id", "version", $I, $J), "aria-label", "Compiler version", $I, $J), $I, $J), $I, $J), $ar($ar(styled(view("div"), panes), $ar($ar($ar($ar(styled(view("div"), pane), $ar($ar(styled(view("div"), pane_head), text(styled(view("p"), pane_label), "Program"), $I, $J), $ar($ar($ar($ar($ar($ao($ao(styled(view("select"), template_select), "id", "template", $I, $J), "aria-label", "Load an example", $I, $J), text($ao($ao($ao(view("option"), "value", "", $I, $J), "disabled", "true", $I, $J), "hidden", "true", $I, $J), "Examples"), $I, $J), template_option("counter", "Counter: reactive state", $I, $J), $I, $J), template_option("hello", "Hello: mount and print", $I, $J), $I, $J), template_option("styles", "Styles: compile-time CSS", $I, $J), $I, $J), show(template_option("server", "Server: typed HTTP, checked", $I, $J), can_platform2, $I, $J), $I, $J), $I, $J), $I, $J), $ao($ao(styled(view("div"), editor_host), "id", "editor", $I, $J), "aria-label", "Program editor", $I, $J), $I, $J), text(styled(view("p"), pane_label), "Diagnostics"), $I, $J), $ar($ar(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Nothing to report."), $aM(diagnostics2, (rows) => {
+	}), $J, $K), bind_text($ao(styled(view("p"), status_line), "role", "status", $J, $K), status2, $J, $K), $J, $K), $ao($ao(styled(view("select"), template_select), "id", "version", $J, $K), "aria-label", "Compiler version", $J, $K), $J, $K), $J, $K), $ar($ar(styled(view("div"), panes), $ar($ar($ar($ar($ar(styled(view("div"), pane), $ar($ar(styled(view("div"), pane_head), text(styled(view("p"), pane_label), "Program"), $J, $K), $ar($ar($ar($ar($ar($ao($ao(styled(view("select"), template_select), "id", "template", $J, $K), "aria-label", "Load an example", $J, $K), bind_text($ao($ao($ao(view("option"), "value", "", $J, $K), "disabled", "true", $J, $K), "hidden", "true", $J, $K), $aw(modified_from2, (name) => {
+		const $aM = name;
+		let $aN = null;
+		if ($aM === "") {
+			$aN = "Examples";
+		} else {
+			$aN = "Modified \u{2014} " + template_title(name);
+		}
+		return $aN;
+	}, $J), $J, $K), $J, $K), template_option("counter", "Counter: reactive state", $J, $K), $J, $K), template_option("hello", "Hello: mount and print", $J, $K), $J, $K), template_option("styles", "Styles: compile-time CSS", $J, $K), $J, $K), show(template_option("server", "Server: typed HTTP, checked", $J, $K), can_platform2, $J, $K), $J, $K), $J, $K), $J, $K), $ar(show($ao(view("div"), "role", "alert", $J, $K), $aQ(confirm_target2, (name) => {
+		return name !== "";
+	}, $J), $J, $K), $ar($ar($ar(styled(view("div"), confirm_bar), bind_text(styled(view("p"), confirm_question), $aw(confirm_target2, (name) => {
+		return "Replace the current program with " + template_title(name) + "? The edits are not kept.";
+	}, $J), $J, $K), $J, $K), on(text(styled(view("button"), example_button), "Keep editing"), "click", ($aX) => {
+		return cancel_replace2();
+	}), $J, $K), on(text(styled(view("button"), confirm_button), "Replace"), "click", ($aY) => {
+		return confirm_replace2();
+	}), $J, $K), $J, $K), $J, $K), $ao($ao(styled(view("div"), editor_host), "id", "editor", $J, $K), "aria-label", "Program editor", $J, $K), $J, $K), text(styled(view("p"), pane_label), "Diagnostics"), $J, $K), $ar($ar(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Nothing to report."), $aZ(diagnostics2, (rows) => {
 		return rows.length === 0;
-	}, $I), $I, $J), $I, $J), $bb(view("div"), diagnostics2, (row) => {
+	}, $J), $J, $K), $J, $K), $bi(view("div"), diagnostics2, (row) => {
 		return row[0];
-	}, (row, $aU) => {
-		return diagnostic_row(row, $I, $aU);
-	}, $I, $J), $I, $J), $I, $J), $I, $J), $ar($ar($ar($ar(styled(view("div"), pane), text(styled(view("p"), pane_label), "Result"), $I, $J), $ao($ao(styled(view("div"), runner_host), "id", "runner", $I, $J), "aria-label", "Program result", $I, $J), $I, $J), text(styled(view("p"), pane_label), "Console"), $I, $J), $ar($ar(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Program output lands here."), $bo(console_lines2, (rows) => {
+	}, (row, $bb) => {
+		return diagnostic_row(row, $J, $bb);
+	}, $J, $K), $J, $K), $J, $K), $J, $K), $ar($ar($ar($ar(styled(view("div"), pane), text(styled(view("p"), pane_label), "Result"), $J, $K), $ao($ao(styled(view("div"), runner_host), "id", "runner", $J, $K), "aria-label", "Program result", $J, $K), $J, $K), text(styled(view("p"), pane_label), "Console"), $J, $K), $ar($ar(styled(view("pre"), report_pre), show(text(styled(view("div"), quiet_row), "Program output lands here."), $bv(console_lines2, (rows) => {
 		return rows.length === 0;
-	}, $I), $I, $J), $I, $J), $bt(view("div"), console_lines2, (row) => {
+	}, $J), $J, $K), $J, $K), $bA(view("div"), console_lines2, (row) => {
 		return row[0];
-	}, (row, $bq) => {
+	}, (row, $bx) => {
 		return console_row(row);
-	}, $I, $J), $I, $J), $I, $J), $I, $J), $I, $J), $I, $J);
+	}, $J, $K), $J, $K), $J, $K), $J, $K), $J, $K), $J, $K);
 }
 function eq(self, other) {
 	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2] && self[3] === other[3] && self[4] === other[4] && self[5] === other[5] && self[6] === other[6];
@@ -525,8 +558,8 @@ function eq(self, other) {
 function eq2(self, other) {
 	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2];
 }
-function top_bar(scroll_fade, $Z, $aa) {
-	return $ar(style_var(styled(view("nav"), topbar), "--nav-fade", scroll_fade, $Z, $aa), $ar($ar(styled(view("div"), add(column, nav_row)), $ar($ar($ao(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $Z, $aa), $ao($ao($ao(styled(view("img"), no_drag), "src", "" + assets + "/mark.svg", $Z, $aa), "alt", "", $Z, $aa), "height", "18", $Z, $aa), $Z, $aa), text(view("span"), "VILAN"), $Z, $aa), $Z, $aa), $ar($ar($ar(styled(view("div"), nav_links), text($ao(styled(view("a"), nav_link), "href", "#install", $Z, $aa), "Install"), $Z, $aa), text($ao(styled(view("a"), nav_link), "href", "/docs/tour/hello-vilan.html", $Z, $aa), "Learn"), $Z, $aa), text($ao(styled(view("a"), nav_link), "href", "/docs/", $Z, $aa), "Docs"), $Z, $aa), $Z, $aa), $Z, $aa);
+function top_bar(scroll_fade, $aa, $ab) {
+	return $ar(style_var(styled(view("nav"), topbar), "--nav-fade", scroll_fade, $aa, $ab), $ar($ar(styled(view("div"), add(column, nav_row)), $ar($ar($ao(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $aa, $ab), $ao($ao($ao(styled(view("img"), no_drag), "src", "" + assets + "/mark.svg", $aa, $ab), "alt", "", $aa, $ab), "height", "18", $aa, $ab), $aa, $ab), text(view("span"), "VILAN"), $aa, $ab), $aa, $ab), $ar($ar($ar($ar(styled(view("div"), nav_links), text($ao(styled(view("a"), nav_link), "href", "#install", $aa, $ab), "Install"), $aa, $ab), text($ao(styled(view("a"), nav_link), "href", "/docs/tour/hello-vilan.html", $aa, $ab), "Learn"), $aa, $ab), text($ao(styled(view("a"), nav_link), "href", "/playground", $aa, $ab), "Playground"), $aa, $ab), text($ao(styled(view("a"), nav_link), "href", "/docs/", $aa, $ab), "Docs"), $aa, $ab), $aa, $ab), $aa, $ab);
 }
 function $a(value) {
 	let subscribers = [  ];
@@ -598,73 +631,73 @@ function $p(self, value, $e) {
 	self[0].v = value;
 	$q(self, $e);
 }
-function $C(self, $g) {
-	const $D = $g;
-	let $E = null;
-	if ($D[0] === 0) {
-		const turn = $D[1];
-		$E = enqueue(turn, self[1].v);
+function $v(self) {
+	return self[0].v;
+}
+function $D(self, $g) {
+	const $E = $g;
+	let $F = null;
+	if ($E[0] === 0) {
+		const turn = $E[1];
+		$F = enqueue(turn, self[1].v);
 	} else {
-		const $F = $k(draining_turns.v);
-		let $G = null;
-		if ($F[0] === 0) {
-			const draining = $F[1];
-			$G = enqueue(draining, self[1].v);
+		const $G = $k(draining_turns.v);
+		let $H = null;
+		if ($G[0] === 0) {
+			const draining = $G[1];
+			$H = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$G = undefined;
+			$H = undefined;
 		}
-		$E = $G;
+		$F = $H;
 	}
-	return $E;
+	return $F;
 }
-function $B(self, value, $e) {
+function $C(self, value, $e) {
 	self[0].v = value;
-	$C(self, $e);
+	$D(self, $e);
 }
-function $N(self) {
+function $O(self) {
 	let result = [  ];
 	for (const entry of __map_values(self[0])) {
 		result.push(__clone(entry[0]));
 	}
 	return result;
 }
-function $O(self, key) {
-	const $P = __map_get(self[0], hash(key));
-	let $Q = null;
-	if ($P[0] === 0) {
-		const entry = $P[1];
-		$Q = [ 0, __clone(entry[1]) ];
+function $P(self, key) {
+	const $Q = __map_get(self[0], hash(key));
+	let $R = null;
+	if ($Q[0] === 0) {
+		const entry = $Q[1];
+		$R = [ 0, __clone(entry[1]) ];
 	} else {
-		$Q = [ 1 ];
+		$R = [ 1 ];
 	}
-	return $Q;
+	return $R;
 }
-function $V(self, key) {
+function $W(self, key) {
 	self[0].delete(hash(key));
 }
-function $W(self, key, value) {
+function $X(self, key, value) {
 	self[0].set(hash(key), [ __clone(key), __clone(value) ]);
 }
-function $X(self) {
+function $Y(self) {
 	let result = [  ];
 	for (const entry of __map_values(self[0])) {
 		result.push(__clone(entry[1]));
 	}
 	return result;
 }
-function $ai(self) {
-	return self[0].v;
-}
-function $ah(self, observer) {
+function $ai(self, observer) {
 	const id = fresh_id();
 	self[1].v.push([ id, () => {
-		observer($ai(self));
+		observer($v(self));
 		return;
 	} ]);
-	observer($ai(self));
+	observer($v(self));
 	return [ self[1], id ];
 }
 function $aj(self, item, $ak) {
@@ -674,8 +707,8 @@ function $aj(self, item, $ak) {
 	});
 	return __clone(item);
 }
-function $ad(self, observer, $ae, $af) {
-	$aj(get_owner($af), $ah(self, observer), $ae);
+function $ae(self, observer, $af, $ag) {
+	$aj(get_owner($ag), $ai(self, observer), $af);
 }
 function $ao(self, name, value, $ap, $aq) {
 	apply(value, self, name, $ap, $aq);
@@ -686,9 +719,9 @@ function $ar(self, content, $as, $at) {
 	return __clone(self);
 }
 function $aw(self, transform, $ax) {
-	const derived = $a(transform($ai(self)));
+	const derived = $a(transform($v(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$d(derived, transform($ai(self)), $ax);
+		$d(derived, transform($v(self)), $ax);
 		return;
 	} ]);
 	return derived;
@@ -712,47 +745,55 @@ function $aG(self, observer) {
 	observer($aH(self));
 	return [ self[1], id ];
 }
-function $aF(self, observer, $ae, $af) {
-	$aj(get_owner($af), $aG(self, observer), $ae);
+function $aF(self, observer, $af, $ag) {
+	$aj(get_owner($ag), $aG(self, observer), $af);
 }
-function $aN(self) {
-	return self[0].v;
-}
-function $aP(self, $g) {
-	const $aQ = $g;
-	let $aR = null;
-	if ($aQ[0] === 0) {
-		const turn = $aQ[1];
-		$aR = enqueue(turn, self[1].v);
+function $aS(self, $g) {
+	const $aT = $g;
+	let $aU = null;
+	if ($aT[0] === 0) {
+		const turn = $aT[1];
+		$aU = enqueue(turn, self[1].v);
 	} else {
-		const $aS = $k(draining_turns.v);
-		let $aT = null;
-		if ($aS[0] === 0) {
-			const draining = $aS[1];
-			$aT = enqueue(draining, self[1].v);
+		const $aV = $k(draining_turns.v);
+		let $aW = null;
+		if ($aV[0] === 0) {
+			const draining = $aV[1];
+			$aW = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$aT = undefined;
+			$aW = undefined;
 		}
-		$aR = $aT;
+		$aU = $aW;
 	}
-	return $aR;
+	return $aU;
 }
-function $aO(self, value, $e) {
+function $aR(self, value, $e) {
 	self[0].v = value;
-	$aP(self, $e);
+	$aS(self, $e);
 }
-function $aM(self, transform, $ax) {
-	const derived = $c(transform($aN(self)));
+function $aQ(self, transform, $ax) {
+	const derived = $c(transform($v(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$aO(derived, transform($aN(self)), $ax);
+		$aR(derived, transform($v(self)), $ax);
 		return;
 	} ]);
 	return derived;
 }
-function $be(old_keys, old_items, items, key_of) {
+function $ba(self) {
+	return self[0].v;
+}
+function $aZ(self, transform, $ax) {
+	const derived = $c(transform($ba(self)));
+	self[1].v.push([ fresh_id(), () => {
+		$aR(derived, transform($ba(self)), $ax);
+		return;
+	} ]);
+	return derived;
+}
+function $bl(old_keys, old_items, items, key_of) {
 	let claimed = [  ];
 	for (const _ of old_keys) {
 		claimed.push(false);
@@ -765,13 +806,13 @@ function $be(old_keys, old_items, items, key_of) {
 		while (index < old_keys.length) {
 			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
 				__at_put(claimed, index, true);
-				let $bf = null;
+				let $bm = null;
 				if (eq(__at(old_items, index), item)) {
-					$bf = [ 0, index ];
+					$bm = [ 0, index ];
 				} else {
-					$bf = [ 1, index ];
+					$bm = [ 1, index ];
 				}
-				step = $bf;
+				step = $bm;
 				break;
 			}
 			index = index + 1;
@@ -788,38 +829,38 @@ function $be(old_keys, old_items, items, key_of) {
 	}
 	return [ __clone(steps), __clone(removed) ];
 }
-function $bj(owner, body) {
+function $bq(owner, body) {
 	return body(owner);
 }
-function $bn(self) {
+function $bu(self) {
 	return self[0].v;
 }
-function $bm(self, observer) {
+function $bt(self, observer) {
 	const id = fresh_id();
 	self[1].v.push([ id, () => {
-		observer($bn(self));
+		observer($bu(self));
 		return;
 	} ]);
-	observer($bn(self));
+	observer($bu(self));
 	return [ self[1], id ];
 }
-function $bl(self, observer, $ae, $af) {
-	$aj(get_owner($af), $bm(self, observer), $ae);
+function $bs(self, observer, $af, $ag) {
+	$aj(get_owner($ag), $bt(self, observer), $af);
 }
-function $bb(self, source, key, render, $bc, $bd) {
+function $bi(self, source, key, render, $bj, $bk) {
 	const element = __clone(self[0]);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
 	const row_views = __shared_new([  ]);
 	const row_owners = __shared_new([  ]);
-	defer(get_owner($bd), () => {
+	defer(get_owner($bk), () => {
 		for (const owner of row_owners.v) {
 			dispose2(owner);
 		}
 		return;
 	});
-	$bl(source, (list) => {
-		const plan = $be(row_keys.v, row_items.v, list, key);
+	$bs(source, (list) => {
+		const plan = $bl(row_keys.v, row_items.v, list, key);
 		const previous_views = row_views.v;
 		const previous_owners = row_owners.v;
 		for (const index of plan[1]) {
@@ -831,32 +872,32 @@ function $bb(self, source, key, render, $bc, $bd) {
 		let position = 0;
 		for (const step of plan[0]) {
 			const item = __clone(__at(list, position));
-			const $bg = step;
-			let $bh = null;
-			if ($bg[0] === 0) {
-				const index2 = $bg[1];
+			const $bn = step;
+			let $bo = null;
+			if ($bn[0] === 0) {
+				const index2 = $bn[1];
 				next_views.push(__clone(__at(previous_views, index2)));
 				next_owners.push(__clone(__at(previous_owners, index2)));
-				$bh = undefined;
-			} else if ($bg[0] === 1) {
-				const index3 = $bg[1];
+				$bo = undefined;
+			} else if ($bn[0] === 1) {
+				const index3 = $bn[1];
 				dispose2(__at(previous_owners, index3));
 				__at(previous_views, index3)[0].remove();
 				const owner = new3();
-				next_views.push($bj(owner, ($bi) => {
-					return render(item, $bi);
+				next_views.push($bq(owner, ($bp) => {
+					return render(item, $bp);
 				}));
 				next_owners.push(__clone(owner));
-				$bh = undefined;
+				$bo = undefined;
 			} else {
 				const owner2 = new3();
-				next_views.push($bj(owner2, ($bk) => {
-					return render(item, $bk);
+				next_views.push($bq(owner2, ($br) => {
+					return render(item, $br);
 				}));
 				next_owners.push(__clone(owner2));
-				$bh = undefined;
+				$bo = undefined;
 			}
-			$bh;
+			$bo;
 			position = position + 1;
 		}
 		for (const row of next_views) {
@@ -871,21 +912,21 @@ function $bb(self, source, key, render, $bc, $bd) {
 		row_views.v = next_views;
 		row_owners.v = next_owners;
 		return;
-	}, $bc, $bd);
+	}, $bj, $bk);
 	return __clone(self);
 }
-function $bp(self) {
+function $bw(self) {
 	return self[0].v;
 }
-function $bo(self, transform, $ax) {
-	const derived = $c(transform($bp(self)));
+function $bv(self, transform, $ax) {
+	const derived = $c(transform($bw(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$aO(derived, transform($bp(self)), $ax);
+		$aR(derived, transform($bw(self)), $ax);
 		return;
 	} ]);
 	return derived;
 }
-function $bu(old_keys, old_items, items, key_of) {
+function $bB(old_keys, old_items, items, key_of) {
 	let claimed = [  ];
 	for (const _ of old_keys) {
 		claimed.push(false);
@@ -898,13 +939,13 @@ function $bu(old_keys, old_items, items, key_of) {
 		while (index < old_keys.length) {
 			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
 				__at_put(claimed, index, true);
-				let $bv = null;
+				let $bC = null;
 				if (eq2(__at(old_items, index), item)) {
-					$bv = [ 0, index ];
+					$bC = [ 0, index ];
 				} else {
-					$bv = [ 1, index ];
+					$bC = [ 1, index ];
 				}
-				step = $bv;
+				step = $bC;
 				break;
 			}
 			index = index + 1;
@@ -921,20 +962,20 @@ function $bu(old_keys, old_items, items, key_of) {
 	}
 	return [ __clone(steps), __clone(removed) ];
 }
-function $bt(self, source, key, render, $bc, $bd) {
+function $bA(self, source, key, render, $bj, $bk) {
 	const element = __clone(self[0]);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
 	const row_views = __shared_new([  ]);
 	const row_owners = __shared_new([  ]);
-	defer(get_owner($bd), () => {
+	defer(get_owner($bk), () => {
 		for (const owner of row_owners.v) {
 			dispose2(owner);
 		}
 		return;
 	});
-	$bl(source, (list) => {
-		const plan = $bu(row_keys.v, row_items.v, list, key);
+	$bs(source, (list) => {
+		const plan = $bB(row_keys.v, row_items.v, list, key);
 		const previous_views = row_views.v;
 		const previous_owners = row_owners.v;
 		for (const index of plan[1]) {
@@ -946,32 +987,32 @@ function $bt(self, source, key, render, $bc, $bd) {
 		let position = 0;
 		for (const step of plan[0]) {
 			const item = __clone(__at(list, position));
-			const $bw = step;
-			let $bx = null;
-			if ($bw[0] === 0) {
-				const index2 = $bw[1];
+			const $bD = step;
+			let $bE = null;
+			if ($bD[0] === 0) {
+				const index2 = $bD[1];
 				next_views.push(__clone(__at(previous_views, index2)));
 				next_owners.push(__clone(__at(previous_owners, index2)));
-				$bx = undefined;
-			} else if ($bw[0] === 1) {
-				const index3 = $bw[1];
+				$bE = undefined;
+			} else if ($bD[0] === 1) {
+				const index3 = $bD[1];
 				dispose2(__at(previous_owners, index3));
 				__at(previous_views, index3)[0].remove();
 				const owner = new3();
-				next_views.push($bj(owner, ($bi) => {
-					return render(item, $bi);
+				next_views.push($bq(owner, ($bp) => {
+					return render(item, $bp);
 				}));
 				next_owners.push(__clone(owner));
-				$bx = undefined;
+				$bE = undefined;
 			} else {
 				const owner2 = new3();
-				next_views.push($bj(owner2, ($bk) => {
-					return render(item, $bk);
+				next_views.push($bq(owner2, ($br) => {
+					return render(item, $br);
 				}));
 				next_owners.push(__clone(owner2));
-				$bx = undefined;
+				$bE = undefined;
 			}
-			$bx;
+			$bE;
 			position = position + 1;
 		}
 		for (const row of next_views) {
@@ -986,49 +1027,49 @@ function $bt(self, source, key, render, $bc, $bd) {
 		row_views.v = next_views;
 		row_owners.v = next_owners;
 		return;
-	}, $bc, $bd);
+	}, $bj, $bk);
 	return __clone(self);
 }
-function $bz(body) {
+function $bG(body) {
 	const scope = new3();
 	const result = body(scope);
 	return [ result, __clone(scope) ];
 }
-function $bA(policy, body) {
+function $bH(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
 	fresh[2].v = true;
 	return result;
 }
-function $bI(self, $g) {
-	const $bJ = $g;
-	let $bK = null;
-	if ($bJ[0] === 0) {
-		const turn = $bJ[1];
-		$bK = enqueue(turn, self[1].v);
+function $bP(self, $g) {
+	const $bQ = $g;
+	let $bR = null;
+	if ($bQ[0] === 0) {
+		const turn = $bQ[1];
+		$bR = enqueue(turn, self[1].v);
 	} else {
-		const $bL = $k(draining_turns.v);
-		let $bM = null;
-		if ($bL[0] === 0) {
-			const draining = $bL[1];
-			$bM = enqueue(draining, self[1].v);
+		const $bS = $k(draining_turns.v);
+		let $bT = null;
+		if ($bS[0] === 0) {
+			const draining = $bS[1];
+			$bT = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$bM = undefined;
+			$bT = undefined;
 		}
-		$bK = $bM;
+		$bR = $bT;
 	}
-	return $bK;
+	return $bR;
 }
-function $bH(self, value, $e) {
+function $bO(self, value, $e) {
 	self[0].v = value;
-	$bI(self, $e);
+	$bP(self, $e);
 }
-function $bF(self, transform, $bG) {
-	$bH(self, transform($bp(self)), $bG);
+function $bM(self, transform, $bN) {
+	$bO(self, transform($bw(self)), $bN);
 }
 const next_subscriber_id = __shared_new(0);
 const draining_turns = __shared_new([  ]);
@@ -1038,28 +1079,31 @@ const workbench = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "disp
 const panes = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::gap", [ "::gap", [ "s8myyrk", "gap:var(--space-4)" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sivwxlf", "min-height:0" ] ] ], [ "1024px::flex-direction", [ "1024px::flex-direction", [ "s1a4afps", "flex-direction:row" ] ] ] ]) ] ];
 const pane = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::gap", [ "::gap", [ "s8myyqn", "gap:var(--space-3)" ] ] ], [ "::min-width", [ "::min-width", [ "sitgfdt", "min-width:0" ] ] ], [ "::flex", [ "::flex", [ "s4sfhb", "flex:1 1 0" ] ] ] ]) ] ];
 const pane_label = [ [ new Map([ [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::opacity", [ "::opacity", [ "s3a4et", "opacity:0.6" ] ] ], [ "::font-size", [ "::font-size", [ "sayk1zs", "font-size:12px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "s1odj214", "letter-spacing:0.14em" ] ] ], [ "::text-transform", [ "::text-transform", [ "s1s2tj83", "text-transform:uppercase" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
-const editor_host = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sw4tyxs", "min-height:320px" ] ] ] ]) ] ];
-const runner_host = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sw4tyxs", "min-height:320px" ] ] ], [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ] ]) ] ];
+const editor_host = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::border", [ "::border", [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sw4tyxs", "min-height:320px" ] ] ] ]) ] ];
+const runner_host = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::border", [ "::border", [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sw4tyxs", "min-height:320px" ] ] ], [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ] ]) ] ];
 const controls = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ "szotvx1", "flex-wrap:wrap" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::gap", [ "::gap", [ "s8myyqn", "gap:var(--space-3)" ] ] ] ]) ] ];
-const run_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1qm4s0m", "background-color:#EB682E" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::border", [ "::border", [ "s1mnphwb", "border:none" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5wt9", "padding-top:8px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzym9", "padding-bottom:8px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vtfeyf", "padding-left:20px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t3o71", "padding-right:20px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk3oa", "font-size:14px" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "szyotuk", "opacity:0.9" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
-const example_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5vz0", "padding-top:7px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzxs0", "padding-bottom:7px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vteql6", "padding-left:14px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t2zts", "padding-right:14px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::opacity", [ "::opacity", [ "s30a1nw", "opacity:0.85" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "srapg3a", "opacity:1" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
+const run_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s19dy6kf", "background-color:var(--primary)" ] ] ], [ "::color", [ "::color", [ "s1miqier", "color:var(--up-bright)" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::border", [ "::border", [ "s1mnphwb", "border:none" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5wt9", "padding-top:8px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzym9", "padding-bottom:8px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vtfeyf", "padding-left:20px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t3o71", "padding-right:20px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk3oa", "font-size:14px" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "szyotuk", "opacity:0.9" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
+const example_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ], [ "::color", [ "::color", [ "s1miqier", "color:var(--up-bright)" ] ] ], [ "::border", [ "::border", [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5vz0", "padding-top:7px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzxs0", "padding-bottom:7px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vteql6", "padding-left:14px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t2zts", "padding-right:14px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::opacity", [ "::opacity", [ "s30a1nw", "opacity:0.85" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "srapg3a", "opacity:1" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
 const status_line = [ [ new Map([ [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::opacity", [ "::opacity", [ "s3a4eu", "opacity:0.7" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::margin-left", [ "::margin-left", [ "s10oplpw", "margin-left:auto" ] ] ] ]) ] ];
 const pane_head = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::justify-content", [ "::justify-content", [ "s1yv3ji6", "justify-content:space-between" ] ] ] ]) ] ];
-const template_select = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5v4r", "padding-top:6px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzwxr", "padding-bottom:6px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vten86", "padding-left:10px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t2wgs", "padding-right:10px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::opacity", [ "::opacity", [ "s30a1nw", "opacity:0.85" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "srapg3a", "opacity:1" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
-const report_pre = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dnzynr", "background-color:#1B060D" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::padding", [ "::padding", [ "s1ufvr2", "padding:var(--space-4)" ] ] ], [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::overflow", [ "::overflow", [ "s19aluk0", "overflow:auto" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::line-height", [ "::line-height", [ "s9bu6v4", "line-height:1.6" ] ] ], [ "::font-family", [ "::font-family", [ "s13ygf9q", "font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ], [ "::white-space", [ "::white-space", [ "s41qynl", "white-space:pre-wrap" ] ] ], [ "::min-height", [ "::min-height", [ "sonk3zu", "min-height:96px" ] ] ], [ "::max-height", [ "::max-height", [ "s1sw9ehx", "max-height:240px" ] ] ], [ "::border", [ "::border", [ "spit95n", "border:1px solid rgba(249, 223, 231, 0.10)" ] ] ] ]) ] ];
-const diag_error = [ [ new Map([ [ "::color", [ "::color", [ "s1j2narg", "color:#EB682E" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzhdq", "font-weight:700" ] ] ] ]) ] ];
-const diag_warning = [ [ new Map([ [ "::color", [ "::color", [ "s1itpo6m", "color:#E5AFD9" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzhdq", "font-weight:700" ] ] ] ]) ] ];
+const template_select = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ], [ "::color", [ "::color", [ "s1miqier", "color:var(--up-bright)" ] ] ], [ "::border", [ "::border", [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5v4r", "padding-top:6px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzwxr", "padding-bottom:6px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vten86", "padding-left:10px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t2wgs", "padding-right:10px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::opacity", [ "::opacity", [ "s30a1nw", "opacity:0.85" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "srapg3a", "opacity:1" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
+const confirm_bar = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ "szotvx1", "flex-wrap:wrap" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::gap", [ "::gap", [ "s8myyqn", "gap:var(--space-3)" ] ] ], [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ], [ "::border", [ "::border", [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "s1cd7p1i", "padding-top:10px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s1nrquui", "padding-bottom:10px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vteql6", "padding-left:14px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t2zts", "padding-right:14px" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ] ]) ] ];
+const confirm_question = [ [ new Map([ [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::margin-right", [ "::margin-right", [ "sp4tc1m", "margin-right:auto" ] ] ] ]) ] ];
+const confirm_button = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s19dy6kf", "background-color:var(--primary)" ] ] ], [ "::color", [ "::color", [ "s1miqier", "color:var(--up-bright)" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::border", [ "::border", [ "s1mnphwb", "border:none" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9ro", "border-radius:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5vz0", "padding-top:7px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzxs0", "padding-bottom:7px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vteql6", "padding-left:14px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t2zts", "padding-right:14px" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "szyotuk", "opacity:0.9" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
+const report_pre = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ], [ "::border-radius", [ "::border-radius", [ "s1r3y9sl", "border-radius:var(--space-3)" ] ] ], [ "::padding", [ "::padding", [ "s1ufvr2", "padding:var(--space-4)" ] ] ], [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::overflow", [ "::overflow", [ "s19aluk0", "overflow:auto" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::line-height", [ "::line-height", [ "s9bu6v4", "line-height:1.6" ] ] ], [ "::font-family", [ "::font-family", [ "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ], [ "::white-space", [ "::white-space", [ "s41qynl", "white-space:pre-wrap" ] ] ], [ "::min-height", [ "::min-height", [ "sonk3zu", "min-height:96px" ] ] ], [ "::max-height", [ "::max-height", [ "s1sw9ehx", "max-height:240px" ] ] ], [ "::border", [ "::border", [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ] ]) ] ];
+const diag_error = [ [ new Map([ [ "::color", [ "::color", [ "s1i5dkrp", "color:var(--primary)" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzhdq", "font-weight:700" ] ] ] ]) ] ];
+const diag_warning = [ [ new Map([ [ "::color", [ "::color", [ "s9d85rj", "color:var(--accent)" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzhdq", "font-weight:700" ] ] ] ]) ] ];
 const diag_site = [ [ new Map([ [ "::opacity", [ "::opacity", [ "s30a1l5", "opacity:0.55" ] ] ] ]) ] ];
 const diag_note = [ [ new Map([ [ "::opacity", [ "::opacity", [ "s3a4eu", "opacity:0.7" ] ] ] ]) ] ];
-const console_error = [ [ new Map([ [ "::color", [ "::color", [ "s1j2narg", "color:#EB682E" ] ] ] ]) ] ];
+const console_error = [ [ new Map([ [ "::color", [ "::color", [ "s1i5dkrp", "color:var(--primary)" ] ] ] ]) ] ];
 const quiet_row = [ [ new Map([ [ "::opacity", [ "::opacity", [ "s30a1k8", "opacity:0.45" ] ] ] ]) ] ];
-const topbar = [ [ new Map([ [ "::position", [ "::position", [ "s1onro1c", "position:sticky" ] ] ], [ "::top", [ "::top", [ "s80ttlx", "top:0" ] ] ], [ "::z-index", [ "::z-index", [ "si5ywm6", "z-index:100" ] ] ], [ "::background", [ "::background", [ "s10uy5mh", "background:rgba(18, 0, 4, calc(var(--nav-fade, 0) * 0.86))" ] ] ], [ "::border-bottom", [ "::border-bottom", [ "s143oef3", "border-bottom:1px solid rgba(249, 223, 231, calc(var(--nav-fade, 0) * 0.10))" ] ] ], [ "::backdrop-filter", [ "::backdrop-filter", [ "shx44pg", "backdrop-filter:blur(calc(var(--nav-fade, 0) * 14px))" ] ] ] ]) ] ];
+const topbar = [ [ new Map([ [ "::position", [ "::position", [ "s1onro1c", "position:sticky" ] ] ], [ "::top", [ "::top", [ "s80ttlx", "top:0" ] ] ], [ "::z-index", [ "::z-index", [ "si5ywm6", "z-index:100" ] ] ], [ "::background", [ "::background", [ "smqxnvc", "background:rgb(from var(--down-dim) r g b / calc(var(--nav-fade, 0) * 0.86))" ] ] ], [ "::border-bottom", [ "::border-bottom", [ "sc9brgc", "border-bottom:1px solid rgb(from var(--stroke-hard) r g b / calc(var(--nav-fade, 0) * 0.9))" ] ] ], [ "::backdrop-filter", [ "::backdrop-filter", [ "shx44pg", "backdrop-filter:blur(calc(var(--nav-fade, 0) * 14px))" ] ] ] ]) ] ];
 const nav_row = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::justify-content", [ "::justify-content", [ "s1yv3ji6", "justify-content:space-between" ] ] ], [ "::height", [ "::height", [ "s2310lv", "height:64px" ] ] ] ]) ] ];
 const nav_brand = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::gap", [ "::gap", [ "s8myyqn", "gap:var(--space-3)" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "s1odkmbv", "letter-spacing:0.35em" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ] ]) ] ];
 const nav_links = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::gap", [ "::gap", [ "s8myyte", "gap:var(--space-6)" ] ] ] ]) ] ];
-const nav_link = [ [ new Map([ [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::opacity", [ "::opacity", [ "s3a4ev", "opacity:0.8" ] ] ], [ "::text-decoration", [ "::text-decoration", [ "svrgm1f", "text-decoration:none" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ ":hover:opacity", [ ":hover:opacity", [ "srapg3a", "opacity:1" ] ] ] ]) ] ];
+const nav_link = [ [ new Map([ [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::text-decoration", [ "::text-decoration", [ "svrgm1f", "text-decoration:none" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ "::transition", [ "::transition", [ "sbcnc8a", "transition:color 80ms ease" ] ] ], [ ":hover:color", [ ":hover:color", [ "s1ytnaev", "color:var(--up-bright)" ] ] ] ]) ] ];
 const assets = "https://vilan-lang.org/assets";
-const shell = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s1dcp4lt", "background-color:#120004" ] ] ], [ "::color", [ "::color", [ "s1jjwgph", "color:#F9DFE7" ] ] ], [ "::min-height", [ "::min-height", [ "sondrfd", "min-height:100%" ] ] ], [ "::font-family", [ "::font-family", [ "s1om2gx7", "font-family:\'Inter\', system-ui, -apple-system, sans-serif" ] ] ], [ "::font-size", [ "::font-size", [ "sayk3oa", "font-size:14px" ] ] ], [ "::line-height", [ "::line-height", [ "snq8cl8", "line-height:18px" ] ] ] ]) ] ];
+const shell = [ [ new Map([ [ "::background-color", [ "::background-color", [ "s4e3ofu", "background-color:var(--down-dim)" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::min-height", [ "::min-height", [ "sondrfd", "min-height:100%" ] ] ], [ "::font-family", [ "::font-family", [ "s1om2gx7", "font-family:\'Inter\', system-ui, -apple-system, sans-serif" ] ] ], [ "::font-size", [ "::font-size", [ "sayk3oa", "font-size:14px" ] ] ], [ "::line-height", [ "::line-height", [ "snq8cl8", "line-height:18px" ] ] ] ]) ] ];
 const column = [ [ new Map([ [ "::max-width", [ "::max-width", [ "s1eamei2", "max-width:1264px" ] ] ], [ "::margin-left", [ "::margin-left", [ "s10oplpw", "margin-left:auto" ] ] ], [ "::margin-right", [ "::margin-right", [ "sp4tc1m", "margin-right:auto" ] ] ], [ "::padding-left", [ "::padding-left", [ "s1vtg8d6", "padding-left:32px" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t4hls", "padding-right:32px" ] ] ] ]) ] ];
 const no_drag = [ [ new Map([ [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ "::-webkit-user-drag", [ "::-webkit-user-drag", [ "svfmjlf", "-webkit-user-drag:none" ] ] ] ]) ] ];
 const console_cap = 300;
@@ -1071,6 +1115,9 @@ const can_platform = $c(false);
 const mode = $a("browser");
 const share_label = $a("Share");
 const next_row_id = __shared_new(0);
+const modified_from = $a("");
+const buffer_dirty = __shared_new(false);
+const confirm_target = $a("");
 const run = () => {
 	if (VilanPlayground.compile(VilanPlayground.value())) {
 		$d(status, "Compiling\u{2026}", [ 1 ]);
@@ -1088,7 +1135,7 @@ const format = () => {
 const share = () => {
 	return VilanPlayground.share();
 };
-const pick = (name) => {
+const load_example = (name) => {
 	const $n = name;
 	let $o = null;
 	if ($n === "server") {
@@ -1104,6 +1151,25 @@ const pick = (name) => {
 	run();
 	return;
 };
+const pick = (name) => {
+	if (buffer_dirty.v) {
+		$d(confirm_target, name, [ 1 ]);
+	} else {
+		load_example(name);
+	}
+	return;
+};
+const confirm_replace = () => {
+	const name = $v(confirm_target);
+	$d(confirm_target, "", [ 1 ]);
+	if (name !== "") {
+		load_example(name);
+	}
+	return;
+};
+const cancel_replace = () => {
+	return $d(confirm_target, "", [ 1 ]);
+};
 const compiler_ready = __shared_new(false);
 const doc_ready = __shared_new(false);
 const ran_on_arrival = __shared_new(false);
@@ -1117,15 +1183,15 @@ const run_on_arrival = () => {
 const share_revert = __shared_new([ 1 ]);
 const flash_share = (label) => {
 	$d(share_label, label, [ 1 ]);
-	const $v = share_revert.v;
-	let $w = null;
-	if ($v[0] === 0) {
-		const timer = $v[1];
-		$w = cancel(timer);
+	const $w = share_revert.v;
+	let $x = null;
+	if ($w[0] === 0) {
+		const timer = $w[1];
+		$x = cancel(timer);
 	} else {
-		$w = undefined;
+		$x = undefined;
 	}
-	$w;
+	$x;
 	const timer2 = after(1600);
 	share_revert.v = [ 0, __clone(timer2) ];
 	__task(async () => {
@@ -1144,19 +1210,19 @@ const apply_diagnostics = (event) => {
 		id = id + 1;
 	}
 	next_row_id.v = id;
-	$B(diagnostics, rows, [ 1 ]);
+	$C(diagnostics, rows, [ 1 ]);
 	return rows.length;
 };
-mount_root("app", ($H) => {
-	return playground_page(status, diagnostics, console_lines, can_format, can_platform, share_label, mode, run, format, share, [ 1 ], $H);
+mount_root("app", ($I) => {
+	return playground_page(status, diagnostics, console_lines, can_format, can_platform, share_label, mode, modified_from, confirm_target, run, format, share, confirm_replace, cancel_replace, [ 1 ], $I);
 });
 VilanPlayground.init("#editor", VilanPlayground.example("counter"));
 VilanPlayground.startCompiler((event) => {
 	const kind = event.kind;
-	let $bC = null;
+	let $bJ = null;
 	if (kind === "ready") {
-		$aO(can_format, event.canFormat, [ 1 ]);
-		$aO(can_platform, event.canPlatform, [ 1 ]);
+		$aR(can_format, event.canFormat, [ 1 ]);
+		$aR(can_platform, event.canPlatform, [ 1 ]);
 		if (!(event.canPlatform)) {
 			VilanPlayground.setMode("browser");
 		}
@@ -1166,6 +1232,13 @@ VilanPlayground.startCompiler((event) => {
 	} else if (kind === "doc") {
 		doc_ready.v = true;
 		run_on_arrival();
+	} else if (kind === "dirty") {
+		buffer_dirty.v = event.changed;
+		$d(modified_from, event.name, [ 1 ]);
+		if (!(event.changed)) {
+			$d(confirm_target, "", [ 1 ]);
+		}
+		$bJ = undefined;
 	} else if (kind === "command") {
 		const command = event.command;
 		if (command === "run") {
@@ -1177,14 +1250,14 @@ VilanPlayground.startCompiler((event) => {
 		} else if (command === "mode") {
 			$d(mode, event.name, [ 1 ]);
 		}
-		$bC = undefined;
+		$bJ = undefined;
 	} else if (kind === "formatted") {
 		if (event.changed) {
 			$d(status, "Formatted.", [ 1 ]);
 		} else {
 			$d(status, "Format made no changes.", [ 1 ]);
 		}
-		$bC = undefined;
+		$bJ = undefined;
 	} else if (kind === "shared") {
 		if (event.copied) {
 			$d(status, "Link copied to the clipboard.", [ 1 ]);
@@ -1193,33 +1266,33 @@ VilanPlayground.startCompiler((event) => {
 			$d(status, "Link ready in the address bar.", [ 1 ]);
 			flash_share("Link ready");
 		}
-		$bC = undefined;
+		$bJ = undefined;
 	} else if (kind === "checked") {
 		const count = apply_diagnostics(event);
-		let $bD = null;
+		let $bK = null;
 		if (event.ok) {
 			if (event.platform === "node") {
 				$d(status, "No problems (server check, vilan " + event.version + ").", [ 1 ]);
 			} else {
 				$d(status, "No problems (vilan " + event.version + ").", [ 1 ]);
 			}
-			$bD = undefined;
+			$bK = undefined;
 		} else if (count === 1) {
 			$d(status, "1 problem; see the diagnostics.", [ 1 ]);
 		} else {
 			$d(status, "" + count + " problems; see the diagnostics.", [ 1 ]);
 		}
-		$bC = $bD;
+		$bJ = $bK;
 	} else if (kind === "result") {
 		apply_diagnostics(event);
-		let $bE = null;
+		let $bL = null;
 		if (event.platform === "node") {
 			if (event.ok) {
 				$d(status, "Server program checks clean (vilan " + event.version + ").", [ 1 ]);
 			} else {
 				$d(status, "Build failed; see the diagnostics.", [ 1 ]);
 			}
-			$bE = undefined;
+			$bL = undefined;
 		} else {
 			$p(console_lines, [  ], [ 1 ]);
 			if (event.ok) {
@@ -1229,19 +1302,19 @@ VilanPlayground.startCompiler((event) => {
 				$d(status, "Build failed; see the diagnostics.", [ 1 ]);
 				VilanPlayground.clearProgram();
 			}
-			$bE = undefined;
+			$bL = undefined;
 		}
-		$bC = $bE;
+		$bJ = $bL;
 	} else if (kind === "crash") {
 		$d(status, "The compiler crashed on this input; it has been restarted. Please report the program that did it.", [ 1 ]);
 	}
-	return $bC;
+	return $bJ;
 });
 window.addEventListener("message", (host_event) => {
 	const message = host_event.data;
 	const kind = message.kind;
 	if (kind === "log" || kind === "error") {
-		$bF(console_lines, (lines) => {
+		$bM(console_lines, (lines) => {
 			let next = __clone(lines);
 			if (next.length < console_cap) {
 				const id = next_row_id.v;
