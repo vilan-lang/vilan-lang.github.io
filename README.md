@@ -41,7 +41,9 @@ else:
 - every `href` absolute from the site root — `/`, `/#install`,
   `/docs/tour/hello-vilan.html`, `/playground/`, `/docs/` — and every asset
   an absolute `https://vilan-lang.org/assets/…` URL, so the same bytes work
-  from `/`, `/playground/`, and any depth of `/docs/`.
+  from `/`, `/playground/`, and any depth of `/docs/`. The mark is not an
+  `<img>`: it is a masked `<span>` filled with `--up-bright`, so it follows
+  the theme like the wordmark text beside it.
 
 **`chrome/header.css`** — the chrome leg's own emitted stylesheet: exactly
 the rules that leg reaches, under content-hashed class names (`.s…`), so it
@@ -53,18 +55,20 @@ literal; every colour is a role consumed as `var(--role)`:
   `--up-bright` (a link under the pointer); `--nav-fade` is set inline on
   the `<nav>` (1) and read by the ground, hairline, and blur;
 - also declared, because the site's theme module rides along: `--down-normal`,
-  `--primary`, `--accent`, `--stroke-soft`, `--tint-callable`, `--up-dim`,
-  `--up-caution`, `--up-error`;
+  `--primary`, `--accent`, `--stroke-soft`, `--tint-callable`,
+  `--tint-comment`, `--up-dim`, `--up-caution`, `--up-error`;
 - the site's spacing scale, `--space-0/3/4/6/24`, which the host is not
   expected to supply.
 
-The stylesheet declares the site's dark defaults for all of those at
-`:root` — specificity (0,1,0). A host that declares the same roles on
-`html.light` / `html.navy` (0,1,1) re-themes the bar to itself, and so does
-one that declares them at `.light` / `.navy` (0,1,0) later in the cascade:
-mdBook's `{{> head}}` lands before its own `variables.css`, so a link from
-`head.hbs` is always earlier. The fragment follows the BOOK's theme; it
-never brings its own.
+The stylesheet declares the site's own values for all of those at `:root`
+— the dark defaults, and the light values redeclared behind
+`@media (prefers-color-scheme: light)` — both at specificity (0,1,0). A host
+that declares the same roles on `html.light` / `html.navy` (0,1,1) re-themes
+the bar to itself, and so does one that declares them at `.light` / `.navy`
+(0,1,0) later in the cascade: mdBook's `{{> head}}` lands before its own
+`variables.css`, so a link from `head.hbs` is always earlier. The fragment
+follows the BOOK's theme — the picker's choice, not the OS's; it never brings
+its own.
 
 What the book does with it (the docs half of S4, in `vilan-lang/vilan`'s
 `vilan/docs/theme/`): `head.hbs` links `/chrome/header.css`; `docs.yml`
