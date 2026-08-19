@@ -62,13 +62,19 @@ jobs:
           mdbook build toolchain/vilan/docs
           rm -rf docs
           mv toolchain/vilan/docs/book docs
-          # book.toml's `src = "."` makes mdBook sweep the config and the
-          # theme SOURCES into the output beside the hashed copies the pages
-          # actually load (docs-port.md 1.3, N10): book.toml, theme/vilan.js
-          # (the pages load theme/vilan-<hash>.js), and the partials. Drop
-          # them from the served tree; any further theme source the book
-          # grows leaks the same way and belongs on this line.
-          rm -f docs/book.toml docs/theme/vilan.js docs/theme/header.hbs docs/theme/head.hbs
+          # book.toml's `src = "."` makes mdBook sweep the config and EVERY
+          # theme SOURCE into the output, verbatim, beside the hashed copies
+          # the pages actually load (docs-port.md 1.3, N10): theme/vilan.js
+          # leaks next to theme/vilan-<hash>.js, theme/css/vilan.css next to
+          # theme/css/vilan-<hash>.css, the partials, the emptied highlight
+          # sheets, fonts/fonts.css. Drop every file under the source theme/
+          # from the served tree (the pages never link an unhashed name),
+          # plus book.toml — so a theme source the book grows later is
+          # covered without a new line here.
+          (cd toolchain/vilan/docs && find theme -type f) | while read -r leaked; do
+            rm -f "docs/$leaked"
+          done
+          rm -f docs/book.toml
           rm -rf toolchain
       - name: Generate the book's sitemap
         # SUMMARY.md decides which pages exist, so the sitemap is generated
