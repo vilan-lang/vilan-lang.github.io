@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The pages this repo's root serves, reached through the sitemap
+     index at /sitemap.xml. The playground is listed because nothing
+     links to it yet: a crawler has no other way to reach it. Hand-kept;
+     add a line when the root grows a page. No lastmod — see the index's
+     comment. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://vilan-lang.org/</loc></url>
+  <url><loc>https://vilan-lang.org/playground/</loc></url>
+</urlset>
