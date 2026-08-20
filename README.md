@@ -15,7 +15,7 @@ workflow must preserve (`docs-port.md` §3.2 in the vilan repo).
 | `playground/**` | the same `deploy.yml` | the playground page and bundles, plus the compiler as wasm under an immutable `playground/v<tag>/` per release; `playground/manifest.json` lists every version directory present |
 | `chrome/**` | the same `deploy.yml` | the site's masthead, exported for the book — the contract below |
 | `assets/` | hand deploys (the owner) | the brand marks, fonts, icons; served under the brand-assets license, not this repo's |
-| `CNAME`, `404.html`, `robots.txt`, `sitemap.xml`, `favicon.ico`, this README, `.gitignore` | hand-owned | `404.html` is also the `/vilan/*` → `/docs/*` forwarder older editor builds deep-link |
+| `CNAME`, `404.html`, `robots.txt`, `sitemap.xml`, `favicon.ico`, this README, `.gitignore` | hand-owned | `404.html` is also the `/vilan/*` → `/docs/*` forwarder older editor builds deep-link (its sunset: below) |
 
 `deploy.yml` stages an explicit filename allowlist — never `git add -A` —
 so it cannot touch `docs/` or `assets/`; `docs.yml` stages `docs/` and
@@ -93,3 +93,14 @@ whose "commit only if it changed" guard a build date would defeat, and the
 root file follows the same rule so the pair reads alike. Whether a visually
 merged site keeps two documents is filed as N13 in the vilan repo's backlog
 and is not decided here.
+
+## The 404 forwarder's sunset (N8 — proposed, not ruled)
+
+`404.html` forwards `/vilan/<page>` → `/docs/<page>` for the editor-hover
+deep links that released binaries through v0.15.0 still emit (the book
+moved to `/docs/` at road-to-launch P2). GitHub Pages keeps no access
+logs, so there is no traffic number to retire it on. Proposed condition,
+awaiting the owner's ruling: drop the forwarder at the beta switch — the
+version jump is already the moment old-toolchain accommodations reset,
+and every binary that emits the old path will be more than twenty
+releases stale by then. Until ruled, the shim stays.
