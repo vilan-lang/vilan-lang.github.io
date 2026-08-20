@@ -1,78 +1,64 @@
 <!doctype html>
 <html lang="en">
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<!-- Dark is the default, light follows the OS (theme.vl's token block is
-	     redeclared behind prefers-color-scheme: light); the UA is told both so
-	     its own chrome - form controls, scrollbars - agrees with the page. -->
-	<meta name="color-scheme" content="dark light">
-	<meta name="theme-color" content="#120004" media="(prefers-color-scheme: dark)">
-	<meta name="theme-color" content="#F9DFE7" media="(prefers-color-scheme: light)">
-	<title>Vilan Playground — run vilan in your browser</title>
-	<meta name="description" content="Write and run Vilan in your browser: the compiler itself runs client-side as WebAssembly — no install, no server.">
-	<link rel="icon" href="https://vilan-lang.org/favicon.ico" sizes="48x48">
-	<link rel="icon" href="https://vilan-lang.org/assets/icon-192.png" type="image/png" sizes="192x192">
-	<link rel="apple-touch-icon" href="https://vilan-lang.org/assets/apple-touch-icon.png">
-	<meta property="og:title" content="Vilan Playground">
-	<meta property="og:description" content="Write and run Vilan in your browser: the compiler itself runs client-side as WebAssembly — no install, no server.">
-	<meta property="og:image" content="https://vilan-lang.org/assets/social_card.png">
-	<meta property="og:url" content="https://vilan-lang.org/playground/">
-	<meta property="og:type" content="website">
-	<meta name="twitter:card" content="summary_large_image">
-	<link rel="stylesheet" href="/playground/playground.css">
-	<style>
-		/* Self-hosted webfonts (OFL) — the same faces the landing page loads,
-		   so navigating between the two costs no new fetches. */
-		@font-face {
-			font-family: "Inter";
-			font-style: normal;
-			font-weight: 100 900;
-			font-display: swap;
-			src: url(https://vilan-lang.org/assets/fonts/inter-latin.woff2) format("woff2");
-		}
-		@font-face {
-			font-family: "Vilan Display";
-			font-style: normal;
-			font-weight: 600;
-			font-display: swap;
-			src: url(https://vilan-lang.org/assets/fonts/vilan-display-600-latin.woff2) format("woff2");
-		}
-		/* The code face, declared here for the same reason as the other two:
-		   both shells load the same faces. The editor's own theme moves onto
-		   it in slice 2 (K10) — this slice only makes the face available. */
-		@font-face {
-			font-family: "CommitMonoV143";
-			font-style: normal;
-			font-weight: 200 700;
-			font-display: swap;
-			font-synthesis: none;
-			src: url(https://vilan-lang.org/assets/fonts/commit-mono-v143.woff2) format("woff2");
-		}
-		html, body { margin: 0; height: 100%; background: var(--down-dim, #120004); }
-		::selection { background: var(--up-bright, #F9DFE7); color: var(--down-dim, #120004); }
-		/* The editor host is a plain div until CodeMirror mounts; the widget
-		   and the per-Run iframe both fill whatever box the page gives them.
-		   #app spans the viewport so the workbench can flex to the fold. */
-		#app { height: 100%; }
-		#editor .cm-editor { height: 100%; }
-		#runner iframe { border: 0; width: 100%; height: 100%; background: #fff; }
-		button:focus-visible, select:focus-visible {
-			outline: 2px solid var(--primary, #EB682E);
-			outline-offset: 2px;
-		}
-		@media (prefers-reduced-motion: reduce) {
-			* { animation: none !important; }
-		}
-	</style>
-</head>
-<body>
-	<div id="app"><div class="s4e3ofu ssxqrx8 sondrfd s1om2gx7 sayk3oa snq8cl8 sbiovxm s1atdsbb s22x0wn syp1ckj sepvury s1xx7ixb s17tflw5 sr79rlz s19c5xn7 s1u3ovjb s19k3kma s1fhczbb s1t1pcq8 snky57a sbb9pzp s18b2uzn s8onzey s16k06qr s1n2n3b1 s5j3euk s14j98t0 s7em04x s8nt3s2 s1dxptvb s1yauy2a"><header class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j sehiopn"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><h1 class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 s1miqier skjzgjh s1iy45h3">Playground</h1><div class="sgdl0ko s1h12z4 s1h4num7 szjswwl suw81y3"></div><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vfx s1anvdpv s94jh8x s1onu0uk sj84onl s1iy45h3 s19dy6kf s30khfz skjzgjh s1mnphwb s15eo8y8 sdue9po">Run</button><select class="sayk2u1 snq8awq sbq2ipd s19qv9u6 s1foenn1 s1hggi4x s13w7vf0 s16t3pvj s94jh8x s1onu0uk s1x0qwck s1iy45h3 sxfhabj s1ydv2q1 ssxqrx8 s8ckzec s22xxov sg7ln4b s1cysvk2 s1fnd457 s1q9mjsm s9fgd5j s1of7ou7 s1ytnaev" id="mode" aria-label="Compile mode" hidden=""><option value="browser">Browser: compile and run</option><option value="node">Server: check the process leg</option></select><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vf0 s1anvdoy s94jh8x s1onu0uk s1x0qwck s1iy45h3 s1wmjjx5 ssxqrx8 s1mnphwb s1s7tv0o s1ytnaev skghblk" hidden="">Format</button><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vf0 s1anvdoy s94jh8x s1onu0uk s1x0qwck s1iy45h3 s1wmjjx5 ssxqrx8 s1mnphwb s1s7tv0o s1ytnaev skghblk">Share</button><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 shpfnhp s10oplpw s13w7ve3 s1anvdo1" role="status">Loading the compiler…</p><select class="sayk1zs snq8awq sbq2ipd sofexq0 s1foenn1 s1hggi4x s13w7vf0 s16t3pvj s94jh8x s1onu0uk s1x0qwck s1iy45h3 sxfhabj s1ydv2q1 ssxqrx8 s8ckzec s22xxov sg7ln4b s1cysvk2 s1fnd457 s1q9mjsm s9fgd5j s1of7ou7 s1ytnaev s1r74r55" id="version" aria-label="Compiler version"></select><div class="sgdl0ko s1h12z4 s1h4num7 szjswwl suw81y3"></div><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></header><main class="sbipssh smaui08 sivwxlf s1x5z460 s1h4num7 send2h s11r85rj s1ox8bcr s1th8vpw"><div class="sbiovxm s1atdsbb s1ydv2q1 sitgfdt sivwxlf syp1ckj"><div class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j s1yv3ji6 sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 ssxqrx8 skjzfp8 s1iy45h3">Program</p><select class="sayk2u1 snq8awq sbq2ipd s19qv9u6 s1foenn1 s1hggi4x s13w7vf0 s16t3pvj s94jh8x s1onu0uk s1x0qwck s1iy45h3 sxfhabj s1ydv2q1 ssxqrx8 s8ckzec s22xxov sg7ln4b s1cysvk2 s1fnd457 s1q9mjsm s9fgd5j s1of7ou7 s1ytnaev" id="template" aria-label="Load an example"><option value="" disabled="true" hidden="true">Examples</option><option value="counter">Counter: reactive state</option><option value="hello">Hello: mount and print</option><option value="styles">Styles: compile-time CSS</option><option value="server" hidden="">Server: typed HTTP, checked</option></select></div><div role="alert" hidden=""><div class="sbiovxm s1rpzmas szotvx1 s8myypq ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 sp4tc1m ssxqrx8">Replace the current program with ? The edits are not kept.</p><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vf0 s1anvdoy s94jh8x s1onu0uk s1x0qwck s1iy45h3 s1wmjjx5 ssxqrx8 s1mnphwb s1s7tv0o s1ytnaev skghblk">Keep editing</button><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vfx s1anvdpv s94jh8x s1onu0uk sj84onl s1iy45h3 s19dy6kf s30khfz skjzgjh s1mnphwb s15eo8y8 sdue9po">Replace</button></div></div><div class="smaui08 sivwxlf syp1ckj" id="editor" aria-label="Program editor"></div></div><div class="sbiovxm s1atdsbb s1ydv2q1 sitgfdt sivwxlf syp1ckj"><div class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j s1yv3ji6 sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 ssxqrx8 skjzfp8 s1iy45h3">Result</p></div><div class="smaui08 sivwxlf sbiovxm s1ydv2q1" id="runner" aria-label="Program result"></div></div><div class="sbiovxm s1atdsbb s1ydv2q1 sitgfdt sivwxlf syp1ckj"><div class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j s1yv3ji6 sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 ssxqrx8 skjzfp8 s1iy45h3">Diagnostics</p></div><pre class="sofexq0 s1r74r55 s1tlfgp4 sku5tg9 s14jzv99 smaui08 sivwxlf s19aluk0 sayk2u1 snq8cl8 s41qynl ssxqrx8"><div class="sku5sm0 s14jzuf0 s13w7vf0 s1anvdoy shpfnhp">Nothing to report.</div><div></div></pre></div><div class="sbiovxm s1atdsbb s1ydv2q1 sitgfdt sivwxlf syp1ckj"><div class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j s1yv3ji6 sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 ssxqrx8 skjzfp8 s1iy45h3">Console</p></div><pre class="sofexq0 s1r74r55 s1tlfgp4 sku5tg9 s14jzv99 smaui08 sivwxlf s19aluk0 sayk2u1 snq8cl8 s41qynl ssxqrx8"><div class="sku5sm0 s14jzuf0 s13w7vf0 s1anvdoy shpfnhp">Program output lands here.</div><div></div></pre></div></main></div></div>
-	<!-- The vendored editor bundle (CodeMirror 6 + the worker and iframe
-	     machinery) and the generated example table load as plain scripts, so
-	     both globals exist before the module entry below runs. -->
-	<script src="/playground/examples.js"></script>
-	<script src="/playground/editor.js"></script>
-	<script type="module" src="/playground/playground.js"></script>
-</body>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Vilan Playground — run vilan in your browser</title>
+		<link rel="stylesheet" href="/playground.css" />
+		<meta name="color-scheme" content="dark light">
+		<meta name="theme-color" content="#120004" media="(prefers-color-scheme: dark)">
+		<meta name="theme-color" content="#F9DFE7" media="(prefers-color-scheme: light)">
+		<meta name="description" content="Write and run Vilan in your browser: the compiler itself runs client-side as WebAssembly — no install, no server.">
+		<link rel="icon" href="https://vilan-lang.org/favicon.ico" sizes="48x48">
+		<link rel="icon" href="https://vilan-lang.org/assets/icon-192.png" type="image/png" sizes="192x192">
+		<link rel="apple-touch-icon" href="https://vilan-lang.org/assets/apple-touch-icon.png">
+		<meta property="og:title" content="Vilan Playground">
+		<meta property="og:description" content="Write and run Vilan in your browser: the compiler itself runs client-side as WebAssembly — no install, no server.">
+		<meta property="og:image" content="https://vilan-lang.org/assets/social_card.png">
+		<meta property="og:url" content="https://vilan-lang.org/playground/">
+		<meta property="og:type" content="website">
+		<meta name="twitter:card" content="summary_large_image">
+		<style>
+			@font-face {
+				font-family: "Inter";
+				font-style: normal;
+				font-weight: 100 900;
+				font-display: swap;
+				src: url(https://vilan-lang.org/assets/fonts/inter-latin.woff2) format("woff2");
+			}
+			@font-face {
+				font-family: "Vilan Display";
+				font-style: normal;
+				font-weight: 600;
+				font-display: swap;
+				src: url(https://vilan-lang.org/assets/fonts/vilan-display-600-latin.woff2) format("woff2");
+			}
+			@font-face {
+				font-family: "CommitMonoV143";
+				font-style: normal;
+				font-weight: 200 700;
+				font-display: swap;
+				font-synthesis: none;
+				src: url(https://vilan-lang.org/assets/fonts/commit-mono-v143.woff2) format("woff2");
+			}
+			html, body { margin: 0; height: 100%; background: var(--down-dim, #120004); }
+			::selection { background: var(--up-bright, #F9DFE7); color: var(--down-dim, #120004); }
+			#app { height: 100%; }
+			#editor .cm-editor { height: 100%; }
+			#runner iframe { border: 0; width: 100%; height: 100%; background: #fff; }
+			button:focus-visible, select:focus-visible {
+				outline: 2px solid var(--primary, #EB682E);
+				outline-offset: 2px;
+			}
+			@media (prefers-reduced-motion: reduce) {
+				* { animation: none !important; }
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app"><div class="s4e3ofu ssxqrx8 sondrfd s1om2gx7 sayk3oa snq8cl8 sbiovxm s1atdsbb s22x0wn syp1ckj sepvury s1xx7ixb s17tflw5 sr79rlz s19c5xn7 s1u3ovjb s19k3kma s1fhczbb s1t1pcq8 snky57a sbb9pzp s18b2uzn s8onzey s16k06qr s1n2n3b1 s5j3euk s14j98t0 s7em04x s8nt3s2 s1dxptvb s1yauy2a"><header class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j sehiopn"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><h1 class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 s1miqier skjzgjh s1iy45h3">Playground</h1><div class="sgdl0ko s1h12z4 s1h4num7 szjswwl suw81y3"></div><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vfx s1anvdpv s94jh8x s1onu0uk sj84onl s1iy45h3 s19dy6kf s30khfz skjzgjh s1mnphwb s15eo8y8 sdue9po">Run</button><select class="sayk2u1 snq8awq sbq2ipd s19qv9u6 s1foenn1 s1hggi4x s13w7vf0 s16t3pvj s94jh8x s1onu0uk s1x0qwck s1iy45h3 sxfhabj s1ydv2q1 ssxqrx8 s8ckzec s22xxov sg7ln4b s1cysvk2 s1fnd457 s1q9mjsm s9fgd5j s1of7ou7 s1ytnaev" id="mode" aria-label="Compile mode" hidden=""><option value="browser">Browser: compile and run</option><option value="node">Server: check the process leg</option></select><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vf0 s1anvdoy s94jh8x s1onu0uk s1x0qwck s1iy45h3 s1wmjjx5 ssxqrx8 s1mnphwb s1s7tv0o s1ytnaev skghblk" hidden="">Format</button><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vf0 s1anvdoy s94jh8x s1onu0uk s1x0qwck s1iy45h3 s1wmjjx5 ssxqrx8 s1mnphwb s1s7tv0o s1ytnaev skghblk">Share</button><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 shpfnhp s10oplpw s13w7ve3 s1anvdo1" role="status">Loading the compiler…</p><select class="sayk1zs snq8awq sbq2ipd sofexq0 s1foenn1 s1hggi4x s13w7vf0 s16t3pvj s94jh8x s1onu0uk s1x0qwck s1iy45h3 sxfhabj s1ydv2q1 ssxqrx8 s8ckzec s22xxov sg7ln4b s1cysvk2 s1fnd457 s1q9mjsm s9fgd5j s1of7ou7 s1ytnaev s1r74r55" id="version" aria-label="Compiler version"></select><div class="sgdl0ko s1h12z4 s1h4num7 szjswwl suw81y3"></div><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></header><main class="sbipssh smaui08 sivwxlf s1x5z460 s1h4num7 send2h s11r85rj s1ox8bcr s1th8vpw"><div class="sbiovxm s1atdsbb s1ydv2q1 sitgfdt sivwxlf syp1ckj"><div class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j s1yv3ji6 sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 ssxqrx8 skjzfp8 s1iy45h3">Program</p><select class="sayk2u1 snq8awq sbq2ipd s19qv9u6 s1foenn1 s1hggi4x s13w7vf0 s16t3pvj s94jh8x s1onu0uk s1x0qwck s1iy45h3 sxfhabj s1ydv2q1 ssxqrx8 s8ckzec s22xxov sg7ln4b s1cysvk2 s1fnd457 s1q9mjsm s9fgd5j s1of7ou7 s1ytnaev" id="template" aria-label="Load an example"><option value="" disabled="true" hidden="true">Examples</option><option value="counter">Counter: reactive state</option><option value="hello">Hello: mount and print</option><option value="styles">Styles: compile-time CSS</option><option value="server" hidden="">Server: typed HTTP, checked</option></select></div><div role="alert" hidden=""><div class="sbiovxm s1rpzmas szotvx1 s8myypq ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 sp4tc1m ssxqrx8">Replace the current program with ? The edits are not kept.</p><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vf0 s1anvdoy s94jh8x s1onu0uk s1x0qwck s1iy45h3 s1wmjjx5 ssxqrx8 s1mnphwb s1s7tv0o s1ytnaev skghblk">Keep editing</button><button class="sayk2u1 snq8awq sbq2ipd s19qv9u6 sku5tg9 s14jzv99 s13w7vfx s1anvdpv s94jh8x s1onu0uk sj84onl s1iy45h3 s19dy6kf s30khfz skjzgjh s1mnphwb s15eo8y8 sdue9po">Replace</button></div></div><div class="smaui08 sivwxlf syp1ckj" id="editor" aria-label="Program editor"></div></div><div class="sbiovxm s1atdsbb s1ydv2q1 sitgfdt sivwxlf syp1ckj"><div class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j s1yv3ji6 sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 ssxqrx8 skjzfp8 s1iy45h3">Result</p></div><div class="smaui08 sivwxlf sbiovxm s1ydv2q1" id="runner" aria-label="Program result"></div></div><div class="sbiovxm s1atdsbb s1ydv2q1 sitgfdt sivwxlf syp1ckj"><div class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j s1yv3ji6 sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 ssxqrx8 skjzfp8 s1iy45h3">Diagnostics</p></div><pre class="sofexq0 s1r74r55 s1tlfgp4 sku5tg9 s14jzv99 smaui08 sivwxlf s19aluk0 sayk2u1 snq8cl8 s41qynl ssxqrx8"><div class="sku5sm0 s14jzuf0 s13w7vf0 s1anvdoy shpfnhp">Nothing to report.</div><div></div></pre></div><div class="sbiovxm s1atdsbb s1ydv2q1 sitgfdt sivwxlf syp1ckj"><div class="sbiovxm s1rpzmas szotvx1 s8myyot ssxqr8g s13w7vf0 s1anvdoy sku5tg9 s14jzv99 sonfe9c s1lr51x s9fgd5j s1yv3ji6 sepksxk"><p class="sayk2u1 snq8awq sbq2ipd s1tlfgp4 ssxqrx8 skjzfp8 s1iy45h3">Console</p></div><pre class="sofexq0 s1r74r55 s1tlfgp4 sku5tg9 s14jzv99 smaui08 sivwxlf s19aluk0 sayk2u1 snq8cl8 s41qynl ssxqrx8"><div class="sku5sm0 s14jzuf0 s13w7vf0 s1anvdoy shpfnhp">Program output lands here.</div><div></div></pre></div></main></div></div>
+		<script src="/playground/examples.js"></script>
+		<script src="/playground/editor.js"></script>
+		<script type="module" src="/playground.js"></script>
+	</body>
 </html>
