@@ -1,27 +1,24 @@
 *.s1mnphwb{border:none}
 *.s1tlfgp4{margin:var(--space-0)}
 *.s1ucbaf9{inset:0}
-*.s4sfhb{flex:1 1 0}
-*.s84iv6f{border:1px solid var(--stroke-hard)}
 *.s8ckzec{border:1px solid var(--stroke-soft)}
 *.smaui08{flex:1 1 auto}
-*.sr4r3mu{flex:0 0 auto}
 .s10oplpw{margin-left:auto}
 .s11mtiwm{mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat}
+.s11r85rj{grid-template-rows:minmax(0, 8fr) minmax(0, 6fr) minmax(0, 4fr) minmax(0, 4fr)}
 .s13w7ve3{padding-left:var(--space-1)}
 .s13w7vf0{padding-left:var(--space-2)}
 .s13w7vfx{padding-left:var(--space-3)}
-.s13w7vgu{padding-left:var(--space-4)}
 .s14j98t0{--code-attr:rgb(from var(--primary) r g b / 0.65)}
 .s14jzsqi{padding-bottom:1px}
 .s14jzuf0{padding-bottom:3px}
 .s14jzv99{padding-bottom:4px}
 .s15eo8y8:hover{filter:brightness(1.08)}
 .s16k06qr{--code-callable:var(--tint-callable)}
+.s16t3pvj{padding-right:22px}
 .s16t4hls{padding-right:32px}
 .s171fk3p{pointer-events:none}
 .s176vjaw{--bloom-scarlet:#D84730}
-.s178flj9{width:100%}
 .s178hbq8{width:36px}
 .s17tflw5{--code-size:13px}
 .s18b2uzn{--code-string:var(--accent)}
@@ -32,17 +29,18 @@
 .s19dy6kf{background-color:var(--primary)}
 .s19k3kma{--code-gutter-edge:var(--stroke-soft)}
 .s19qv9u6{font-family:inherit}
+.s1al0jmt{grid-template-rows:minmax(0, 7fr) minmax(0, 3fr)}
 .s1anvdo1{padding-right:var(--space-1)}
 .s1anvdoy{padding-right:var(--space-2)}
 .s1anvdpv{padding-right:var(--space-3)}
-.s1anvdqs{padding-right:var(--space-4)}
 .s1atdsbb{flex-direction:column}
+.s1cysvk2{background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)}
 .s1dq5yi8{background-color:rgb(from var(--down-dim) r g b / calc(var(--nav-fade, 0) * 0.86))}
 .s1dxptvb{--code-error:var(--up-error)}
 .s1eamei2{max-width:1264px}
-.s1eewcz2{max-width:1880px}
 .s1er9mcg{background-color:rgb(from var(--down-danger) r g b / 0.07)}
 .s1fhczbb{--code-active-line:rgb(from var(--up-bright) r g b / 0.04)}
+.s1fnd457{background-size:4px 4px, 4px 4px}
 .s1foenn1{padding-top:0}
 .s1h12z4{align-self:stretch}
 .s1h4num7{background-color:var(--stroke-hard)}
@@ -60,12 +58,12 @@
 .s1onro1c{position:sticky}
 .s1onu0uk{cursor:pointer}
 .s1pu2qte{max-width:36rem}
+.s1q9mjsm{background-repeat:no-repeat}
 .s1r74r55{font-feature-settings:"ss01", "ss02", "ss03", "ss04", "ss05", "cv04", "cv06", "cv08"}
 .s1rpzmas{align-items:center}
 .s1s7tv0o:hover{background-color:var(--down-hover)}
-.s1sgiykh{padding-bottom:var(--space-3)}
-.s1sw9ehx{max-height:240px}
 .s1t1pcq8{--code-active-gutter:rgb(from var(--up-bright) r g b / 0.07)}
+.s1tqs9os{grid-template-columns:minmax(0, 3fr) minmax(0, 2fr)}
 .s1u3ovjb{--code-dim:var(--up-dim)}
 .s1uiy6wn{--bloom-plum:#95304D}
 .s1v5t6xm{border-left:2px solid var(--down-danger)}
@@ -78,17 +76,18 @@
 .s1wxw92y{height:1px}
 .s1x0qwck{transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease}
 .s1x49iqk{background-color:var(--down-active)}
+.s1x5z460{gap:1px}
 .s1xx7ixb{--code-features:"ss01", "ss02", "ss03", "ss04", "ss05", "cv04", "cv06", "cv08"}
 .s1yauy2a{--code-caution:var(--up-caution)}
 .s1ydv2q1{background-color:var(--down-normal)}
 .s1ytnaev:hover{color:var(--up-bright)}
 .s1yv3ji6{justify-content:space-between}
+.s22x0wn{height:100%}
 .s22x9bm{height:18px}
 .s22xxov{height:24px}
 .s2310lv{height:64px}
 .s30a1l5{opacity:0.55}
 .s30khfz{color:var(--primary-on)}
-.s3ujeas:hover{background-color:var(--down-bright)}
 .s41qynl{white-space:pre-wrap}
 .s4e3ofu{background-color:var(--down-dim)}
 .s58iza0{position:absolute}
@@ -106,7 +105,6 @@
 .s8nt3s2{--code-operator:rgb(from var(--up-bright) r g b / 0.72)}
 .s8onzey{--code-plain:var(--up-normal)}
 .s94jh8x{border-radius:4px}
-.s94jixf{border-radius:6px}
 .s9fgd5j{box-sizing:border-box}
 .sayk1zs{font-size:12px}
 .sayk2u1{font-size:13px}
@@ -115,6 +113,7 @@
 .sbb9pzp{--code-keyword:var(--primary)}
 .sbcnc8a{transition:color 80ms ease}
 .sbiovxm{display:flex}
+.sbipssh{display:grid}
 .sbiv4i3{display:none}
 .sbq2ipd{letter-spacing:-0.01em}
 .sc8sqhh{mix-blend-mode:overlay}
@@ -122,11 +121,13 @@
 .scqkrg6{-webkit-mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat}
 .sdue9po:active{filter:brightness(0.94)}
 .see34qj{border-color:var(--stroke-hard)}
+.sehiopn{border-bottom:1px solid var(--stroke-hard)}
+.send2h{grid-template-columns:minmax(0, 1fr)}
 .sepksxk{border-bottom:1px solid var(--stroke-soft)}
 .sepvury{--code-face:'CommitMonoV143', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
 .seyay0p{font-family:'Vilan Display', system-ui, -apple-system, sans-serif}
+.sg7ln4b{background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)}
 .sgdl0ko{width:1px}
-.shn4a01{flex-direction:row}
 .shpfnhp{color:var(--up-dim)}
 .shx44pg{backdrop-filter:blur(calc(var(--nav-fade, 0) * 14px))}
 .si5ywm6{z-index:100}
@@ -147,7 +148,6 @@
 .somu7p8{border-left:2px solid var(--down-caution)}
 .sondrfd{min-height:100%}
 .sonfe9c{min-height:32px}
-.sonk3zu{min-height:96px}
 .sowfjmu{display:block}
 .sp4tc1m{margin-right:auto}
 .sq2xqkq:first-child{border-top:1px solid transparent}
@@ -155,13 +155,11 @@
 .sr79rlz{--code-bg:var(--down-normal)}
 .ssxqr8g{background-color:var(--down-bright)}
 .ssxqrx8{color:var(--up-normal)}
-.stbzxp9{padding-top:var(--space-3)}
 .suw81y3{margin-right:2px}
 .svfmjlf{-webkit-user-drag:none}
 .svrgm1f{text-decoration:none}
-.sw3dlhu{min-height:100vh}
-.sw4tyxs{min-height:320px}
 .sx3450x{clip-path:inset(50%)}
+.sxfhabj{appearance:none}
 .sxurvz1{color:var(--up-error)}
 .syp1ckj{overflow:hidden}
 .syz58y5{background-color:var(--up-bright)}
@@ -194,5 +192,6 @@
 :root{--up-dim:#9A7F8B}@media (prefers-color-scheme: light){:root{--up-dim:#6A535B}}
 :root{--up-error:#FB7185}@media (prefers-color-scheme: light){:root{--up-error:#BE123C}}
 :root{--up-normal:#D8BEC8}@media (prefers-color-scheme: light){:root{--up-normal:#3B262D}}
-@media (min-width: 1024px){.s1a4afps{flex-direction:row}}
+@media (min-width: 1024px){.s1ox8bcr{grid-template-columns:minmax(0, 3fr) minmax(0, 2fr)}}
 @media (min-width: 1024px){.s1pon8d1{display:block}}
+@media (min-width: 1024px){.s1th8vpw{grid-template-rows:minmax(0, 7fr) minmax(0, 3fr)}}
