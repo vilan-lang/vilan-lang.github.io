@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -263,7 +261,7 @@ never touches a
 <p>Views come with a deliberate restriction: <strong>they don’t outlive the
 moment.</strong> A view can be a parameter or a short-lived local. It cannot be
 stored in a struct field, put in a list, returned into long-lived state,
-or held across an <code>await</code>. Lend, use, done. That confinement is what
+or held across a suspension. Lend, use, done. That confinement is what
 makes views safe without a whole lifetime system. If you’ve heard Rust
 horror stories, this is the part Vilan deliberately keeps small.</p>
 <p>Views also make loops that mutate in place. A plain <code>for x in list</code>
@@ -294,6 +292,13 @@ a container’s geometry (grow, shrink, reallocate; inferred per method)
 conflict with a live view; a method that only writes fields or elements
 through <code>&amp;mut self</code> passes freely. Hover a function to see both
 inferred effects (<code>borrows</code>, <code>bumps</code>). Spec §6 has the precise rules.</p>
+<p>What decides whether you got a projection or a copy is the <strong>return
+type</strong>, never what the body happened to touch. <code>fun make(&amp;self): (i32, i32) { self.pair }</code> returns a value — the caller’s copy, so a
+later write to <code>h.pair</code> cannot reach it — and so does <code>fun grab(&amp;self): Inner { &amp;self.inner }</code>, one <code>&amp;</code> away, because the return says <code>Inner</code>.
+Only <code>fun slot(&amp;mut self): &amp;mut T</code> hands back the alias, as it must.
+References are transparent in the type system, so inside the body
+<code>self</code> looks the same either way; the signature is the only thing that
+says which one you meant.</p>
 </blockquote>
 <h2 id="sharedt-one-cell-many-holders"><a class="header" href="#sharedt-one-cell-many-holders"><code>Shared&lt;T&gt;</code>: one cell, many holders</a></h2>
 <p>When two places need to see the same mutable state (a closure and its
@@ -349,17 +354,23 @@ pointing at the new occupant. The full API is in the
 <a href="../std/cells.html">cells reference</a>.</p>
 <h2 id="the-async-rule"><a class="header" href="#the-async-rule">The async rule</a></h2>
 <p>One rule ties this chapter to the <a href="async.html">async model</a>: <strong>a view may
-not be held across an <code>await</code>.</strong> While your function is suspended, other
-code runs and may change or replace whatever the view pointed into. The
-compiler rejects the shape. The fix is always the same: re-derive after
-the suspension.</p>
+not be held across a suspension.</strong> While your function is suspended,
+other code runs and may change or replace whatever the view pointed
+into. The compiler rejects the shape. The fix is always the same:
+re-derive after the suspension.</p>
 <pre><code class="language-vilan fragment">let row = &amp;mut rows[i];
 send(row.id);            // suspends —
-row.text = "sent";       // ✗ rejected: view held across await
+row.text = "sent";       // ✗ rejected: view held across a suspension
 
 send(rows[i].id);        // ✓ re-derive after the suspension
 rows[i].text = "sent";
 </code></pre>
+<p>The question is whether the call <strong>can suspend</strong>, not whether you wrote
+<code>await</code>. Calling an async function without the keyword is the sanctioned
+spelling and it yields exactly the same way, so <code>send(row.id)</code> above is
+caught with no <code>await</code> anywhere in it — and so is a sync-looking function
+in between that reaches something async. The rule reads the declaration
+of the function you <em>call</em>.</p>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
 <li>“Why didn’t my mutation stick?” You mutated a copy. Either take <code>&amp;mut</code>
@@ -423,7 +434,8 @@ of the stored value — never by mutating a <code>get()</code> result.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -192,8 +190,8 @@ sync by hand. The compiler knows both sides.</p>
 <pre><code class="language-vilan norun">import std::print;
 import std::reactive::Signal;
 import std::json::json_codec;
-import std::http::Response;
-import std::rpc_server::serve_service;
+import std::http::{ Response, Server };
+import std::rpc_server::Service;
 import std::shared::Shared;
 
 [derive(Wire, PartialEq, Debug)]
@@ -227,14 +225,18 @@ fun main() {
 		entries = Signal::new([]),
 		next_id = Shared::new(1),
 	};
-	serve_service(4000, notes.dispatcher().into_protocol(json_codec()), |request| {
-		Response::builder().body("app shell here").build()
-	}, |server| print(i"listening on {server.url()}"));
+	Server::builder()
+		.port(4000)
+		.with_service(Service::new(notes.dispatcher().into_protocol(json_codec())))
+		.on_request(|request| Response::builder().body("app shell here").build())
+		.on_start(|server| print(i"listening on {server.url()}"))
+		.build()
+		.start();
 }
 </code></pre>
 <p>And a client. <code>NotesClient::connect</code> gives you an object whose exposed
-fields are live local signals and whose rpc methods are ordinary calls
-that return <code>Result</code>:</p>
+fields are typed <strong>mirrors</strong> (<code>RemoteSource&lt;T&gt;</code>, one per <code>[expose]</code>) and
+whose rpc methods are ordinary calls that return <code>Result</code>:</p>
 <pre><code class="language-vilan browser">import std::print;
 import std::reactive::Signal;
 import std::json::json_codec;
@@ -265,13 +267,16 @@ impl Notes {
 async fun main() {
 	match NotesClient::connect("/", json_codec()) {
 		Ok(let client) =&gt; {
-			// The mirror: fires on every server-side change, on every client.
-			let _sync = client.entries.sub(|list: List&lt;Note&gt;| print(list.len()));
+			// The mirror, watched by hand: the first `sub` opens the channel,
+			// and the observer fires on every server-side change, on every
+			// client. Disposing the last watcher closes the channel again.
+			let watching = client.entries.sub(|list: List&lt;Note&gt;| print(list.len()));
 			// An rpc call: implicitly awaited, Result-typed.
 			match client.add("hello") {
 				Ok(let id) =&gt; print(id),
 				Err(let error) =&gt; print(i"rpc failed: {error.debug()}"),
 			}
+			watching.dispose();
 		},
 		Err(let error) =&gt; print(i"connect failed: {error.debug()}"),
 	}
@@ -347,12 +352,15 @@ check is still what decides who may act.</p>
 <ul>
 <li>On the client they return <code>Result&lt;T, RpcError&gt;</code> and are implicitly
 awaited, like any async call.</li>
-<li><code>RpcError</code> tells you what went wrong: <code>Transport</code> (couldn’t reach the
-server), <code>Decode</code>, or <code>Remote</code> (the handler failed). Errors are
+<li><code>RpcError</code> tells you what went wrong, in five variants:
+<code>Transport(str)</code> (couldn’t reach the server), <code>Decode(str)</code>,
+<code>Remote(str)</code> (the handler failed), <code>Contract(str)</code> (the connect-time
+check below refused a drifted server), and <code>Unauthorized</code>. Errors are
 values. Look at them and decide.</li>
 <li>At connect time, both sides compare a hash of the service’s shape. If
-a stale client meets a redeployed server, the connect fails cleanly
-instead of calls corrupting halfway. This is the <strong>contract check</strong>.</li>
+a stale client meets a redeployed server, the connect fails cleanly —
+as <code>Contract(reason)</code> — instead of calls corrupting halfway. This is
+the <strong>contract check</strong>.</li>
 <li>On the server, each handler runs inside a turn, so all the signal
 writes one rpc makes are broadcast as a single consistent update.</li>
 <li>Handler bodies can await: call another service, <code>sleep_for</code>, wait on
@@ -378,6 +386,76 @@ change arriving back through the mirror.</li>
 commit is the rpc, and <code>adopt</code> mirror updates into them. Typing stays
 instant, remote edits fold in, and your own echoes are no-ops.</li>
 </ul>
+<h3 id="reading-a-mirror"><a class="header" href="#reading-a-mirror">Reading a mirror</a></h3>
+<p>A mirror is a <code>RemoteSource&lt;T&gt;</code>, not a <code>Signal&lt;T&gt;</code>, for one honest
+reason: before the first update lands it has <strong>no value</strong>, and nothing
+about the type pretends otherwise. You read it one of four ways:</p>
+<ul>
+<li><code>mirror.or(initial): Signal&lt;T&gt;</code> — the common one, for a view. A plain
+signal you hand to <code>bind_each</code>, <code>bind_text</code>, or a <code>{…}</code> hole: <code>initial</code>
+until the first sync, the mirrored value after. Write it inside the
+view (not in <code>main</code>), because it is a <strong>subscription</strong>: it opens the
+channel, and it is released when the view that created it is unmounted.</li>
+<li><code>mirror.map(|value| …): Signal&lt;U&gt;</code> — the same, with the <code>Option&lt;T&gt;</code>
+in your hands once, which is where a fallback of a <em>different</em> type
+belongs (<code>"loading…"</code> from a <code>RemoteSource&lt;i32&gt;</code>). <code>or</code> is <code>map</code> for
+the same-type case.</li>
+<li><code>mirror.sub(|value| …): Subscription</code> — the manual form: an observer
+of present values, and a handle you dispose yourself. For code with no
+view and no owner (a probe, a script).</li>
+<li><code>mirror.get(): Option&lt;T&gt;</code> and <code>mirror.status(): Signal&lt;Status&gt;</code>
+(<code>Waiting</code> / <code>Ready</code>) — passive reads. They open nothing.</li>
+</ul>
+<pre><code class="language-vilan browser">import std::print;
+import std::json::json_codec;
+import std::reactive::Signal;
+import std::result::Result::{ self, Ok, Err };
+import std::rpc::SocketTransport;
+import std::shared::Shared;
+import std::ui::{ View, mount_root, view };
+
+[derive(Wire, PartialEq, Debug)]
+struct Note {
+	id: i32,
+	text: str,
+}
+
+[service(NotesClient)]
+struct Notes {
+	[expose] entries: Signal&lt;List&lt;Note&gt;&gt;,
+	next_id: Shared&lt;i32&gt;,
+}
+
+fun notes_panel(client: NotesClient&lt;SocketTransport&gt;): View {
+	// Counted, and released when this view is unmounted: the channel is
+	// open while — and only while — the panel is showing. `[]` until the
+	// first sync; the empty list takes its element type from the mirror.
+	let entries = client.entries.or([]);
+	view("ul").bind_each(entries, |note| note.id, |note| view("li").text(note.text))
+}
+
+async fun main() {
+	match NotesClient::connect("/", json_codec()) {
+		Ok(let client) =&gt; {
+			let _root = mount_root("app", || notes_panel(client));
+		},
+		Err(let error) =&gt; print(i"connect failed: {error.debug()}"),
+	}
+}
+</code></pre>
+<p><strong>Subscription follows demand.</strong> Every <code>or</code>, <code>map</code>, and <code>sub</code> takes a
+counted lease on the channel: the first one sends <code>Subscribe</code>, the last
+release sends <code>Unsubscribe</code> (deferred to the end of the turn, so a view
+that re-renders in place churns nothing). Ten bindings on one mirror
+cost one channel; unmounting the page closes it. Which is also why
+<code>or</code>/<code>map</code> must be called where an owner is ambient (inside a view, or
+under <code>run_with_owner</code>): a network subscription with nobody to release
+it is a compile error, not a slow leak.</p>
+<p>One sentence to keep in mind: <strong><code>status</code> reports; it does not ask.</strong> A
+<code>status()</code> observer alone never sees <code>Waiting → Ready</code>, because nothing
+opened the channel — the mirror stays <code>Waiting</code> until something that
+renders the value (<code>or</code>, <code>map</code>, <code>sub</code>) subscribes. That is the passive
+read being honest, and the count is what makes the active ones cheap.</p>
 <h2 id="connection-state-and-reconnection"><a class="header" href="#connection-state-and-reconnection">Connection state and reconnection</a></h2>
 <p>Connections drop. The transport handles it: it reconnects with backoff,
 re-verifies the contract, and re-attaches every mirror, so state resyncs
@@ -445,26 +523,32 @@ server-colored and out of its reach. A shared <code>common</code> library is sti
 a fine home for the payload types both sides speak; it’s no
 longer the only legal home for anything.</p>
 <h2 id="the-server-side"><a class="header" href="#the-server-side">The server side</a></h2>
-<pre><code class="language-vilan fragment">serve_service(
-	port,
-	service.dispatcher().into_protocol(json_codec()),
-	|request| …,       // http fallback: serve assets + the app shell
-	|server| …,        // on_ready — `server.port()` is the bound port
-)
+<pre><code class="language-vilan fragment">Server::builder()
+	.port(port)
+	.with_service(Service::new(service.dispatcher().into_protocol(json_codec())))
+	.serve_build(require_build("client"))
+	.on_request(|request| …)   // every path neither claims: the app shell
+	.on_start(|server| …)      // `server.port()` is the bound port
+	.build()
+	.start();
 </code></pre>
-<p><code>dispatcher()</code> is generated by <code>[service]</code>. The fallback answers every
-plain http request; wrap it in <code>build_handler(require_build("client"), …)</code>
-so the client leg’s own artifacts are served from the build’s description
-rather than from paths you typed, and your closure returns the app shell
-for anything else so deep links work (see <a href="routing.html">Routing</a>). For
-custom per-connection state, drop down to <code>serve_connected</code> (see the
-<a href="../std/rpc.html">rpc reference</a>).</p>
+<p><code>dispatcher()</code> is generated by <code>[service]</code>, <code>into_protocol</code> pairs it with
+a codec, and <code>Service::new</code> mounts the result at <code>/</code> — <code>with_service</code>
+installs its routes and its WebSocket handshake on the builder.
+<code>serve_build</code> serves the client leg’s own artifacts from the build’s
+description rather than from paths you typed, and <code>on_request</code> answers
+every plain http request neither of them claims — return the app shell
+there, so deep links work (see <a href="routing.html">Routing</a>; the shell, read
+and checked against the build, is in
+<a href="persistence.html#serving-http-stdhttp">Persistence</a>). For custom
+per-connection state, <code>Service::on_connect</code>/<code>on_disconnect</code> replace the
+default session lifecycle (see the <a href="../std/rpc.html">rpc reference</a>).</p>
 <h2 id="growing-past-one-service"><a class="header" href="#growing-past-one-service">Growing past one service</a></h2>
-<p><code>serve_service</code> is sugar over a <code>ServerBuilder</code> layer you can reach
-directly: <code>Service::new(protocol)</code>, installed with
-<code>ServerBuilder::with_service</code>. Its routes answer before <code>on_request</code>,
-which is what lets a page and a service sit on the same builder chain
-instead of one replacing the other:</p>
+<p>That chain is the whole layer — <code>Service::new(protocol)</code>, installed with
+<code>ServerBuilder::with_service</code>. A
+service’s routes answer before <code>on_request</code>, which is what lets a page
+and a service sit on the same builder chain instead of one replacing the
+other:</p>
 <pre><code class="language-vilan norun">import std::print;
 import std::shared::Shared;
 import std::json::json_codec;
@@ -496,23 +580,25 @@ fun main() {
 }
 </code></pre>
 <p>Delete the <code>.with_service(…)</code> line and the program still compiles and
-still serves the page — the property a boot function built around
-<code>serve_service</code> can’t have. <code>with_service</code> is repeatable: a second
+still serves the page — the property a boot function that owns the
+whole port can’t have. <code>with_service</code> is repeatable: a second
 service goes on its own mount, <code>.at("/admin/")</code>, so
 <code>Client::connect("/admin/", codec)</code> reaches it and the first service’s
 routes are untouched. Two constants either way: services always answer
 before <code>on_request</code> (so an app route can’t accidentally shadow a
-service route), and <code>serve_rpc</code>/<code>serve_service</code>/<code>serve_connected</code> keep
-working unchanged — they’re this same layer with the registry lifecycle
-(or a custom one) already wired in.</p>
+service route), and the connection lifecycle is the service’s own knob —
+<code>Service::on_connect</code>/<code>on_disconnect</code> swap the default session registry
+for the app’s per-connection state (an auth identity, an app-written
+attach) without changing anything else about the chain.</p>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
 <li>Mysterious contract-mismatch failures while developing usually mean an
 <em>old server process</em> is still holding the port. Check with
 <code>ss -tlnp | grep &lt;port&gt;</code> and kill it by pid.</li>
 <li>The wire is value-semantic. A mirrored list is a fresh copy per
-update. Mutate through rpcs, never by writing the client’s mirror
-signal.</li>
+update. Mutate through rpcs, never by writing the signal <code>or</code>/<code>map</code>
+handed you — that writes the local derivative only, and the next sync
+overwrites it.</li>
 <li>An rpc handler’s reply is its return value, so the handler runs to
 completion before the client hears back. Long work belongs in spawned
 tasks that write signals when done.</li>
@@ -569,7 +655,8 @@ tasks that write signals when done.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

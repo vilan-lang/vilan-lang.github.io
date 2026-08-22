@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -344,8 +342,35 @@ there would say nothing the <code>_</code> does not.
 <p><strong>“struct ‘…’ has no field ‘…’”</strong> · <strong>“variant ‘…’ does not belong to the matched enum”</strong>
 A field or variant name is off. For the variant case inside <code>match</code>,
 patterns bind with <code>let</code>: a bare misspelled variant is an error here,
-never a silent catch-all.
+never a silent catch-all. When a real field is a close-enough edit away
+the field case adds a note — <em>“did you mean <code>entries</code>?”</em> — and the editor
+turns it into a “Change to <code>entries</code>” quickfix that rewrites the name.
+Close enough is a real threshold: <code>"entires"</code> suggests <code>"entries"</code>, and
+<code>"x"</code> suggests nothing at all.
 → <a href="../tour/control-flow.html">Control flow</a></p>
+<p><strong>“<code>…</code> expects N arguments, but got M instead: <code>…</code> is missing.”</strong> ·
+<strong>“<code>…</code> expects N fields, but got M instead: <code>…</code> is not a field of <code>…</code>.”</strong>
+A call or a struct literal is short of, or over, its declared list. The
+message names the <strong>callee or struct</strong>, not just the counts — two calls
+on one line no longer leave you working out which — and, when it is
+short, the specific parameter or field that is missing (arguments bind
+positionally, so which one is absent is unambiguous; too <em>many</em> gets no
+such guess, since which extra to drop is not). A secondary note points at
+the subject’s own declaration: <em>“<code>distance</code> is declared here”</em>.
+→ <a href="../tour/functions-and-closures.html">Functions &amp; closures</a>, <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“Expected …, but got void instead: an <code>if</code> with no <code>else</code> produces void.”</strong> ·
+<strong>“…: the <code>;</code> discards this body’s last value.”</strong> ·
+<strong>“…: this body ends without producing a value.”</strong>
+Three shapes of “nothing came back”, each naming its own cause instead of
+reporting a bare void. The first is an <code>if</code>/<code>else if</code> chain in tail
+position with no final <code>else</code> — add the branch. The second and third
+anchor on the callable’s <strong>closing brace</strong>, one character wide: the fix
+is almost always the trailing <code>;</code> that discarded the value, and the
+editor offers “Remove <code>;</code>” on it. A closure’s own <code>: T</code> return annotation
+is checked against its body directly, so these reach a closure literal as
+readily as a <code>fun</code>. Passing a wrong-<em>typed</em> value is a different error and
+still points at the value.
+→ <a href="../tour/functions-and-closures.html">Functions &amp; closures</a></p>
 <p><strong>“<code>…</code> compares two values of the same type, but the operands are <code>…</code> and <code>…</code>”</strong>
 Comparisons follow the trait model (<code>==</code> is <code>PartialEq</code>, <code>&lt;</code> is
 <code>PartialOrd</code>): the right operand must be the left’s type, and there are
@@ -400,8 +425,12 @@ which). Do the mutation before taking the view, or after its block ends.
 → <a href="../tour/memory-model.html">The memory model</a></p>
 <p><strong>“cannot hold a view across ‘await’: ‘…’ is still live here. …”</strong>
 Your function suspends while a view is live, and whatever it points into
-could change during the pause. Re-derive the view after the await
-(<code>rows[i].field</code> again) instead of keeping it.
+could change during the pause. Re-derive the view after the suspension
+(<code>rows[i].field</code> again) instead of keeping it. The message names <code>await</code>,
+but the question is whether the call <strong>can suspend</strong>: calling an async
+function without the keyword is the sanctioned spelling and suspends
+identically, so this fires on a line with no <code>await</code> on it — including
+through a sync-looking function that reaches something async.
 → <a href="../tour/memory-model.html">The memory model</a>, <a href="../tour/async.html">Async</a></p>
 <p><strong>“view binding ‘…’ cannot be <code>mut</code>: a view cannot be rebound. …”</strong>
 <code>mut v = &amp;mut x</code> doesn’t mean what it would in Rust. Declare the view
@@ -497,10 +526,12 @@ instead.
 can’t see inside host storage. <code>Option</code> is the sanctioned resource
 container; or keep the resource in a struct field.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> / <code>[derive(Hashable)]</code> / <code>[derive(PartialEq)]</code> type <code>…</code> is the resource <code>…</code>: …”</strong>
-A resource is not plain data: it cannot be sent over the wire, hashed by
+<p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> / <code>[derive(Json)]</code> / <code>[derive(Hashable)]</code> / <code>[derive(PartialEq)]</code> type <code>…</code> is the resource <code>…</code>: …”</strong>
+A resource is not plain data: it cannot be serialized, hashed by
 value, or compared by copy. Drop it from the derived type, or carry a
-plain-data handle (an id, a key) in its place.
+plain-data handle (an id, a key) in its place. The check reaches a field
+nested two structs deep and an enum variant’s payload, not just a direct
+field.
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“<code>Wire</code> / <code>Json</code> cannot be derived for the resource struct / enum <code>…</code>: …”</strong>
 The same rule with the resource in the other position — the derived type
@@ -618,7 +649,13 @@ closure or a UI handler, <code>match</code> instead.
 <p><strong>“context <code>owner_scope</code> is read here, but this code can be reached without an enclosing <code>run</code>”</strong>
 The most common first UI error: you built reactive state (an <code>effect</code>, a
 binding) outside every ownership boundary. Wrap the entry point in
-<code>mount_root</code>, or <code>run_with_owner</code> in a test.
+<code>mount_root</code>, or <code>run_with_owner</code> in a test. The error points at your
+<code>effect</code>/<code>map</code>/<code>or</code> call; the note under it shows the read inside the
+standard library that your call reaches, and every call of yours on the
+uncovered path above it is underlined too (“the context requirement
+flows through this call”) — follow the chain up to where the ownership
+boundary belongs. Calls inside a covering <code>run</code> are clean and never
+appear in the chain.
 → <a href="../guide/ui.html">Building UI</a>, <a href="../guide/reactive.html">Reactive state</a></p>
 <p><strong>“<code>…</code> reads context <code>…</code>, so it can’t be used as a value”</strong>
 A function that reads an ambient context (like the current owner) can’t
@@ -689,6 +726,28 @@ it exhausted the interpreter’s step budget (an unbounded <code>for</code>) or 
 call-depth cap (unbounded recursion). The build fails rather than
 hangs. Fix the termination condition, or move the work to runtime.</p>
 <h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
+<p>A syntax error no longer blanks out the rest of the file. The parser
+recovers at statement and item boundaries — a statement it cannot read is
+reported and skipped to the next <code>;</code>, <code>}</code>, or declaration keyword — so
+the statements around it, the functions below it and the whole file tail
+still reach the type checker, and the diagnostics they already had stay
+where they were. <code>vilan check</code> type-checks that salvaged file too;
+<code>vilan build</code> still stops, because a recovered file is not something to
+emit from.</p>
+<p><strong>“expected <code>;</code> to end this statement”</strong>
+A statement ran into the next one. The message is anchored at the gap
+where the <code>;</code> goes — the last character before it, not the head of the
+statement below — and the editor offers an “Insert <code>;</code>” quickfix there.
+It answers a missing <code>;</code> after an <code>import</code> or a <code>use</code> as well.
+→ <a href="../spec/grammar.html">spec §3.2</a></p>
+<p><strong>“unclosed <code>(</code>: expected a matching <code>)</code>”</strong>
+A delimiter you opened and have not closed yet — the defining shape of
+code mid-edit. It reports on the delimiter <em>you typed</em>, not on whatever
+the parser tripped over several lines down. A closing delimiter that is
+wrong <em>inside</em> a finished list keeps its own, more precise message
+(<code>found ';' expected ',' or ')'</code>, on the exact character where the list
+broke).
+→ <a href="../spec/grammar.html">spec §3</a></p>
 <p><strong>A struct literal in a condition parses as the block</strong>
 Struct literals are ordinary operator operands (<code>Point { … } == q</code>
 compares), but condition positions exclude them: after <code>if Foo</code> or a
@@ -713,12 +772,35 @@ expected (<code>let q = Point;</code>). A type names a kind, not a runtime value
 construct it (<code>Point { … }</code>), name a variant (<code>Color::Red</code>), or call a
 static (<code>Point::new(…)</code>).
 → <a href="../spec/names.html">spec §4.2</a></p>
+<h2 id="panics"><a class="header" href="#panics">Panics</a></h2>
+<p>These are not compile errors — they are what the program prints when it
+stops at run time. Both exist because the alternative was a host-level
+message naming nothing you wrote.</p>
+<p><strong>“… : … is not one of its values”</strong> (e.g. <code>Align: "middle" is not one of its values</code>)
+An <strong>exhaustive</strong> <code>match</code> over a backed enum met a value outside its
+variant set. A backed enum lowers to a bare host string or number, so its
+runtime domain is the host’s, and exhaustiveness is a proof about the
+<em>variant set</em> rather than about the value: an <code>external fun</code> return, a
+host callback’s argument, or a decoded payload can carry anything. The
+last arm is tested like every other one and the <code>else</code> traps rather than
+answering with whichever variant happened to be last. A <code>match</code> with a
+<code>_</code> arm is unaffected — the out-of-set value takes the arm you wrote — and
+<code>Enum::parse(text)</code> is the shape to reach for where an unrecognized value
+is one of the answers you expect: it returns <code>Option</code>.
+→ <a href="../tour/data-and-traits.html">Data and traits</a>, <a href="../spec/types.html">spec §5.2</a></p>
+<p><strong>“mount: no element with id ‘…’”</strong>
+<code>mount</code> or <code>mount_root</code> was given an id nothing on the page carries. The
+host’s <code>get_element_by_id</code> hands back <code>null</code> typed as an <code>Element</code>, so the
+shared lookup checks for that first and names the id, instead of leaving a
+<code>Cannot read properties of null</code> to speak for itself. On a server-served
+page, <code>check_shell</code> catches the same mismatch at boot.
+→ <a href="../std/browser.html">Browser modules</a>, <a href="../guide/ui.html">Building UI</a></p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../appendix/cli.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../appendix/editor.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -732,7 +814,7 @@ static (<code>Point::new(…)</code>).
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../appendix/cli.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../appendix/editor.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
@@ -765,7 +847,8 @@ static (<code>Point::new(…)</code>).
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

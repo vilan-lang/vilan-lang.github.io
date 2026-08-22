@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -181,7 +179,7 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <pre><code class="language-vilan fragment">import std::reactive::{
 	Signal, Source, Subscription, Disposable, combine,
 	Owner, owner_scope, get_owner, run_with_owner, comp,
-	Turn, FlushPolicy, turn_scope, turn, batch, flush,
+	Turn, FlushPolicy, turn_scope, turn, batch, flush, at_settle,
 	optimistic, Optimistic, WriteState,
 	draft, Draft, DraftState,
 	reconcile, ReconcilePlan, RowStep,
@@ -200,7 +198,7 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <tr><td><code>combine</code></td><td>fn</td><td>tuple-signal over 2+ signals</td></tr>
 <tr><td><code>Owner</code></td><td>struct</td><td>disposal bag; the lifetime unit</td></tr>
 <tr><td><code>run_with_owner</code>, <code>comp</code>, <code>get_owner</code>, <code>owner_scope</code></td><td>fns/context</td><td>establish/read the ambient owner</td></tr>
-<tr><td><code>turn</code>, <code>batch</code>, <code>flush</code>, <code>FlushPolicy</code>, <code>turn_scope</code></td><td>fns/context</td><td>write batching</td></tr>
+<tr><td><code>turn</code>, <code>batch</code>, <code>flush</code>, <code>at_settle</code>, <code>FlushPolicy</code>, <code>turn_scope</code></td><td>fns/context</td><td>write batching</td></tr>
 <tr><td><code>optimistic</code></td><td>fn</td><td>paint → commit → confirm-or-rollback (one shot)</td></tr>
 <tr><td><code>Optimistic&lt;T&gt;</code>, <code>WriteState</code></td><td>struct/enum</td><td>the same lifecycle, observable and overlap-safe</td></tr>
 <tr><td><code>draft</code>, <code>Draft&lt;T&gt;</code>, <code>DraftState</code></td><td>fn/struct/enum</td><td>local-first editing cell</td></tr>
@@ -231,7 +229,7 @@ impl Signal&lt;Signal&lt;type U&gt;&gt; {
 outside any turn it notifies immediately.</li>
 <li><code>update</code> mutates the <strong>stored</strong> value through a writable view and notifies
 once, unconditionally, after the closure returns — the collection door
-(<code>proposal/signal-update.md</code>). It shares <code>set</code>’s notify half, so batching,
+(<a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/signal-update.md">design notes</a>). It shares <code>set</code>’s notify half, so batching,
 drain affinity, and dedup behave identically. A read from <em>inside</em> the
 closure sees the in-progress value; a re-entrant <code>update</code> of the same
 signal is unsupported.</li>
@@ -258,8 +256,9 @@ fun main() {
 unowned (lives as long as the source).</li>
 <li><code>effect</code> requires an ambient owner; calling it outside every owner is a
 compile error (context coverage). It fires once immediately.</li>
-<li><code>sub</code> does <strong>not</strong> fire immediately, and its <code>Subscription</code> is yours to
-dispose (or hand to <code>owner.take</code>).</li>
+<li><code>sub</code> fires once immediately with the current value, like <code>effect</code>, and
+then on every change; its <code>Subscription</code> is yours to dispose (or hand to
+<code>owner.take</code>).</li>
 </ul>
 <h2 id="combine"><a class="header" href="#combine">combine</a></h2>
 <pre><code class="language-vilan fragment">fun combine&lt;T: (2..)&gt;(sources: (U in T: Signal&lt;U&gt;)): Signal&lt;T&gt;
@@ -312,6 +311,7 @@ let turn_scope: Context&lt;Turn&gt;
 fun turn&lt;T&gt;(policy: FlushPolicy, body: (|| T) context turn_scope): T
 fun batch&lt;T&gt;(body: (sync || T) context turn_scope): T   // join or create
 fun flush()                                             // drain the ambient turn now
+fun at_settle(id: i32, action: || void)                 // run `action` at the ambient settle; now if none
 </code></pre>
 <p>Inside a turn, signal writes are recorded and each subscriber runs once with
 final values when the turn settles. The body is asyncness-polymorphic (spec
@@ -320,6 +320,13 @@ an awaiting body holds every notification until it fully completes (a
 transaction). Framework boundaries establish turns for you: UI event handlers
 and <code>mount_root</code> (<code>AtSuspension</code>), RPC service handlers (<code>AtEnd</code>). Writes
 landing after a settle (from spawned work) drain in per-segment microtasks.</p>
+<p><code>at_settle</code> defers a plain action the same way a notification is deferred:
+it rides the ambient turn’s queue, deduped by <code>id</code> (repeat deferrals of one
+action in one turn run it once), joins the currently draining turn when
+called from inside a settle, and runs inline when no turn is ambient. It is
+the primitive under a remote mirror’s deferred <code>Unsubscribe</code>
+(<code>std::rpc</code>); library code that wants “after this turn, once” uses it with
+an id that cannot collide with a subscriber’s (<code>fresh_id()</code> mints one).</p>
 <h2 id="optimistic"><a class="header" href="#optimistic">optimistic</a></h2>
 <pre><code class="language-vilan fragment">fun optimistic&lt;T, E&gt;(signal: Signal&lt;T&gt;, value: T, commit: async || Result&lt;T, E&gt;): Result&lt;T, E&gt;
 </code></pre>
@@ -378,7 +385,7 @@ unsafe for the one-shot <em>actions</em> this cell is for. The rollback is the
 recovery; the user re-issues the action.</p>
 <p>A cell over a <strong>mirrored</strong> signal is out of scope for now — the mirror writes
 behind the cell’s back, so its confirmed value goes stale. Wrap a local
-signal (<code>proposal/optimistic-lifecycle.md</code> §8).</p>
+signal (<a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/optimistic-lifecycle.md">design notes</a> §8).</p>
 <h2 id="draft--local-first-cells"><a class="header" href="#draft--local-first-cells">Draft — local-first cells</a></h2>
 <pre><code class="language-vilan fragment">enum DraftState {
 	Synced,       // local matches the last pushed/adopted value
@@ -520,7 +527,8 @@ list-rendering primitive.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

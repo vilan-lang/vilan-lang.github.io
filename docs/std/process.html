@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -223,9 +221,6 @@ impl ServerBuilder {
 	fun serve_build(own self, build: LegBuild): ServerBuilder   // one route per artifact
 	fun build(self): Server
 }
-// The same routing for a boot function that hands you only a fallback
-// (`serve_service`, `serve_connected`):
-fun build_handler(build: LegBuild, fallback: |Request| Response): |Request| Response
 impl Server {
 	fun start(self)        // begin listening; holds the event loop
 	fun stop(self)         // stop listening; fires on_stop once the listener has closed
@@ -278,7 +273,10 @@ content-type table a full-stack server used to write by hand. It takes a
 every route chunk — in front of <code>on_request</code>, whatever order the chain was
 written in. So the app’s catch-all still answers every path the build does
 not claim, and a leg that gains <code>split = true</code> gains its chunk routes with
-no server edit.</p>
+no server edit. It is the one way a server serves its build: an rpc app
+that wants it puts its service on the same chain with <code>with_service</code>
+(<a href="#stdrpc_server">below</a>) rather than reaching for a <code>serve_*</code> boot
+function, which hands you only a fallback and no builder to install on.</p>
 <p>Three details are decisions, not defaults. The route shape is
 <code>/&lt;file name&gt;</code>, which is what every shell already asks for, so adopting it
 moves no HTML. Content types come from a short fixed table (<code>.js</code>/<code>.mjs</code>,
@@ -295,26 +293,17 @@ headers are written, <code>on_open</code> receives the live <code>ResponseStream
 writes chunks over time (SSE’s shape; a suspending <code>on_open</code> runs as
 spawned work). <code>on_upgrade</code> mounts a WebSocket-style handshake handler
 over the raw bindings (<code>NodeRequest</code>/<code>NodeSocket</code>). For an rpc-serving
-app you won’t touch any of this directly: <code>serve_service</code> wraps it
-(below), and <code>serve_connected</code> itself now rides this surface.</p>
+app you won’t touch any of this directly: the service layer
+(<code>with_service</code>, below) rides this surface.</p>
 <p><code>Server::stop()</code> closes the listener and fires <code>on_stop</code> once it has
 actually closed — call it from <code>on_start</code> (stash the <code>Server</code> value
 somewhere reachable, e.g. behind a signal handler or a <code>/shutdown</code>
 route) or from inside a request handler. Stopping a <code>Server</code> value
 <code>start()</code> never populated (built but never started) is a no-op.</p>
 <h2 id="stdrpc_server"><a class="header" href="#stdrpc_server">std::rpc_server</a></h2>
-<pre><code class="language-vilan fragment">fun serve_service(
-	port: i32,
-	protocol: RpcProtocol,             // service.dispatcher().into_protocol(codec)
-	fallback: |Request| Response,      // plain-http requests
-	on_ready: |Server| void,           // `server.port()` is the port actually bound
-)
-
-fun serve_connected(port, protocol, on_connection, fallback, on_ready)
-	// the same server with the per-connection hook exposed (custom attach/auth)
-
-impl Service {
-	fun new(protocol: RpcProtocol): Service   // mounted at "/"; the session-registry lifecycle
+<pre><code class="language-vilan fragment">impl Service {
+	fun new(protocol: RpcProtocol): Service   // service.dispatcher().into_protocol(codec);
+	                                          // mounted at "/"; the session-registry lifecycle
 	fun at(own self, prefix: str): Service    // mount elsewhere instead, e.g. "/admin/"
 	fun on_connect(own self, handler: |i32, DuplexEnd| void): Service
 	fun on_disconnect(own self, handler: |i32| void): Service
@@ -324,17 +313,18 @@ impl ServerBuilder {
 }
 </code></pre>
 <p>Websocket upgrade + session registry (mirror attach/detach) + rpc dispatch;
-each handler runs in a turn (<code>AtEnd</code>). <code>serve_rpc</code>/<code>serve_service</code>/
-<code>serve_connected</code> are sugar over <code>Server::builder().with_service(…)</code> —
-the underlying layer a server can grow into: install a second service on
-its own mount, or a plain page alongside one, by adding a call rather
-than swapping to a different <code>serve_*</code> function. Details and the client
+each handler runs in a turn (<code>AtEnd</code>). <code>Server::builder().with_service(…)</code>
+is the one spelling, and the server grows by adding a call rather than
+swapping boot functions: a second service on its own mount, a plain page
+alongside one, the build’s artifacts via <code>serve_build</code> — all on the same
+chain. Details and the client
 side: <a href="../guide/services.html">Services &amp; RPC</a> and the
 <a href="rpc.html">rpc reference</a>.</p>
 <h2 id="stdfs"><a class="header" href="#stdfs">std::fs</a></h2>
 <pre><code class="language-vilan fragment">fun exists(path: str): bool                     // sync
 fun read_file_to_str(path: str): str            // async, UTF-8
 fun read_file_to_str_sync(path: str): str       // sync, UTF-8 — blocks the event loop
+fun read_file_encoded(path: str, encoding: str): str   // async — decode with any host encoding
 fun read_bytes(path: str): Bytes                // async, true binary read
 fun write_file(path: str, contents: str)        // async
 fun read_dir(path: str): List&lt;str&gt;              // async, entry NAMES, flat (v1)
@@ -353,6 +343,16 @@ missing path is <code>None</code>, not a thrown exception. Prefer the async read
 sync one exists for a read that must complete inside a callback that cannot
 suspend — <code>serve_build</code>’s dev-mode revalidation is the case it was added
 for.</p>
+<p>Three reads, three different questions. <code>read_bytes</code> is the true binary
+read: the host hands back a <code>Buffer</code>, which binds straight to <code>Bytes</code> with
+no decode in between, and it is what serves an image, a font or a favicon.
+<code>read_file_to_str</code> is that read decoded as UTF-8 — the one almost every
+caller wants. <code>read_file_encoded(path, encoding)</code> is the same decode with
+the encoding named (<code>"utf8"</code>, <code>"latin1"</code>, …), for a file that is text but
+not UTF-8; <code>read_file_to_str</code> is a one-line call to it. (It was called
+<code>read_file_bytes</code> until v0.34.0, which is the name that made the rename
+worth doing: it promised bytes and returned a decoded string. No alias was
+kept.)</p>
 <h2 id="stdbuild"><a class="header" href="#stdbuild">std::build</a></h2>
 <p>What a browser leg’s build emitted, as the build itself knows it — the
 value that lets a server stop restating <code>"dist/client.js"</code> from memory.</p>
@@ -402,7 +402,7 @@ impl Document {
 	fun lang(own self, lang: str): Document
 	fun mount(own self, id: str): Document                // the other end of mount_root
 	fun head(own self, markup: str): Document             // raw, appended inside &lt;head&gt;
-	fun body(own self, markup: str): Document             // raw, before the script tag
+	fun body(own self, markup: str): Document             // raw, appended inside &lt;body&gt;
 	fun render(self, view: View): Document                // SSR markup, inside the mount element
 
 	fun html(self): str
@@ -486,10 +486,17 @@ async fun main() {
 </code></pre>
 <p><code>head</code>/<code>body</code> take raw markup and append (a favicon, an <code>og:</code> tag, a CSP,
 a <code>&lt;noscript&gt;</code>), which is what keeps the generated document small enough
-to be worth having: everything else is derived. They are an escape hatch,
-not an exemption — markup you add there is checked like any other, so a
-<code>&lt;link&gt;</code> to a stylesheet the build did not emit is caught wherever it came
-from.</p>
+to be worth having: everything else is derived. They work on a supplied
+shell too (<code>require_shell</code>, <code>from_shell</code>): <code>head()</code> markup splices in
+immediately before the shell’s own <code>&lt;/head&gt;</code>, <code>body()</code>’s immediately
+before its <code>&lt;/body&gt;</code> — and a shell that lacks the closing tag a used
+hatch needs stops at <code>html()</code> rather than having the markup guessed into
+it. They are an escape hatch, not an exemption — when <code>html()</code> writes the
+page, markup you added there is checked like any other, so a <code>&lt;link&gt;</code> to
+a stylesheet the build did not emit stops the boot exactly as it would in
+a hand-written shell. A document with no hatch markup runs no check at
+all: a generated one is derived from the build alone, and a supplied one
+serves the shell’s own bytes, exactly as <code>require_shell</code> checked them.</p>
 <p><code>render(view)</code> is the server-rendering splice (<a href="../guide/ssr.html">SSR</a>):
 the markup goes <em>inside the mount element</em>, because the document already
 knows where that is. It takes <code>self</code> rather than <code>own self</code> — it is the
@@ -599,7 +606,8 @@ fun main() {
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

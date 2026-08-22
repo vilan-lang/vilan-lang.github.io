@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -313,51 +311,82 @@ startup; <code>boot()</code> loads the mirror once from the already-open databas
 is now the boring file, which is the point:</p>
 <pre><code class="language-vilan fragment">async fun main() {
 	let build = require_build("client");
-	let app_html = fs::read_file_to_str("src/app.html");
+	let page = require_shell("src/app.html", build).html();
 
 	let store = boot();
 
-	serve_service(
-		4600,
-		store.dispatcher().into_protocol(json_codec()),
-		build_handler(build, |request| Response::builder().set_header("Content-Type", "text/html").body(app_html).build()),
-		|server| print(i"notes server listening on {server.url()}"),
-	);
+	Server::builder()
+		.port(4600)
+		.with_service(Service::new(store.dispatcher().into_protocol(json_codec())))
+		.serve_build(build)
+		.on_request(|request| Response::builder().set_header("Content-Type", "text/html").body(page).build())
+		.on_start(|server| print(i"notes server listening on {server.url()}"))
+		.build()
+		.start();
 }
 </code></pre>
 <p><code>require_build("client")</code> asks what the client leg’s build emitted — the
 bundle, and the stylesheet its <code>const</code> styles produced — and
-<code>build_handler</code> turns that into one route per artifact, with the content
+<code>serve_build</code> turns that into one route per artifact, with the content
 type each extension implies. No <code>dist/</code> path is spelled here, so renaming
-the leg cannot leave this file compiling and the page blank. (When the app
-owns its builder, <code>Server::builder().serve_build(build)</code> is the same thing
-installed on the chain.)</p>
-<p>The fallback then serves the shell for every path the build does not
-claim. That’s what makes deep links like <code>/note/7</code> load
+the leg cannot leave this file compiling and the page blank.</p>
+<p><code>require_shell</code> reads <code>src/app.html</code> once at boot and holds it against
+that same build: a <code>&lt;link&gt;</code> for a stylesheet the build no longer emits, a
+<code>&lt;script&gt;</code> naming a bundle that was renamed, a mount <code>&lt;div id&gt;</code> that
+drifted from <code>mount_root("app", …)</code> — each stops the server here, naming
+the file and the fix, instead of serving a page that renders wrong and
+looks right.</p>
+<p>The service goes on the same chain as everything else. <code>Service::new(…)</code>
+plus <a href="services.html#growing-past-one-service"><code>with_service</code></a> installs the
+rpc routes and the WebSocket upgrade in front of <code>on_request</code>, so the page
+and the service share one port without one of them replacing the other’s
+boot function — delete the <code>.with_service(…)</code> line and this file still
+compiles and still serves the page. (A server that is only a service is
+the same chain with the <code>serve_build</code>/<code>on_request</code> lines left off.)</p>
+<p><code>on_request</code> then serves the shell for every path neither the service nor
+the build claims. That’s what makes deep links like <code>/note/7</code> load
 (<a href="routing.html#deep-links-and-the-server">Routing</a>). <code>vilan build</code> compiles
 browser entries first, so the client’s artifacts are always there by the
 time the server entry builds.</p>
-<h2 id="the-client-entry-four-signals-and-a-mount"><a class="header" href="#the-client-entry-four-signals-and-a-mount">The client entry: four signals and a mount</a></h2>
+<p>This file is quoted from the example as it stands, and the example is one
+rung below the top of the ladder: the shell is still a file you write,
+held against the build. The last rung is <code>Document::of(build)</code>, which
+skips the shell altogether and writes the page from the build — the
+<code>&lt;link&gt;</code>, the <code>&lt;script&gt;</code> and the mount <code>&lt;div id&gt;</code> derived from what the
+build emitted, so there is nothing left to check. The
+<a href="https://github.com/vilan-lang/vilan/tree/main/vilan/examples/todo/">to-do example</a>
+stands there: it has no <code>app.html</code> at all. Both rungs are covered in
+<a href="persistence.html#putting-it-together">Persistence</a>; which one you want is a
+question of whether you care about the document.</p>
+<h2 id="the-client-entry-two-signals-a-connect-and-a-mount"><a class="header" href="#the-client-entry-two-signals-a-connect-and-a-mount">The client entry: two signals, a connect, and a mount</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/client.vl"><code>src/client.vl</code></a> is
 the whole wiring diagram:</p>
 <pre><code class="language-vilan fragment">async fun main() {
-	let notes: Signal&lt;List&lt;Note&gt;&gt; = Signal::new([]);
 	let token = Signal::new(storage::get("notes-token"));
 	let route = current_path().map(parse);
 
 	match NotesClient::connect("/", json_codec()) {
 		Ok(let client) =&gt; {
-			let _sync = client.notes.sub(|list| notes.set(list));
-			let _root = mount_root("app", || screen(client, notes, token, route));
+			let _root = mount_root("app", || screen(client, token, route));
 		},
 		Err(let error) =&gt; print(i"connect failed: {error.debug()}"),
 	}
 }
 </code></pre>
-<p>Read it as: mirror in, token from <code>localStorage</code> (a reload stays signed
-in), the typed route derived from the URL, connect, mount. <code>NotesClient</code>
-comes from <code>import pkg::store::NotesClient;</code>, the same module whose
-bodies run SQL on the server. This build sees only the stub.
+<p>Read it as: token from <code>localStorage</code> (a reload stays signed in), the
+typed route derived from the URL, connect, mount. <code>NotesClient</code> comes
+from <code>import pkg::store::NotesClient;</code>, the same module whose bodies run
+SQL on the server. This build sees only the stub. The mirror is not
+wired here at all: <code>client.notes</code> is a <code>RemoteSource&lt;List&lt;Note&gt;&gt;</code>, and
+the screen reads it where it is shown —</p>
+<pre><code class="language-vilan fragment">fun screen(client: NotesClient&lt;SocketTransport&gt;, token: Signal&lt;str&gt;, route: Signal&lt;Route&gt;): View {
+	let notes = client.notes.or([]);
+	…
+}
+</code></pre>
+<p>— <code>[]</code> until the first sync, the live list after, and a subscription
+that opens when the screen mounts and closes when it unmounts
+(<a href="services.html#reading-a-mirror">Services: reading a mirror</a>).
 Everything after this line is views reading those signals.</p>
 <h2 id="routes"><a class="header" href="#routes">Routes</a></h2>
 <p><a href="https://github.com/vilan-lang/vilan/blob/main/vilan/examples/walkthrough/src/routes.vl"><code>src/routes.vl</code></a>
@@ -502,7 +531,8 @@ is the one above.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

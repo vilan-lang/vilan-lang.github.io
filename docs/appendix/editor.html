@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§2 Lexical structure - The Vilan documentation</title>
+        <title>The editor - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -172,179 +172,188 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="spec-2--lexical-structure"><a class="header" href="#spec-2--lexical-structure">Spec §2 — Lexical structure</a></h1>
-<p>Source text is UTF-8. Lexing converts it to a token stream; <strong>trivia</strong>
-(whitespace and comments) separates tokens and is otherwise discarded. A
-file consisting only of trivia lexes to an empty token stream (and parses
-as an empty module).</p>
-<p><strong>Line terminators.</strong> A line terminator is <code>\n</code>, and the two-character
-sequence <code>\r\n</code> is <strong>one</strong> line terminator. Text built from source (the
-value of any string literal) is built from the normalized text, so a
-literal spanning lines carries <code>\n</code> per source line break and never
-<code>\r\n</code>, whatever the file’s on-disk encoding. A lone <code>\r</code> (no following
-<code>\n</code>) is not a line terminator: between tokens it is ordinary whitespace,
-and inside a string literal it is an ordinary character, preserved. A
-leading U+FEFF byte-order mark is an encoding marker rather than source
-text: it is ignored, and positions are counted from the byte after it. A
-U+FEFF anywhere else is content. Together these make a program’s meaning
-independent of how an editor saved it: the same source is the same
-program on every platform. (See <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/windows-support.md">the design notes</a> §2; the
-canonical on-disk form is LF with no BOM, and <code>vilan fmt</code> writes it.)</p>
-<h2 id="21-comments"><a class="header" href="#21-comments">2.1 Comments</a></h2>
-<p>A comment begins with <code>//</code> and runs to the end of the line. There are no
-block comments.</p>
-<h2 id="22-identifiers-and-keywords"><a class="header" href="#22-identifiers-and-keywords">2.2 Identifiers and keywords</a></h2>
-<pre><code class="language-text">IDENT = ascii_letter | "_" , { ascii_letter | digit | "_" } ;
-</code></pre>
-<p>Identifiers are ASCII. The following words are <strong>reserved</strong>; they lex as
-keyword tokens and are never <code>IDENT</code>:</p>
-<pre><code class="language-text">async  await  borrows  const     else    enum   export  external
-for    fun    if       impl      import  in     is      jump
-let    macro  match    mod       mut     null   own     resource
-ret    struct trait    type      use     with   true    false
-</code></pre>
-<p>(<code>true</code>/<code>false</code> lex as boolean literals; <code>null</code> as the null literal.)</p>
-<p><strong>Contextual keywords</strong> lex as <code>IDENT</code> and take meaning only by position:
-<code>context</code> (the clause after a closure type, §3.9), <code>sync</code> (the marker
-opening a closure type, §3.9), <code>void</code> (the unit value/type), <code>self</code> and
-<code>Self</code> (receiver and receiver type), <code>derive</code>, <code>service</code>, <code>extern</code>,
-<code>must_use</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code> (attribute
-names in <code>[...]</code> position), and jump targets (<code>break</code>, <code>continue</code>) after
-<code>jump</code>. All remain usable as ordinary identifiers elsewhere.</p>
-<h2 id="23-literals"><a class="header" href="#23-literals">2.3 Literals</a></h2>
-<h3 id="numbers"><a class="header" href="#numbers">Numbers</a></h3>
-<pre><code class="language-text">NUMBER = decimal | hex ;
-decimal = digits , [ "." , digits ] , [ SUFFIX ] ;
-hex     = "0x" , hexdigit , { hexdigit } , [ SUFFIX ] ;
-SUFFIX  = IDENT   (* immediately adjacent, no space *)
-</code></pre>
-<p>The suffix names the literal’s type: <code>i8 i16 i32 u8 u16 u32</code> (that
-two’s-complement width), <code>i53</code>/<code>u53</code> (the wide integers; see below),
-<code>f</code> (<code>f64</code>), <code>f32</code>, <code>f64</code>, <code>n</code> (<code>BigInt</code>). An <strong>unknown suffix is a
-compile error</strong> (the retired <code>i64</code>/<code>u64</code> suffixes get a rename hint). An
-unsuffixed integer literal is <code>i32</code>; an unsuffixed fractional literal is
-<code>f64</code>. Every integer literal is <strong>range-checked</strong> against its type at
-compile time.</p>
-<p><code>i53</code> spans the symmetric range ±2^53 and <code>u53</code> spans [0, 2^53]: the
-window in which every integer is exactly representable in an IEEE-754
-double (the backing representation). The names deliberately follow
-JavaScript’s safe-integer convention (53 bits of integer precision)
-rather than the two’s-complement <code>iN</code> convention. There is no <code>i64</code>;
-integers beyond the window take <code>BigInt</code>.</p>
-<p>In a hex literal the digit run is maximal, so a suffix must begin with a
-non-hex letter: <code>0xFFu8</code> is valid; <code>0xFFf</code> is a single hex number <code>0xFFF</code>,
-not <code>0xFF</code> with suffix <code>f</code>.</p>
-<h3 id="strings"><a class="header" href="#strings">Strings</a></h3>
-<pre><code class="language-text">STRING           = '"' , { string_char } , '"' ;
-string_char      = "\" any_char_except_line_terminator
-                 | any_char_except_quote_backslash_or_line_terminator ;
-MULTILINE_STRING = '"""' , raw_text , '"""' ;
-</code></pre>
-<p>In a plain string a backslash escapes the next character; escape sequences
-are preserved in the token and interpreted at code generation with
-JavaScript string-escape semantics (<code>\n</code>, <code>\"</code>, <code>\\</code>, …). A multiline
-string is <strong>raw</strong> (a backslash is a backslash) and runs to the first
-<code>"""</code>; the whitespace prefix of the line containing the closing delimiter
-is stripped from every line of the content.</p>
-<p>A single-quoted string <strong>must close on the line it opens</strong>. A raw line
-break inside <code>"…"</code> is an error, and so is a backslash immediately before
-one: nothing escapes a line terminator, because the literal has to close
-on its line either way. Multi-line text is written <code>"""…"""</code>; a single
-line break inside a one-line string is written <code>\n</code>. (The rule buys error
-locality: a forgotten closing quote is reported at its own line instead of
-running on to the next <code>"</code> anywhere below it.)</p>
-<p>In a multiline string a source line break contributes a single <code>\n</code> to the
-value per the line-terminator rule above. An escaped <code>\r</code> is unaffected:
-it is written into the literal, not read off the end of a line.</p>
-<h3 id="interpolated-strings"><a class="header" href="#interpolated-strings">Interpolated strings</a></h3>
-<p><code>i"…"</code> is an interpolated string: <code>{expr}</code> holes embed expressions; <code>\{</code>
-and <code>\}</code> are literal braces. The construct is defined by desugaring. An
-interpolated string is exactly equivalent to a parenthesized
-concatenation:</p>
-<pre><code class="language-text">i"Hello, {name}!"   ≡   ("" + "Hello, " + (name) + "!")
-</code></pre>
-<p>Each hole’s contents are lexed as ordinary tokens (except that <code>{</code>/<code>}</code>
-delimit the hole; string literals inside a hole may still contain braces)
-and parsed as a single parenthesized expression. The result of the whole
-form is <code>str</code>; each part must therefore be valid as a <code>+</code> operand with
-<code>str</code> (§5’s operator dispatch).</p>
-<p><code>i"…"</code> obeys the single-line rule of its plain twin: a raw line break in
-its body (or a backslash before one) is the same error. Interpolated
-multi-line text is <code>i"""…"""</code>, which is how a macro writes the code it
-returns.</p>
-<h4 id="interpolated-multiline-strings"><a class="header" href="#interpolated-multiline-strings">Interpolated multiline strings</a></h4>
-<pre><code class="language-text">INTERPOLATED_MULTILINE = 'i' , '"""' , raw_text , '"""' ;
-</code></pre>
-<p><code>i"""…"""</code> is the multiline string with holes. Two rules apply, in this
-order:</p>
-<ol>
-<li><strong>Trimming, on the literal’s raw text.</strong> The layout rule of a plain
-<code>"""</code> applies unchanged and applies <em>first</em>: nothing may follow the
-opening delimiter on its line, the closing delimiter sits alone on its
-line, and the whitespace preceding it is the indentation prefix
-stripped from the start of every content line. Holes and <code>\{</code> / <code>\}</code>
-count as ordinary characters of that text, so a hole never disturbs its
-line’s indent accounting: a line opening with a hole is indented like
-any other, and a hole in the middle of a line has no effect on it. A
-hole may span lines; its continuation lines carry the prefix like every
-other line, and stripping is a no-op inside the hole, where whitespace
-is trivia.</li>
-<li><strong>Fragmenting, on the trimmed text.</strong> Exactly two escapes exist: <code>\{</code>
-and <code>\}</code>, each a literal brace. Nothing else is an escape: a backslash
-before any other character is a literal backslash and that character,
-the same near-rawness as a plain <code>"""</code> (<code>\n</code> is a backslash and an
-<code>n</code>). An unescaped <code>}</code> outside a hole is an error, as it is in <code>i"…"</code>.</li>
-</ol>
-<p>The body is raw and runs to the first <code>"""</code>, so a single <code>"</code> and a <code>""</code>
-pair are ordinary content. The value is a <code>str</code>, and (this being one of
-the two forms that may span lines) a source line break in it contributes
-one <code>\n</code>.</p>
-<pre><code class="language-vilan fragment">let report = i"""
-    {name} scored {score}.
-    Braces are written \{like this\}.
-    """
-</code></pre>
-<p><em>Implementation note: because a hole is re-lexed as ordinary tokens, a
-string literal inside a hole cannot use <code>\"</code> escapes; nested quoting
-inside holes is currently a parse error. Bind the value to a local first.</em></p>
-<h3 id="other-literals"><a class="header" href="#other-literals">Other literals</a></h3>
-<p><code>true</code>, <code>false</code> (type <code>bool</code>); <code>null</code> (the host-boundary null, §5.2);
-<code>void</code> (the unit value; a contextual identifier, not a keyword).</p>
-<h2 id="24-operators-and-punctuation"><a class="header" href="#24-operators-and-punctuation">2.4 Operators and punctuation</a></h2>
-<p>Two token classes:</p>
+                        <h1 id="the-editor"><a class="header" href="#the-editor">The editor</a></h1>
+<p>Vilan ships a language server, <code>vilan-lsp</code>, beside the <code>vilan</code> binary in
+every release — same repository, same version number, installed by the same
+script, updated by the same <code>vilan upgrade</code> (which replaces the server
+first, so the pair is never newer-CLI/older-server). It speaks LSP over
+stdio, so any LSP client can drive it; the one the project configures and
+tests is the VS Code extension.</p>
+<h2 id="getting-it"><a class="header" href="#getting-it">Getting it</a></h2>
+<p>The <a href="../tour/hello-vilan.html#install-the-toolchain">toolchain install</a> puts
+<code>vilan-lsp</code> next to <code>vilan</code> in <code>~/.vilan/bin</code>. Then install <strong>Vilan</strong>
+(<code>vilan-lang.vilan</code>) from the VS Code Marketplace or Open VSX. The
+extension activates on a <code>.vl</code> file or a workspace containing a
+<code>vilan.toml</code>, and finds the server by looking, in order, at
+<code>vilan.server.path</code>, a <code>target/release/vilan-lsp</code> or <code>target/debug/</code>
+build in the workspace (so a checkout of the compiler outranks the
+installed copy — deliberate, for people working on vilan itself),
+<code>~/.cargo/bin</code>, <code>~/.vilan/bin</code>, and finally <code>vilan-lsp</code> on your <code>PATH</code>.
+If it finds none it says so, naming the command it tried and offering a
+button into settings.</p>
+<p>No other editor is configured in the repository today. The server needs no
+arguments, so a generic LSP client pointed at <code>vilan-lsp</code> for the <code>vilan</code>
+language works; nothing here is VS Code-specific except the packaging.</p>
+<p>The server resolves <code>std</code> itself — <code>$VILAN_STD</code>, then an in-checkout
+<code>vilan/std</code>, then a copy embedded in its own binary — so go-to-definition
+lands inside the standard library on a machine with nothing else installed.</p>
+<h2 id="what-it-gives-you"><a class="header" href="#what-it-gives-you">What it gives you</a></h2>
+<p><strong>Diagnostics</strong>, published as you type on a 150 ms debounce, the same
+messages <code>vilan check</code> prints (notes included, as related information).
+A save re-checks the saved file <em>and</em> every open file that imports it, so
+breaking a shared module lights up its consumers rather than waiting for
+you to visit them.</p>
+<p><strong>Hover</strong> — inferred types on locals and parameters, loan conventions
+included; a field’s <code>name: type</code> and a method’s full signature behind a
+<code>.</code>; your own doc comments; and documentation on the language’s own
+keywords, deep-linked into this book.</p>
+<p><strong>Inlay hints</strong> — the inferred type of a binding you left unannotated
+(<code>let</code>/<code>mut</code>, a <code>for</code> binder, a comprehension binder). A parameter is not
+hinted: its type is written in the signature already.</p>
+<p><strong>Semantic highlighting</strong> from the analyzer, over the TextMate grammar,
+which also highlights <code>vilan</code> fences inside Markdown.</p>
+<p><strong>Go to definition</strong> (including into <code>std</code>), <strong>find references</strong>,
+<strong>rename</strong>, and a <strong>document outline</strong>.</p>
+<p><strong>Formatting</strong> — the same <code>vilan_core</code> formatter <code>vilan fmt</code> runs, so the
+editor and the CLI cannot disagree. Whole-document only; there is no range
+or on-type formatting.</p>
+<p><strong>Linked editing</strong> for markup tag pairs: rename <code>&lt;div&gt;</code> and <code>&lt;/div&gt;</code>
+follows.</p>
+<h2 id="completion"><a class="header" href="#completion">Completion</a></h2>
+<p>Where the cursor is decides what is offered.</p>
 <ul>
-<li><strong>Operator tokens</strong>: a maximal run of the characters <code>- : ! * / + = | &amp; ^ ? %</code>, plus the arrow <code>=&gt;</code> (lexed as one token). Maximal munch means
-<code>==</code>, <code>!=</code>, <code>+=</code>, <code>::</code>, <code>?.</code>’s <code>?</code>, <code>&amp;&amp;</code>, <code>||</code> each lex as single
-operator tokens; conversely <code>a+-b</code> lexes as <code>a</code>, <code>+-</code>, <code>b</code> and is a parse
-error.</li>
-<li><strong>Control tokens</strong>: the single characters <code>( ) [ ] { } &lt; &gt; ; , .</code>.</li>
+<li><strong>A bare position</strong> offers everything in scope, every keyword, and four
+construct snippets (<code>fun … ( ) { }</code>, <code>struct … { }</code>, <code>for … in { }</code>,
+<code>match … { }</code>), which sort last.</li>
+<li><strong>After <code>.</code></strong> offers the receiver’s fields and methods; <strong>after <code>?.</code></strong>
+offers the <em>lifted</em> element’s, so an <code>Option&lt;Profile&gt;</code> offers <code>Profile</code>’s
+members.</li>
+<li><strong>After <code>::</code></strong> offers an enum’s variants and statics, a struct’s statics,
+or a module’s members — and only when the name on the left is actually
+<strong>in scope</strong>. It used to match that name against every type the compiler
+happened to have loaded, and the derive prelude keeps a handful of std
+modules loaded permanently, so <code>Ordering::</code> offered <code>Less</code>/<code>Equal</code>/
+<code>Greater</code> in a file that had never heard of <code>std::compare</code>. It resolves
+through scope now, exactly as the receiver of a <code>.</code> always has.</li>
+<li><strong>Inside an <code>import</code> path</strong> the whole path completes, at every level: the
+head offers the origins (<code>std</code>, <code>pkg</code>, and each dependency by the name
+you import it under), an origin offers its modules, and a module offers
+its members — loaded on demand, so <code>import std::random::</code> completes in a
+file that has never mentioned <code>std::random</code>. A brace set completes at the
+same level as its module, so <code>import std::json::{ Json, </code> keeps going.
+(Imports are read as single-line items; a braced group’s later lines are
+not recognized.)</li>
+<li><strong>A name you have not imported</strong> is offered too, labeled with the module
+it comes from and carrying the <code>import</code> as part of accepting it — one
+action writes both. Your own package’s names rank ahead of <code>std</code>’s, so a
+std-heavy file’s loaded surface cannot crowd them out of the 20-candidate
+cap.</li>
 </ul>
-<p><code>&lt;</code> and <code>&gt;</code> are control tokens (they delimit generics), not operator
-characters. Consequently <code>&lt;=</code>/<code>&gt;=</code> lex as <code>&lt;</code>/<code>&gt;</code> followed by <code>=</code>, and the
-shift operators <code>&lt;&lt;</code>/<code>&gt;&gt;</code> are two adjacent control tokens; the parser
-accepts them as shifts only when <strong>span-adjacent</strong> (no whitespace):
-<code>a &lt;&lt; b</code> is a shift, <code>a &lt; &lt; b</code> is a parse error (§3.7). The element form
-(grammar spec, <em>atom</em>) reuses the same discipline: <code>&lt;/</code> and <code>/&gt;</code> are
-span-adjacent pairs, <code>on:</code> joins by adjacency, and a hyphenated element
-or attribute name (<code>aria-label</code>, <code>my-widget</code>) is a span-adjacent
-name-<code>-</code>-name run — <code>data - id</code> is three tokens of arithmetic, not a
-name. The lexer itself is untouched by the element form: every token it
-produces already existed.</p>
-<h2 id="25-trivia-and-token-separation"><a class="header" href="#25-trivia-and-token-separation">2.5 Trivia and token separation</a></h2>
-<p>Whitespace (any Unicode whitespace) and comments may appear between any
-two tokens and are required only where two tokens would otherwise lex as
-one (<code>fun main</code> needs the space; <code>a + b</code> does not). Lexing is greedy and
-context-free: no token depends on parse state.</p>
+<p>Completion shapes a call for you by default; <code>vilan.completion.functionCall</code>
+turns that down to parentheses only, or off.</p>
+<p><code>vilan.toml</code> gets its own completion — manifest keys and their closed sets
+of values — from the server rather than from a JSON schema, so every editor
+sees it.</p>
+<h2 id="quick-fixes"><a class="header" href="#quick-fixes">Quick fixes</a></h2>
+<p>Four, each attached to the diagnostic that earns it:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Action</th><th>Offered on</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Import `X` from std::json</code></td><td><code>cannot find 'X'</code> where <code>X</code> is importable. One action per module when more than one exports the name — never a guess between them</td></tr>
+<tr><td><code>Change to `entries` </code></td><td>a <code>did you mean …?</code> note on a misspelled struct-initializer field</td></tr>
+<tr><td><code>Insert `;` </code></td><td><code>expected `;` to end this statement</code>, at the gap the diagnostic points at</td></tr>
+<tr><td><code>Remove `;` </code></td><td><code>the `;` discards this body's last value</code> — it finds the right <code>;</code> from the diagnostic’s own bookkeeping, and declines rather than guess when a comment sits in the gap</td></tr>
+</tbody>
+</table>
+</div>
+<p>and two source actions:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Action</th><th>Does</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Organize Imports</strong></td><td>sorts each top-level import run into canonical order (the same key <code>vilan fmt</code> uses) and prunes unused leaves, shrinking a brace set rather than deleting it. Offered only when it would change something</td></tr>
+<tr><td><strong>Add All Missing Imports</strong></td><td>applies every unambiguous import quickfix in the file at once, skipping the ambiguous ones</td></tr>
+</tbody>
+</table>
+</div>
+<p>Organizing prunes only against a clean, current analysis: a file with
+diagnostics, or one you are mid-edit in, is sorted and never pruned —
+because “unused” is an answer you can only trust from a program that
+type-checked. A module imported and used <strong>only</strong> through <code>::</code>
+(<code>import std::math;</code> referenced as <code>math::min(1, 2)</code>) counts as used and
+is kept.</p>
+<p><code>vilan.organizeImports.onSave</code> (off by default) runs the same action on
+save. It is the extension’s own hook rather than a line in your
+<code>editor.codeActionsOnSave</code>, and organizing is a fixed point, so turning
+both on is harmless.</p>
+<h2 id="what-it-does-while-you-type"><a class="header" href="#what-it-does-while-you-type">What it does while you type</a></h2>
+<p>Half-typed code is what a compiler is asked about most of the time. Two
+behaviors follow from that, and both are worth knowing because they are the
+difference between an editor that helps mid-edit and one that goes blank.</p>
+<p><strong>A syntax error no longer blanks out the file.</strong> The parser recovers at
+statement and item boundaries: a statement it cannot read is reported and
+skipped to the next <code>;</code>, <code>}</code>, or declaration keyword, and everything around
+it — the statements beside it, the functions below it, the whole file tail
+— still reaches the analyzer. So the diagnostics a file already had stay on
+screen instead of vanishing for the two keystrokes it takes to type
+<code>print(1);</code>, and a function body with one broken statement in it loses that
+statement rather than being discarded whole. <code>vilan check</code> answers the same
+way; <code>vilan build</code> still stops, because a recovered file is not something
+to emit from.</p>
+<p><strong>Answers stay in the last-analyzed text’s coordinates</strong> until the next
+analysis lands, a few dozen milliseconds later. Hover, go-to-definition,
+references, rename, the outline, inlay hints, semantic tokens and
+completion’s lookups all convert the cursor through the analyzed text
+first. That is correct for the analyzed program, and therefore visually
+correct everywhere except the line you are actively editing; converting the
+same bytes through the live buffer would be correct for neither. Semantic
+highlighting additionally carries the unchanged tail of the file across an
+analysis, so the colours below your edit do not flash off and back.</p>
+<p>Two requests decline rather than answer wrong while the buffer is ahead of
+the analysis: <strong>rename</strong> (“still analyzing this file; retry in a moment”)
+and <strong>code actions</strong>, which refuse silently because editors ask for them
+automatically when a menu opens or a file saves.</p>
+<h2 id="what-it-does-not-have"><a class="header" href="#what-it-does-not-have">What it does not have</a></h2>
+<p>Named so you do not go looking: there is no signature-help popup (a
+signature reaches you through hover and a completion item’s detail line),
+no folding ranges, no workspace-wide symbol search (the outline is
+per-file), no document-highlight-on-cursor, no code lens, no call or type
+hierarchy, no go-to-type-definition / implementation / declaration beyond
+plain go-to-definition, and no pull diagnostics — diagnostics are pushed.</p>
+<h2 id="settings"><a class="header" href="#settings">Settings</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Setting</th><th>Default</th><th></th></tr>
+</thead>
+<tbody>
+<tr><td><code>vilan.server.path</code></td><td>—</td><td>an explicit <code>vilan-lsp</code> binary; changing it restarts the client</td></tr>
+<tr><td><code>vilan.stdPath</code></td><td>—</td><td>an explicit <code>std</code> root, overriding discovery</td></tr>
+<tr><td><code>vilan.inlayHints.enabled</code></td><td><code>true</code></td><td></td></tr>
+<tr><td><code>vilan.semanticTokens.enabled</code></td><td><code>true</code></td><td>off falls back to the TextMate grammar</td></tr>
+<tr><td><code>vilan.completion.functionCall</code></td><td><code>full</code></td><td><code>parensOnly</code>, or <code>none</code></td></tr>
+<tr><td><code>vilan.organizeImports.onSave</code></td><td><code>false</code></td><td></td></tr>
+</tbody>
+</table>
+</div>
+<p>Everything but the two paths applies live. <strong>Vilan: Restart Language
+Server</strong> is in the command palette when you want the blunt instrument, and
+the <strong>Vilan Language Server</strong> output channel carries the server’s own log.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../spec/introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../appendix/cli.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../spec/grammar.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../appendix/errors.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -354,11 +363,11 @@ context-free: no token depends on parse state.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../spec/introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../appendix/cli.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../spec/grammar.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../appendix/errors.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

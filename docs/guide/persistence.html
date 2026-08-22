@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -236,9 +234,8 @@ in practice: spell it <code>description</code>.</li>
 <p>The API is synchronous, which fits rpc handlers (the dispatch path is
 synchronous too), and there is no connection pool to manage.</p>
 <h2 id="serving-http-stdhttp"><a class="header" href="#serving-http-stdhttp">Serving http: <code>std::http</code></a></h2>
-<p>For an rpc app, <code>serve_service</code> (from the <a href="services.html">services guide</a>)
-owns the port, and you only supply the http <strong>fallback</strong> for plain
-requests. The plain server underneath is usable on its own too:</p>
+<p>Every server in vilan is a <code>Server::builder()</code> chain — a port, a handler,
+and <code>start()</code>:</p>
 <pre><code class="language-vilan norun">import std::print;
 import std::http::{ Server, Request, Response };
 
@@ -260,25 +257,59 @@ fun main() {
 		.start();
 }
 </code></pre>
-<p><code>Request</code> gives you <code>path()</code>, <code>method()</code>, and <code>body()</code>. Responses come
-from a builder: <code>.code(i32)</code> (200 by default),
-<code>.set_header(name, value)</code>, <code>.body(str)</code>, <code>.build()</code>.</p>
-<p>Here is the standard full-stack fallback. <code>build_handler</code> serves the
-client leg’s own artifacts — the bundle, its stylesheet, any route chunks
-— and your closure answers <em>every other path</em> with the HTML shell, so deep
-links load (see <a href="routing.html">Routing</a>):</p>
-<pre><code class="language-vilan fragment">build_handler(require_build("client"), |request| {
-	Response::builder().set_header("Content-Type", "text/html").body(app_html).build()
-})
+<p><code>Request</code> gives you <code>path()</code>, <code>method()</code>, and <code>body()</code> (<code>bytes()</code> for a
+binary POST). Responses come from a builder: <code>.code(i32)</code> (200 by
+default), <code>.set_header(name, value)</code>, <code>.body(str)</code>, <code>.build()</code>.</p>
+<p>A full-stack server adds two more links to that chain, and neither of them
+names a file. <strong><code>serve_build</code></strong> installs one route per artifact the client
+leg’s build actually wrote — the bundle, the stylesheet if the leg emitted
+one, every route chunk — and <strong><code>with_service</code></strong> installs an rpc service’s
+routes and its WebSocket handshake. Both answer <em>before</em> <code>on_request</code>,
+whatever order you wrote the chain in, so your own handler still gets
+every path they do not claim and deep links keep working (see
+<a href="routing.html">Routing</a>):</p>
+<pre><code class="language-vilan norun">import std::build::require_build;
+import std::document::require_shell;
+import std::http::{ Response, Server };
+
+async fun main() {
+	let build = require_build("client");
+	let page = require_shell("src/app.html", build).html();
+
+	Server::builder()
+		.port(8080)
+		.serve_build(build)         // /client.js, /client.css, every chunk
+		.on_request(|request| Response::builder().set_header("Content-Type", "text/html").body(page).build())
+		.build()
+		.start();
+}
 </code></pre>
+<p>Renaming the leg, adding a stylesheet, or turning <code>split = true</code> on needs
+no edit here: the build says what it emitted and the server believes it.
+An rpc app adds <code>.with_service(Service::new(protocol))</code> to the same chain
+— <a href="services.html#the-server-side">Services &amp; RPC</a> has it whole.</p>
 <h2 id="files-stdfs"><a class="header" href="#files-stdfs">Files: <code>std::fs</code></a></h2>
 <pre><code class="language-vilan fragment">fun exists(path: str): bool                 // sync — boot code can branch on it
 fun read_file_to_str(path: str): str        // async (implicitly awaited), UTF-8
 fun read_file_to_str_sync(path: str): str   // sync — for a callback that can't suspend
+fun read_file_encoded(path: str, encoding: str): str   // async — any host encoding
+fun read_bytes(path: str): Bytes            // async — the true binary read
 fun write_file(path: str, contents: str)    // async
+fun read_dir(path: str): List&lt;str&gt;          // async — entry names, flat
+fun stat(path: str): Option&lt;Stat&gt;           // async — None if the path isn't there
 </code></pre>
-<p>The typical server reads the client bundle and shell into memory once at
-boot, then serves from the strings.</p>
+<p><code>read_bytes</code> is what serves an image, a font or a favicon: the host’s
+buffer binds to <code>Bytes</code> with no decode in between. <code>read_dir</code> lists a
+directory’s immediate entries by name — flat and unordered, so call <code>stat</code>
+per entry when you need file-vs-directory. <code>stat</code> reads <code>size</code>,
+<code>modified_at_ms</code> (epoch millis) and <code>is_directory</code>, and is the one read
+here that answers <code>None</code> instead of throwing on a missing path: it exists
+for a caller asking “is this here yet”. Full signatures:
+<a href="../std/process.html#stdfs">the process reference</a>.</p>
+<p>What a server does <em>not</em> read by hand any more is its own build.
+<code>serve_build</code> knows the bundle’s name, the stylesheet’s, and every chunk’s,
+so the boot reads and the content-type table that used to live here are
+gone.</p>
 <h2 id="the-process-stdprocess"><a class="header" href="#the-process-stdprocess">The process: <code>std::process</code></a></h2>
 <pre><code class="language-vilan fragment">fun args(): List&lt;str&gt;          // CLI arguments (vilan run app.vl -- …)
 fun env(key: str): Option&lt;str&gt; // an environment variable
@@ -295,15 +326,26 @@ long-lived <em>client</em> process (a probe holding a socket, say) has to keep
 <ol>
 <li><code>Database::open</code>, then <code>exec</code> the schema
 (<code>CREATE TABLE IF NOT EXISTS …</code>).</li>
+<li><code>require_build("client")</code> — ask the client leg’s build what it emitted.</li>
+<li><code>require_shell("src/app.html", build)</code> — hold your page against that
+build (<a href="ssr.html">SSR</a>, <a href="styling.html#getting-the-stylesheet-onto-the-page">Styling</a>).
+<code>Document::of(build)</code> writes the page from the build instead, if you
+would rather not keep a shell at all.</li>
 <li>Load the mirrored state from SQLite into the service’s signals.</li>
 <li>Wire the service’s handlers to statements. Write SQL first, then
 update the signal (the mirror broadcasts the signal).</li>
-<li><code>fs::read_file_to_str</code> the client bundle and shell.</li>
-<li><code>serve_service(port, protocol, fallback, on_ready)</code>.</li>
+<li><code>Server::builder()</code> with <code>serve_build(build)</code>, a <code>with_service(…)</code> if
+the app speaks rpc, your <code>on_request</code> fallback, and <code>start()</code>.</li>
 </ol>
-<p>The ordering inside step 3 matters. Persist first, then update the
-signal. That way a crash between the two can never broadcast state that
-was never stored.</p>
+<p>Steps 2 and 3 both <strong>refuse rather than degrade</strong>, and that is why they
+belong at boot. A leg that was never built and a page whose stylesheet
+<code>&lt;link&gt;</code> went missing are not conditions to discover one request at a
+time: the first would 404 every asset for the life of the process, the
+second renders unstyled and entirely correct-looking. Each stops the
+server instead, naming the file and the leg.</p>
+<p>The ordering inside step 5 matters for its own reason. Persist first, then
+update the signal. That way a crash between the two can never broadcast
+state that was never stored.</p>
 
                     </main>
 
@@ -356,7 +398,8 @@ was never stored.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

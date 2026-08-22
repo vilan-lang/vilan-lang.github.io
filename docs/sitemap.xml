@@ -2,6 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://vilan-lang.org/docs/</loc></url>
   <url><loc>https://vilan-lang.org/docs/appendix/cli.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/appendix/editor.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/appendix/errors.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/appendix/glossary.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/appendix/gotchas.html</loc></url>

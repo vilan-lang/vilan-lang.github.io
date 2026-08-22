@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -178,143 +176,153 @@
 <p>One line per term, with a link to where it’s actually taught. Terms are
 alphabetical. If you meet a word in the docs that isn’t here, that’s a
 bug in the docs; please add it.</p>
-<p><strong>adopt</strong>: folding a remote value into a <a href="#draft">draft</a> without
+<p><a id="adopt"></a><strong>adopt</strong>: folding a remote value into a <a href="#draft">draft</a> without
 re-sending it. Echoes are ignored, clean fields update, dirty fields win.
 <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>arena</strong>: a container that owns many values and hands out
+<p><a id="arena"></a><strong>arena</strong>: a container that owns many values and hands out
 <a href="#handle">handles</a> to them. The tool for graphs and cycles.
 <a href="../tour/memory-model.html">The memory model</a>.</p>
-<p><strong>binding</strong>: a name introduced by <code>let</code> (immutable) or <code>mut</code> (mutable).
+<p><a id="backed-enum"></a><strong>backed enum</strong>: an enum whose payload-free variants carry an explicit
+string or integer — <code>enum Align { Start = "flex-start" }</code>. The variant
+<em>is</em> that value at run time (no tag, no wrapper), which is why <code>value()</code>
+costs nothing, <code>parse</code> is offered, and it keys a <code>Map</code> with no derive. Its
+runtime domain is the host’s, so an exhaustive <code>match</code> traps on a value
+outside the set. <a href="../tour/data-and-traits.html">Data and traits</a>,
+<a href="../spec/types.html">spec §5.2</a>.</p>
+<p><a id="binding"></a><strong>binding</strong>: a name introduced by <code>let</code> (immutable) or <code>mut</code> (mutable).
 <a href="../tour/values-and-types.html">Values and types</a>.</p>
-<p><strong>bound</strong>: a requirement on a generic parameter, like <code>T: PartialEq</code>:
+<p><a id="bound"></a><strong>bound</strong>: a requirement on a generic parameter, like <code>T: PartialEq</code>:
 “any T that can be compared”. <a href="../tour/data-and-traits.html">Data and traits</a>.</p>
-<p><strong>boundary</strong> (disposal boundary): a place where a UI subtree can die: a
+<p><a id="boundary"></a><strong>boundary</strong> (disposal boundary): a place where a UI subtree can die: a
 mounted root, a list row, a <code>when</code>/<code>swap</code> body. Each boundary has an
 <a href="#owner">owner</a>. <a href="../guide/ui.html">Building UI</a>.</p>
-<p><strong>claim</strong>: any alias into an <a href="#owner">owner</a>: a <a href="#view">view</a>, an
+<p><a id="claim"></a><strong>claim</strong>: any alias into an <a href="#owner">owner</a>: a <a href="#view">view</a>, an
 <a href="#arena">arena</a> <a href="#handle">handle</a>, a loan of a <a href="#resource">resource</a>. Valid
 only while the owner’s <a href="#epoch">epoch</a> is unchanged. <a href="../spec/memory.html">The memory
 model</a>.</p>
-<p><strong>codec</strong>: the wire format both ends of a connection agree on:
+<p><a id="codec"></a><strong>codec</strong>: the wire format both ends of a connection agree on:
 <code>json_codec()</code> (readable) or <code>binary_codec()</code> (compact).
 <a href="../guide/services.html">Services &amp; RPC</a>.</p>
-<p><strong>context</strong> (ambient value): a value carried invisibly to the code that
+<p><a id="context"></a><strong>context</strong> (ambient value): a value carried invisibly to the code that
 needs it, like the current owner or turn. Established with <code>run</code>, read
 with <code>get</code>. <a href="../tour/functions-and-closures.html">Functions &amp; closures</a>.</p>
-<p><strong>contract check</strong>: at connect time, client and server compare a hash of
+<p><a id="contract-check"></a><strong>contract check</strong>: at connect time, client and server compare a hash of
 the service’s shape. A stale client fails cleanly instead of corrupting
 calls. <a href="../guide/services.html">Services &amp; RPC</a>.</p>
-<p><strong>copy</strong>: what every assignment, argument pass, and field store does to
-a value. The receiver gets its own; the original is untouched.
-<a href="../tour/memory-model.html">The memory model</a>.</p>
-<p><strong>derive</strong>: an attribute like <code>[derive(PartialEq, Debug)]</code> that
+<p><a id="copy"></a><strong>copy</strong>: what every binding, assignment, argument pass, field store, and
+<strong>return</strong> does to a value. The receiver gets its own; the original is
+untouched. The <em>signature</em> decides: a function returning <code>Inner</code> returns
+a value even where its body names the receiver’s storage; one returning
+<code>&amp;mut Inner</code> returns the projection.
+<a href="../tour/memory-model.html">The memory model</a>, <a href="../spec/memory.html">spec §6.1</a>.</p>
+<p><a id="derive"></a><strong>derive</strong>: an attribute like <code>[derive(PartialEq, Debug)]</code> that
 generates a trait implementation from a type’s shape.
 <a href="../tour/data-and-traits.html">Data and traits</a>.</p>
-<p><strong>dirty</strong>: a <a href="#draft">draft</a> whose local value has edits the server
+<p><a id="dirty"></a><strong>dirty</strong>: a <a href="#draft">draft</a> whose local value has edits the server
 hasn’t confirmed yet. Dirty fields ignore adoption; the user’s text wins.
 <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>draft</strong>: a local-first cell for editing server state: typing updates
+<p><a id="draft"></a><strong>draft</strong>: a local-first cell for editing server state: typing updates
 locally at once, commits in the background, and keeps your text on
 failure. <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>drop</strong>: destruction. The <code>Drop</code> hook runs at an owner’s scope end;
+<p><a id="drop"></a><strong>drop</strong>: destruction. The <code>Drop</code> hook runs at an owner’s scope end;
 <code>drop(x)</code> moves a value in to destroy it early. Only <a href="#resource">resources</a>
 have one. <a href="../tour/resources.html">Resources</a>.</p>
-<p><strong>echo</strong>: your own change arriving back through a <a href="#mirror">mirror</a>. A
+<p><a id="echo"></a><strong>echo</strong>: your own change arriving back through a <a href="#mirror">mirror</a>. A
 draft recognizes it and does nothing, so your caret never jumps.
 <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>effect</strong>: code that runs now and again on every change of a signal,
+<p><a id="effect"></a><strong>effect</strong>: code that runs now and again on every change of a signal,
 cleaned up automatically by its <a href="#owner">owner</a>.
 <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>entrypoint</strong>: <code>fun main</code> in the entry module. It runs automatically;
+<p><a id="entrypoint"></a><strong>entrypoint</strong>: <code>fun main</code> in the entry module. It runs automatically;
 on Node the process exits when it finishes. <a href="../tour/async.html">Async</a>.</p>
-<p><strong>epoch</strong>: an <a href="#owner">owner</a>’s abstract version counter. It advances when
+<p><a id="epoch"></a><strong>epoch</strong>: an <a href="#owner">owner</a>’s abstract version counter. It advances when
 the owner is rebound, resized, moved, or dropped; a <a href="#claim">claim</a> is valid
 only while it has not. <a href="../spec/memory.html">The memory model</a>.</p>
-<p><strong>extern</strong>: a declaration binding a host (JavaScript) function, object,
+<p><a id="extern"></a><strong>extern</strong>: a declaration binding a host (JavaScript) function, object,
 or property so Vilan code can call it. <a href="../tour/platforms.html">Platforms</a>.</p>
-<p><strong>frame</strong>: one encoded message on the wire. You only meet it when
+<p><a id="frame"></a><strong>frame</strong>: one encoded message on the wire. You only meet it when
 building custom transports. <a href="../std/rpc.html">rpc reference</a>.</p>
-<p><strong>handle</strong>: a small copyable id into an <a href="#arena">arena</a>. Storable
+<p><a id="handle"></a><strong>handle</strong>: a small copyable id into an <a href="#arena">arena</a>. Storable
 anywhere a value is, which <a href="#view">views</a> are not.
 <a href="../tour/memory-model.html">The memory model</a>.</p>
-<p><strong>lang item</strong>: a std declaration the language itself depends on, like
+<p><a id="lang-item"></a><strong>lang item</strong>: a std declaration the language itself depends on, like
 <code>Option</code> for <code>?.</code> or <code>Add</code> for <code>+</code>. <a href="../spec/appendix.html">Spec appendix</a>.</p>
-<p><strong>layer</strong>: the platform-specific part of the standard library. Base is
+<p><a id="layer"></a><strong>layer</strong>: the platform-specific part of the standard library. Base is
 everywhere; the browser layer is browser-only; the process layer is
 server-only. <a href="../tour/platforms.html">Platforms</a>.</p>
-<p><strong>local-first</strong>: updating local state immediately and syncing in the
+<p><a id="local-first"></a><strong>local-first</strong>: updating local state immediately and syncing in the
 background, instead of waiting on the network. What <a href="#draft">drafts</a>
 implement. <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>mirror</strong>: an <code>[expose]</code>d server signal that every connected client
+<p><a id="mirror"></a><strong>mirror</strong>: an <code>[expose]</code>d server signal that every connected client
 receives a live copy of. The server writes; every client updates.
 <a href="../guide/services.html">Services &amp; RPC</a>.</p>
-<p><strong>monomorphization</strong>: how generics compile: each concrete use gets its
+<p><a id="monomorphization"></a><strong>monomorphization</strong>: how generics compile: each concrete use gets its
 own specialized code, so generic dispatch has no runtime cost.
 <a href="../tour/data-and-traits.html">Data and traits</a>.</p>
-<p><strong>nursery</strong>: the structured way to spawn: <code>nursery(body)</code> joins every
+<p><a id="nursery"></a><strong>nursery</strong>: the structured way to spawn: <code>nursery(body)</code> joins every
 task spawned in the body’s dynamic extent before returning the body’s
 value, applies the first-observed error rule, and owns the cancellation
 signal std IO listens on. <a href="../tour/async.html">Async</a>.</p>
-<p><strong>owner</strong>: the object that collects subscriptions and disposes them
+<p><a id="owner"></a><strong>owner</strong>: the object that collects subscriptions and disposes them
 when its subtree dies. Created by the framework at
 <a href="#boundary">boundaries</a>; you rarely touch one directly.
 <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>panic</strong>: aborting the program with a message, for states that should
+<p><a id="panic"></a><strong>panic</strong>: aborting the program with a message, for states that should
 be impossible. Expected failures are <code>Result</code>s instead.
 <a href="../tour/control-flow.html">Control flow</a>.</p>
-<p><strong>pattern</strong>: the shape on the left of a <code>match</code> arm: a variant to
+<p><a id="pattern"></a><strong>pattern</strong>: the shape on the left of a <code>match</code> arm: a variant to
 match, payloads to bind (<code>Some(let x)</code>), a literal, or <code>_</code>.
 <a href="../tour/control-flow.html">Control flow</a>.</p>
-<p><strong>platform</strong>: what a package builds for: Node, Deno, Bun, or the
+<p><a id="platform"></a><strong>platform</strong>: what a package builds for: Node, Deno, Bun, or the
 browser. Decides which std <a href="#layer">layers</a> are importable.
 <a href="../tour/platforms.html">Platforms</a>.</p>
-<p><strong>prelude</strong>: the few names available without imports: the primitive
+<p><a id="prelude"></a><strong>prelude</strong>: the few names available without imports: the primitive
 types, <code>List</code>, <code>void</code>. Everything else is imported explicitly.
 <a href="../spec/names.html">Spec §4</a>.</p>
-<p><strong>resource</strong>: a value with a single owner that <em>moves</em> instead of copying
+<p><a id="resource"></a><strong>resource</strong>: a value with a single owner that <em>moves</em> instead of copying
 and is destroyed deterministically at scope end (a <code>Database</code>, an
 <code>OwnedNursery</code>). <a href="../tour/resources.html">Resources</a>.</p>
-<p><strong>safe integer</strong>: an integer JavaScript’s 64-bit floats represent
+<p><a id="safe-integer"></a><strong>safe integer</strong>: an integer JavaScript’s 64-bit floats represent
 exactly: anything within ±2^53. Vilan’s <code>i53</code>/<code>u53</code> are named for this
 window. <a href="../tour/values-and-types.html">Values and types</a>.</p>
-<p><strong>service</strong>: a server struct whose <code>[rpc]</code> methods clients call and
+<p><a id="service"></a><strong>service</strong>: a server struct whose <code>[rpc]</code> methods clients call and
 whose <code>[expose]</code>d signals clients <a href="#mirror">mirror</a>.
 <a href="../guide/services.html">Services &amp; RPC</a>.</p>
-<p><strong>signal</strong>: a value cell that code can subscribe to. The unit of
+<p><a id="signal"></a><strong>signal</strong>: a value cell that code can subscribe to. The unit of
 reactive state. <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>spawn</strong>: starting async work without waiting for it: <code>async expr</code>.
+<p><a id="spawn"></a><strong>spawn</strong>: starting async work without waiting for it: <code>async expr</code>.
 Gives you a <code>Task&lt;T&gt;</code>. <a href="../tour/async.html">Async</a>.</p>
-<p><strong>subscription</strong>: one live “call me on change” registration on a
+<p><a id="subscription"></a><strong>subscription</strong>: one live “call me on change” registration on a
 signal. Effects manage theirs through <a href="#owner">owners</a>; manual <code>sub</code>
 hands you the object to dispose. <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>suspension</strong>: a point where a function pauses and other code runs: a
+<p><a id="suspension"></a><strong>suspension</strong>: a point where a function pauses and other code runs: a
 call to something async, or an explicit <code>await</code>. <a href="#view">Views</a> may not
 be held across one. <a href="../tour/async.html">Async</a>.</p>
-<p><strong>task</strong>: the handle a spawn yields: eager, opaque, copy-refers-to-the-
+<p><a id="task"></a><strong>task</strong>: the handle a spawn yields: eager, opaque, copy-refers-to-the-
 same-task. A task’s failure is absorbed at the spawn: a later <code>await</code>
 receives it; an unobserved failure is reported, not crashed on.
 <a href="../tour/async.html">Async</a>.</p>
-<p><strong>trait</strong>: a named capability a type can implement, used as a bound on
+<p><a id="trait"></a><strong>trait</strong>: a named capability a type can implement, used as a bound on
 generics. Like an interface, but explicit and compile-time only.
 <a href="../tour/data-and-traits.html">Data and traits</a>.</p>
-<p><strong>transport</strong>: the thing that carries rpc calls: the reconnecting
+<p><a id="transport"></a><strong>transport</strong>: the thing that carries rpc calls: the reconnecting
 WebSocket in production, http or in-process variants for special cases.
 <a href="../std/rpc.html">rpc reference</a>.</p>
-<p><strong>turn</strong>: a batch of signal writes that becomes visible at once.
+<p><a id="turn"></a><strong>turn</strong>: a batch of signal writes that becomes visible at once.
 Event handlers and rpc handlers each run in one automatically.
 <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>value semantics</strong>: the rule that data is copied, not shared, unless
+<p><a id="value-semantics"></a><strong>value semantics</strong>: the rule that data is copied, not shared, unless
 you use an explicit sharing tool.
 <a href="../tour/memory-model.html">The memory model</a>.</p>
-<p><strong>variant</strong>: one case of an enum, possibly carrying data:
+<p><a id="variant"></a><strong>variant</strong>: one case of an enum, possibly carrying data:
 <code>Shape::Circle(2.0)</code>. <a href="../tour/data-and-traits.html">Data and traits</a>.</p>
-<p><strong>view</strong>: a short-lived borrow of a place (<code>&amp;x</code>, <code>&amp;mut x</code>) that aliases
+<p><a id="view"></a><strong>view</strong>: a short-lived borrow of a place (<code>&amp;x</code>, <code>&amp;mut x</code>) that aliases
 instead of copying. Can’t be stored, returned into long-lived state, or
 held across a <a href="#suspension">suspension</a>.
 <a href="../tour/memory-model.html">The memory model</a>.</p>
-<p><strong>wave</strong>: one settling of a <a href="#turn">turn</a>: every affected watcher runs
+<p><a id="wave"></a><strong>wave</strong>: one settling of a <a href="#turn">turn</a>: every affected watcher runs
 once with the final values. <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><strong>Wire</strong>: the “can travel over the network” capability: scalars, lists
+<p><a id="wire"></a><strong>Wire</strong>: the “can travel over the network” capability: scalars, lists
 and options of Wire types, and anything with <code>[derive(Wire)]</code>.
 <a href="../guide/services.html">Services &amp; RPC</a>.</p>
 
@@ -363,7 +371,8 @@ and options of Wire types, and anything with <code>[derive(Wire)]</code>.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

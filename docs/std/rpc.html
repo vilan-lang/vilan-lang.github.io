@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -185,17 +183,54 @@ signal fields, the macro generates:</p>
 <pre><code class="language-vilan fragment">// client side
 FooClient::connect(url: str, codec: Codec): Result&lt;FooClient&lt;SocketTransport&gt;, RpcError&gt;
 client.some_rpc(args…): Result&lt;T, RpcError&gt;     // per [rpc] method; implicitly awaited
-client.some_signal: Signal&lt;T&gt;                   // per [expose] field; a live mirror
+client.some_signal: RemoteSource&lt;T&gt;             // per [expose] field; a typed mirror (below)
 client.transport: SocketTransport               // connection state lives here
 
 // server side
 foo.dispatcher(): Dispatcher                    // the method table
-dispatcher.into_protocol(codec: Codec): RpcProtocol   // what serve_service takes
+dispatcher.into_protocol(codec: Codec): RpcProtocol   // what Service::new takes
 </code></pre>
 <p><code>connect</code> accepts a relative url (<code>"/"</code>) in the browser; it dials the same
 host over WebSocket, waits for the server’s announcement, and verifies the
 <strong>contract hash</strong>: a drifted server fails the connect with
 <code>RpcError::Contract</code>.</p>
+<h2 id="mirrors-remotesourcet"><a class="header" href="#mirrors-remotesourcet">Mirrors: <code>RemoteSource&lt;T&gt;</code></a></h2>
+<pre><code class="language-vilan fragment">struct RemoteSource&lt;T&gt; { … }
+
+impl RemoteSource&lt;type T&gt; {
+	fun get(self): Option&lt;T&gt;                              // passive: the cache, `None` before the first update
+	fun status(self): Signal&lt;Status&gt;                      // passive: `Waiting` until a value has arrived, then `Ready`
+	fun or(self, initial: T): Signal&lt;T&gt;                   // counted, owner-scoped: `initial` until the first update
+	fun map&lt;U&gt;(self, transform: sync |Option&lt;T&gt;| U): Signal&lt;U&gt;   // counted, owner-scoped: the `Option` confronted once
+	[must_use]
+	fun sub(self, observer: |T| void): Subscription       // counted, manual: present values; dispose to release
+}
+
+[derive(PartialEq, Debug)]
+enum Status { Waiting, Ready }
+</code></pre>
+<p>A mirror holds <code>Option&lt;T&gt;</code> — <code>None</code> until the first <code>Update</code> lands — and
+<strong>subscribes by demand</strong>: every <code>or</code>, <code>map</code>, and <code>sub</code> takes a counted lease
+on the channel. The 0→1 lease sends <code>Subscribe</code> (the server answers with
+the current value at once); the 1→0 release sends <code>Unsubscribe</code>, deferred
+to the end of the ambient turn so a same-turn re-subscribe (a view
+re-rendering in place) sends nothing. A second watcher on an open channel
+sends no frame. On reconnect a watched mirror (count &gt; 0) re-subscribes on
+its fresh channel; an unwatched one does not.</p>
+<p><code>or</code> and <code>map</code> hand the lease to the ambient owner (the enclosing view, or
+a <code>run_with_owner</code>), so it is released at unmount; calling either where no
+owner is ambient is a compile error (context coverage), by design — a
+network subscription must have a releaser. <code>sub</code> is the manual form for
+code with no owner: you hold the <code>Subscription</code> and <code>dispose</code> it.</p>
+<p><code>get</code> and <code>status</code> open nothing. <strong>A <code>status</code> observer alone never sees
+<code>Waiting → Ready</code></strong>: <code>status</code> reports, it does not ask; until something
+that renders the value subscribes, the mirror stays <code>Waiting</code>, and that is
+correct — the channel was never opened.</p>
+<p>The <code>Signal&lt;T&gt;</code> that <code>or</code>/<code>map</code> return is a local derivative: writing it
+writes nothing back (the server owns the source) and the next update
+overwrites it. An empty-list <code>initial</code> needs no annotation — the <code>[]</code>
+takes its element type from the mirror
+(<code>let notes = client.notes.or([]);</code> is a <code>Signal&lt;List&lt;Note&gt;&gt;</code>).</p>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
 <pre><code class="language-vilan fragment">[derive(Wire, Debug)]
 enum RpcError {
@@ -261,19 +296,38 @@ impl SocketDuplex {
 }
 </code></pre>
 <h2 id="server-plumbing-stdrpc_server-process-layer"><a class="header" href="#server-plumbing-stdrpc_server-process-layer">Server plumbing (<code>std::rpc_server</code>, process layer)</a></h2>
-<pre><code class="language-vilan fragment">fun serve_service(
-	port: i32,
-	protocol: RpcProtocol,
-	fallback: |Request| Response,   // plain-http requests: assets + app shell
-	on_ready: |Server| void,        // `server.port()` is the port actually bound
-)
+<pre><code class="language-vilan fragment">impl Service {
+	fun new(protocol: RpcProtocol): Service   // mounted at "/"
+	fun at(own self, prefix: str): Service    // mount elsewhere, e.g. "/admin/"
+	fun on_connect(own self, handler: |i32, DuplexEnd| void): Service
+	fun on_disconnect(own self, handler: |i32| void): Service
+}
+impl ServerBuilder {
+	fun with_service(own self, service: Service): ServerBuilder   // repeatable
+}
 </code></pre>
-<p><code>serve_service</code> = WebSocket upgrade + per-connection session registration
-(mirror attach/detach) + rpc dispatch, with <code>fallback</code> answering ordinary
-http. Each handler runs in a turn (<code>AtEnd</code>). For custom per-connection
-state (connection-scoped auth, an app-written attach), use
-<code>serve_connected(port, protocol, on_connection, fallback, on_ready)</code>, the
-same server with the session hook exposed.</p>
+<p>A service is WebSocket upgrade + per-connection session registration
+(mirror attach/detach) + rpc dispatch. Each handler runs in a turn
+(<code>AtEnd</code>). <code>ServerBuilder::with_service</code> installs those routes and the
+handshake on a <code>Server::builder()</code> chain,
+answering <strong>before</strong> <code>on_request</code>, so a page and a service sit on one
+builder instead of one replacing the other. It is repeatable — a second
+service goes on its own mount (<code>Service::new(protocol).at("/admin/")</code>),
+picked by longest mount and independent of call order.</p>
+<p><code>Service::new(protocol)</code> wires the runtime session registry as the
+connection lifecycle — what <code>Client::connect</code>’s generated <code>__attach</code>
+answers from; <code>on_connect</code>/<code>on_disconnect</code> replace it for apps holding
+their own per-connection state (connection-scoped auth, an app-written
+attach). The <code>{mount}rpc</code> route is the server side of <code>std::rpc</code>’s
+<code>HttpTransport</code> (<code>HttpTransport { url = "http://host:port/rpc" }</code>), and
+<code>on_request</code> answers every path no service claims — the app shell,
+usually; serving the build’s own artifacts is
+<code>ServerBuilder::serve_build</code>’s job, on the same builder. Details:
+<a href="../guide/services.html#growing-past-one-service">Services &amp; RPC</a> and the
+<a href="process.html#stdrpc_server">process reference</a>.</p>
+<p>One matching rule is worth knowing: a service claims a path <strong>segment</strong> —
+its route exactly, or its route followed by <code>?</code> — so <code>/rpc</code> does not
+shadow an application’s <code>/rpcs</code> or <code>/rpc-docs</code>.</p>
 <h2 id="envelope--codec-layer"><a class="header" href="#envelope--codec-layer">Envelope &amp; codec layer</a></h2>
 <p><code>Frame</code> is the codec-agnostic unit (<code>std::wire</code>); <code>encode_request</code> /
 <code>open_request</code> / <code>encode_reply</code> read and write the rpc envelope
@@ -333,7 +387,8 @@ transport or protocol bridge.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

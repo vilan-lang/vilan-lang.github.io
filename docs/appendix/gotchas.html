@@ -7,6 +7,7 @@
 
 
         <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
 
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,20 @@
 
         <link rel="icon" href="../favicon-de23e50b.svg">
         <link rel="shortcut icon" href="../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
         <link rel="stylesheet" href="../css/general-e96d0476.css">
         <link rel="stylesheet" href="../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -35,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e6ab13b9.js";
+            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e4e9f39d.js"></script>
+        <script src="../toc-fef6de3b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -115,7 +116,7 @@
         <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1eamei2 s10oplpw sp4tc1m s1vtg8d6 s16t4hls sbiovxm s1rpzmas s1yv3ji6 s2310lv"><a class="sbiovxm s1rpzmas s8myyqn skjzgjh s1odkmbv sayk2u1 ssxqrx8 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/#install">Install</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/playground/">Playground</a><a class="ssxqrx8 sayk2u1 svrgm1f s1iy45h3 sbcnc8a s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
                 <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
@@ -140,9 +141,6 @@
                     <h1 class="menu-title">The Vilan documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="../print.html" title="Print this book" aria-label="Print this book">
-                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
-                        </a>
 
                     </div>
                 </div>
@@ -188,6 +186,22 @@ don’t.</strong> <code>stamp + 1000</code> and <code>stamp &lt; 1000</code> are
 literal takes the peer’s type), but mixing two differently-typed
 <em>variables</em> in a comparison is an error: there are no implicit
 conversions. Convert with <code>as_*</code> or unify the declarations.</li>
+<li><strong>A guarded last <code>match</code> arm proves nothing.</strong> A guard tests the value
+and exhaustiveness reasons about the type, so <code>B if ready =&gt; …</code> leaves
+<code>B</code> missing. Write the arm you meant to fall through to:
+<code>B if ready =&gt; …, _ =&gt; …</code>.</li>
+<li><strong>An exhaustive <code>match</code> over a backed enum can still panic.</strong> The enum
+<em>is</em> its backing string or number at run time, so a host value outside
+the set (an <code>external fun</code> return, a callback’s argument) reaches the
+trap arm: <code>Align: "middle" is not one of its values</code>. Give it a <code>_</code> arm,
+or take the value through <code>Align::parse</code>, which answers <code>None</code>.</li>
+<li><strong>A view may not be held across a <em>suspension</em>, not just an <code>await</code>.</strong>
+Calling an async function without the keyword suspends identically —
+and so does a sync-looking function that reaches one.</li>
+<li><strong>Writing over a resource-holding place destroys what it replaces.</strong>
+<code>slot.held = Holder::Empty</code> runs the old value’s destructor before the
+write, through a <code>&amp;mut</code> view and on an owned place alike. That is the
+rule working; it is worth knowing it is <em>when</em> teardown happens.</li>
 </ul>
 <h2 id="reactive--ui"><a class="header" href="#reactive--ui">Reactive &amp; UI</a></h2>
 <ul>
@@ -217,6 +231,20 @@ update; mutate via rpcs, never by writing the client’s mirror signal.</li>
 <ul>
 <li><strong>A completed Node <code>main</code> exits the process.</strong> Long-lived
 clients/servers must hold <code>main</code> open.</li>
+<li><strong>Process-target artifacts are <code>.mjs</code>, not <code>.js</code>.</strong> <code>vilan build app.vl</code> writes <code>app.mjs</code>, and a multi-entry package writes
+<code>dist/&lt;name&gt;.mjs</code> per process entry — so <code>node dist/server.js</code> becomes
+<code>node dist/server.mjs</code> in scripts, Dockerfiles and process managers. A
+<strong>browser</strong> leg keeps <code>.js</code>: its <code>&lt;script type="module"&gt;</code> declares the
+module at the load site, where the extension carries no weight.</li>
+<li><strong>A module-level binding cannot <code>await</code>, in any spelling.</strong> Not the
+implicit await of an async call, and not an explicit <code>await</code> on a
+<code>Task</code>, a spawn, or an <code>async { … }</code> block. Spawn at module level
+(<code>let pending = async work();</code>) and do the waiting inside
+<code>async fun main()</code>.</li>
+<li><strong>A server should not read its own build by hand.</strong> <code>require_build</code>,
+<code>require_shell</code> and <code>serve_build</code> describe it from what the build
+actually wrote; a path typed from memory leaves a renamed leg compiling
+and the page blank (<a href="../guide/persistence.html">Persistence</a>).</li>
 <li><strong><code>pkill -f &lt;pattern&gt;</code> can match your own shell’s command string.</strong> Kill
 by tracked PID.</li>
 <li><strong>Rebuild the debug binary before regenerating corpus goldens.</strong> A stale
@@ -274,7 +302,8 @@ binary silently writes wrong goldens.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-09ede7b7.js"></script>
+        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 
