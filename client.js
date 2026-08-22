@@ -138,7 +138,7 @@ function drain(turn) {
 		turn[1].v = true;
 		draining_turns.v.push(__clone(turn));
 		let budget = 100000;
-		while (!($ak(turn[0].v)) && budget > 0) {
+		while (!($am(turn[0].v)) && budget > 0) {
 			const wave = turn[0].v;
 			turn[0].v = [  ];
 			for (const subscriber of wave) {
@@ -173,7 +173,18 @@ function dispose(self, $B) {
 	} else {
 		$D = undefined;
 	}
-	return $D;
+	$D;
+	const $E = self[2].v;
+	let $F = null;
+	if ($E[0] === 0) {
+		const release = $E[1];
+		self[2].v = [ 1 ];
+		release();
+		$F = undefined;
+	} else {
+		$F = undefined;
+	}
+	return $F;
 }
 function new3() {
 	return [ __shared_new([  ]) ];
@@ -190,22 +201,22 @@ function get_owner($w) {
 function after(ms) {
 	return [ __timer(ms) ];
 }
-async function wait(self, $aq) {
-	return await (self[0].wait(ambient_signal($aq)));
+async function wait(self, $as) {
+	return await (self[0].wait(ambient_signal($as)));
 }
 function cancel(self) {
 	self[0].cancel();
 }
-function ambient_signal($ar) {
-	const $as = $ar;
-	let $at = null;
-	if ($as[0] === 0) {
-		const n = $as[1];
-		$at = [ 0, n.signal_of() ];
+function ambient_signal($at) {
+	const $au = $at;
+	let $av = null;
+	if ($au[0] === 0) {
+		const n = $au[1];
+		$av = [ 0, n.signal_of() ];
 	} else {
-		$at = [ 1 ];
+		$av = [ 1 ];
 	}
-	return $at;
+	return $av;
 }
 function view(tag) {
 	let $h = null;
@@ -308,8 +319,8 @@ function style_var(self, name, source, $r, $s) {
 }
 function on(self, event, handler) {
 	self[0].addEventListener(event, () => {
-		return $av([ 1 ], ($au) => {
-			return handler($au);
+		return $ax([ 1 ], ($aw) => {
+			return handler($aw);
 		});
 	});
 	return __clone(self);
@@ -320,20 +331,20 @@ function children(self, items) {
 	}
 	return __clone(self);
 }
-function bind_text(self, source, $aT, $aU) {
+function bind_text(self, source, $aV, $aW) {
 	const element = __clone(self[0]);
 	$t(source, (value) => {
 		element.textContent = value;
 		return;
-	}, $aT, $aU);
+	}, $aV, $aW);
 	return __clone(self);
 }
-function bind_attr(self, name, source, $aw, $ax) {
+function bind_attr(self, name, source, $ay, $az) {
 	const element = __clone(self[0]);
 	$t(source, (value) => {
 		element.setAttribute(name, value);
 		return;
-	}, $aw, $ax);
+	}, $ay, $az);
 	return __clone(self);
 }
 function place(self, parent) {
@@ -360,11 +371,11 @@ function mount(id, view2) {
 	element.appendChild(view2[0]);
 }
 function mount_root(id, body) {
-	const $bK = $bJ([ 1 ], ($bH) => {
-		return $bI(body);
+	const $bM = $bL([ 1 ], ($bJ) => {
+		return $bK(body);
 	});
-	const built = $bK[0];
-	const root = $bK[1];
+	const built = $bM[0];
+	const root = $bM[1];
 	mount(id, built);
 	if (__hmr_active()) {
 		const element = document.getElementById(id);
@@ -382,24 +393,24 @@ function on_teardown(cleanup) {
 	}
 }
 function family_longhands(property) {
-	const $K = property;
-	let $L = null;
-	if ($K === "padding") {
-		$L = ";padding-top;padding-right;padding-bottom;padding-left;";
-	} else if ($K === "margin") {
-		$L = ";margin-top;margin-right;margin-bottom;margin-left;";
-	} else if ($K === "inset") {
-		$L = ";top;right;bottom;left;";
-	} else if ($K === "flex") {
-		$L = ";flex-grow;flex-shrink;flex-basis;";
-	} else if ($K === "background") {
-		$L = ";background-color;background-image;background-position;background-size;background-repeat;background-attachment;background-origin;background-clip;";
-	} else if ($K === "border") {
-		$L = border_longhands();
+	const $M = property;
+	let $N = null;
+	if ($M === "padding") {
+		$N = ";padding-top;padding-right;padding-bottom;padding-left;";
+	} else if ($M === "margin") {
+		$N = ";margin-top;margin-right;margin-bottom;margin-left;";
+	} else if ($M === "inset") {
+		$N = ";top;right;bottom;left;";
+	} else if ($M === "flex") {
+		$N = ";flex-grow;flex-shrink;flex-basis;";
+	} else if ($M === "background") {
+		$N = ";background-color;background-image;background-position;background-size;background-repeat;background-attachment;background-origin;background-clip;";
+	} else if ($M === "border") {
+		$N = border_longhands();
 	} else {
-		$L = "";
+		$N = "";
 	}
-	return $L;
+	return $N;
 }
 function border_longhands() {
 	let out = ";border-width;border-style;border-color;";
@@ -417,10 +428,10 @@ function without_covered(rules, media, condition, property) {
 		return __clone(rules);
 	}
 	let out = __clone(rules);
-	for (const key of $E(rules)) {
+	for (const key of $G(rules)) {
 		const parts = key.split(":");
 		if (__at(parts, 0) === media && __at(parts, 1) === condition && longhands.includes(";" + __at(parts, 2) + ";")) {
-			$M(out, key);
+			$O(out, key);
 		}
 	}
 	return out;
@@ -441,129 +452,129 @@ function class_list(self) {
 }
 function add(self, b) {
 	let rules = __clone(self[0]);
-	for (const key of $E(b[0])) {
-		const $I = $F(b[0], key);
-		let $J = null;
-		if ($I[0] === 0) {
-			const entry = $I[1];
+	for (const key of $G(b[0])) {
+		const $K = $H(b[0], key);
+		let $L = null;
+		if ($K[0] === 0) {
+			const entry = $K[1];
 			const parts = key.split(":");
 			rules = without_covered(rules, __at(parts, 0), __at(parts, 1), __at(parts, 2));
-			$N(rules, key, entry);
-			$J = undefined;
+			$P(rules, key, entry);
+			$L = undefined;
 		} else {
-			$J = undefined;
+			$L = undefined;
 		}
-		$J;
+		$L;
 	}
 	return [ __clone(rules) ];
 }
 function page(scroll_fade2, copy, $c, $d, $e) {
 	return $m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m(styled(view("div"), shell), bloom($c, $d), $c, $d), top_bar(scroll_fade2, $c, $d), $c, $d), masthead($c, $d), $c, $d), divider($c, $d), $c, $d), install_section(copy, $c, $d, $e), $c, $d), divider($c, $d), $c, $d), showcase_reactive($c, $d), $c, $d), divider($c, $d), $c, $d), showcase_fullstack($c, $d), $c, $d), divider($c, $d), $c, $d), showcase_compiler($c, $d), $c, $d), divider($c, $d), $c, $d), editor_band($c, $d), $c, $d), divider($c, $d), $c, $d), feature_grid($c, $d), $c, $d), divider($c, $d), $c, $d), dogfood($c, $d), $c, $d), page_footer($c, $d), $c, $d);
 }
-function install_row(label, command, copy, $aa, $ab, $ac) {
+function install_row(label, command, copy, $ac, $ad, $ae) {
 	const icon = $a("" + assets + "/icons/copy.svg");
 	const pending = __shared_new([ 1 ]);
-	return $m($m(view("div"), text(styled(view("p"), install_label), label), $aa, $ab), $m($m(styled(view("div"), install_command), text(styled(view("span"), install_command_text), command), $aa, $ab), $m(on($O(styled(view("button"), copy_button), "aria-label", "Copy command", $aa, $ab), "click", ($ad) => {
+	return $m($m(view("div"), text(styled(view("p"), install_label), label), $ac, $ad), $m($m(styled(view("div"), install_command), text(styled(view("span"), install_command_text), command), $ac, $ad), $m(on($Q(styled(view("button"), copy_button), "aria-label", "Copy command", $ac, $ad), "click", ($af) => {
 		copy(command);
-		$ae(icon, "" + assets + "/icons/check.svg", [ 0, $ad ]);
-		const $ao = pending.v;
-		let $ap = null;
-		if ($ao[0] === 0) {
-			const timer = $ao[1];
-			$ap = cancel(timer);
+		$ag(icon, "" + assets + "/icons/check.svg", [ 0, $af ]);
+		const $aq = pending.v;
+		let $ar = null;
+		if ($aq[0] === 0) {
+			const timer = $aq[1];
+			$ar = cancel(timer);
 		} else {
-			$ap = undefined;
+			$ar = undefined;
 		}
-		$ap;
+		$ar;
 		const timer2 = after(2400);
 		pending.v = [ 0, __clone(timer2) ];
 		__task(async () => {
-			if (await (wait(timer2, $ac))) {
-				$ae(icon, "" + assets + "/icons/copy.svg", [ 0, $ad ]);
+			if (await (wait(timer2, $ae))) {
+				$ag(icon, "" + assets + "/icons/copy.svg", [ 0, $af ]);
 			}
 			return;
 		}, "install_row");
 		return;
-	}), bind_attr($O(styled(view("img"), copy_icon), "alt", "", $aa, $ab), "src", icon, $aa, $ab), $aa, $ab), $aa, $ab), $aa, $ab);
+	}), bind_attr($Q(styled(view("img"), copy_icon), "alt", "", $ac, $ad), "src", icon, $ac, $ad), $ac, $ad), $ac, $ad), $ac, $ad);
 }
-function install_section(copy, $X, $Y, $Z) {
-	return $m($m($m(styled($O(view("section"), "id", "install", $X, $Y), add(add(column, section_block), stack)), text(styled(view("h2"), heading), "One command, the whole toolchain"), $X, $Y), $m($m($m(styled(view("p"), lead), pt("The compiler, dev server with hot reload, formatter, test runner, and language server live in one small binary. There is nothing else to install and nothing to configure. Update any time with "), $X, $Y), leaf("vilan upgrade"), $X, $Y), pt("."), $X, $Y), $X, $Y), $m($m(styled(view("div"), install_split), $m($m($m(styled(view("div"), install_grid), install_row("macOS / Linux", "curl -fsSL https://github.com/vilan-lang/vilan/releases/latest/download/install.sh | sh", copy, $X, $Y, $Z), $X, $Y), install_row("Windows (PowerShell)", "irm https://github.com/vilan-lang/vilan/releases/latest/download/install.ps1 | iex", copy, $X, $Y, $Z), $X, $Y), install_row("Homebrew", "brew install vilan-lang/vilan/vilan", copy, $X, $Y, $Z), $X, $Y), $X, $Y), $m(styled(view("div"), install_art_cell), toolchain_art($X, $Y), $X, $Y), $X, $Y), $X, $Y);
+function install_section(copy, $Z, $aa, $ab) {
+	return $m($m($m(styled($Q(view("section"), "id", "install", $Z, $aa), add(add(column, section_block), stack)), text(styled(view("h2"), heading), "One command, the whole toolchain"), $Z, $aa), $m($m($m(styled(view("p"), lead), pt("The compiler, dev server with hot reload, formatter, test runner, and language server live in one small binary. There is nothing else to install and nothing to configure. Update any time with "), $Z, $aa), leaf("vilan upgrade"), $Z, $aa), pt("."), $Z, $aa), $Z, $aa), $m($m(styled(view("div"), install_split), $m($m($m(styled(view("div"), install_grid), install_row("macOS / Linux", "curl -fsSL https://github.com/vilan-lang/vilan/releases/latest/download/install.sh | sh", copy, $Z, $aa, $ab), $Z, $aa), install_row("Windows (PowerShell)", "irm https://github.com/vilan-lang/vilan/releases/latest/download/install.ps1 | iex", copy, $Z, $aa, $ab), $Z, $aa), install_row("Homebrew", "brew install vilan-lang/vilan/vilan", copy, $Z, $aa, $ab), $Z, $aa), $Z, $aa), $m(styled(view("div"), install_art_cell), toolchain_art($Z, $aa), $Z, $aa), $Z, $aa), $Z, $aa);
 }
-function showcase(prose, code, $aV, $aW) {
-	return $m($m(styled(view("div"), showcase_grid), prose, $aV, $aW), code, $aV, $aW);
+function showcase(prose, code, $aX, $aY) {
+	return $m($m(styled(view("div"), showcase_grid), prose, $aX, $aY), code, $aX, $aY);
 }
-function showcase_flipped(code, prose, $bp, $bq) {
-	return $m($m(styled(view("div"), showcase_grid_flipped), code, $bp, $bq), prose, $bp, $bq);
+function showcase_flipped(code, prose, $br, $bs) {
+	return $m($m(styled(view("div"), showcase_grid_flipped), code, $br, $bs), prose, $br, $bs);
 }
-function counter_demo($aE, $aF) {
-	const count = $aG(0);
-	return $m($m(styled(view("div"), demo_box), on(text(styled(view("button"), demo_button), "+1"), "click", ($aH) => {
-		return $aI(count, (n) => {
+function counter_demo($aG, $aH) {
+	const count = $aI(0);
+	return $m($m(styled(view("div"), demo_box), on(text(styled(view("button"), demo_button), "+1"), "click", ($aJ) => {
+		return $aK(count, (n) => {
 			return n + 1;
-		}, [ 0, $aH ]);
-	}), $aE, $aF), bind_text(styled(view("p"), demo_label), $aR(count, (n) => {
+		}, [ 0, $aJ ]);
+	}), $aG, $aH), bind_text(styled(view("p"), demo_label), $aT(count, (n) => {
 		return "clicked " + n + " times";
-	}, $aE), $aE, $aF), $aE, $aF);
+	}, $aG), $aG, $aH), $aG, $aH);
 }
-function showcase_reactive($aC, $aD) {
-	return $m($m(styled(view("section"), add(add(column, section_block), stack)), showcase($m($m($m($m(styled(view("div"), showcase_copy), text(styled(view("h2"), heading), "UI that follows your data"), $aC, $aD), $m($m($m(styled(view("p"), lead), pt("A view is a value and a binding is a subscription: "), $aC, $aD), leaf("bind_text"), $aC, $aD), pt(" sets the text node once, then sets it again whenever the signal changes. There is no virtual DOM, no render loop, and no dependency array to babysit. Updates land exactly where the data changed."), $aC, $aD), $aC, $aD), text(styled(view("p"), lead), "The snippet is the whole program, and it runs. Try it right here:"), $aC, $aD), counter_demo($aC, $aD), $aC, $aD), code_panel([ ln([ kw("import"), t(" std::ui::{ view, mount_root };") ]), ln([ kw("import"), t(" std::reactive::"), ty("Signal"), t(";") ]), blank(), ln([ kw("fun"), t(" "), fn("main"), t("() {") ]), ln([ t("    "), kw("let"), t(" count = "), ty("Signal"), t("::"), fn("new"), t("("), st("0"), t(");") ]), ln([ t("    "), kw("let"), t(" _root = "), fn("mount_root"), t("("), st("\"app\""), t(", || {") ]), ln([ t("        "), fn("view"), t("("), st("\"div\""), t(")") ]), ln([ t("            ."), fn("child"), t("("), fn("view"), t("("), st("\"p\""), t(")."), fn("bind_text"), t("(count."), fn("map"), t("(|n: i32| "), st("i\"clicked "), hl("{"), t("n"), hl("}"), st(" times\""), t(")))") ]), ln([ t("            ."), fn("child"), t("("), fn("view"), t("("), st("\"button\""), t(")."), fn("text"), t("("), st("\"+1\""), t(")."), fn("on"), t("("), st("\"click\""), t(", || count."), fn("set_with"), t("(|n| n + "), st("1"), t(")))") ]), ln([ t("    });") ]), ln([ t("}") ]) ]), $aC, $aD), $aC, $aD), dataflow_art($aC, $aD), $aC, $aD);
+function showcase_reactive($aE, $aF) {
+	return $m($m(styled(view("section"), add(add(column, section_block), stack)), showcase($m($m($m($m(styled(view("div"), showcase_copy), text(styled(view("h2"), heading), "UI that follows your data"), $aE, $aF), $m($m($m(styled(view("p"), lead), pt("A view is a value and a binding is a subscription: "), $aE, $aF), leaf("bind_text"), $aE, $aF), pt(" sets the text node once, then sets it again whenever the signal changes. There is no virtual DOM, no render loop, and no dependency array to babysit. Updates land exactly where the data changed."), $aE, $aF), $aE, $aF), text(styled(view("p"), lead), "The snippet is the whole program, and it runs. Try it right here:"), $aE, $aF), counter_demo($aE, $aF), $aE, $aF), code_panel([ ln([ kw("import"), t(" std::ui::{ view, mount_root };") ]), ln([ kw("import"), t(" std::reactive::"), ty("Signal"), t(";") ]), blank(), ln([ kw("fun"), t(" "), fn("main"), t("() {") ]), ln([ t("    "), kw("let"), t(" count = "), ty("Signal"), t("::"), fn("new"), t("("), st("0"), t(");") ]), ln([ t("    "), kw("let"), t(" _root = "), fn("mount_root"), t("("), st("\"app\""), t(", || {") ]), ln([ t("        "), fn("view"), t("("), st("\"div\""), t(")") ]), ln([ t("            ."), fn("child"), t("("), fn("view"), t("("), st("\"p\""), t(")."), fn("bind_text"), t("(count."), fn("map"), t("(|n: i32| "), st("i\"clicked "), hl("{"), t("n"), hl("}"), st(" times\""), t(")))") ]), ln([ t("            ."), fn("child"), t("("), fn("view"), t("("), st("\"button\""), t(")."), fn("text"), t("("), st("\"+1\""), t(")."), fn("on"), t("("), st("\"click\""), t(", || count."), fn("set_with"), t("(|n| n + "), st("1"), t(")))") ]), ln([ t("    });") ]), ln([ t("}") ]) ]), $aE, $aF), $aE, $aF), dataflow_art($aE, $aF), $aE, $aF);
 }
-function showcase_fullstack($be, $bf) {
-	return $m($m($m($m(styled(view("section"), add(add(column, section_block), stack)), text(styled(view("h2"), heading), "The server is a struct. The client is generated."), $be, $bf), $m($m($m($m($m(styled(view("p"), lead), pt("Mark a method "), $be, $bf), leaf_link("/docs/guide/services.html#what-rpc-calls-do", "[rpc]", $be, $bf), $be, $bf), pt(" and the browser can call it like any other function, typed and checked. Mark a signal "), $be, $bf), leaf_link("/docs/guide/services.html#mirrors", "[expose]", $be, $bf), $be, $bf), pt(" and every connected client holds a live mirror that updates when the server writes. You never write REST endpoints, fetch calls, or the JSON shapes that drift out of sync between them."), $be, $bf), $be, $bf), diagram($be, $bf), $be, $bf), button_link("/docs/guide/services.html", "Services & RPC in the guide", $be, $bf), $be, $bf);
+function showcase_fullstack($bg, $bh) {
+	return $m($m($m($m(styled(view("section"), add(add(column, section_block), stack)), text(styled(view("h2"), heading), "The server is a struct. The client is generated."), $bg, $bh), $m($m($m($m($m(styled(view("p"), lead), pt("Mark a method "), $bg, $bh), leaf_link("/docs/guide/services.html#what-rpc-calls-do", "[rpc]", $bg, $bh), $bg, $bh), pt(" and the browser can call it like any other function, typed and checked. Mark a signal "), $bg, $bh), leaf_link("/docs/guide/services.html#mirrors", "[expose]", $bg, $bh), $bg, $bh), pt(" and every connected client holds a live mirror that updates when the server writes. You never write REST endpoints, fetch calls, or the JSON shapes that drift out of sync between them."), $bg, $bh), $bg, $bh), diagram($bg, $bh), $bg, $bh), button_link("/docs/guide/services.html", "Services & RPC in the guide", $bg, $bh), $bg, $bh);
 }
-function showcase_compiler($bn, $bo) {
-	return $m(styled(view("section"), add(add(column, section_block), stack)), showcase_flipped($m($m(styled(view("div"), diag_stack), code_panel([ ln([ kw("import"), t(" std::print;") ]), ln([ kw("import"), t(" std::option::"), ty("Option"), t("::{ self, "), ty("Some"), t(", "), ty("None"), t(" };") ]), ln([ kw("fun"), t(" "), fn("find_user"), t("(id: i32): "), ty("Option"), t("<str> {") ]), ln([ t("    "), kw("if"), t(" id == "), st("1"), t(" { "), ty("Some"), t("("), st("\"Ada\""), t(") } "), kw("else"), t(" { "), ty("None"), t(" }") ]), ln([ t("}") ]), ln([ kw("fun"), t(" "), fn("greet"), t("(name: str): str {") ]), ln([ t("    "), st("i\"hello "), hl("{"), t("name"), hl("}"), st("\"") ]), ln([ t("}") ]), ln([ kw("fun"), t(" "), fn("main"), t("() {") ]), ln([ t("    "), fn("print"), t("("), fn("greet"), t("("), fn("find_user"), t("("), st("2"), t(")));") ]), ln([ t("}") ]) ]), $bn, $bo), $m($m($m($m($m($m($m(styled(view("pre"), diag_pre), ln([ text(styled(view("span"), diag_error), "Error:"), t(" Expected str, but got Option<str> instead.") ]), $bn, $bo), ln([ text(styled(view("span"), diag_frame), "    \u{256d}\u{2500}[ demo.vl:10:14 ]") ]), $bn, $bo), ln([ text(styled(view("span"), diag_frame), "    \u{2502}") ]), $bn, $bo), ln([ text(styled(view("span"), diag_frame), " 10 \u{2502}     print(greet(find_user(2)));") ]), $bn, $bo), ln([ text(styled(view("span"), diag_frame), "    \u{2502}                 \u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{252c}\u{2500}\u{2500}\u{2500}\u{2500}") ]), $bn, $bo), ln([ text(styled(view("span"), diag_frame), "    \u{2502}                       \u{2570}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500} Expected str, but got Option<str> instead.") ]), $bn, $bo), ln([ text(styled(view("span"), diag_frame), "\u{2500}\u{2500}\u{2500}\u{2500}\u{256f}") ]), $bn, $bo), $bn, $bo), $m($m($m($m(styled(view("div"), showcase_copy), text(styled(view("h2"), heading), "Find out at compile time"), $bn, $bo), $m($m($m($m($m(styled(view("p"), lead), pt("Vilan has no null and no exceptions. A value that might be missing is an "), $bn, $bo), leaf_link("/docs/std/option-result.html#optiont", "Option", $bn, $bo), $bn, $bo), pt(", a call that might fail returns a "), $bn, $bo), leaf_link("/docs/std/option-result.html#resultt-e", "Result", $bn, $bo), $bn, $bo), pt(", and the compiler makes you look inside before you use either. The mistake in this snippet is a build error, not a production incident."), $bn, $bo), $bn, $bo), text(styled(view("p"), lead), "Values are copied rather than silently shared, so two names never fight over one object. Most of the mistakes JavaScript saves for runtime cannot even be written."), $bn, $bo), button_link("/docs/std/option-result.html", "Option & Result in the reference", $bn, $bo), $bn, $bo), $bn, $bo), $bn, $bo);
+function showcase_compiler($bp, $bq) {
+	return $m(styled(view("section"), add(add(column, section_block), stack)), showcase_flipped($m($m(styled(view("div"), diag_stack), code_panel([ ln([ kw("import"), t(" std::print;") ]), ln([ kw("import"), t(" std::option::"), ty("Option"), t("::{ self, "), ty("Some"), t(", "), ty("None"), t(" };") ]), ln([ kw("fun"), t(" "), fn("find_user"), t("(id: i32): "), ty("Option"), t("<str> {") ]), ln([ t("    "), kw("if"), t(" id == "), st("1"), t(" { "), ty("Some"), t("("), st("\"Ada\""), t(") } "), kw("else"), t(" { "), ty("None"), t(" }") ]), ln([ t("}") ]), ln([ kw("fun"), t(" "), fn("greet"), t("(name: str): str {") ]), ln([ t("    "), st("i\"hello "), hl("{"), t("name"), hl("}"), st("\"") ]), ln([ t("}") ]), ln([ kw("fun"), t(" "), fn("main"), t("() {") ]), ln([ t("    "), fn("print"), t("("), fn("greet"), t("("), fn("find_user"), t("("), st("2"), t(")));") ]), ln([ t("}") ]) ]), $bp, $bq), $m($m($m($m($m($m($m(styled(view("pre"), diag_pre), ln([ text(styled(view("span"), diag_error), "Error:"), t(" Expected str, but got Option<str> instead.") ]), $bp, $bq), ln([ text(styled(view("span"), diag_frame), "    \u{256d}\u{2500}[ demo.vl:10:14 ]") ]), $bp, $bq), ln([ text(styled(view("span"), diag_frame), "    \u{2502}") ]), $bp, $bq), ln([ text(styled(view("span"), diag_frame), " 10 \u{2502}     print(greet(find_user(2)));") ]), $bp, $bq), ln([ text(styled(view("span"), diag_frame), "    \u{2502}                 \u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{252c}\u{2500}\u{2500}\u{2500}\u{2500}") ]), $bp, $bq), ln([ text(styled(view("span"), diag_frame), "    \u{2502}                       \u{2570}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500} Expected str, but got Option<str> instead.") ]), $bp, $bq), ln([ text(styled(view("span"), diag_frame), "\u{2500}\u{2500}\u{2500}\u{2500}\u{256f}") ]), $bp, $bq), $bp, $bq), $m($m($m($m(styled(view("div"), showcase_copy), text(styled(view("h2"), heading), "Find out at compile time"), $bp, $bq), $m($m($m($m($m(styled(view("p"), lead), pt("Vilan has no null and no exceptions. A value that might be missing is an "), $bp, $bq), leaf_link("/docs/std/option-result.html#optiont", "Option", $bp, $bq), $bp, $bq), pt(", a call that might fail returns a "), $bp, $bq), leaf_link("/docs/std/option-result.html#resultt-e", "Result", $bp, $bq), $bp, $bq), pt(", and the compiler makes you look inside before you use either. The mistake in this snippet is a build error, not a production incident."), $bp, $bq), $bp, $bq), text(styled(view("p"), lead), "Values are copied rather than silently shared, so two names never fight over one object. Most of the mistakes JavaScript saves for runtime cannot even be written."), $bp, $bq), button_link("/docs/std/option-result.html", "Option & Result in the reference", $bp, $bq), $bp, $bq), $bp, $bq), $bp, $bq);
 }
-function editor_band($br, $bs) {
-	return $m(styled(view("section"), add(add(column, section_block), stack)), showcase_flipped(editor_art($br, $bs), $m($m($m($m(styled(view("div"), showcase_copy), text(styled(view("h2"), heading), "The editor is in on it"), $br, $bs), $m($m($m($m(styled(view("p"), lead), leaf("vilan"), $br, $bs), pt(" and "), $br, $bs), leaf("vilan-lsp"), $br, $bs), pt(" ship together so your editor and build never disagree. In-editor diagnostics, hover types and docs, autocompletion, Symbol Rename, formatting, and Organize Imports are all available in VS Code today."), $br, $bs), $br, $bs), text(styled(view("p"), lead), "One broken line does not take the tooling down. The rest of the file keeps compiling, serving hovers, and completing while you fix it."), $br, $bs), button_link("https://github.com/vilan-lang/vilan/tree/main/editors/vscode", "The VS Code extension", $br, $bs), $br, $bs), $br, $bs), $br, $bs);
+function editor_band($bt, $bu) {
+	return $m(styled(view("section"), add(add(column, section_block), stack)), showcase_flipped(editor_art($bt, $bu), $m($m($m($m(styled(view("div"), showcase_copy), text(styled(view("h2"), heading), "The editor is in on it"), $bt, $bu), $m($m($m($m(styled(view("p"), lead), leaf("vilan"), $bt, $bu), pt(" and "), $bt, $bu), leaf("vilan-lsp"), $bt, $bu), pt(" ship together so your editor and build never disagree. In-editor diagnostics, hover types and docs, autocompletion, Symbol Rename, formatting, and Organize Imports are all available in VS Code today."), $bt, $bu), $bt, $bu), text(styled(view("p"), lead), "One broken line does not take the tooling down. The rest of the file keeps compiling, serving hovers, and completing while you fix it."), $bt, $bu), button_link("https://github.com/vilan-lang/vilan/tree/main/editors/vscode", "The VS Code extension", $bt, $bu), $bt, $bu), $bt, $bu), $bt, $bu);
 }
-function button_link(href, label, $bl, $bm) {
-	return $m($m($O(styled(view("a"), button_link_style), "href", href, $bl, $bm), pt(label), $bl, $bm), $O($O(styled(view("img"), link_arrow), "src", "" + assets + "/icons/move-right.svg", $bl, $bm), "alt", "", $bl, $bm), $bl, $bm);
+function button_link(href, label, $bn, $bo) {
+	return $m($m($Q(styled(view("a"), button_link_style), "href", href, $bn, $bo), pt(label), $bn, $bo), $Q($Q(styled(view("img"), link_arrow), "src", "" + assets + "/icons/move-right.svg", $bn, $bo), "alt", "", $bn, $bo), $bn, $bo);
 }
-function docs_link(href, label, $bz, $bA) {
-	return $m($m($O(styled(view("a"), card_link), "href", href, $bz, $bA), pt(label), $bz, $bA), $O($O(styled(view("img"), link_arrow), "src", "" + assets + "/icons/move-right.svg", $bz, $bA), "alt", "", $bz, $bA), $bz, $bA);
+function docs_link(href, label, $bB, $bC) {
+	return $m($m($Q(styled(view("a"), card_link), "href", href, $bB, $bC), pt(label), $bB, $bC), $Q($Q(styled(view("img"), link_arrow), "src", "" + assets + "/icons/move-right.svg", $bB, $bC), "alt", "", $bB, $bC), $bB, $bC);
 }
-function feature(icon, name, href, body, $bx, $by) {
-	return $m($m($m($m(styled(view("article"), card), $O($O(styled(view("img"), card_icon), "src", "" + assets + "/icons/" + icon + ".svg", $bx, $by), "alt", "", $bx, $by), $bx, $by), text(styled(view("h3"), card_title), name), $bx, $by), children(styled(view("p"), card_body), body), $bx, $by), docs_link(href, "docs", $bx, $by), $bx, $by);
+function feature(icon, name, href, body, $bz, $bA) {
+	return $m($m($m($m(styled(view("article"), card), $Q($Q(styled(view("img"), card_icon), "src", "" + assets + "/icons/" + icon + ".svg", $bz, $bA), "alt", "", $bz, $bA), $bz, $bA), text(styled(view("h3"), card_title), name), $bz, $bA), children(styled(view("p"), card_body), body), $bz, $bA), docs_link(href, "docs", $bz, $bA), $bz, $bA);
 }
-function feature_grid($bv, $bw) {
-	return $m($m(styled(view("section"), add(add(column, section_block), stack)), text(styled(view("h2"), heading), "Built into the language"), $bv, $bw), $m($m($m($m($m($m($O(styled(view("div"), cards_grid), "data-glow", "", $bv, $bw), feature("shield-check", "No null, no exceptions", "/docs/std/option-result.html", [ pt("A missing value is an "), leaf_link("/docs/std/option-result.html#optiont", "Option", $bv, $bw), pt(", a failure is a "), leaf_link("/docs/std/option-result.html#resultt-e", "Result", $bv, $bw), pt(", and "), leaf("match"), pt(" makes you handle both arms. Errors are ordinary values you pass around like any other data.") ], $bv, $bw), $bv, $bw), feature("copy", "Values, not references", "/docs/tour/memory-model.html", [ pt("Assignment copies. Sharing is explicit, borrowing is checked, and spooky action at a distance is a compile error.") ], $bv, $bw), $bv, $bw), feature("zap", "Async without the ceremony", "/docs/tour/async.html", [ leaf_link("/docs/tour/async.html#opting-out-of-waiting-async-and-await", "await", $bv, $bw), pt(" is implicit. Call an async function and the machinery is the compiler\'s problem. When you want real concurrency, tasks and "), leaf_link("/docs/tour/async.html#nurseries-structured-spawning", "nurseries", $bv, $bw), pt(" give it structure.") ], $bv, $bw), $bv, $bw), feature("layers", "One program, two platforms", "/docs/tour/platforms.html", [ pt("One workspace compiles the node server and the browser client. The compiler tracks which code needs which platform and keeps each bundle honest.") ], $bv, $bw), $bv, $bw), feature("server", "Rendered before it ships", "/docs/guide/ssr.html", [ leaf("std::ui"), pt(" renders on the server too: first paint is real markup, then the client rebuilds it live. View source on this page and the content is already there.") ], $bv, $bw), $bv, $bw), feature("refresh-cw", "A dev loop that keeps up", "/docs/guide/dev-loop.html", [ leaf("vilan run . --watch"), pt(" rebuilds in milliseconds and hot-reloads the browser. Format, test, and language server ship in the same binary.") ], $bv, $bw), $bv, $bw), $bv, $bw);
+function feature_grid($bx, $by) {
+	return $m($m(styled(view("section"), add(add(column, section_block), stack)), text(styled(view("h2"), heading), "Built into the language"), $bx, $by), $m($m($m($m($m($m($Q(styled(view("div"), cards_grid), "data-glow", "", $bx, $by), feature("shield-check", "No null, no exceptions", "/docs/std/option-result.html", [ pt("A missing value is an "), leaf_link("/docs/std/option-result.html#optiont", "Option", $bx, $by), pt(", a failure is a "), leaf_link("/docs/std/option-result.html#resultt-e", "Result", $bx, $by), pt(", and "), leaf("match"), pt(" makes you handle both arms. Errors are ordinary values you pass around like any other data.") ], $bx, $by), $bx, $by), feature("copy", "Values, not references", "/docs/tour/memory-model.html", [ pt("Assignment copies. Sharing is explicit, borrowing is checked, and spooky action at a distance is a compile error.") ], $bx, $by), $bx, $by), feature("zap", "Async without the ceremony", "/docs/tour/async.html", [ leaf_link("/docs/tour/async.html#opting-out-of-waiting-async-and-await", "await", $bx, $by), pt(" is implicit. Call an async function and the machinery is the compiler\'s problem. When you want real concurrency, tasks and "), leaf_link("/docs/tour/async.html#nurseries-structured-spawning", "nurseries", $bx, $by), pt(" give it structure.") ], $bx, $by), $bx, $by), feature("layers", "One program, two platforms", "/docs/tour/platforms.html", [ pt("One workspace compiles the node server and the browser client. The compiler tracks which code needs which platform and keeps each bundle honest.") ], $bx, $by), $bx, $by), feature("server", "Rendered before it ships", "/docs/guide/ssr.html", [ leaf("std::ui"), pt(" renders on the server too: first paint is real markup, then the client rebuilds it live. View source on this page and the content is already there.") ], $bx, $by), $bx, $by), feature("refresh-cw", "A dev loop that keeps up", "/docs/guide/dev-loop.html", [ leaf("vilan run . --watch"), pt(" rebuilds in milliseconds and hot-reloads the browser. Format, test, and language server ship in the same binary.") ], $bx, $by), $bx, $by), $bx, $by);
 }
-function dogfood($bB, $bC) {
-	return $m($m($m(styled(view("section"), add(add(column, section_block), stack)), text(styled(view("p"), dogfood_text), "This site is a vilan program: one package, three entries \u{2014} this page, the playground, and the server that renders both. The server rendered the markup you first saw, and the browser rebuilt it live."), $bB, $bC), text(styled(view("p"), dogfood_text), "Vilan is built to last. Semantics are settled on paper before they are implemented, and pinned by tests after. A language is a foundation, and a foundation should not move under you."), $bB, $bC), $m(styled(view("p"), dogfood_cta), docs_link("https://github.com/vilan-lang/website", "Read this page\'s source", $bB, $bC), $bB, $bC), $bB, $bC);
+function dogfood($bD, $bE) {
+	return $m($m($m(styled(view("section"), add(add(column, section_block), stack)), text(styled(view("p"), dogfood_text), "This site is a vilan program: one package, three entries \u{2014} this page, the playground, and the server that renders both. The server rendered the markup you first saw, and the browser rebuilt it live."), $bD, $bE), text(styled(view("p"), dogfood_text), "Vilan is built to last. Semantics are settled on paper before they are implemented, and pinned by tests after. A language is a foundation, and a foundation should not move under you."), $bD, $bE), $m(styled(view("p"), dogfood_cta), docs_link("https://github.com/vilan-lang/website", "Read this page\'s source", $bD, $bE), $bD, $bE), $bD, $bE);
 }
-function footer_column(title, links, $bF, $bG) {
-	return $m($m(view("div"), text(styled(view("p"), footer_head), title), $bF, $bG), children(styled(view("div"), footer_list), links), $bF, $bG);
+function footer_column(title, links, $bH, $bI) {
+	return $m($m(view("div"), text(styled(view("p"), footer_head), title), $bH, $bI), children(styled(view("div"), footer_list), links), $bH, $bI);
 }
-function page_footer($bD, $bE) {
-	return $m($m(styled(view("footer"), footer_block), $m($m($m($m(styled(view("div"), add(column, footer_grid)), styled($O($O($O(view("img"), "src", "" + assets + "/footer_mark.webp", $bD, $bE), "alt", "The vilan mark", $bD, $bE), "width", "200", $bD, $bE), footer_mark), $bD, $bE), footer_column("Using Vilan", [ text($O(styled(view("a"), footer_link), "href", "#install", $bD, $bE), "Install"), text($O(styled(view("a"), footer_link), "href", "/docs/tour/hello-vilan.html", $bD, $bE), "Learn"), text($O(styled(view("a"), footer_link), "href", "/playground", $bD, $bE), "Playground"), text($O(styled(view("a"), footer_link), "href", "/docs/", $bD, $bE), "Documentation") ], $bD, $bE), $bD, $bE), footer_column("Community", [ text($O(styled(view("a"), footer_link), "href", "" + repo + "/issues", $bD, $bE), "Issues"), text($O(styled(view("a"), footer_link), "href", "" + repo + "/discussions", $bD, $bE), "Discussions"), text($O(styled(view("a"), footer_link), "href", "https://github.com/vilan-lang", $bD, $bE), "GitHub") ], $bD, $bE), $bD, $bE), footer_column("Terms & policies", [ text($O(styled(view("a"), footer_link), "href", "" + repo + "/blob/main/CODE_OF_CONDUCT.md", $bD, $bE), "Code of Conduct"), text($O(styled(view("a"), footer_link), "href", "" + repo + "#license", $bD, $bE), "Licenses"), text($O(styled(view("a"), footer_link), "href", "" + repo + "/blob/main/assets/branding/LICENSE", $bD, $bE), "Logo Policy") ], $bD, $bE), $bD, $bE), $bD, $bE), $m(styled(view("div"), column), $m($m(styled(view("div"), footer_micro), text(view("span"), "\u{a9} 2026 Reed Syllas"), $bD, $bE), text(view("span"), "MIT or Apache-2.0"), $bD, $bE), $bD, $bE), $bD, $bE);
+function page_footer($bF, $bG) {
+	return $m($m(styled(view("footer"), footer_block), $m($m($m($m(styled(view("div"), add(column, footer_grid)), styled($Q($Q($Q(view("img"), "src", "" + assets + "/footer_mark.webp", $bF, $bG), "alt", "The vilan mark", $bF, $bG), "width", "200", $bF, $bG), footer_mark), $bF, $bG), footer_column("Using Vilan", [ text($Q(styled(view("a"), footer_link), "href", "#install", $bF, $bG), "Install"), text($Q(styled(view("a"), footer_link), "href", "/docs/tour/hello-vilan.html", $bF, $bG), "Learn"), text($Q(styled(view("a"), footer_link), "href", "/playground", $bF, $bG), "Playground"), text($Q(styled(view("a"), footer_link), "href", "/docs/", $bF, $bG), "Documentation") ], $bF, $bG), $bF, $bG), footer_column("Community", [ text($Q(styled(view("a"), footer_link), "href", "" + repo + "/issues", $bF, $bG), "Issues"), text($Q(styled(view("a"), footer_link), "href", "" + repo + "/discussions", $bF, $bG), "Discussions"), text($Q(styled(view("a"), footer_link), "href", "https://github.com/vilan-lang", $bF, $bG), "GitHub") ], $bF, $bG), $bF, $bG), footer_column("Terms & policies", [ text($Q(styled(view("a"), footer_link), "href", "" + repo + "/blob/main/CODE_OF_CONDUCT.md", $bF, $bG), "Code of Conduct"), text($Q(styled(view("a"), footer_link), "href", "" + repo + "#license", $bF, $bG), "Licenses"), text($Q(styled(view("a"), footer_link), "href", "" + repo + "/blob/main/assets/branding/LICENSE", $bF, $bG), "Logo Policy") ], $bF, $bG), $bF, $bG), $bF, $bG), $m(styled(view("div"), column), $m($m(styled(view("div"), footer_micro), text(view("span"), "\u{a9} 2026 Reed Syllas"), $bF, $bG), text(view("span"), "MIT or Apache-2.0"), $bF, $bG), $bF, $bG), $bF, $bG);
 }
-function diagram($bi, $bj) {
-	return $m($m($m($m($m($m($m($m(styled(view("div"), art_stage), styled(view("div"), dg_blob_top), $bi, $bj), styled(view("div"), dg_blob_left), $bi, $bj), styled(view("div"), dg_blob_right), $bi, $bj), grain(), $bi, $bj), $m($m(styled(view("div"), dg_source), $bk(styled(view("p"), art_tab), "notes.vl \u{b7} one source", $bi, $bj), $bi, $bj), $m($m($m($m($m($m($m($m($m(styled(view("div"), art_code), ln([ t("["), kw("service"), t("(NotesClient)]") ]), $bi, $bj), ln([ kw("struct"), t(" Notes {") ]), $bi, $bj), ln([ t("    ["), kw("expose"), t("] entries: Signal<List<Note>>,") ]), $bi, $bj), ln([ t("}") ]), $bi, $bj), blank(), $bi, $bj), ln([ kw("impl"), t(" Notes {") ]), $bi, $bj), ln([ t("    ["), kw("rpc"), t("]") ]), $bi, $bj), ln([ t("    "), kw("fun"), t(" add(self, text: str): i32 { \u{2026} }") ]), $bi, $bj), ln([ t("}") ]), $bi, $bj), $bi, $bj), $bi, $bj), $m($m($m($m(styled(view("div"), dg_wire_zone), styled(view("div"), dg_wire_left), $bi, $bj), styled(view("div"), dg_wire_right), $bi, $bj), $bk(styled(view("span"), dg_wire_label_left), "vilan build", $bi, $bj), $bi, $bj), $bk(styled(view("span"), dg_wire_label_right), "vilan build", $bi, $bj), $bi, $bj), $bi, $bj), $m($m($m(styled(view("div"), dg_legs), $m($m(styled(view("div"), art_card), $m($m($m(styled(view("div"), dg_leg_head), styled(view("div"), dot_magenta), $bi, $bj), $bk(styled(view("span"), dg_leg_name), "the server", $bi, $bj), $bi, $bj), $bk(styled(view("span"), dg_leg_env), "node", $bi, $bj), $bi, $bj), $bi, $bj), $m($m(styled(view("div"), art_code), ln([ t("serve_service(4000,") ]), $bi, $bj), ln([ t("    notes.dispatcher() \u{2026})") ]), $bi, $bj), $bi, $bj), $bi, $bj), $m($m(styled(view("div"), dg_mid), $m($m(view("div"), $bk(styled(view("p"), dg_mid_label), "notes.add(\"ship it\")", $bi, $bj), $bi, $bj), $m($m(styled(view("div"), dg_line_row), styled(view("div"), arrow_head_left), $bi, $bj), styled(view("div"), dg_line), $bi, $bj), $bi, $bj), $bi, $bj), $m($m($m(view("div"), $m($m(styled(view("div"), dg_line_row), styled(view("div"), dg_line_dashed), $bi, $bj), styled(view("div"), arrow_head_right_rose), $bi, $bj), $bi, $bj), $bk(styled(view("p"), dg_mid_label_rose), "entries", $bi, $bj), $bi, $bj), $bk(styled(view("p"), dg_note), "mirrored live", $bi, $bj), $bi, $bj), $bi, $bj), $bi, $bj), $m($m(styled(view("div"), art_card), $m($m($m(styled(view("div"), dg_leg_head), styled(view("div"), dot_orange), $bi, $bj), $bk(styled(view("span"), dg_leg_name), "the client", $bi, $bj), $bi, $bj), $bk(styled(view("span"), dg_leg_env), "browser", $bi, $bj), $bi, $bj), $bi, $bj), $m($m(styled(view("div"), art_code), ln([ kw("let"), t(" notes = NotesClient::connect("), st("\"/rpc\""), t(");") ]), $bi, $bj), ln([ t("notes.entries "), t("// Signal, live") ]), $bi, $bj), $bi, $bj), $bi, $bj), $bi, $bj), $bk(styled(view("p"), art_caption), "one definition: the compiler builds both sides and keeps them honest", $bi, $bj), $bi, $bj);
+function diagram($bk, $bl) {
+	return $m($m($m($m($m($m($m($m(styled(view("div"), art_stage), styled(view("div"), dg_blob_top), $bk, $bl), styled(view("div"), dg_blob_left), $bk, $bl), styled(view("div"), dg_blob_right), $bk, $bl), grain(), $bk, $bl), $m($m(styled(view("div"), dg_source), $bm(styled(view("p"), art_tab), "notes.vl \u{b7} one source", $bk, $bl), $bk, $bl), $m($m($m($m($m($m($m($m($m(styled(view("div"), art_code), ln([ t("["), kw("service"), t("(NotesClient)]") ]), $bk, $bl), ln([ kw("struct"), t(" Notes {") ]), $bk, $bl), ln([ t("    ["), kw("expose"), t("] entries: Signal<List<Note>>,") ]), $bk, $bl), ln([ t("}") ]), $bk, $bl), blank(), $bk, $bl), ln([ kw("impl"), t(" Notes {") ]), $bk, $bl), ln([ t("    ["), kw("rpc"), t("]") ]), $bk, $bl), ln([ t("    "), kw("fun"), t(" add(self, text: str): i32 { \u{2026} }") ]), $bk, $bl), ln([ t("}") ]), $bk, $bl), $bk, $bl), $bk, $bl), $m($m($m($m(styled(view("div"), dg_wire_zone), styled(view("div"), dg_wire_left), $bk, $bl), styled(view("div"), dg_wire_right), $bk, $bl), $bm(styled(view("span"), dg_wire_label_left), "vilan build", $bk, $bl), $bk, $bl), $bm(styled(view("span"), dg_wire_label_right), "vilan build", $bk, $bl), $bk, $bl), $bk, $bl), $m($m($m(styled(view("div"), dg_legs), $m($m(styled(view("div"), art_card), $m($m($m(styled(view("div"), dg_leg_head), styled(view("div"), dot_magenta), $bk, $bl), $bm(styled(view("span"), dg_leg_name), "the server", $bk, $bl), $bk, $bl), $bm(styled(view("span"), dg_leg_env), "node", $bk, $bl), $bk, $bl), $bk, $bl), $m($m(styled(view("div"), art_code), ln([ t("serve_service(4000,") ]), $bk, $bl), ln([ t("    notes.dispatcher() \u{2026})") ]), $bk, $bl), $bk, $bl), $bk, $bl), $m($m(styled(view("div"), dg_mid), $m($m(view("div"), $bm(styled(view("p"), dg_mid_label), "notes.add(\"ship it\")", $bk, $bl), $bk, $bl), $m($m(styled(view("div"), dg_line_row), styled(view("div"), arrow_head_left), $bk, $bl), styled(view("div"), dg_line), $bk, $bl), $bk, $bl), $bk, $bl), $m($m($m(view("div"), $m($m(styled(view("div"), dg_line_row), styled(view("div"), dg_line_dashed), $bk, $bl), styled(view("div"), arrow_head_right_rose), $bk, $bl), $bk, $bl), $bm(styled(view("p"), dg_mid_label_rose), "entries", $bk, $bl), $bk, $bl), $bm(styled(view("p"), dg_note), "mirrored live", $bk, $bl), $bk, $bl), $bk, $bl), $bk, $bl), $m($m(styled(view("div"), art_card), $m($m($m(styled(view("div"), dg_leg_head), styled(view("div"), dot_orange), $bk, $bl), $bm(styled(view("span"), dg_leg_name), "the client", $bk, $bl), $bk, $bl), $bm(styled(view("span"), dg_leg_env), "browser", $bk, $bl), $bk, $bl), $bk, $bl), $m($m(styled(view("div"), art_code), ln([ kw("let"), t(" notes = NotesClient::connect("), st("\"/rpc\""), t(");") ]), $bk, $bl), ln([ t("notes.entries "), t("// Signal, live") ]), $bk, $bl), $bk, $bl), $bk, $bl), $bk, $bl), $bm(styled(view("p"), art_caption), "one definition: the compiler builds both sides and keeps them honest", $bk, $bl), $bk, $bl);
 }
-function editor_art($bt, $bu) {
-	return $m($m($m($m(styled(view("div"), art_stage), styled(view("div"), ed_blob_a), $bt, $bu), styled(view("div"), ed_blob_b), $bt, $bu), grain(), $bt, $bu), $m($m($m($m(styled(view("div"), ed_window), $m($m($m($m(styled(view("div"), ed_titlebar), styled(view("div"), ed_dot_red), $bt, $bu), styled(view("div"), ed_dot_orange), $bt, $bu), styled(view("div"), ed_dot_magenta), $bt, $bu), text(styled(view("span"), ed_title), "app.vl \u{2014} vilan"), $bt, $bu), $bt, $bu), $m($m(styled(view("div"), ed_body), text(styled(view("div"), ed_gutter), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11"), $bt, $bu), $m($m($m($m($m($m($m($m($m($m($m(styled(view("div"), ed_code), ln([ kw("import"), t(" std::print;") ]), $bt, $bu), ln([ kw("import"), t(" std::option::Option::{ self, Some, None };") ]), $bt, $bu), ln([ kw("fun"), t(" find_user(id: i32): Option<str> {") ]), $bt, $bu), ln([ t("    "), kw("if"), t(" id == 1 { Some("), st("\"Ada\""), t(") } "), kw("else"), t(" { None }") ]), $bt, $bu), ln([ t("}") ]), $bt, $bu), ln([ kw("fun"), t(" greet(name: str): str {") ]), $bt, $bu), ln([ t("    "), st("i\"hello {name}\"") ]), $bt, $bu), ln([ t("}") ]), $bt, $bu), ln([ kw("fun"), t(" main() {") ]), $bt, $bu), ln([ t("    print(greet("), text(styled(view("span"), ed_squiggle), "find_user(2)"), t("));"), styled(view("span"), ed_caret) ]), $bt, $bu), ln([ t("}") ]), $bt, $bu), $bt, $bu), $bt, $bu), $m($m($m(styled(view("div"), ed_statusbar), text(styled(view("span"), ed_problem), "\u{2297} 1"), $bt, $bu), text(view("span"), "vilan-lsp"), $bt, $bu), text(styled(view("span"), ed_status_right), "Ln 10, Col 17 \u{b7} app.vl"), $bt, $bu), $bt, $bu), $m($m(styled(view("div"), ed_hover), text(styled(view("div"), ed_hover_error), "Expected str, but got Option<str> instead."), $bt, $bu), text(styled(view("div"), ed_hover_from), "vilan \u{b7} live as you type"), $bt, $bu), $bt, $bu), $bt, $bu);
+function editor_art($bv, $bw) {
+	return $m($m($m($m(styled(view("div"), art_stage), styled(view("div"), ed_blob_a), $bv, $bw), styled(view("div"), ed_blob_b), $bv, $bw), grain(), $bv, $bw), $m($m($m($m(styled(view("div"), ed_window), $m($m($m($m(styled(view("div"), ed_titlebar), styled(view("div"), ed_dot_red), $bv, $bw), styled(view("div"), ed_dot_orange), $bv, $bw), styled(view("div"), ed_dot_magenta), $bv, $bw), text(styled(view("span"), ed_title), "app.vl \u{2014} vilan"), $bv, $bw), $bv, $bw), $m($m(styled(view("div"), ed_body), text(styled(view("div"), ed_gutter), "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11"), $bv, $bw), $m($m($m($m($m($m($m($m($m($m($m(styled(view("div"), ed_code), ln([ kw("import"), t(" std::print;") ]), $bv, $bw), ln([ kw("import"), t(" std::option::Option::{ self, Some, None };") ]), $bv, $bw), ln([ kw("fun"), t(" find_user(id: i32): Option<str> {") ]), $bv, $bw), ln([ t("    "), kw("if"), t(" id == 1 { Some("), st("\"Ada\""), t(") } "), kw("else"), t(" { None }") ]), $bv, $bw), ln([ t("}") ]), $bv, $bw), ln([ kw("fun"), t(" greet(name: str): str {") ]), $bv, $bw), ln([ t("    "), st("i\"hello {name}\"") ]), $bv, $bw), ln([ t("}") ]), $bv, $bw), ln([ kw("fun"), t(" main() {") ]), $bv, $bw), ln([ t("    print(greet("), text(styled(view("span"), ed_squiggle), "find_user(2)"), t("));"), styled(view("span"), ed_caret) ]), $bv, $bw), ln([ t("}") ]), $bv, $bw), $bv, $bw), $bv, $bw), $m($m($m(styled(view("div"), ed_statusbar), text(styled(view("span"), ed_problem), "\u{2297} 1"), $bv, $bw), text(view("span"), "vilan-lsp"), $bv, $bw), text(styled(view("span"), ed_status_right), "Ln 10, Col 17 \u{b7} app.vl"), $bv, $bw), $bv, $bw), $m($m(styled(view("div"), ed_hover), text(styled(view("div"), ed_hover_error), "Expected str, but got Option<str> instead."), $bv, $bw), text(styled(view("div"), ed_hover_from), "vilan \u{b7} live as you type"), $bv, $bw), $bv, $bw), $bv, $bw);
 }
-function tc_chip_at(left, top, color, label, $aA, $aB) {
-	return $m($m($O(styled(view("div"), tc_chip), "style", "left: " + left + "; top: " + top, $aA, $aB), $O(styled(view("div"), led), "style", "background: " + color, $aA, $aB), $aA, $aB), text(view("span"), label), $aA, $aB);
+function tc_chip_at(left, top, color, label, $aC, $aD) {
+	return $m($m($Q(styled(view("div"), tc_chip), "style", "left: " + left + "; top: " + top, $aC, $aD), $Q(styled(view("div"), led), "style", "background: " + color, $aC, $aD), $aC, $aD), text(view("span"), label), $aC, $aD);
 }
-function toolchain_art($ay, $az) {
-	return $m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m(styled(view("div"), tc_wrap), styled(view("div"), tc_blob_b), $ay, $az), styled(view("div"), tc_blob_a), $ay, $az), styled(view("div"), tc_blob_c), $ay, $az), grain(), $ay, $az), styled(view("div"), tc_spoke_up), $ay, $az), styled(view("div"), tc_spoke_down), $ay, $az), styled(view("div"), tc_spoke_run), $ay, $az), styled(view("div"), tc_spoke_fmt), $ay, $az), styled(view("div"), tc_spoke_lsp), $ay, $az), styled(view("div"), tc_spoke_upgrade), $ay, $az), styled(view("div"), tc_center_mask), $ay, $az), $O($O(styled(view("div"), tc_center), "role", "img", $ay, $az), "aria-label", "vilan", $ay, $az), $ay, $az), tc_chip_at("210px", "70px", primary[0], "vilan build", $ay, $az), $ay, $az), tc_chip_at("328px", "142px", "#D84730", "vilan run --watch", $ay, $az), $ay, $az), tc_chip_at("344px", "288px", accent[0], "vilan fmt", $ay, $az), $ay, $az), tc_chip_at("210px", "360px", "#B23056", "vilan test", $ay, $az), $ay, $az), tc_chip_at("78px", "288px", "#8B2786", "vilan-lsp", $ay, $az), $ay, $az), tc_chip_at("82px", "142px", "#672283", "vilan upgrade", $ay, $az), $ay, $az);
+function toolchain_art($aA, $aB) {
+	return $m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m($m(styled(view("div"), tc_wrap), styled(view("div"), tc_blob_b), $aA, $aB), styled(view("div"), tc_blob_a), $aA, $aB), styled(view("div"), tc_blob_c), $aA, $aB), grain(), $aA, $aB), styled(view("div"), tc_spoke_up), $aA, $aB), styled(view("div"), tc_spoke_down), $aA, $aB), styled(view("div"), tc_spoke_run), $aA, $aB), styled(view("div"), tc_spoke_fmt), $aA, $aB), styled(view("div"), tc_spoke_lsp), $aA, $aB), styled(view("div"), tc_spoke_upgrade), $aA, $aB), styled(view("div"), tc_center_mask), $aA, $aB), $Q($Q(styled(view("div"), tc_center), "role", "img", $aA, $aB), "aria-label", "vilan", $aA, $aB), $aA, $aB), tc_chip_at("210px", "70px", primary[0], "vilan build", $aA, $aB), $aA, $aB), tc_chip_at("328px", "142px", "#D84730", "vilan run --watch", $aA, $aB), $aA, $aB), tc_chip_at("344px", "288px", accent[0], "vilan fmt", $aA, $aB), $aA, $aB), tc_chip_at("210px", "360px", "#B23056", "vilan test", $aA, $aB), $aA, $aB), tc_chip_at("78px", "288px", "#8B2786", "vilan-lsp", $aA, $aB), $aA, $aB), tc_chip_at("82px", "142px", "#672283", "vilan upgrade", $aA, $aB), $aA, $aB);
 }
-function df_arrow_to(label, $bc, $bd) {
-	return $m($m(styled(view("div"), df_arrow), text(styled(view("span"), df_arrow_label), label), $bc, $bd), $m($m(styled(view("div"), df_arrow_row), styled(view("div"), dg_line), $bc, $bd), styled(view("div"), arrow_head_right), $bc, $bd), $bc, $bd);
+function df_arrow_to(label, $be, $bf) {
+	return $m($m(styled(view("div"), df_arrow), text(styled(view("span"), df_arrow_label), label), $be, $bf), $m($m(styled(view("div"), df_arrow_row), styled(view("div"), dg_line), $be, $bf), styled(view("div"), arrow_head_right), $be, $bf), $be, $bf);
 }
-function df_node_view(lit, tag, body, $aZ, $ba) {
-	let $bb = null;
+function df_node_view(lit, tag, body, $bb, $bc) {
+	let $bd = null;
 	if (lit) {
-		$bb = df_node_lit;
+		$bd = df_node_lit;
 	} else {
-		$bb = df_node;
+		$bd = df_node;
 	}
-	return $m($m(styled(view("div"), $bb), text(styled(view("p"), df_tag), tag), $aZ, $ba), $m(styled(view("div"), art_code), ln(body), $aZ, $ba), $aZ, $ba);
+	return $m($m(styled(view("div"), $bd), text(styled(view("p"), df_tag), tag), $bb, $bc), $m(styled(view("div"), art_code), ln(body), $bb, $bc), $bb, $bc);
 }
-function dataflow_art($aX, $aY) {
-	return $m($m($m($m($m(styled(view("div"), df_wrap), styled(view("div"), df_blob_a), $aX, $aY), styled(view("div"), df_blob_b), $aX, $aY), grain(), $aX, $aY), $m($m($m($m($m(styled(view("div"), df_row), df_node_view(false, "the write", [ t("count.set("), st("2"), t(")") ], $aX, $aY), $aX, $aY), df_arrow_to("notify", $aX, $aY), $aX, $aY), df_node_view(false, "the signal", [ t("Signal<i32> "), kw("= 2") ], $aX, $aY), $aX, $aY), df_arrow_to("re-set", $aX, $aY), $aX, $aY), df_node_view(true, "the one text node", [ t("<p>clicked "), kw("2"), t(" times</p>") ], $aX, $aY), $aX, $aY), $aX, $aY), text(styled(view("p"), art_caption), "no virtual DOM, no re-render: the subscription updates exactly one node"), $aX, $aY);
+function dataflow_art($aZ, $ba) {
+	return $m($m($m($m($m(styled(view("div"), df_wrap), styled(view("div"), df_blob_a), $aZ, $ba), styled(view("div"), df_blob_b), $aZ, $ba), grain(), $aZ, $ba), $m($m($m($m($m(styled(view("div"), df_row), df_node_view(false, "the write", [ t("count.set("), st("2"), t(")") ], $aZ, $ba), $aZ, $ba), df_arrow_to("notify", $aZ, $ba), $aZ, $ba), df_node_view(false, "the signal", [ t("Signal<i32> "), kw("= 2") ], $aZ, $ba), $aZ, $ba), df_arrow_to("re-set", $aZ, $ba), $aZ, $ba), df_node_view(true, "the one text node", [ t("<p>clicked "), kw("2"), t(" times</p>") ], $aZ, $ba), $aZ, $ba), $aZ, $ba), text(styled(view("p"), art_caption), "no virtual DOM, no re-render: the subscription updates exactly one node"), $aZ, $ba);
 }
 function kw(text2) {
 	return text(styled(view("span"), tk_keyword), text2);
@@ -595,8 +606,8 @@ function code_panel(lines) {
 function leaf(text2) {
 	return text(styled(view("code"), leaf_style), text2);
 }
-function leaf_link(href, text2, $bg, $bh) {
-	return text($O(styled(view("a"), leaf_link_style), "href", href, $bg, $bh), text2);
+function leaf_link(href, text2, $bi, $bj) {
+	return text($Q(styled(view("a"), leaf_link_style), "href", href, $bi, $bj), text2);
 }
 function pt(text2) {
 	return text(view("span"), text2);
@@ -604,20 +615,20 @@ function pt(text2) {
 function bloom($k, $l) {
 	return $m(styled(view("div"), bloom_field), $m($m(styled(view("div"), bloom_drift), $m(styled(view("div"), bloom_blurwrap), styled(view("div"), bloom_gradient), $k, $l), $k, $l), styled(view("div"), bloom_duo), $k, $l), $k, $l);
 }
-function hero($T, $U) {
-	return $m($m($m($m(styled(view("header"), hero_block), text(styled(view("h1"), visually_hidden), "Vilan \u{2014} The Modern Web Language"), $T, $U), $O($O(styled(view("img"), hero_mark), "src", "" + assets + "/dark_logo_flat.svg", $T, $U), "alt", "", $T, $U), $T, $U), $O($O(styled(view("img"), hero_wordmark), "src", "" + assets + "/wordmark_hero.svg", $T, $U), "alt", "VILAN", $T, $U), $T, $U), text($O(styled(view("p"), hero_tagline), "aria-hidden", "true", $T, $U), "The Modern Web Language"), $T, $U);
+function hero($V, $W) {
+	return $m($m($m($m(styled(view("header"), hero_block), text(styled(view("h1"), visually_hidden), "Vilan \u{2014} The Modern Web Language"), $V, $W), $Q($Q(styled(view("img"), hero_mark), "src", "" + assets + "/dark_logo_flat.svg", $V, $W), "alt", "", $V, $W), $V, $W), $Q($Q(styled(view("img"), hero_wordmark), "src", "" + assets + "/wordmark_hero.svg", $V, $W), "alt", "VILAN", $V, $W), $V, $W), text($Q(styled(view("p"), hero_tagline), "aria-hidden", "true", $V, $W), "The Modern Web Language"), $V, $W);
 }
-function masthead($R, $S) {
-	return $m(styled(view("div"), masthead_wrap), hero($R, $S), $R, $S);
+function masthead($T, $U) {
+	return $m(styled(view("div"), masthead_wrap), hero($T, $U), $T, $U);
 }
-function divider($V, $W) {
-	return $m(styled(view("div"), column), styled(view("div"), rule_line), $V, $W);
+function divider($X, $Y) {
+	return $m(styled(view("div"), column), styled(view("div"), rule_line), $X, $Y);
 }
 function grain() {
 	return styled(view("div"), grain_overlay);
 }
 function top_bar(scroll_fade2, $p, $q) {
-	return $m(style_var(styled(view("nav"), topbar), "--nav-fade", scroll_fade2, $p, $q), $m($m(styled(view("div"), add(column, nav_row)), $m($m($O(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $p, $q), $O(styled(view("span"), add(nav_mark, no_drag)), "aria-hidden", "true", $p, $q), $p, $q), text(view("span"), "VILAN"), $p, $q), $p, $q), $m($m($m($m(styled(view("div"), nav_links), text($O(styled(view("a"), nav_link), "href", "/#install", $p, $q), "Install"), $p, $q), text($O(styled(view("a"), nav_link), "href", "/docs/tour/hello-vilan.html", $p, $q), "Learn"), $p, $q), text($O(styled(view("a"), nav_link), "href", "/playground/", $p, $q), "Playground"), $p, $q), text($O(styled(view("a"), nav_link), "href", "/docs/", $p, $q), "Docs"), $p, $q), $p, $q), $p, $q);
+	return $m(style_var(styled(view("nav"), topbar), "--nav-fade", scroll_fade2, $p, $q), $m($m(styled(view("div"), add(column, nav_row)), $m($m($Q(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $p, $q), $Q(styled(view("span"), add(nav_mark, no_drag)), "aria-hidden", "true", $p, $q), $p, $q), text(view("span"), "VILAN"), $p, $q), $p, $q), $m($m($m($m(styled(view("div"), nav_links), text($Q(styled(view("a"), nav_link), "href", "/#install", $p, $q), "Install"), $p, $q), text($Q(styled(view("a"), nav_link), "href", "/docs/tour/hello-vilan.html", $p, $q), "Learn"), $p, $q), text($Q(styled(view("a"), nav_link), "href", "/playground/", $p, $q), "Playground"), $p, $q), text($Q(styled(view("a"), nav_link), "href", "/docs/", $p, $q), "Docs"), $p, $q), $p, $q), $p, $q);
 }
 function $a(value) {
 	let subscribers = [  ];
@@ -644,7 +655,7 @@ function $x(self, observer) {
 		return;
 	} ]);
 	observer($y(self));
-	return [ self[1], id ];
+	return [ self[1], id, __shared_new([ 1 ]) ];
 }
 function $z(self, item, $A) {
 	self[0].v.push(() => {
@@ -656,127 +667,127 @@ function $z(self, item, $A) {
 function $t(self, observer, $u, $v) {
 	$z(get_owner($v), $x(self, observer), $u);
 }
-function $E(self) {
+function $G(self) {
 	let result = [  ];
 	for (const entry of __map_values(self[0])) {
 		result.push(__clone(entry[0]));
 	}
 	return result;
 }
-function $F(self, key) {
-	const $G = __map_get(self[0], hash(key));
-	let $H = null;
-	if ($G[0] === 0) {
-		const entry = $G[1];
-		$H = [ 0, __clone(entry[1]) ];
+function $H(self, key) {
+	const $I = __map_get(self[0], hash(key));
+	let $J = null;
+	if ($I[0] === 0) {
+		const entry = $I[1];
+		$J = [ 0, __clone(entry[1]) ];
 	} else {
-		$H = [ 1 ];
+		$J = [ 1 ];
 	}
-	return $H;
+	return $J;
 }
-function $M(self, key) {
+function $O(self, key) {
 	self[0].delete(hash(key));
 }
-function $N(self, key, value) {
+function $P(self, key, value) {
 	self[0].set(hash(key), [ __clone(key), __clone(value) ]);
 }
-function $O(self, name, value, $P, $Q) {
-	apply(value, self, name, $P, $Q);
+function $Q(self, name, value, $R, $S) {
+	apply(value, self, name, $R, $S);
 	return __clone(self);
 }
-function $ak(self) {
+function $am(self) {
 	return self.length === 0;
 }
-function $al(self) {
+function $an(self) {
 	return __list_get(self, self.length - 1);
 }
-function $ag(self, $ah) {
-	const $ai = $ah;
-	let $aj = null;
-	if ($ai[0] === 0) {
-		const turn = $ai[1];
-		$aj = enqueue(turn, self[1].v);
+function $ai(self, $aj) {
+	const $ak = $aj;
+	let $al = null;
+	if ($ak[0] === 0) {
+		const turn = $ak[1];
+		$al = enqueue(turn, self[1].v);
 	} else {
-		const $am = $al(draining_turns.v);
-		let $an = null;
-		if ($am[0] === 0) {
-			const draining = $am[1];
-			$an = enqueue(draining, self[1].v);
+		const $ao = $an(draining_turns.v);
+		let $ap = null;
+		if ($ao[0] === 0) {
+			const draining = $ao[1];
+			$ap = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$an = undefined;
+			$ap = undefined;
 		}
-		$aj = $an;
+		$al = $ap;
 	}
-	return $aj;
+	return $al;
 }
-function $ae(self, value, $af) {
+function $ag(self, value, $ah) {
 	self[0].v = value;
-	$ag(self, $af);
+	$ai(self, $ah);
 }
-function $av(policy, body) {
+function $ax(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
 	fresh[2].v = true;
 	return result;
 }
-function $aG(value) {
+function $aI(value) {
 	let subscribers = [  ];
 	return [ __shared_new(value), __shared_new(subscribers) ];
 }
-function $aK(self) {
+function $aM(self) {
 	return self[0].v;
 }
-function $aM(self, $ah) {
-	const $aN = $ah;
-	let $aO = null;
-	if ($aN[0] === 0) {
-		const turn = $aN[1];
-		$aO = enqueue(turn, self[1].v);
+function $aO(self, $aj) {
+	const $aP = $aj;
+	let $aQ = null;
+	if ($aP[0] === 0) {
+		const turn = $aP[1];
+		$aQ = enqueue(turn, self[1].v);
 	} else {
-		const $aP = $al(draining_turns.v);
-		let $aQ = null;
-		if ($aP[0] === 0) {
-			const draining = $aP[1];
-			$aQ = enqueue(draining, self[1].v);
+		const $aR = $an(draining_turns.v);
+		let $aS = null;
+		if ($aR[0] === 0) {
+			const draining = $aR[1];
+			$aS = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
 				subscriber[1]();
 			}
-			$aQ = undefined;
+			$aS = undefined;
 		}
-		$aO = $aQ;
+		$aQ = $aS;
 	}
-	return $aO;
+	return $aQ;
 }
-function $aL(self, value, $af) {
+function $aN(self, value, $ah) {
 	self[0].v = value;
-	$aM(self, $af);
+	$aO(self, $ah);
 }
-function $aI(self, transform, $aJ) {
-	$aL(self, transform($aK(self)), $aJ);
+function $aK(self, transform, $aL) {
+	$aN(self, transform($aM(self)), $aL);
 }
-function $aR(self, transform, $aS) {
-	const derived = $a(transform($aK(self)));
+function $aT(self, transform, $aU) {
+	const derived = $a(transform($aM(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$ae(derived, transform($aK(self)), $aS);
+		$ag(derived, transform($aM(self)), $aU);
 		return;
 	} ]);
 	return derived;
 }
-function $bk(self, content, $n, $o) {
+function $bm(self, content, $n, $o) {
 	place2(content, self, $n, $o);
 	return __clone(self);
 }
-function $bI(body) {
+function $bK(body) {
 	const scope = new3();
 	const result = body(scope);
 	return [ result, __clone(scope) ];
 }
-function $bJ(policy, body) {
+function $bL(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
@@ -944,7 +955,7 @@ const probe = document.querySelector("html");
 const reduced_motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const targets = document.querySelectorAll("." + class_list(reveal));
 const viewport = probe.clientHeight;
-let $bL = null;
+let $bN = null;
 if (!(reduced_motion)) {
 	for (const target of targets) {
 		if (target.getBoundingClientRect().top > viewport - 40.0) {
@@ -952,14 +963,14 @@ if (!(reduced_motion)) {
 			target.style.setProperty("transform", "translateY(28px)");
 		}
 	}
-	$bL = undefined;
+	$bN = undefined;
 }
-$bL;
+$bN;
 const publish = () => {
-	return $av([ 1 ], ($bM) => {
+	return $ax([ 1 ], ($bO) => {
 		const progress = Math.max(Math.min(probe.scrollTop / 64.0, 1.0), 0.0);
-		$ae(scroll_fade, "" + progress, [ 0, $bM ]);
-		let $bN = null;
+		$ag(scroll_fade, "" + progress, [ 0, $bO ]);
+		let $bP = null;
 		if (!(reduced_motion)) {
 			const line = probe.clientHeight * 0.92;
 			for (const target2 of targets) {
@@ -969,9 +980,9 @@ const publish = () => {
 					target2.style.setProperty("transform", "none");
 				}
 			}
-			$bN = undefined;
+			$bP = undefined;
 		}
-		return $bN;
+		return $bP;
 	});
 };
 publish();
