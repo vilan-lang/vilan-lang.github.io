@@ -367,11 +367,11 @@ function mount(id, view2) {
 	element.appendChild(view2[0]);
 }
 function mount_root(id, body) {
-	const $bH = $bG([ 1 ], ($bE) => {
-		return $bF(body);
+	const $bI = $bH([ 1 ], ($bF) => {
+		return $bG(body);
 	});
-	const built = $bH[0];
-	const root = $bH[1];
+	const built = $bI[0];
+	const root = $bI[1];
 	mount(id, built);
 	if (__hmr_active()) {
 		const element = document.getElementById(id);
@@ -464,22 +464,6 @@ function add(self, b) {
 	}
 	return [ __clone(rules) ];
 }
-function eq(self, other) {
-	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2] && self[3] === other[3] && self[4] === other[4] && self[5] === other[5] && self[6] === other[6] && same_trace(self[7], other[7]);
-}
-function same_trace(left, right) {
-	if (left.length !== right.length) {
-		return false;
-	}
-	let index = 0;
-	for (const hop of left) {
-		if (!(eq2(hop, __at(right, index)))) {
-			return false;
-		}
-		index = index + 1;
-	}
-	return true;
-}
 function template_option(value, label, $aG, $aH) {
 	return text($aa(view("option"), "value", value, $aG, $aH), label);
 }
@@ -539,14 +523,14 @@ function diagnostic_row(row, $ba, $bb) {
 	return $bg;
 }
 function console_row(row) {
-	const $bx = row[1];
-	let $by = null;
-	if ($bx === "error") {
-		$by = text(styled(view("div"), console_error), row[2]);
+	const $by = row[1];
+	let $bz = null;
+	if ($by === "error") {
+		$bz = text(styled(view("div"), console_error), row[2]);
 	} else {
-		$by = text(styled(view("div"), console_line), row[2]);
+		$bz = text(styled(view("div"), console_line), row[2]);
 	}
-	return $by;
+	return $bz;
 }
 function playground_page(status2, diagnostics2, console_lines2, can_format2, can_platform2, share_label2, mode2, modified_from2, confirm_target2, run2, format2, share2, confirm_replace2, cancel_replace2, $J, $K) {
 	return $ad($ad(styled(view("div"), add(add(shell, app_fill), code_palette)), $ad($ad($ad($ad($ad($ad($ad($ad($ad($ad($ad(styled(view("header"), app_bar), $ad($ad($aa(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $J, $K), $aa(styled(view("span"), add(nav_mark, no_drag)), "aria-hidden", "true", $J, $K), $J, $K), text(view("span"), "VILAN"), $J, $K), $J, $K), text(styled(view("h1"), page_title), "Playground"), $J, $K), styled(view("div"), rail_divider), $J, $K), on(bind_text(styled(view("button"), primary_button), $ai(mode2, (current) => {
@@ -587,13 +571,16 @@ function playground_page(status2, diagnostics2, console_lines2, can_format2, can
 		return row[0];
 	}, (row, $aZ) => {
 		return diagnostic_row(row, $J, $aZ);
-	}, $J, $K), $J, $K), $J, $K), $J, $K), $ad($ad(styled(view("div"), panel), $ad(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Console"), $J, $K), $J, $K), $ad($ad(styled(view("pre"), report_well), show(text(styled(view("div"), quiet_row), "Program output lands here."), $bu(console_lines2, (rows) => {
+	}, $J, $K), $J, $K), $J, $K), $J, $K), $ad($ad(styled(view("div"), panel), $ad(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Console"), $J, $K), $J, $K), $ad($ad(styled(view("pre"), report_well), show(text(styled(view("div"), quiet_row), "Program output lands here."), $bv(console_lines2, (rows) => {
 		return rows.length === 0;
-	}, $J), $J, $K), $J, $K), $bz(view("div"), console_lines2, (row) => {
+	}, $J), $J, $K), $J, $K), $bA(view("div"), console_lines2, (row) => {
 		return row[0];
-	}, (row, $bw) => {
+	}, (row, $bx) => {
 		return console_row(row);
 	}, $J, $K), $J, $K), $J, $K), $J, $K), $J, $K);
+}
+function eq(self, other) {
+	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2] && self[3] === other[3] && self[4] === other[4] && self[5] === other[5] && self[6] === other[6] && $bl(self[7], other[7]);
 }
 function eq2(self, other) {
 	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2] && self[3] === other[3] && self[4] === other[4];
@@ -833,6 +820,19 @@ function $aX(self, transform, $aj) {
 	} ]);
 	return derived;
 }
+function $bl(self, b) {
+	if (self.length !== b.length) {
+		return false;
+	}
+	let index = 0;
+	for (const item of self) {
+		if (!(eq2(item, __at(b, index)))) {
+			return false;
+		}
+		index = index + 1;
+	}
+	return true;
+}
 function $bk(old_keys, old_items, items, key_of) {
 	let claimed = [  ];
 	for (const _ of old_keys) {
@@ -846,13 +846,13 @@ function $bk(old_keys, old_items, items, key_of) {
 		while (index < old_keys.length) {
 			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
 				__at_put(claimed, index, true);
-				let $bl = null;
+				let $bm = null;
 				if (eq(__at(old_items, index), item)) {
-					$bl = [ 0, index ];
+					$bm = [ 0, index ];
 				} else {
-					$bl = [ 1, index ];
+					$bm = [ 1, index ];
 				}
-				step = $bl;
+				step = $bm;
 				break;
 			}
 			index = index + 1;
@@ -869,23 +869,23 @@ function $bk(old_keys, old_items, items, key_of) {
 	}
 	return [ __clone(steps), __clone(removed) ];
 }
-function $bp(owner, body) {
+function $bq(owner, body) {
 	return body(owner);
 }
-function $bt(self) {
+function $bu(self) {
 	return self[0].v;
 }
-function $bs(self, observer) {
+function $bt(self, observer) {
 	const id = fresh_id();
 	self[1].v.push([ id, () => {
-		observer($bt(self));
+		observer($bu(self));
 		return;
 	} ]);
-	observer($bt(self));
+	observer($bu(self));
 	return [ self[1], id, __shared_new([ 1 ]) ];
 }
-function $br(self, observer, $an, $ao) {
-	$ar(get_owner($ao), $bs(self, observer), $an);
+function $bs(self, observer, $an, $ao) {
+	$ar(get_owner($ao), $bt(self, observer), $an);
 }
 function $bh(self, source, key, render, $bi, $bj) {
 	const element = __clone(self[0]);
@@ -899,7 +899,7 @@ function $bh(self, source, key, render, $bi, $bj) {
 		}
 		return;
 	});
-	$br(source, (list) => {
+	$bs(source, (list) => {
 		const plan = $bk(row_keys.v, row_items.v, list, key);
 		const previous_views = row_views.v;
 		const previous_owners = row_owners.v;
@@ -912,32 +912,32 @@ function $bh(self, source, key, render, $bi, $bj) {
 		let position = 0;
 		for (const step of plan[0]) {
 			const item = __clone(__at(list, position));
-			const $bm = step;
-			let $bn = null;
-			if ($bm[0] === 0) {
-				const index2 = $bm[1];
+			const $bn = step;
+			let $bo = null;
+			if ($bn[0] === 0) {
+				const index2 = $bn[1];
 				next_views.push(__clone(__at(previous_views, index2)));
 				next_owners.push(__clone(__at(previous_owners, index2)));
-				$bn = undefined;
-			} else if ($bm[0] === 1) {
-				const index3 = $bm[1];
+				$bo = undefined;
+			} else if ($bn[0] === 1) {
+				const index3 = $bn[1];
 				dispose2(__at(previous_owners, index3));
 				__at(previous_views, index3)[0].remove();
 				const owner = new3();
-				next_views.push($bp(owner, ($bo) => {
-					return render(item, $bo);
+				next_views.push($bq(owner, ($bp) => {
+					return render(item, $bp);
 				}));
 				next_owners.push(__clone(owner));
-				$bn = undefined;
+				$bo = undefined;
 			} else {
 				const owner2 = new3();
-				next_views.push($bp(owner2, ($bq) => {
-					return render(item, $bq);
+				next_views.push($bq(owner2, ($br) => {
+					return render(item, $br);
 				}));
 				next_owners.push(__clone(owner2));
-				$bn = undefined;
+				$bo = undefined;
 			}
-			$bn;
+			$bo;
 			position = position + 1;
 		}
 		for (const row of next_views) {
@@ -955,18 +955,18 @@ function $bh(self, source, key, render, $bi, $bj) {
 	}, $bi, $bj);
 	return __clone(self);
 }
-function $bv(self) {
+function $bw(self) {
 	return self[0].v;
 }
-function $bu(self, transform, $aj) {
-	const derived = $c(transform($bv(self)));
+function $bv(self, transform, $aj) {
+	const derived = $c(transform($bw(self)));
 	self[1].v.push([ fresh_id(), () => {
-		$aP(derived, transform($bv(self)), $aj);
+		$aP(derived, transform($bw(self)), $aj);
 		return;
 	} ]);
 	return derived;
 }
-function $bA(old_keys, old_items, items, key_of) {
+function $bB(old_keys, old_items, items, key_of) {
 	let claimed = [  ];
 	for (const _ of old_keys) {
 		claimed.push(false);
@@ -979,13 +979,13 @@ function $bA(old_keys, old_items, items, key_of) {
 		while (index < old_keys.length) {
 			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
 				__at_put(claimed, index, true);
-				let $bB = null;
+				let $bC = null;
 				if (eq3(__at(old_items, index), item)) {
-					$bB = [ 0, index ];
+					$bC = [ 0, index ];
 				} else {
-					$bB = [ 1, index ];
+					$bC = [ 1, index ];
 				}
-				step = $bB;
+				step = $bC;
 				break;
 			}
 			index = index + 1;
@@ -1002,7 +1002,7 @@ function $bA(old_keys, old_items, items, key_of) {
 	}
 	return [ __clone(steps), __clone(removed) ];
 }
-function $bz(self, source, key, render, $bi, $bj) {
+function $bA(self, source, key, render, $bi, $bj) {
 	const element = __clone(self[0]);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
@@ -1014,8 +1014,8 @@ function $bz(self, source, key, render, $bi, $bj) {
 		}
 		return;
 	});
-	$br(source, (list) => {
-		const plan = $bA(row_keys.v, row_items.v, list, key);
+	$bs(source, (list) => {
+		const plan = $bB(row_keys.v, row_items.v, list, key);
 		const previous_views = row_views.v;
 		const previous_owners = row_owners.v;
 		for (const index of plan[1]) {
@@ -1027,32 +1027,32 @@ function $bz(self, source, key, render, $bi, $bj) {
 		let position = 0;
 		for (const step of plan[0]) {
 			const item = __clone(__at(list, position));
-			const $bC = step;
-			let $bD = null;
-			if ($bC[0] === 0) {
-				const index2 = $bC[1];
+			const $bD = step;
+			let $bE = null;
+			if ($bD[0] === 0) {
+				const index2 = $bD[1];
 				next_views.push(__clone(__at(previous_views, index2)));
 				next_owners.push(__clone(__at(previous_owners, index2)));
-				$bD = undefined;
-			} else if ($bC[0] === 1) {
-				const index3 = $bC[1];
+				$bE = undefined;
+			} else if ($bD[0] === 1) {
+				const index3 = $bD[1];
 				dispose2(__at(previous_owners, index3));
 				__at(previous_views, index3)[0].remove();
 				const owner = new3();
-				next_views.push($bp(owner, ($bo) => {
-					return render(item, $bo);
+				next_views.push($bq(owner, ($bp) => {
+					return render(item, $bp);
 				}));
 				next_owners.push(__clone(owner));
-				$bD = undefined;
+				$bE = undefined;
 			} else {
 				const owner2 = new3();
-				next_views.push($bp(owner2, ($bq) => {
-					return render(item, $bq);
+				next_views.push($bq(owner2, ($br) => {
+					return render(item, $br);
 				}));
 				next_owners.push(__clone(owner2));
-				$bD = undefined;
+				$bE = undefined;
 			}
-			$bD;
+			$bE;
 			position = position + 1;
 		}
 		for (const row of next_views) {
@@ -1070,20 +1070,20 @@ function $bz(self, source, key, render, $bi, $bj) {
 	}, $bi, $bj);
 	return __clone(self);
 }
-function $bF(body) {
+function $bG(body) {
 	const scope = new3();
 	const result = body(scope);
 	return [ result, __clone(scope) ];
 }
-function $bG(policy, body) {
+function $bH(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
 	fresh[2].v = true;
 	return result;
 }
-function $bL(self, transform, $bM) {
-	$v(self, transform($bv(self)), $bM);
+function $bM(self, transform, $bN) {
+	$v(self, transform($bw(self)), $bN);
 }
 const next_subscriber_id = __shared_new(0);
 const draining_turns = __shared_new([  ]);
@@ -1238,7 +1238,7 @@ mount_root("app", ($I) => {
 VilanPlayground.init("#editor", VilanPlayground.example("counter"));
 VilanPlayground.startCompiler((event) => {
 	const kind = event.kind;
-	let $bI = null;
+	let $bJ = null;
 	if (kind === "ready") {
 		$aP(can_format, event.canFormat, [ 1 ]);
 		$aP(can_platform, event.canPlatform, [ 1 ]);
@@ -1257,7 +1257,7 @@ VilanPlayground.startCompiler((event) => {
 		if (!(event.changed)) {
 			$d(confirm_target, "", [ 1 ]);
 		}
-		$bI = undefined;
+		$bJ = undefined;
 	} else if (kind === "command") {
 		const command = event.command;
 		if (command === "run") {
@@ -1269,14 +1269,14 @@ VilanPlayground.startCompiler((event) => {
 		} else if (command === "mode") {
 			$d(mode, event.name, [ 1 ]);
 		}
-		$bI = undefined;
+		$bJ = undefined;
 	} else if (kind === "formatted") {
 		if (event.changed) {
 			$d(status, "Formatted.", [ 1 ]);
 		} else {
 			$d(status, "Format made no changes.", [ 1 ]);
 		}
-		$bI = undefined;
+		$bJ = undefined;
 	} else if (kind === "shared") {
 		if (event.copied) {
 			$d(status, "Link copied to the clipboard.", [ 1 ]);
@@ -1285,33 +1285,33 @@ VilanPlayground.startCompiler((event) => {
 			$d(status, "Link ready in the address bar.", [ 1 ]);
 			flash_share("Link ready");
 		}
-		$bI = undefined;
+		$bJ = undefined;
 	} else if (kind === "checked") {
 		const count = apply_diagnostics(event);
-		let $bJ = null;
+		let $bK = null;
 		if (event.ok) {
 			if (event.platform === "node") {
 				$d(status, "No problems (server check, vilan " + event.version + ").", [ 1 ]);
 			} else {
 				$d(status, "No problems (vilan " + event.version + ").", [ 1 ]);
 			}
-			$bJ = undefined;
+			$bK = undefined;
 		} else if (count === 1) {
 			$d(status, "1 problem; see the diagnostics.", [ 1 ]);
 		} else {
 			$d(status, "" + count + " problems; see the diagnostics.", [ 1 ]);
 		}
-		$bI = $bJ;
+		$bJ = $bK;
 	} else if (kind === "result") {
 		apply_diagnostics(event);
-		let $bK = null;
+		let $bL = null;
 		if (event.platform === "node") {
 			if (event.ok) {
 				$d(status, "Server program checks clean (vilan " + event.version + ").", [ 1 ]);
 			} else {
 				$d(status, "Build failed; see the diagnostics.", [ 1 ]);
 			}
-			$bK = undefined;
+			$bL = undefined;
 		} else {
 			$v(console_lines, [  ], [ 1 ]);
 			if (event.ok) {
@@ -1321,19 +1321,19 @@ VilanPlayground.startCompiler((event) => {
 				$d(status, "Build failed; see the diagnostics.", [ 1 ]);
 				VilanPlayground.clearProgram();
 			}
-			$bK = undefined;
+			$bL = undefined;
 		}
-		$bI = $bK;
+		$bJ = $bL;
 	} else if (kind === "crash") {
 		$d(status, "The compiler crashed on this input; it has been restarted. Please report the program that did it.", [ 1 ]);
 	}
-	return $bI;
+	return $bJ;
 });
 window.addEventListener("message", (host_event) => {
 	const message = host_event.data;
 	const kind = message.kind;
 	if (kind === "log" || kind === "error") {
-		$bL(console_lines, (lines) => {
+		$bM(console_lines, (lines) => {
 			let next = __clone(lines);
 			if (next.length < console_cap) {
 				const id = next_row_id.v;
