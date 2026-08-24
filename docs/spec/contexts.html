@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -273,12 +273,18 @@ exempt (it cannot run uncovered); a function called from top level, or
 taken as a value, is entered without the value and is never covered,
 whatever its other callers.</p>
 <p>The error anchors at <strong>your code</strong>. A strict read you wrote reports at
-that read. A strict read that sits inside a standard-library helper —
-<code>effect</code>, <code>map</code>, and <code>or</code> all reach the ambient owner through one read
-in <code>std::reactive</code> — reports at each of your calls that enters
-the library on an uncovered path, one error per call (a call inside a
-covering <code>run</code> is never blamed), with a secondary note pointing at the
-library-internal read it reaches.</p>
+that read — anywhere in your workspace: an imported sibling module, or
+a member package your workspace root’s <code>[project] packages</code> declares
+(membership is that declaration, never where a directory happens to
+live). A strict read that sits inside <strong>library code</strong> — a
+standard-library helper (<code>effect</code>, <code>map</code>, and <code>or</code> all reach the
+ambient owner through one read in <code>std::reactive</code>), or an external
+dependency package’s function (a git dependency, or a path dependency
+that is not a declared member) — reports at each of your calls that
+enters the library on an uncovered path, one error per call (a call
+inside a covering <code>run</code> is never blamed), with a secondary note
+pointing at the library-internal read it reaches, in the library’s own
+file. Library-internal calls never carry labels of their own.</p>
 <p>The error also shows the <strong>whole uncovered path</strong>, not just its
 endpoint: every call of yours between the program’s entry and the
 anchor carries its own label (“the context requirement flows through
@@ -419,7 +425,7 @@ language rules; they are specified by their reference pages.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

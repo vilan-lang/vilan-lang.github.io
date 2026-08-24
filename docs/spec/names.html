@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -194,13 +194,16 @@ own package). The namespaces are disjoint: resolution is scoped by the
 root segment, so a package is free to name a module <code>ui</code> or <code>json</code> even
 though std has one: <code>pkg::ui</code> is always the package’s own module,
 <code>std::ui</code> always std’s, and neither shadows the other. (Conversely,
-<code>pkg::</code> never reaches a std module.) A module name that resolves both as
-<code>name.vl</code> and <code>name/lib.vl</code> is an <strong>ambiguity error</strong>.</p>
+<code>pkg::</code> never reaches a std module.) The root names themselves are
+<strong>reserved</strong>: a manifest may not declare a dependency — or a
+<code>[package] name</code> — as <code>std</code>, <code>pkg</code>, or <code>macro_std</code> (§11.4), so no
+package can shadow a root or vanish behind one. A module name that
+resolves both as <code>name.vl</code> and <code>name/lib.vl</code> is an <strong>ambiguity error</strong>.</p>
 <p>A module name must match the on-disk directory entry <strong>byte for byte</strong>: a
 case-insensitive filesystem that answers <code>import foo</code> with <code>Foo.vl</code> is a
 <strong>diagnostic naming both spellings</strong>, not a resolution, so that a program
 compiles identically on case-sensitive and case-insensitive filesystems
-(<a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/windows-support.md">design notes</a> §5). Every component of the resolved path
+(<a href="https://github.com/vilan-lang/proposals/blob/main/proposal/windows-support.md">design notes</a> §5). Every component of the resolved path
 carries the rule, so <code>foo/lib.vl</code> is reached by <code>import foo</code> only when the
 directory is spelled <code>foo</code>.</p>
 <h2 id="43-imports"><a class="header" href="#43-imports">4.3 Imports</a></h2>
@@ -377,7 +380,7 @@ must be imported. (The exact prelude is the lang-item table, appendix
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

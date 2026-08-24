@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -651,11 +651,16 @@ The most common first UI error: you built reactive state (an <code>effect</code>
 binding) outside every ownership boundary. Wrap the entry point in
 <code>mount_root</code>, or <code>run_with_owner</code> in a test. The error points at your
 <code>effect</code>/<code>map</code>/<code>or</code> call; the note under it shows the read inside the
-standard library that your call reaches, and every call of yours on the
+library — the standard library, or an external dependency package your
+code calls — that your call reaches, and every call of yours on the
 uncovered path above it is underlined too (“the context requirement
 flows through this call”) — follow the chain up to where the ownership
 boundary belongs. Calls inside a covering <code>run</code> are clean and never
-appear in the chain.
+appear in the chain, and an external package’s internal calls are never
+underlined: the error always lands on code you wrote. (Your own
+workspace is yours: a member package your project root’s <code>packages</code>
+declares reports exactly like your entry’s modules — the read anchors
+at itself, in the member’s file.)
 → <a href="../guide/ui.html">Building UI</a>, <a href="../guide/reactive.html">Reactive state</a></p>
 <p><strong>“<code>…</code> reads context <code>…</code>, so it can’t be used as a value”</strong>
 A function that reads an ambient context (like the current owner) can’t
@@ -672,6 +677,14 @@ The call returns something that stops working if you drop it (a
 <code>Subscription</code>, typically). Keep it, hand it to an owner, or discard it
 on purpose with <code>let _ = …</code>.
 → <a href="../guide/reactive.html">Reactive state</a></p>
+<p><strong>“<code>…</code> is deprecated; use …”</strong> <em>(a warning)</em>
+The named function still works — this never fails a build — but it is
+marked <code>[deprecated]</code> and scheduled for removal, no earlier than the
+minor release <em>after</em> this warning first shipped. The message names the
+replacement; switch to it at each warned use site. The removal itself,
+when it comes, is announced under the CHANGELOG’s Breaking entries with
+migration notes.
+→ <a href="../spec/grammar.html">spec §3.3</a> for the attribute</p>
 <h2 id="wire-and-rpc"><a class="header" href="#wire-and-rpc">Wire and rpc</a></h2>
 <p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> type <code>…</code> is <code>…</code>, which is not Wire: …”</strong>
 Something unserializable (a closure, a <code>Signal</code>) is inside a payload
@@ -847,7 +860,7 @@ page, <code>check_shell</code> catches the same mismatch at boot.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

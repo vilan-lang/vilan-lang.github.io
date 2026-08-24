@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,8 +178,8 @@ sharing mechanism (views, projections, <code>Shared</code>, <code>Arena</code>/<
 resource class, §6.8) is a <em>claim</em> on an owner, and all of them obey the
 one law stated in §6.0. The numbered sections that follow are that law’s
 projections: the four rules (design:
-<a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/memory-management-rev-1.md">the design notes</a>), the escape hatches, and resources
-(design: <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/claims-and-epochs.md">claims and epochs</a>, <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/destruction.md">destruction</a>). Rules
+<a href="https://github.com/vilan-lang/proposals/blob/main/archive/memory-management-rev-1.md">the design notes</a>), the escape hatches, and resources
+(design: <a href="https://github.com/vilan-lang/proposals/blob/main/proposal/claims-and-epochs.md">claims and epochs</a>, <a href="https://github.com/vilan-lang/proposals/blob/main/proposal/destruction.md">destruction</a>). Rules
 1–3 and rule 4’s static half are normative and enforced; rule 4’s dynamic
 remainder is future work, marked below.</p>
 <h2 id="60-the-law--owners-epochs-and-claims"><a class="header" href="#60-the-law--owners-epochs-and-claims">6.0 The law — owners, epochs, and claims</a></h2>
@@ -526,7 +526,7 @@ cell under another live view traps, while overlapping writes through the
 cell do not (the reconciled trap law of §6.0; a <code>write</code> view is <em>not</em>
 exclusive). See <a href="../std/cells.html">cells</a>.</p>
 <h2 id="68-resources-and-destruction"><a class="header" href="#68-resources-and-destruction">6.8 Resources and destruction</a></h2>
-<p><em>(Design: <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/destruction.md">destruction</a>.)</em> Rule 1 copies values, and a
+<p><em>(Design: <a href="https://github.com/vilan-lang/proposals/blob/main/proposal/destruction.md">destruction</a>.)</em> Rule 1 copies values, and a
 droppable value cannot survive copying: a copied file handle double-closes,
 a copied refcount miscounts. Destruction is therefore not bolted onto the
 data world: the world is partitioned. <strong>Data</strong> is everything above: copied
@@ -944,7 +944,7 @@ global move is not scanned (benign, since module globals never drop).</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

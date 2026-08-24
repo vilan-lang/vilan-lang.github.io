@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -229,7 +229,7 @@ impl Signal&lt;Signal&lt;type U&gt;&gt; {
 outside any turn it notifies immediately.</li>
 <li><code>update</code> mutates the <strong>stored</strong> value through a writable view and notifies
 once, unconditionally, after the closure returns — the collection door
-(<a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/signal-update.md">design notes</a>). It shares <code>set</code>’s notify half, so batching,
+(<a href="https://github.com/vilan-lang/proposals/blob/main/proposal/signal-update.md">design notes</a>). It shares <code>set</code>’s notify half, so batching,
 drain affinity, and dedup behave identically. A read from <em>inside</em> the
 closure sees the in-progress value; a re-entrant <code>update</code> of the same
 signal is unsupported.</li>
@@ -385,7 +385,7 @@ unsafe for the one-shot <em>actions</em> this cell is for. The rollback is the
 recovery; the user re-issues the action.</p>
 <p>A cell over a <strong>mirrored</strong> signal is out of scope for now — the mirror writes
 behind the cell’s back, so its confirmed value goes stale. Wrap a local
-signal (<a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/optimistic-lifecycle.md">design notes</a> §8).</p>
+signal (<a href="https://github.com/vilan-lang/proposals/blob/main/proposal/optimistic-lifecycle.md">design notes</a> §8).</p>
 <h2 id="draft--local-first-cells"><a class="header" href="#draft--local-first-cells">Draft — local-first cells</a></h2>
 <pre><code class="language-vilan fragment">enum DraftState {
 	Synced,       // local matches the last pushed/adopted value
@@ -527,7 +527,7 @@ list-rendering primitive.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

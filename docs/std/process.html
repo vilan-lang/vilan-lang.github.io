@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -399,6 +399,7 @@ impl Document {
 	fun from_shell(shell: str, build: LegBuild): Result&lt;Document, List&lt;ShellFault&gt;&gt;
 
 	fun title(own self, title: str): Document
+	fun description(own self, text: str): Document        // &lt;meta name="description"&gt;
 	fun lang(own self, lang: str): Document
 	fun mount(own self, id: str): Document                // the other end of mount_root
 	fun head(own self, markup: str): Document             // raw, appended inside &lt;head&gt;
@@ -461,10 +462,11 @@ script’s own string is not a mount element.</p>
 <p><strong><code>Document::of(build)</code> writes the document instead.</strong> Same value, same
 rules — every document it can produce passes <code>check_shell</code>, which is what
 keeps the generator and the checker from drifting apart. It emits a
-doctype, <code>&lt;html lang&gt;</code>, charset, viewport, <code>&lt;title&gt;</code>, the stylesheet link
-<em>if and only if</em> the build emitted styles, the mount element, and the
-bundle’s script tag in the form the build requires (a classic script for a
-leg that splits, since chunk resolution reads <code>document.currentScript</code>):</p>
+doctype, <code>&lt;html lang&gt;</code>, charset, viewport, <code>&lt;title&gt;</code>, the description meta
+<em>if one was given</em>, the stylesheet link <em>if and only if</em> the build emitted
+styles, the mount element, and the bundle’s script tag in the form the
+build requires (a classic script for a leg that splits, since chunk
+resolution reads <code>document.currentScript</code>):</p>
 <pre><code class="language-vilan norun">import std::build::require_build;
 import std::document::Document;
 import std::http::{ Response, Server };
@@ -473,6 +475,7 @@ async fun main() {
 	let build = require_build("client");
 	let page = Document::of(build)
 		.title("Notes")
+		.description("A tidy list of everything you meant to do.")
 		.head("&lt;style&gt;body { font: 16px/1.5 system-ui; }&lt;/style&gt;")
 		.html();
 
@@ -484,14 +487,22 @@ async fun main() {
 		.start();
 }
 </code></pre>
+<p><code>title</code> and <code>description</code> are the two <em>identity lines</em> — head matter the
+document is the sole author of, so escaping is the only thing that can go
+wrong and the document does it. Both shape the generated document only: a
+supplied shell’s identity lines are the shell’s own. Everything in the
+<code>&lt;head&gt;</code> that names a second party the build cannot see — a file (a
+favicon), an address (<code>og:url</code>), a palette (<code>theme-color</code>) — stays a
+<code>head()</code> call, where the raw markup says what it is.</p>
 <p><code>head</code>/<code>body</code> take raw markup and append (a favicon, an <code>og:</code> tag, a CSP,
 a <code>&lt;noscript&gt;</code>), which is what keeps the generated document small enough
-to be worth having: everything else is derived. They work on a supplied
-shell too (<code>require_shell</code>, <code>from_shell</code>): <code>head()</code> markup splices in
-immediately before the shell’s own <code>&lt;/head&gt;</code>, <code>body()</code>’s immediately
-before its <code>&lt;/body&gt;</code> — and a shell that lacks the closing tag a used
-hatch needs stops at <code>html()</code> rather than having the markup guessed into
-it. They are an escape hatch, not an exemption — when <code>html()</code> writes the
+to be worth having: everything else is derived. They are repeatable, and
+each call lands on its own line of the written page, so a hatch reads
+naturally used once per item. They work on a supplied shell too
+(<code>require_shell</code>, <code>from_shell</code>): <code>head()</code> markup splices in immediately
+before the shell’s own <code>&lt;/head&gt;</code>, <code>body()</code>’s immediately before its
+<code>&lt;/body&gt;</code> — and a shell that lacks the closing tag a used hatch needs
+stops at <code>html()</code> rather than having the markup guessed into it. They are an escape hatch, not an exemption — when <code>html()</code> writes the
 page, markup you added there is checked like any other, so a <code>&lt;link&gt;</code> to
 a stylesheet the build did not emit stops the boot exactly as it would in
 a hand-written shell. A document with no hatch markup runs no check at
@@ -606,7 +617,7 @@ fun main() {
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

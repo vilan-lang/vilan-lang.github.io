@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -205,6 +205,9 @@ impl List&lt;type T: PartialEq&gt; {
 	fun contains(self, value: T): bool
 	fun index_of(self, value: T): Option&lt;i32&gt;
 }
+impl List&lt;type T: PartialEq&gt; with PartialEq {
+	fun eq(self, b: List&lt;T&gt;): bool           // element-wise, length first
+}
 impl List&lt;type T: Display&gt; { fun join(self, separator: str): str }
 </code></pre>
 <p>Indexing is <code>list[i]</code>; iterate with <code>for item in list</code> (copies) or
@@ -245,9 +248,13 @@ fun main() {
 	print(lengths.sum());
 }
 </code></pre>
-<h3 id="searching"><a class="header" href="#searching">Searching</a></h3>
+<h3 id="searching--equality"><a class="header" href="#searching--equality">Searching &amp; equality</a></h3>
 <p><code>find</code> takes a predicate and short-circuits; <code>contains</code> and <code>index_of</code> take a
 value and need <code>T: PartialEq</code>. Missing answers are <code>None</code>, never a panic.</p>
+<p>A <code>List&lt;T: PartialEq&gt;</code> is itself <code>PartialEq</code>: <code>==</code> compares element-wise,
+length first. Because the impl is conditional, lists nest
+(<code>List&lt;List&lt;i32&gt;&gt;</code> compares through its elements) and a struct holding a
+<code>List</code> field can <code>[derive(PartialEq)]</code>.</p>
 <pre><code class="language-vilan">import std::print;
 
 fun main() {
@@ -256,6 +263,8 @@ fun main() {
 	print(scores.contains(65));                   // true
 	print(scores.index_of(65).unwrap_or(-1));     // 2
 	print(scores.index_of(7).is_none());          // true
+	print(scores == [40, 91, 65]);                // true
+	print(scores == [40, 91]);                    // false — length first
 }
 </code></pre>
 <h3 id="ordering"><a class="header" href="#ordering">Ordering</a></h3>
@@ -764,7 +773,7 @@ makes with <code>Display</code>. A repeated key in <code>to_map</code> keeps the
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

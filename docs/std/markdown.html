@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§7 Execution &amp; async - The Vilan documentation</title>
+        <title>Markdown - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -172,294 +172,174 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="spec-7--execution--async"><a class="header" href="#spec-7--execution--async">Spec §7 — Execution &amp; async</a></h1>
-<h2 id="71-program-start-and-termination"><a class="header" href="#71-program-start-and-termination">7.1 Program start and termination</a></h2>
-<p>A program’s entry module executes its top-level statements in order. A
-function named <code>main</code> at the entry module’s top level is the
-<strong>entrypoint</strong>: it is invoked automatically after the top-level
-statements. (An explicit top-level <code>main();</code> call is redundant; the
-program still runs <code>main</code> once.)</p>
-<p><strong>Module-level bindings initialize before <code>main</code>, in dependency order.</strong>
-A binding’s initializer runs after the initializer of every binding it
-<strong>evaluates at load time</strong>: the bindings its own initializer reads, and
-everything read inside whatever it calls while initializing. <em>Creating</em> a
-closure evaluates nothing: a closure body runs only when something calls
-it, so the bindings it mentions order nothing (two module-level closures
-may name each other freely). Textual position carries no meaning: a
-binding may read one declared below it, in the same file or another,
-exactly as a function may call one declared later (§4.4). A <strong>cycle</strong> in
-that relation is a compile error, since no order satisfies it, including
-the one-binding cycle of an initializer that reads itself. A <code>const</code>
-initializer evaluates during compilation (§9), so it evaluates nothing at
-load time and waits for nothing; a binding that reads <em>it</em> still
-initializes after it.</p>
-<p>Where the relation leaves two bindings unordered, the one whose module
-loaded first initializes first. Modules load in a canonical order: the
-standard library’s first, then the dependency packages’ (each package
-after the packages it depends on, in an order the dependency graph fixes
-rather than the manifest’s listing), then the program’s own; within one
-package, modules load by name. Each package’s root module follows, in
-that same package order, and the entry file is last. Within one file,
-bindings initialize in declaration order. Nothing here depends on how a
-file spells its imports, so reordering import statements, or the names
-inside a <code>{ .. }</code> list, cannot change what a program does.</p>
-<p><strong>Module initialization is synchronous.</strong> An initializer may not
-suspend: an <code>await</code> reachable in a module-level binding’s own
-initializer is a compile error, in every spelling — the implicit await
-of a call to an async function, and the explicit <code>await</code> whatever its
-operand (a <code>Task</code>-valued binding, a spawn, a <code>Task</code> returned by a plain
-function). This is a design position, not a limit of the emission
-model. The order above is <em>derived</em> from the dependency relation, and
-suspending a derived sequence makes one binding’s completion wait on an
-ordering the program never wrote and cannot see.</p>
-<p><em>Spawning</em> at module level stays legal, and is the idiom the rule
-steers to: <code>let pending: Task&lt;T&gt; = async work();</code> starts the work at
-load without suspending, and <code>main</code> — which may be <code>async</code> — awaits it
-where the wait is visible. Independent spawns overlap, where a sequence
-of awaited initializers would serialize. Creating an async closure or
-an <code>async { .. }</code> block is legal for the same reason: the body is not
-the initializer, and nothing runs it at load.</p>
-<p>Only a binding something reachable from <code>main</code> references initializes at
-all (§11.2’s reachability rule): an unreferenced binding’s initializer
-never runs, so load-time side effects are not a promise.</p>
-<p>On process platforms (Node/Deno/Bun), the process <strong>exits when no live
-work remains</strong>: after <code>main</code> completes, only live host handles (a
-running timer, an open socket, a listening server) keep it alive, per
-the host event loop. Pending tasks holding such a handle run to
-completion; pending work that holds none is abandoned at exit. A
-program must therefore not rely on a dropped spawn completing (join it,
-§7.7, to guarantee that), and a long-lived program must keep <code>main</code>
-open (a listening server does so inherently; a socket-holding client
-must await something that ends with the app). On the browser platform,
-<code>main</code>’s completion leaves installed handlers and subscriptions live.</p>
-<p><code>panic(message)</code> aborts execution with the message; it types as <code>any</code>
-(§5.1). Failed <code>assert</code>s panic.</p>
-<p><strong>A failing <code>main</code> terminates with a non-zero status</strong>, whether <code>main</code>
-is sync or <code>async</code>. A panic that escapes a sync <code>main</code> aborts the
-process; an <code>async fun main()</code> whose work fails reports the error and
-exits non-zero on the process platforms, rather than leaving the
-outcome to the host’s unhandled-rejection policy. Attaching that
-outcome does not make the entrypoint wait: a <code>main</code> that never settles
-— a server holding a listener — is unaffected and keeps running. The
-browser has no exit status, so a failure there surfaces through the
-host’s own reporting.</p>
-<h2 id="72-evaluation-order"><a class="header" href="#72-evaluation-order">7.2 Evaluation order</a></h2>
-<p>Within an expression, evaluation is <strong>left-to-right</strong>: operands before
-operators apply, the callee before its arguments, arguments in source
-order, the receiver before method arguments. A compound assignment
-evaluates its target place once — <strong>subscripts included</strong>, so
-<code>ys[bump()] += 1</code> calls <code>bump()</code> exactly once, before the read.
-Short-circuit: <code>&amp;&amp;</code> and <code>||</code> evaluate
-the right operand only when needed. <code>if</code>/<code>match</code> evaluate exactly the
-taken branch; a <code>match</code> evaluates its subject once, then tests legs top
-to bottom (first matching leg wins; its guard is evaluated only when the
-pattern matches). Every guard is tested where its leg stands, the last
-leg’s included — exhaustiveness never rests on a guard (§3.10 of the
-grammar chapter), so no leg is treated as a catch-all it did not spell.</p>
-<h2 id="72a-integer-overflow"><a class="header" href="#72a-integer-overflow">7.2a Integer overflow</a></h2>
-<p>Arithmetic whose mathematical result exceeds the operand type’s range is
-<strong>undefined behavior</strong>: a conforming program does not overflow, and an
-implementation may produce any value for one that does (the JS backend
-yields f64 artifacts without trapping: precision loss for the wide
-types, out-of-range magnitudes for the narrow ones). Literals are
-range-checked at compile time (§2.3); runtime operations are not. An
-opt-in checked family (<code>add_safe</code>, …) is recorded future work; <code>BigInt</code>
-is the answer where the range itself is the problem.</p>
-<h2 id="73-the-async-model"><a class="header" href="#73-the-async-model">7.3 The async model</a></h2>
-<p>Vilan is <strong>await-by-default</strong>. Asyncness is a property of <em>functions</em>,
-inferred, and never written in return types:</p>
-<ol>
-<li>A function is <strong>async</strong> iff its body contains a suspension point: a
-call to an async function (including async externs), an explicit
-<code>await</code>, or a call through an <code>async</code>-typed closure value.</li>
-<li>A <strong>direct call</strong> to an async function is implicitly awaited: the
-caller receives the plain declared value, and the caller becomes
-async (asyncness propagates through the call graph).</li>
-<li>A call <strong>through a closure value</strong> is never inferred async by
-itself: there is no static callee. The closure <em>type</em> carries the
-marker instead (§7.4).</li>
-</ol>
-<p>The explicit forms:</p>
-<ul>
-<li><code>async expr</code> (<strong>spawn</strong>): evaluate <code>expr</code>’s suspending computation
-concurrently; the spawn expression itself does not suspend and yields
-<code>Task&lt;T&gt;</code> where <code>T</code> is <code>expr</code>’s type (the task handle is opaque, and
-copying it refers to the same task). <code>async { … }</code> spawns a block.</li>
-<li><code>await expr</code>: suspend until the <code>Task&lt;T&gt;</code> (or raw host <code>Promise&lt;T&gt;</code>)
-operand settles; yields <code>T</code>.</li>
-</ul>
-<p><strong><code>Task</code> does not nest.</strong> A task settles with a <em>value</em>, and a task is not
-one: spawning a computation that produces a task yields <code>Task&lt;T&gt;</code>, not
-<code>Task&lt;Task&lt;T&gt;&gt;</code>, and one <code>await</code> reaches the value. This holds however the
-type arises — including a generic <code>T</code> that instantiates at a task — so
-<code>Task&lt;..&gt;</code> is idempotent: <code>Task&lt;Task&lt;T&gt;&gt;</code> is not a type any expression has.</p>
+                        <h1 id="markdown"><a class="header" href="#markdown">Markdown</a></h1>
+<p><code>std::markdown</code> parses markdown to a plain-data AST. It is deliberately
+not CommonMark: its grammar is the census of what the vilan book
+actually writes (<a href="https://github.com/vilan-lang/proposals/blob/main/proposal/markdown.md">design notes</a> §1), and it is <strong>strict</strong> — a
+construct outside that grammar is a loud <code>ParseError</code>, never a silently
+wrong render. It is also the first <em>package-shaped</em> std module: one
+file, leaf imports, no compiler-known names, plain data end to end,
+versioned with the toolchain until a package registry exists.</p>
+<p>The parser is pure computation — no I/O, no platform types — so it runs
+on any target, and every type it produces is const-eligible by
+construction (<code>str</code>, <code>i32</code>, <code>bool</code>, <code>List</code>, structs, enums; no <code>Shared</code>,
+no <code>View</code>, no closures).</p>
+<h2 id="parsing"><a class="header" href="#parsing">Parsing</a></h2>
+<p><code>parse</code> takes the source text and returns <code>Result&lt;Doc, ParseError&gt;</code>.
+Decoding untrusted input is fallible the same way <code>from_json</code> is: handle
+the <code>Err</code> with <code>match</code>, <code>!</code>, or <code>unwrap_or_else</code>.</p>
 <pre><code class="language-vilan">import std::print;
-import std::task::Task;
-
-fun wrap&lt;T&gt;(value: T): Task&lt;T&gt; {
-	async { value }
-}
+import std::markdown::{ parse, Block, Doc, Inline, ParseError };
+import std::result::Result::{ Err, Ok };
 
 fun main() {
-	let inner: Task&lt;i32&gt; = async { 7 };
-	let outer: Task&lt;i32&gt; = async { inner };   // not `Task&lt;Task&lt;i32&gt;&gt;`
-	let value: i32 = await outer;             // one `await`, not two
-	print(value + await wrap(inner));         // generic `T` = `Task&lt;i32&gt;`: same rule
+	let source = "# Notes\n\nSome `inline code` and a [link](https://vilan-lang.org).\n";
+	match parse(source) {
+		Ok(let doc) =&gt; {
+			for block in doc.blocks {
+				match block {
+					Block::Heading(let level, let content, let id) =&gt; {
+						print("h" + level.to_string() + " #" + id);
+					}
+					Block::Paragraph(let content) =&gt; {
+						print("paragraph, " + content.len().to_string() + " inlines");
+					}
+					Block::CodeFence(let info, let body) =&gt; {
+						print("fence [" + info + "]");
+					}
+					Block::Quote(let inner) =&gt; {
+						print("quote");
+					}
+					Block::Items(let ordered, let items) =&gt; {
+						print("list, " + items.len().to_string() + " items");
+					}
+					Block::Table(let header, let rows) =&gt; {
+						print("table, " + rows.len().to_string() + " rows");
+					}
+				}
+			}
+		}
+		Err(let error) =&gt; {
+			print(error.to_string()); // "line 3: a footnote ([^label]) — …"
+		}
+	}
 }
 </code></pre>
-<p>The rule follows the host rather than being imposed on it: a task is a
-host thenable, and the promise resolution procedure <em>adopts</em> a thenable
-result instead of boxing it. A nested task is unrepresentable at runtime,
-so the type says so too.</p>
-<p>A spawned computation runs to its first suspension synchronously, then
-interleaves with its spawner per the host event loop. Dropping a task
-abandons nothing: the computation still runs; only its result is
-discarded. A task’s failure is <strong>absorbed at the spawn</strong>: it is
-delivered to whichever <code>await</code> observes the task, and a failed task
-that is never observed is reported to the host console with its spawn
-origin; it does not terminate the program.</p>
-<pre><code class="language-vilan">import std::print;
-import std::time::{ sleep_for, Duration };
-
-fun step(label: str): str {
-	sleep_for(Duration::millis(1));
-	label
+<h2 id="the-ast"><a class="header" href="#the-ast">The AST</a></h2>
+<p>The whole public surface is plain data — two enums, two structs, two
+functions:</p>
+<pre><code class="language-vilan fragment">enum Inline {
+	Text(str),
+	Code(str),                    // span content, CommonMark-trimmed
+	Strong(List&lt;Inline&gt;),
+	Emph(List&lt;Inline&gt;),
+	Link(str, List&lt;Inline&gt;),      // destination, label
+	Html(str),                    // one verbatim tag: &lt;a id="…"&gt;, &lt;/a&gt;
 }
+
+enum Block {
+	Heading(i32, List&lt;Inline&gt;, str),  // level 1–6, content, mdBook id
+	Paragraph(List&lt;Inline&gt;),
+	CodeFence(str, str),              // info string, verbatim body
+	Quote(List&lt;Block&gt;),               // recursive
+	Items(bool, List&lt;List&lt;Block&gt;&gt;),   // ordered?, items (each a block list)
+	Table(List&lt;List&lt;Inline&gt;&gt;, List&lt;List&lt;List&lt;Inline&gt;&gt;&gt;),  // header, rows
+}
+
+struct Doc { blocks: List&lt;Block&gt; }
+struct ParseError { line: i32, message: str }   // implements Display
+
+fun parse(source: str): Result&lt;Doc, ParseError&gt;
+fun heading_id(content: List&lt;Inline&gt;): str      // base id, dedupe-free
+</code></pre>
+<p>A list item is a <code>List&lt;Block&gt;</code>, not a line of inlines: the book’s own
+bullets carry multi-paragraph bodies and indented code fences, and the
+AST represents them as they render. The renderer is deliberately <em>not</em>
+in this module — walking <code>Doc</code> into views, HTML, or a link checker is
+the consumer’s code, which is what keeps the package platform-neutral.</p>
+<h2 id="strict-by-design"><a class="header" href="#strict-by-design">Strict by design</a></h2>
+<p>The grammar covers: ATX headings, backtick code fences with info
+strings, paragraphs, flat lists (<code>-</code> and <code>1.</code>), blockquotes, pipe
+tables (with <code>\|</code> cell escapes, no alignment), inline code, strong,
+emphasis, inline links, <code>&lt;https://…&gt;</code> autolinks, and the one HTML
+passthrough shape <code>&lt;a id="…"&gt;&lt;/a&gt;</code>.</p>
+<p>Everything with a measured count of zero in the book is out by decision,
+and refused with an error naming the construct and its line: images,
+footnotes, strikethrough, reference-style links and their definitions,
+setext headings, indented code blocks, thematic breaks, nested lists,
+hard line breaks, backslash escapes (beyond <code>\|</code> in a cell), tilde
+fences, custom heading ids, lazy continuations, and raw HTML beyond the
+anchor shape. The point of the refusal is the docs gate: the first page
+to write a footnote fails the suite loudly instead of rendering wrong.</p>
+<pre><code class="language-vilan">import std::print;
+import std::markdown::{ parse, Doc, ParseError };
+import std::result::Result::{ Err, Ok };
 
 fun main() {
-	let pending = async step("b");   // spawned
-	print(step("a"));                // awaited inline — prints first
-	print(await pending);
+	match parse("some ~~struck~~ text\n") {
+		Ok(let doc) =&gt; print("unreachable — strikethrough is out of grammar"),
+		Err(let error) =&gt; print(error.message),
+	}
 }
 </code></pre>
-<h2 id="74-async-closure-types-adoption-and-adaptation"><a class="header" href="#74-async-closure-types-adoption-and-adaptation">7.4 Async closure types, adoption, and adaptation</a></h2>
-<p><code>async |T| U</code> marks a closure <strong>value</strong> whose calls are implicitly
-awaited (suspension points in the caller). The marker is legal on
-<strong>parameter types</strong>, <strong><code>let</code> annotations</strong>, <strong>struct fields</strong>, and
-<strong>function return types</strong>; calls through a marked field read
-(<code>(self.hook)()</code>) and through a returned value (<code>make()()</code>, or via a
-binding) await like any other. An <strong>unannotated binding adopts</strong>
-asyncness from any value it holds (its initializer or any <code>mut</code>
-rebind), so a <code>let f = || { …await… };</code> needs no marker at all.</p>
-<p>A synchronous closure flowing into an async-typed position is fine
-(awaiting a non-promise yields it unchanged).</p>
-<p><code>sync |T| U</code> on a <strong>parameter</strong> declares the opposite contract: the
-callback completes inside the declaring function’s synchronous
-protocol, and an async closure argument is an error. (<code>sync</code> is a
-contextual keyword; it only means the contract directly before a
-closure type.) <code>std::reactive</code>’s recompute positions (<code>Signal::map</code>,
-<code>set_with</code>, <code>turn</code>/<code>batch</code> bodies, the UI render callbacks) are <code>sync</code>.</p>
-<p><strong>Adaptation.</strong> A <strong>plain</strong>, value-returning closure parameter is
-<em>asyncness-polymorphic</em>: each call instantiates the function with the
-actual asyncness of its closure arguments:</p>
-<ul>
-<li>an async argument instantiates an <strong>async instance</strong>: calls through
-the parameter are awaited <strong>sequentially</strong> (each callback settles
-before the next begins; effects are ordered exactly as the sync body
-orders them), the instance is async, and the caller awaits it;</li>
-<li>sync arguments select the untouched plain instance: no awaits, no
-coloring, identical emission.</li>
-</ul>
-<p>An async adapted instance traverses a <strong>snapshot</strong> of any value it
-iterates (the receiver as of the call): its awaits admit interleaved
-work, which must not tear the traversal. Adaptation follows a closure
-through plain parameters transitively (<code>helper(xs, f)</code> forwarding <code>f</code>
-into <code>map</code> adapts both), and never crosses these boundaries:</p>
-<ul>
-<li>a <code>sync</code> parameter (error, including transitively; the diagnostic
-names the call that made the closure async);</li>
-<li>a host (<code>external</code>) function’s value-returning closure parameter:
-host code cannot await a Vilan closure;</li>
-<li>a trait/generic-dispatched call: there is no statically-known callee
-to instantiate (bind the receiver concretely, or declare the trait
-parameter <code>async</code>);</li>
-<li>a module-level initializer: it cannot suspend, in any spelling
-(§7.1) — spawn at load and await in <code>main</code> instead.</li>
-</ul>
-<p><strong>The divergence rule</strong> (the remaining stores). An async closure flowing
-where a plain closure type is declared on a struct <strong>field</strong> or a
-function’s declared <strong>return type</strong> is:</p>
-<ul>
-<li>an <strong>error</strong> when that closure returns a value: the reader would
-receive a live promise typed as <code>T</code>; declare the field or return type
-<code>async |…| T</code> instead;</li>
-<li><strong>legal</strong> when it returns <code>void</code> (<em>spawn semantics</em>): the call fires
-the closure and nobody awaits it. This is what allows UI event
-handlers and other void callbacks to suspend freely, and it applies
-to parameters as well (a void parameter spawns rather than adapts).</li>
-</ul>
-<h2 id="75-suspension-and-state"><a class="header" href="#75-suspension-and-state">7.5 Suspension and state</a></h2>
-<p>At every suspension point the enclosing function’s live state is
-captured and restored on resumption, with one carve-out: <strong>views may
-not be live across a suspension</strong> (§6.6). Ambient context values (§8)
-are captured at closure creation and are therefore stable
-across suspensions by construction.</p>
-<p>Concurrency is cooperative and single-threaded per program: between a
-suspension and its resumption, other computations (event handlers,
-other spawned work) may run and mutate shared cells; within one
-synchronous extent (no suspension), execution is atomic. The reactive
-turn machinery (<code>std::reactive</code>) is a library discipline layered on
-these primitives, not part of the language.</p>
-<h2 id="76-emission-guarantees-observable-behavior"><a class="header" href="#76-emission-guarantees-observable-behavior">7.6 Emission guarantees (observable behavior)</a></h2>
-<p>A conforming implementation targeting JavaScript guarantees: the
-entrypoint contract of §7.1, and the module-level initialization order
-it fixes; <code>print</code> writing one line per call to the host console; panics
-rejecting/aborting with the given message; left-to-right evaluation per
-§7.2; truncating integer division and two’s-complement <code>as_*</code> folds
-(overflow excepted, §7.2a); and <code>i53</code> exactness over the wire across
-its whole range. Everything else about the emitted code (names,
-formatting, module layout beyond that order, the <code>[build]</code> knobs) is
-implementation-defined.</p>
-<h2 id="77-nurseries"><a class="header" href="#77-nurseries">7.7 Nurseries</a></h2>
-<p><code>std::task::nursery(body)</code> runs <code>body</code> with a <strong>nursery</strong> established
-for its <strong>dynamic extent</strong>: the body’s execution and everything it
-calls, under the ambient-value rules of §8 (in particular, closures
-capture the extent at creation). Within the extent, every spawn
-(§7.3’s <code>async expr</code>) <strong>registers</strong> its task with the nursery; spawns
-outside any nursery are unaffected. There is no implicit root nursery:
-a program’s free spawns keep §7.3’s unstructured behavior.</p>
-<p><strong>Join.</strong> The <code>nursery</code> call returns the body’s value, and returns only
-when the body and every registered task have settled, including tasks
-registered while draining (a running task’s own spawns register with
-the same nursery). The call is async (its callers await it), and the
-body parameter is a plain closure parameter, so an awaiting body
-selects an adapted instance per §7.4.</p>
-<p><strong>Failure.</strong> The nursery’s outcome is the <strong>first-observed</strong> failure:</p>
-<ul>
-<li>a body throw wins (it always happens before the join);</li>
-<li>otherwise the earliest-settled task failure wins, re-raised from the
-<code>nursery</code> call; a failure that is a Vilan panic carries the spawn’s
-origin (the spawning function’s name) in its message.</li>
-</ul>
-<p>On the first failure the nursery cancels (below). Every other
-registered task is <strong>absorbed</strong>: observed (so it neither becomes a
-host unhandled rejection nor triggers §7.3’s unobserved-failure
-report) with its result discarded.</p>
-<p><strong>Cancellation</strong> is cooperative. Each nursery owns a host abort signal,
-fired by the body handle’s <code>cancel()</code> or by the first failure; a
-nursery created inside another’s extent chains to its parent’s signal
-at creation. The standard library’s IO primitives pass the ambient
-nursery’s signal to the host operation, so cancellation rejects
-in-flight IO promptly; those rejections, and any rejection classified
-as a host abort, are <strong>cancellation echoes</strong>: absorbed at the join,
-never selected as the failure. Execution is never preempted: code runs
-until its next cancellable suspension (<code>is_cancelled()</code> is the check
-for compute loops). After an explicit <code>cancel()</code> the body continues and
-its value is still returned; a body <em>suspended on</em> cancellable IO when
-the signal fires observes the rejection, which then propagates as the
-nursery’s outcome under the body-throw rule.</p>
-<p>A <code>nursery</code> call in a module initializer is rejected (§7.4’s
-initializer rule: an initializer cannot await).</p>
+<h2 id="heading-ids"><a class="header" href="#heading-ids">Heading ids</a></h2>
+<p>Heading ids are a compatibility surface, not a rendering choice: the
+book’s URL space is mdBook’s <code>page.html#slug</code>, the LSP’s keyword hovers
+deep-link into it, and any renderer that ever replaces mdBook must
+reproduce those ids exactly. So <code>parse</code> computes each heading’s id with
+mdBook v0.5.4’s algorithm — pinned by a unit corpus and by a book-wide
+golden that walks every page of this book on every suite run.</p>
+<p>The algorithm, measured rather than guessed: take the heading’s text
+(code-span content kept, emphasis markers gone, link labels kept, HTML
+tags dropped, the result trimmed), lowercase it, keep alphanumerics with
+<code>-</code> and <code>_</code>, turn each whitespace character into its own <code>-</code>, and drop
+everything else. Repeated ids within one document gain <code>-1</code>, <code>-2</code>, … in
+order of appearance. The consequences are unintuitive enough to pin:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>heading (source)</th><th>id</th></tr>
+</thead>
+<tbody>
+<tr><td><code># Spec §1 — Introduction &amp; conformance</code></td><td><code>spec-1--introduction--conformance</code></td></tr>
+<tr><td><code>## `Shared&lt;T&gt;`: one cell, many holders</code></td><td><code>sharedt-one-cell-many-holders</code></td></tr>
+<tr><td><code># Macros &amp; const</code></td><td><code>macros--const</code></td></tr>
+<tr><td><code>## Conversions: `as_*` </code></td><td><code>conversions-as_</code></td></tr>
+<tr><td><code>## `macro { … }` blocks</code></td><td><code>macro----blocks</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><code>heading_id</code> exposes the base algorithm (no dedupe) for consumers that
+need to predict an anchor — a link checker, a table of contents.</p>
+<pre><code class="language-vilan">import std::print;
+import std::markdown::{ heading_id, Inline };
+
+fun main() {
+	mut content: List&lt;Inline&gt; = [];
+	content.push(Inline::Text("Macros &amp; const"));
+	print(heading_id(content)); // macros--const
+}
+</code></pre>
+<h2 id="the-package-shape"><a class="header" href="#the-package-shape">The package shape</a></h2>
+<p><code>std::markdown</code> is built as if published
+(<a href="https://github.com/vilan-lang/proposals/blob/main/proposal/std-shape.md">design notes</a> §6):
+one base-root module file, imports limited to Tier-1 core
+(<code>option</code>, <code>result</code>, <code>display</code>), no name the compiler knows, a
+plain-data public surface, this page and its test surface — per-census
+construct pins, per-refusal strict pins, the anchor corpus, and the
+book-wide golden. The spelling <code>std::markdown</code> is final under the
+namespace model; only the file’s home moves when a package registry
+exists.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../spec/memory.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../std/encoding.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../spec/contexts.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/net.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -469,11 +349,11 @@ initializer rule: an initializer cannot await).</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../spec/memory.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../std/encoding.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../spec/contexts.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/net.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

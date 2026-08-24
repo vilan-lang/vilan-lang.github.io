@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -198,6 +198,31 @@ fun main() {
 <p>Notice there is no <code>return</code> on the last line. A bare expression at the
 end of a block is the block’s value. You’ll see this everywhere in Vilan.
 <code>if</code>, <code>match</code>, and plain blocks all work the same way.</p>
+<p>The <code>: i32</code> is optional. Leave it off and the return type is inferred
+from the body — from the final expression and from every <code>ret</code>, which
+have to agree. A body that only ever leaves by <code>ret</code> is typed by those
+<code>ret</code>s:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun sign(x: i32) {
+	if x &lt; 0 {
+		ret -1;
+	}
+	if x &gt; 0 {
+		ret 1;
+	}
+	ret 0;
+}
+
+fun main() {
+	print(sign(-7));
+}
+</code></pre>
+<p>If a <code>ret</code> disagrees with the rest of the body — a <code>ret "s"</code> next to a
+final <code>2</code>, a bare <code>ret</code> in a body that ends in a value, a <code>ret 1</code> beside
+an <code>if</code> with no <code>else</code> that can fall through with nothing — the compiler
+reports it at that <code>ret</code>. Declaring the return type is always an option,
+and turns inference into checking.</p>
 <p>Generic functions take type parameters. Bounds say what the body is
 allowed to do with them:</p>
 <pre><code class="language-vilan fragment">fun largest&lt;T: PartialOrd&gt;(a: T, b: T): T { … }
@@ -296,6 +321,11 @@ fun main() {
 <p>Closure <strong>types</strong> are written <code>|T| U</code>. A closure with no parameters is
 <code>|| U</code>, and one that returns nothing is <code>|| void</code>. These appear as
 parameter types, in <code>let</code> annotations, and as struct fields.</p>
+<p><code>ret</code> inside a closure returns from the closure, and the closure’s
+return type is inferred exactly the way a function’s is: from the final
+expression when the body can reach it, and from every <code>ret</code>, which have
+to agree — a body that only ever leaves by <code>ret</code> is typed by those
+<code>ret</code>s. A <code>ret</code> that disagrees is reported at that <code>ret</code>.</p>
 <p>Closures capture their surroundings <strong>by value</strong> at the moment they are
 created. Vilan copies, remember. When a closure needs to share mutable
 state with its creator, they hold a <code>Shared</code> cell together. The
@@ -442,7 +472,7 @@ channel would be severed. Both produce clear errors when you hit them.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

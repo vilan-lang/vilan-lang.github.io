@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -219,8 +219,10 @@ variants). Semantics: §4. <code>export statement</code> re-exports an import or
 exposes a declaration to importers of the module.</p>
 <h2 id="33-items"><a class="header" href="#33-items">3.3 Items</a></h2>
 <h3 id="functions"><a class="header" href="#functions">Functions</a></h3>
-<pre><code class="language-text">function = [ extern-attr ] [ "[" "must_use" "]" ] [ "[" "rpc" "]" ]
+<pre><code class="language-text">function = [ "[" "deprecated" "(" STRING ")" "]" ]
+           [ extern-attr ] [ "[" "must_use" "]" ] [ "[" "rpc" "]" ]
            [ "[" "trait_only" "]" ] [ "[" "doc" "(" "hidden" ")" "]" ]
+           [ "[" "platform" "(" STRING { "," STRING } [ "," ] ")" "]" ]
            [ "async" ] [ "external" ]
            "fun" IDENT [ generic-params ]
            "(" [ parameter { "," parameter } [ "," ] ] ")"
@@ -262,6 +264,21 @@ declaration or any <code>impl</code> member, and on an <code>external fun</code>
 combines with a convention — the argument is a tuple the <em>call site</em>
 builds, so there is nothing to transfer or alias — but <code>mut</code> may precede
 it (<code>mut ...items: T</code>).</p>
+<p>The attribute prefix is <strong>ordered</strong> — each attribute is optional, but
+they appear in exactly the production’s order. <code>[deprecated("use …")]</code>
+leads it: the function is <strong>deprecated</strong>, and every use in code outside
+the standard library — a call, a method call, the function passed as a
+value — still compiles but raises the non-fatal warning
+<code>`{name}` is deprecated; {steer}</code>, anchored at the using name, once
+per use site. The one required argument is the replacement steer,
+carried into the warning verbatim; by convention it reads <code>use …</code>
+(<code>[deprecated("use two()")]</code> warns <code>`one` is deprecated; use two()</code>).
+Uses <em>inside</em> the standard library are silent — std migrates its own
+callers in the release that deprecates. The attribute is honored
+wherever it appears, in std and user code alike, and dies with its item:
+when the function is removed, so is the mark. When the item goes away is
+the CHANGELOG’s fact, not the source’s — the removal comes no earlier
+than the minor release after the warning first shipped.</p>
 <h3 id="structs-and-enums"><a class="header" href="#structs-and-enums">Structs and enums</a></h3>
 <pre><code class="language-text">struct = [ "resource" ] [ "external" ] "struct" (IDENT | "null") [ generic-params ]
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
@@ -355,8 +372,8 @@ macro-block      = "macro" block ;
 <p>A macro attribute’s arguments are captured as <strong>source spans</strong>: the
 macro receives their text, not their values (§10). The built-in
 attribute names (<code>derive</code>, <code>service</code>, <code>extern</code>, <code>must_use</code>, <code>rpc</code>,
-<code>trait_only</code>, <code>doc</code>, <code>expose</code>) are not available as user macro-attribute
-names.</p>
+<code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code>, <code>deprecated</code>) are not
+available as user macro-attribute names.</p>
 <h2 id="34-bindings-and-assignment"><a class="header" href="#34-bindings-and-assignment">3.4 Bindings and assignment</a></h2>
 <pre><code class="language-text">let        = ("let" | "mut") binder [ ":" type ] [ "=" expression ] ;
 assignment = [ "*" ] place ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" )
@@ -622,7 +639,7 @@ catch-all.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -188,7 +188,7 @@ leading U+FEFF byte-order mark is an encoding marker rather than source
 text: it is ignored, and positions are counted from the byte after it. A
 U+FEFF anywhere else is content. Together these make a program’s meaning
 independent of how an editor saved it: the same source is the same
-program on every platform. (See <a href="https://github.com/vilan-lang/vilan/blob/main/vilan/proposal/windows-support.md">the design notes</a> §2; the
+program on every platform. (See <a href="https://github.com/vilan-lang/proposals/blob/main/proposal/windows-support.md">the design notes</a> §2; the
 canonical on-disk form is LF with no BOM, and <code>vilan fmt</code> writes it.)</p>
 <h2 id="21-comments"><a class="header" href="#21-comments">2.1 Comments</a></h2>
 <p>A comment begins with <code>//</code> and runs to the end of the line. There are no
@@ -208,9 +208,10 @@ ret    struct trait    type      use     with   true    false
 <code>context</code> (the clause after a closure type, §3.9), <code>sync</code> (the marker
 opening a closure type, §3.9), <code>void</code> (the unit value/type), <code>self</code> and
 <code>Self</code> (receiver and receiver type), <code>derive</code>, <code>service</code>, <code>extern</code>,
-<code>must_use</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code> (attribute
-names in <code>[...]</code> position), and jump targets (<code>break</code>, <code>continue</code>) after
-<code>jump</code>. All remain usable as ordinary identifiers elsewhere.</p>
+<code>must_use</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code>,
+<code>deprecated</code> (attribute names in <code>[...]</code> position), and jump targets
+(<code>break</code>, <code>continue</code>) after <code>jump</code>. All remain usable as ordinary
+identifiers elsewhere.</p>
 <h2 id="23-literals"><a class="header" href="#23-literals">2.3 Literals</a></h2>
 <h3 id="numbers"><a class="header" href="#numbers">Numbers</a></h3>
 <pre><code class="language-text">NUMBER = decimal | hex ;
@@ -387,7 +388,7 @@ context-free: no token depends on parse state.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

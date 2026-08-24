@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -251,6 +251,13 @@ exit fails the build. <code>vilan check</code> builds nothing and runs none.</li
 <li><strong><code>[macro]</code></strong>: the compile-time interpreter budget: <code>fuel</code> (steps
 per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
 </ul>
+<p><code>std</code>, <code>pkg</code>, and <code>macro_std</code> are <strong>reserved package names</strong>: they name
+the import roots themselves (§4.2), so a <code>[package] name</code> or a key in
+any <code>dependencies</code> table claiming one is a manifest error — a dependency
+under such a key could only shadow the root or be unreachable behind it.
+<code>[library] name</code> is exempt: the standard library itself is the
+<code>[library]</code> named <code>std</code> (likewise <code>macro_std</code>), and a library’s own
+name, unlike a dependency key, never binds an import root.</p>
 <h2 id="115-build-products"><a class="header" href="#115-build-products">11.5 Build products</a></h2>
 <p>Each entry emits <code>dist/&lt;name&gt;.&lt;ext&gt;</code> for its platform (browser entries
 first, so a server that ships bundles finds them fresh), plus
@@ -330,7 +337,7 @@ only one, the designated <code>default-entry</code>, or the one <code>--entry</c
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

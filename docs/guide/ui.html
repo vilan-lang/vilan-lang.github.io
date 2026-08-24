@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-23ae3645.js";
+            window.path_to_searchindex_js = "../searchindex-307743ae.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-fef6de3b.js"></script>
+        <script src="../toc-e7aff2b2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -263,7 +263,10 @@ fun main() {
 <li>An <strong>undotted</strong> <code>name(value)</code> is an attribute: <code>.attr("name", value)</code>,
 the value’s type deciding static vs tracked as always. A bare name
 (<code>disabled</code>) is a boolean attribute. Keyword and hyphenated names
-(<code>type</code>, <code>aria-label</code>) are ordinary attribute names.</li>
+(<code>type</code>, <code>data-state</code>, <code>aria-label</code>) are ordinary attribute names —
+hyphens are ordinary attribute-name characters, exactly as in HTML, so
+every <code>data-*</code>/<code>aria-*</code> attribute is written in the same undotted form
+and emitted verbatim.</li>
 <li>A <strong>leading dot</strong> is the chain, verbatim: <code>.styled(card)</code>,
 <code>.bind_value(draft)</code>, <code>.show(flag)</code>, <code>.bind_each(rows, |r| r.id, |r| row(r))</code>. Every <code>View</code> method works in head position — the dot is
 what keeps attributes and methods from ever colliding, so a new
@@ -577,7 +580,7 @@ framework already puts them there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-69e83dfc.js"></script>
+        <script src="../theme/vilan-73359ec7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
