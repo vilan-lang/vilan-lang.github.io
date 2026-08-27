@@ -1132,6 +1132,7 @@ const share_label = $a("Share");
 const next_row_id = __shared_new(0);
 const modified_from = $a("");
 const buffer_dirty = __shared_new(false);
+const run_token = __shared_new("");
 const confirm_target = $a("");
 const run = () => {
 	if (VilanPlayground.compile(VilanPlayground.value())) {
@@ -1316,9 +1317,12 @@ VilanPlayground.startCompiler((event) => {
 			$v(console_lines, [  ], [ 1 ]);
 			if (event.ok) {
 				$d(status, "Compiled (vilan " + event.version + ")", [ 1 ]);
-				VilanPlayground.runProgram(event.js, event.css);
+				const token = crypto.randomUUID();
+				run_token.v = token;
+				VilanPlayground.runProgram(event.js, event.css, token);
 			} else {
 				$d(status, "Build failed; see the diagnostics.", [ 1 ]);
+				run_token.v = "";
 				VilanPlayground.clearProgram();
 			}
 			$bL = undefined;
@@ -1331,8 +1335,9 @@ VilanPlayground.startCompiler((event) => {
 });
 window.addEventListener("message", (host_event) => {
 	const message = host_event.data;
+	const expected = run_token.v;
 	const kind = message.kind;
-	if (kind === "log" || kind === "error") {
+	if (expected !== "" && message.token === expected && (kind === "log" || kind === "error")) {
 		$bM(console_lines, (lines) => {
 			let next = __clone(lines);
 			if (next.length < console_cap) {
