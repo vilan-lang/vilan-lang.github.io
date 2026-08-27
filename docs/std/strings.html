@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -190,10 +190,58 @@
 	fun replace(self, from: str, to: str): str       // all occurrences
 	fun repeat(self, count: i32): str
 	fun split(self, separator: str): List&lt;str&gt;
-	fun substring(self, start: i32, end: i32): str   // end-exclusive
+	fun substring(self, start: i32, end: i32): str   // end-exclusive; see below
 	fun code_at(self, index: i32): u32               // UTF-16 code unit
-	fun parse_i32(self): Option&lt;i32&gt;                 // declared in std::option
+	fun strip_prefix(self, prefix: str): Option&lt;str&gt; // declared in std::option
+	fun strip_suffix(self, suffix: str): Option&lt;str&gt; // likewise
+	fun parse_i32(self): Option&lt;i32&gt;                 // likewise
 	fun parse_f64(self): Option&lt;f64&gt;                 // likewise
+}
+</code></pre>
+<h3 id="slicing-substring-refuses-it-does-not-correct"><a class="header" href="#slicing-substring-refuses-it-does-not-correct">Slicing: <code>substring</code> refuses, it does not correct</a></h3>
+<p><code>substring(start, end)</code> requires</p>
+<pre><code class="language-text">0 &lt;= start &lt;= end &lt;= len()
+</code></pre>
+<p>and <strong>panics</strong> on anything else — a negative bound, an inverted pair, or an
+<code>end</code> past the length. It never clamps and never swaps.</p>
+<p>That rule is worth stating plainly because the obvious host behavior is the
+opposite one. JavaScript’s <code>substring</code> clamps a negative argument to <code>0</code> and
+<em>swaps</em> the pair when <code>start &gt; end</code>, so <code>s.substring(offset, -1)</code> there returns
+<code>s[0..offset]</code> — the <strong>prefix</strong>, the exact complement of the suffix the caller
+was reaching for, with no error at any point. Vilan refuses instead, on the same
+principle that makes an out-of-range <code>list[i]</code> a panic rather than a silent
+<code>undefined</code>.</p>
+<p>Two consequences worth knowing:</p>
+<ul>
+<li><strong>“To the end” is spelled <code>s.len()</code></strong>, not <code>-1</code> and not an over-long <code>end</code>.</li>
+<li><strong>The bound is checked, not guessed</strong> — <code>substring(0, 100)</code> on a short string
+is an error, not a truncation.</li>
+</ul>
+<p>Where both bounds are literals the refusal happens at <strong>compile time</strong>:</p>
+<pre><code class="language-text">error: substring end -1 is negative — the range must satisfy
+       0 &lt;= start &lt;= end &lt;= len, and substring never clamps or swaps
+</code></pre>
+<p>Empty ranges are legal, so the natural boundary cases all work:
+<code>substring(0, 0)</code>, <code>substring(len(), len())</code>, and <code>substring(0, len())</code>.</p>
+<h3 id="cutting-a-known-affix"><a class="header" href="#cutting-a-known-affix">Cutting a known affix</a></h3>
+<p>Reaching for <code>substring</code> to drop a leading or trailing marker is what invited
+the arithmetic in the first place. Prefer the verbs, which return <code>Option&lt;str&gt;</code>
+so that “absent” is distinguishable from “present but empty”:</p>
+<pre><code class="language-vilan">import std::print;
+import std::option::{ Some, None };
+
+fun main() {
+	match "data: 42".strip_prefix("data: ") {
+		Some(let body) =&gt; print(body),
+		None =&gt; print("not a data line"),
+	}
+	match "report.md".strip_suffix(".md") {
+		Some(let stem) =&gt; print(stem),
+		None =&gt; print("not markdown"),
+	}
+	// `starts_with`/`ends_with` test; these two cut.
+	print("ab".strip_prefix("ab").unwrap_or("?"));   // "" — present, empty
+	print("ab".strip_prefix("zz").unwrap_or("?"));   // "?" — absent
 }
 </code></pre>
 <pre><code class="language-vilan">import std::print;
@@ -206,6 +254,11 @@ fun main() {
 	print("task".repeat(2));
 }
 </code></pre>
+<p><strong>On a path, cut with <a href="paths.html"><code>std::path</code></a>, not with these.</strong> <code>strip_prefix</code>
+and <code>starts_with</code> compare text, and text is the wrong unit for a path:
+<code>"/a/bc".starts_with("/a/b")</code> is <code>true</code> while <code>/a/bc</code> is not inside <code>/a/b</code>.
+<code>path::starts_with</code> and <code>path::relative</code> compare components, and
+<code>path::basename</code>/<code>path::extname</code> cut the affixes a filename actually has.</p>
 <p><code>str</code> also implements <code>PartialEq</code>/<code>Ord</code> (lexicographic <code>==</code>, <code>&lt;</code>) and
 <code>Default</code> (<code>""</code>).</p>
 <h2 id="display-user-facing-text"><a class="header" href="#display-user-facing-text">Display: user-facing text</a></h2>
@@ -244,7 +297,7 @@ this: they’re the <code>as_*</code> methods on the numbers; see
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../std/numbers.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/paths.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -258,7 +311,7 @@ this: they’re the <code>as_*</code> methods on the numbers; see
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../std/numbers.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/paths.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -287,7 +340,7 @@ this: they’re the <code>as_*</code> methods on the numbers; see
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

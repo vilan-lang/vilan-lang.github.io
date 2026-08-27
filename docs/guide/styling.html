@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -330,16 +330,25 @@ descendant’s own font size. Reach for <strong><code>line_height_length(Length:
 when a design specifies a leading in absolute units — a length inherits as a
 computed length and will not track a child that resizes its text. Both write
 the same slot, so a later one simply replaces an earlier one.</p>
-<p>For anything the typed surface doesn’t cover, escape hatches:</p>
+<p>For anything the typed surface doesn’t cover, the escape hatch is <code>raw</code>:</p>
 <pre><code class="language-vilan fragment">.raw("clip-path", "polygon(0 0, 100% 0, 100% 80%)")
-.with_length("scroll-margin-top", space(4))
-.with_color("outline-color", Color::blue(300))
+.raw("scroll-margin-top", space(4))
+.raw("outline-color", Color::blue(300))
 </code></pre>
-<p><code>raw</code> takes any property; <code>with_length</code> and <code>with_color</code> take an
-untyped property with a <em>typed</em> value, so a token still emits its
-<code>:root</code> declaration. The typed surface grows by demand — if you find
-yourself reaching for <code>raw</code> on the same property repeatedly, that is the
-evidence a method should exist.</p>
+<p><code>raw</code> takes any property, and any <em>value</em> the CSS channel understands: a
+complete value written as a <code>str</code>, or a <code>Length</code> or <code>Color</code> — including a
+theme token like <code>space(4)</code> or <code>Color::blue(300)</code>, which carries its own
+<code>:root</code> declaration onto the stylesheet exactly as a typed property method
+does. <code>with_length</code> and <code>with_color</code> are the same thing under older names
+and stay available; they are <code>raw</code> at those two value types.</p>
+<p>Reach for the value, not its text. A token is a <em>pair</em> — the reference
+(<code>var(--space-4)</code>) and the <code>:root</code> line that declares it — and reading the
+<code>.css</code> field of one hands over the reference alone, so <code>space(4).css</code> puts a
+<code>var()</code> on the sheet that nothing defines. (That is the field, not the
+<code>Length::css(..)</code> constructor above, which is a value in its own right and
+declares nothing to lose.) Passing <code>space(4)</code> itself keeps the pair together.</p>
+<p>The typed surface grows by demand — if you find yourself reaching for <code>raw</code>
+on the same property repeatedly, that is the evidence a method should exist.</p>
 <h2 id="boxes-edges-and-borders"><a class="header" href="#boxes-edges-and-borders">Boxes, edges and borders</a></h2>
 <p>Spacing comes in three arities, and the name says which: the whole box
 (<code>padding</code>, <code>margin</code>), an axis (<code>padding_x</code>, <code>margin_y</code>), or one edge
@@ -551,7 +560,7 @@ shorthand replaces the whole family. This holds per condition, so a
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

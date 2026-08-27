@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Encoding - The Vilan documentation</title>
+        <title>Paths - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -172,230 +172,186 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="encoding-reference"><a class="header" href="#encoding-reference">Encoding reference</a></h1>
-<p>JSON (<code>std::json</code>), the codec-agnostic wire layer (<code>std::wire</code>), the binary
-codec (<code>std::binary</code>), raw bytes (<code>std::bytes</code>), and base64
-(<code>std::base64</code>).</p>
-<p>The short version: derive <code>Json</code> for JSON in/out at app boundaries, derive
-<code>Wire</code> for rpc payloads, and let the codecs do the rest. Everything below
-“Derives” here is plumbing you only meet when building custom transports or
-parsers.</p>
-<h2 id="json"><a class="header" href="#json">JSON</a></h2>
-<pre><code class="language-vilan fragment">trait Json { fun to_json(self): str; }                     // encode
-trait FromJson {                                           // decode
-	fun from_json(text: str): Result&lt;Self, str&gt;;
-	fun from_json_value(value: JsonValue): Result&lt;Self, str&gt;;
-}
+                        <h1 id="paths-reference"><a class="header" href="#paths-reference">Paths reference</a></h1>
+<p><code>std::path</code> is path arithmetic over plain <code>str</code>: <code>join</code>, <code>basename</code>,
+<code>dirname</code>, <code>extname</code>, <code>stem</code>, <code>normalize</code>, <code>resolve</code>, <code>relative</code> and a
+component-wise <code>starts_with</code>. It is pure vilan with no host call in it, so it
+is <strong>available on every platform</strong> — a browser build routes URL paths, an SSR
+build routes the same ones — and it is <strong>const-evaluable</strong>, so a path built
+from literals folds at compile time.</p>
+<pre><code class="language-vilan fragment">fun is_absolute(path: str): bool
+fun normalize(path: str): str
+fun join(base: str, part: str): str
+fun join_all(parts: List&lt;str&gt;): str
+fun resolve(base: str, path: str): str
+fun basename(path: str): str
+fun dirname(path: str): str
+fun extname(path: str): str                          // WITH the leading dot
+fun stem(path: str): str                             // basename minus extname
+fun starts_with(path: str, prefix: str): bool        // by component, not by text
+fun strip_prefix(path: str, prefix: str): Option&lt;str&gt;
+fun relative(from: str, to: str): Option&lt;str&gt;
 </code></pre>
-<p><code>[derive(Json)]</code> implements both from a struct/enum’s shape; scalars,
-<code>List</code>, and <code>Option</code> nest.</p>
-<p>Encoding (<code>to_json</code>) is total, but <strong>decoding is fallible</strong>: the input is
-untrusted, so a missing field, a wrong-shaped value, or text that isn’t
-JSON is a decode error rather than silent garbage or a crash. Both
-<code>from_json(text)</code> and <code>from_json_value(value)</code> return <code>Result&lt;Self, str&gt;</code>;
-handle it with <code>!</code>, <code>match</code>, or <code>is Ok(..)</code>.</p>
-<p>The two decode methods differ in what they take, not in what they answer:
-<code>from_json</code> parses the text (non-crashing) and hands off to
-<code>from_json_value</code>, which validates an already-parsed value’s shape. That
-is the one to call when a value is nested inside another decode, and the
-one to write when implementing the trait by hand.</p>
 <pre><code class="language-vilan">import std::print;
-import std::json::{ Json, FromJson, JsonValue, parse_json_value };
-import std::result::Result::{ self, Ok, Err };
-
-[derive(Json)]
-struct Point {
-	x: i32,
-	y: i32,
-}
+import std::path;
 
 fun main() {
-	let point = Point { x = 1, y = 2 };
-	let text = point.to_json();
-	print(text); // {"x":1,"y":2}
-
-	match Point::from_json(text) {
-		Ok(let back) =&gt; print(back.x), // 1
-		Err(let reason) =&gt; print(reason),
-	}
-
-	// The already-parsed form, same `Result`.
-	match Point::from_json_value(parse_json_value("{\"x\":3,\"y\":4}")) {
-		Ok(let back) =&gt; print(back.y), // 4
-		Err(let reason) =&gt; print(reason),
-	}
-
-	// A missing field is a decode error naming the field.
-	match Point::from_json("{\"x\":1}") {
-		Ok(_) =&gt; print("decoded"),
-		Err(let reason) =&gt; print(reason), // missing field y
-	}
-
-	// So is text that isn't JSON at all.
-	match Point::from_json("not json") {
-		Ok(_) =&gt; print("decoded"),
-		Err(let reason) =&gt; print(reason), // not valid JSON
-	}
+	print(path::join("src/static", "app.css"));   // src/static/app.css
+	print(path::basename("/var/log/app.log"));    // app.log
+	print(path::dirname("/var/log/app.log"));     // /var/log
+	print(path::extname("/var/log/app.log"));     // .log
+	print(path::stem("/var/log/app.log"));        // app
+	print(path::normalize("a/b/../c/"));          // a/c
+	print(path::resolve("/srv/site", "../etc"));  // /srv/etc
 }
 </code></pre>
-<p>Written by hand — for a type whose encoding isn’t its shape — the
-signatures are the trait’s, <code>Self</code> included:</p>
-<pre><code class="language-vilan">import std::print;
-import std::json::{ Json, FromJson, JsonValue };
-import std::result::Result::{ self, Ok, Err };
-
-// A newtype that encodes as the bare string it wraps, not as an object.
-struct Tag {
-	name: str,
-}
-
-impl Tag with Json {
-	fun to_json(self): str {
-		self.name.to_json()
-	}
-}
-
-impl Tag with FromJson {
-	fun from_json(text: str): Result&lt;Self, str&gt; {
-		Tag::from_json_value(text.try_parse_json().ok_or("not valid JSON")!)
-	}
-	fun from_json_value(value: JsonValue): Result&lt;Self, str&gt; {
-		Ok(Tag { name = str::from_json_value(value)! })
-	}
-}
-
-fun main() {
-	print(Tag { name = "ada" }.to_json()); // "ada"
-	match Tag::from_json("\"ada\"") {
-		Ok(let tag) =&gt; print(tag.name),    // ada
-		Err(let reason) =&gt; print(reason),
-	}
-}
-</code></pre>
-<p>Untyped inspection, when the shape isn’t known up front:</p>
-<pre><code class="language-vilan fragment">external struct JsonValue;
-fun parse_json_value(text: str): JsonValue  // throws on malformed text
-str.try_parse_json(): Option&lt;JsonValue&gt;     // the safe form
-
-enum JsonKind { Null, Bool, Number, String, Array, Object }
-
-value.kind(): JsonKind
-value.is_null(): bool
-value.field(name: str): JsonValue
-value.has_field(name: str): bool
-value.elements(): List&lt;JsonValue&gt;
-value.tag(): str         // an enum discriminator, NOT a type — see below
-</code></pre>
-<p><code>kind()</code> is the value’s JSON type, normalized: the host’s <code>typeof</code> calls
-both an array and <code>null</code> an <code>"object"</code>, so the intrinsic names those two
-itself. <code>JsonKind</code> is a <strong>backed enum</strong> carrying exactly those strings, so
-<code>value.kind() == JsonKind::Number</code> is one comparison against <code>"number"</code> —
-the set is closed in the type system rather than in a doc comment, and
-<code>Object</code> and <code>Null</code> are as usable as the other four. <code>is_null()</code> is a
-separate intrinsic: it tests the value against <code>null</code> directly.</p>
-<p>The set is closed over JSON, not over every <code>JsonValue</code>. <code>value.field(name)</code>
-for a key the object does not have is the host’s <code>undefined</code>, whose kind is
-none of the six — <code>==</code> answers <code>false</code> for it, as it always did, and an
-exhaustive <code>match</code> over <code>JsonKind</code> panics naming it. <code>has_field</code> is the
-check that keeps you out of that case.</p>
-<p><code>tag()</code> answers a different question and is not a spelling of <code>kind()</code>: it
-reads an <strong>externally-tagged enum’s discriminator</strong> — the string itself for a
-bare <code>"Variant"</code>, the single key for a <code>{"Variant":…}</code> object. That is what a
-derived decoder calls to pick a variant, so it only means anything on those
-two shapes: on a number or a bool it yields <code>"undefined"</code>, and on <code>null</code> it
-throws. Reach for <code>kind()</code> unless you are decoding an enum by hand.</p>
-<pre><code class="language-vilan">import std::print;
-import std::json::{ JsonKind, parse_json_value };
-
-fun main() {
-	let value = parse_json_value("{\"name\":\"ada\",\"tags\":[\"x\",\"y\"]}");
-	print(value.kind() == JsonKind::Object);        // true
-	print(value.field("name").kind().value());      // string
-	print(value.has_field("age"));                  // false
-
-	for element in value.field("tags").elements() {
-		if element.kind() == JsonKind::String {
-			print(element.kind().value()); // string, twice
-		}
-	}
-
-	// `tag()` is the other question: an externally-tagged enum's discriminator.
-	print(parse_json_value("\"Start\"").tag());         // Start
-	print(parse_json_value("{\"Text\":\"hi\"}").tag()); // Text
-}
-</code></pre>
-<p><code>json_codec(): Codec</code> is the JSON wire codec for rpc (see below).</p>
-<h2 id="the-wire-layer-stdwire"><a class="header" href="#the-wire-layer-stdwire">The wire layer (<code>std::wire</code>)</a></h2>
-<p>The codec-agnostic serialization protocol under <code>derive(Wire)</code> and rpc:</p>
+<h2 id="there-is-no-path-type-deliberately"><a class="header" href="#there-is-no-path-type-deliberately">There is no <code>Path</code> type, deliberately</a></h2>
+<p><code>std::fs</code> takes and returns plain <code>str</code> paths, and so does everything built on
+it. A <code>Path</code> type would have to convert at every one of those call sites or
+change all of them, and the two functions that would justify it — <code>normalize</code>
+and <code>relative</code> — are a dozen lines each as free functions. So a path is a
+<code>str</code>, there is one representation of it in the language rather than two, and
+nothing here forecloses a wrapper later.</p>
+<h2 id="the-separator-is--on-every-platform"><a class="header" href="#the-separator-is--on-every-platform">The separator is <code>/</code>, on every platform</a></h2>
+<p>Paths are POSIX-shaped everywhere. This is a correctness rule, not a Unix
+preference: a <code>join</code> that emitted <code>\</code> on Windows would make every path a
+program derives — a cache key, an asset URL, a golden file — differ by host,
+and Windows accepts <code>/</code> in ordinary filesystem APIs anyway. What is genuinely
+not modelled is said plainly rather than half-supported:</p>
 <ul>
-<li><code>trait Serialize</code> / <code>trait Deserialize</code>: visitor-style value
-description (<code>begin_struct</code>/<code>field</code>/<code>str_value</code>/<code>i53_value</code>/…). The
-wire scalars: <code>str</code>, <code>bool</code>, <code>i32</code>, <code>u32</code>, <code>i53</code>, <code>f64</code> (+ lists,
-options, structs, enum variants).</li>
-<li><code>Frame</code>: one encoded message.</li>
-<li><code>Codec</code>: a matched writer/reader pair, <code>json_codec()</code> (<code>std::json</code>,
-readable) or <code>binary_codec()</code> (<code>std::binary</code>, compact). Client and
-server must agree.</li>
+<li><strong>Drive-absolute (<code>C:/…</code>) and UNC (<code>\\server\share</code>) paths are not roots.</strong>
+<code>is_absolute("C:/x")</code> is <code>false</code>, and <code>\</code> is an ordinary character (it is a
+legal filename byte on Linux and macOS, so reading it as a separator would
+be wrong on the platform with the most files).</li>
+<li><strong><code>fs::read_dir_all</code> returns HOST-separator paths.</strong> On Windows its entries
+are backslash-joined, and <code>std::path</code> reads such an entry as one component.</li>
+<li><strong>Nothing here folds case, ever.</strong> <code>normalize</code> preserves the case it was
+given and every comparison is byte-for-byte, so <code>/A</code> and <code>/a</code> are different
+paths.</li>
 </ul>
-<p><code>[derive(Wire)]</code> requires every field to be Wire, recursively, checked at
-the derive site. You implement <code>Serialize</code>/<code>Deserialize</code> by hand only for
-types with a custom encoding.</p>
-<h3 id="backed-enums-on-the-wire"><a class="header" href="#backed-enums-on-the-wire">Backed enums on the wire</a></h3>
-<p>A <strong>backed enum</strong> — one whose variants carry an explicit value, <code>enum Align { Start = "flex-start", … }</code> — encodes as that value rather than as
-its variant name, for both <code>Json</code> and <code>Wire</code>. <code>Align::Start</code> is
-<code>"flex-start"</code> on the wire, not <code>"Start"</code>, and it decodes through
-<code>Align::parse</code>, so a peer sending a value outside the set is a decode
-error rather than a confidently-wrong variant. One explicit value backs
-the whole enum, so <code>enum Level { Low = 0, Mid, High }</code> puts <code>1</code> on the
-wire for <code>Mid</code>, not <code>"Mid"</code>.</p>
-<p><strong>Adding a backing value to an existing derived enum is a wire-format
-break, and so is removing one.</strong> An enum with no backing value keeps the
-externally-tagged form (<code>"Start"</code>, or <code>{"Text":…}</code> with a payload), so
-the two shapes are not interchangeable across a version.</p>
-<h2 id="bytes"><a class="header" href="#bytes">Bytes</a></h2>
-<p>An immutable-length byte array (<code>Uint8Array</code> underneath), the currency of
-the binary codec, crypto, and websockets:</p>
-<pre><code class="language-vilan fragment">impl Bytes {
-	fun alloc(size: i32): Bytes
-	fun len(self): i32
-	fun get(self, index: i32): i32
-	fun set(self, index: i32, value: i32)
-	fun slice(self, from: i32, to: i32): Bytes
-	fun fill(self, value: i32, from: i32, to: i32): Bytes
-	fun copy_into(self, source: Bytes, offset: i32)
-	fun concat(a: Bytes, b: Bytes): Bytes     // static
-	fun to_hex(self): str
-}
+<h2 id="normalize-is-canonical-which-means-the-trailing-separator-goes"><a class="header" href="#normalize-is-canonical-which-means-the-trailing-separator-goes"><code>normalize</code> is canonical, which means the trailing separator goes</a></h2>
+<pre><code class="language-vilan">import std::print;
+import std::path;
 
-// UTF-8 text ↔ bytes
-fun encode_utf8(text: str): Bytes
-fun decode_utf8(bytes: Bytes): str
+fun main() {
+	print(path::normalize("a//b/./c"));                    // a/b/c
+	print(path::normalize("a/b/../c"));                    // a/c
+	print(path::normalize("a/b") == path::normalize("a/b/"));  // true
+	print(path::normalize(""));                            // .
+	print(path::normalize("/../a"));                       // /a — the root's parent is the root
+	print(path::normalize("../a"));                        // ../a — a relative climb is kept
+}
 </code></pre>
-<p>Lower still: <code>ByteBuffer</code>/<code>DataView</code> (host ArrayBuffer access,
-<code>read_f64</code>/<code>write_f64</code>), the binary codec’s float channel.</p>
-<h2 id="binary-codec-stdbinary"><a class="header" href="#binary-codec-stdbinary">Binary codec (<code>std::binary</code>)</a></h2>
-<pre><code class="language-vilan fragment">fun binary_codec(): Codec
-fun encode_binary&lt;T: Wire&gt;(value: T): Bytes
-fun decode_binary&lt;T: Wire&gt;(bytes: Bytes): Result&lt;T, str&gt;
-struct BinaryWriter { … }   // write_byte / write_i32 / write_str / finish(): Bytes
+<p>Node’s <code>path.normalize</code> keeps a trailing separator, so its <code>"a/b"</code> and
+<code>"a/b/"</code> stay unequal; this one drops it, because the whole point of a
+canonical form is that two spellings of one path compare equal. That and
+<code>dirname("a//b")</code> (<code>"a"</code> here, <code>"a/"</code> in node) are the only two places these
+functions answer differently from <code>path.posix</code>.</p>
+<p>Everything is <strong>lexical</strong> — nothing is read from disk, so a <code>..</code> cancels
+against the name before it even when that name is a symlink pointing
+somewhere else.</p>
+<h2 id="join-concatenates-resolve-follows-a-reference"><a class="header" href="#join-concatenates-resolve-follows-a-reference"><code>join</code> concatenates; <code>resolve</code> follows a reference</a></h2>
+<pre><code class="language-vilan">import std::print;
+import std::path;
+
+fun main() {
+	print(path::join("/a", "/b"));      // /a/b — an absolute part does NOT reset
+	print(path::resolve("/a", "/b"));   // /b   — a reference to an absolute path is that path
+	print(path::join("", "b"));         // b    — an empty side contributes nothing
+}
 </code></pre>
-<p>Same model as JSON, compact layout. <code>i53</code> values ride as f64 bit patterns,
-exact to 2^53.</p>
-<h2 id="base64-stdbase64"><a class="header" href="#base64-stdbase64">Base64 (<code>std::base64</code>)</a></h2>
-<p>URL-safe alphabet, no padding (the JWT flavor):</p>
-<pre><code class="language-vilan fragment">fun encode_url(bytes: Bytes): str
-fun decode_url(text: str): Option&lt;Bytes&gt;
+<p><code>resolve</code> takes its base <strong>explicitly</strong>. Node’s <code>path.resolve</code> falls back to
+<code>process.cwd()</code>; taking a working directory would have made this whole module
+<code>@process</code>-only for one function’s convenience, and a caller who means
+“against the working directory” can pass it.</p>
+<h2 id="extname-a-dotfile-has-no-extension"><a class="header" href="#extname-a-dotfile-has-no-extension"><code>extname</code>: a dotfile has no extension</a></h2>
+<p><code>extname(".gitignore")</code> is <code>""</code>, not <code>".gitignore"</code>. The leading dot marks the
+file as hidden — it does not name a type — and getting this wrong is the most
+common bug in hand-rolled path code.</p>
+<pre><code class="language-vilan">import std::print;
+import std::path;
+
+fun main() {
+	print(path::extname("index.html"));   // .html
+	print(path::extname("a.b.c"));        // .c — only the last dot counts
+	print(path::extname("noext"));        // (empty)
+	print(path::extname(".gitignore"));   // (empty)
+	print(path::extname("a.b/c"));        // (empty) — a dot in a directory is not the file's
+	print(path::stem("/a/b.txt"));        // b
+}
+</code></pre>
+<p><code>extname</code> includes the leading dot, and <code>stem(p) + extname(p) == basename(p)</code>
+holds for every <code>p</code>.</p>
+<h2 id="starts_with-compares-components-strstarts_with-compares-text"><a class="header" href="#starts_with-compares-components-strstarts_with-compares-text"><code>starts_with</code> compares components, <code>str::starts_with</code> compares text</a></h2>
+<pre><code class="language-vilan">import std::print;
+import std::path;
+
+fun main() {
+	print("/a/bc".starts_with("/a/b"));           // true  — about the TEXT
+	print(path::starts_with("/a/bc", "/a/b"));    // false — about the FILESYSTEM
+	print(path::starts_with("/a/b/c", "/a/b"));   // true
+}
+</code></pre>
+<p><code>/a/bc</code> is not inside the directory <code>/a/b</code>, and cutting a textual prefix to
+derive a key or an asset URL is the same mistake in the other direction.</p>
+<p><code>starts_with</code> tests and <code>strip_prefix</code> cuts, exactly as the two <code>str</code> verbs
+divide the same work on text:</p>
+<pre><code class="language-vilan">import std::print;
+import std::path;
+import std::option::{ Some, None };
+
+fun main() {
+	print(path::strip_prefix("/srv/site/css/app.css", "/srv/site").unwrap_or("not under"));  // css/app.css
+	print(path::strip_prefix("/a/bc", "/a/b").unwrap_or("not under"));                       // not under
+	print("/a/bc".strip_prefix("/a/b").unwrap_or("?"));                                      // "c" — the wrong tool
+}
+</code></pre>
+<p>Cutting the whole of a path gives <code>Some(".")</code>. There is deliberately no path
+<code>strip_suffix</code>: the only trailing affix a path commonly carries is a file
+extension, and removing that is <code>stem</code>.</p>
+<p><code>strip_prefix</code> and <code>relative</code> answer different questions. <code>relative</code> always
+has an answer for two paths under one root and will climb with <code>..</code> to reach
+it; <code>strip_prefix</code> is “is this mine, and if so what do I call it”, and says
+<code>None</code> when it is not.</p>
+<h2 id="relative-inverts-resolve"><a class="header" href="#relative-inverts-resolve"><code>relative</code> inverts <code>resolve</code></a></h2>
+<pre><code class="language-vilan">import std::print;
+import std::path;
+import std::option::{ Some, None };
+
+fun main() {
+	match path::relative("/srv/site/css", "/srv/site/js/app.js") {
+		Some(let hop) =&gt; print(hop),      // ../js/app.js
+		None =&gt; print("no lexical answer"),
+	}
+}
+</code></pre>
+<p><code>resolve(from, relative(from, to))</code> is <code>normalize(to)</code>. The result is <code>None</code>
+in the two cases with no lexical answer: <code>from</code> and <code>to</code> disagree about being
+absolute (there is no working directory here to bridge them), or <code>from</code> still
+begins with <code>..</code> after the common prefix comes off — climbing out of an
+unknown place, so what is above it is unknown too.</p>
+<h2 id="url-paths-are-out-and-the-seam-is-the-query-string"><a class="header" href="#url-paths-are-out-and-the-seam-is-the-query-string">URL paths are out, and the seam is the query string</a></h2>
+<p>These functions are for paths, not URLs. They share the <code>/</code>-separated core and
+nothing else: <code>extname("/app.js?v=2")</code> is <code>.js?v=2</code> under a file rule and
+<code>.js</code> under a URL rule, <code>%2F</code> is not a separator, and a URL’s root is an
+origin rather than a filesystem root. The split is that a URL’s own grammar —
+scheme, authority, query, fragment — is cut first, and what is left is an
+ordinary path these functions read. <code>std::document</code>’s internal <code>file_name_of</code>
+is exactly that, in two lines:</p>
+<pre><code class="language-vilan fragment">fun file_name_of(url: str): str {
+	path::basename(url.split("?")[0].split("#")[0])
+}
 </code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../std/time.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../std/strings.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../std/markdown.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/numbers.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -405,11 +361,11 @@ fun decode_url(text: str): Option&lt;Bytes&gt;
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../std/time.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../std/strings.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../std/markdown.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/numbers.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

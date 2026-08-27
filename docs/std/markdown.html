@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -183,7 +183,12 @@ versioned with the toolchain until a package registry exists.</p>
 <p>The parser is pure computation — no I/O, no platform types — so it runs
 on any target, and every type it produces is const-eligible by
 construction (<code>str</code>, <code>i32</code>, <code>bool</code>, <code>List</code>, structs, enums; no <code>Shared</code>,
-no <code>View</code>, no closures).</p>
+no <code>View</code>, no closures). That eligibility is exercisable: with the
+compile-time file channel, <code>const parse(asset::read("pages/intro.md"))</code>
+parses a page during compilation — within the const fuel budget even
+for the book’s largest page — and ships the <code>Doc</code> as plain data in the
+output, with the read file tracked as a build input
+(<a href="misc.html#stdasset">std::asset</a>).</p>
 <h2 id="parsing"><a class="header" href="#parsing">Parsing</a></h2>
 <p><code>parse</code> takes the source text and returns <code>Result&lt;Doc, ParseError&gt;</code>.
 Decoding untrusted input is fallible the same way <code>from_json</code> is: handle
@@ -382,7 +387,7 @@ exists.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

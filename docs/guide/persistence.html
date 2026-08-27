@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -289,17 +289,19 @@ no edit here: the build says what it emitted and the server believes it.
 An rpc app adds <code>.with_service(Service::new(protocol))</code> to the same chain
 — <a href="services.html#the-server-side">Services &amp; RPC</a> has it whole.</p>
 <h2 id="files-stdfs"><a class="header" href="#files-stdfs">Files: <code>std::fs</code></a></h2>
-<pre><code class="language-vilan fragment">fun exists(path: str): bool                 // sync — boot code can branch on it
+<pre><code class="language-vilan fragment">fun exists(path: str): bool                 // sync — the module's one blocking call
 fun read_file_to_str(path: str): str        // async (implicitly awaited), UTF-8
-fun read_file_to_str_sync(path: str): str   // sync — for a callback that can't suspend
 fun read_file_encoded(path: str, encoding: str): str   // async — any host encoding
 fun read_bytes(path: str): Bytes            // async — the true binary read
 fun write_file(path: str, contents: str)    // async
 fun read_dir(path: str): List&lt;str&gt;          // async — entry names, flat
 fun stat(path: str): Option&lt;Stat&gt;           // async — None if the path isn't there
 </code></pre>
-<p><code>read_bytes</code> is what serves an image, a font or a favicon: the host’s
-buffer binds to <code>Bytes</code> with no decode in between. <code>read_dir</code> lists a
+<p><code>read_bytes</code> reads a file with no decode in between — the host’s buffer
+binds straight to <code>Bytes</code> — which is what anything that is not text needs.
+An image, a font or a favicon that your <em>build</em> emits no longer needs it:
+<code>serve_build</code> reads and serves those as bytes itself (below). <code>read_bytes</code>
+is for the binary file the build did not write. <code>read_dir</code> lists a
 directory’s immediate entries by name — flat and unordered, so call <code>stat</code>
 per entry when you need file-vs-directory. <code>stat</code> reads <code>size</code>,
 <code>modified_at_ms</code> (epoch millis) and <code>is_directory</code>, and is the one read
@@ -309,7 +311,8 @@ for a caller asking “is this here yet”. Full signatures:
 <p>What a server does <em>not</em> read by hand any more is its own build.
 <code>serve_build</code> knows the bundle’s name, the stylesheet’s, and every chunk’s,
 so the boot reads and the content-type table that used to live here are
-gone.</p>
+gone — including for binary artifacts, which it reads and serves byte for
+byte under a content type generated from the <code>mime-db</code> registry data.</p>
 <h2 id="the-process-stdprocess"><a class="header" href="#the-process-stdprocess">The process: <code>std::process</code></a></h2>
 <pre><code class="language-vilan fragment">fun args(): List&lt;str&gt;          // CLI arguments (vilan run app.vl -- …)
 fun env(key: str): Option&lt;str&gt; // an environment variable
@@ -398,7 +401,7 @@ state that was never stored.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

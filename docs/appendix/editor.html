@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -227,7 +227,17 @@ construct snippets (<code>fun … ( ) { }</code>, <code>struct … { }</code>, <
 <code>match … { }</code>), which sort last.</li>
 <li><strong>After <code>.</code></strong> offers the receiver’s fields and methods; <strong>after <code>?.</code></strong>
 offers the <em>lifted</em> element’s, so an <code>Option&lt;Profile&gt;</code> offers <code>Profile</code>’s
-members.</li>
+members. What counts as “after <code>.</code>” ignores the whitespace and comments
+around it, so a chain written down the page (<code>items</code>, then <code>.filter(f)</code> on
+the next line) completes at each link; and what follows the cursor never
+changes the answer, so completing <em>between</em> two links works too.
+The methods include the ones the receiver’s type inherits as <strong>trait
+defaults</strong> — <code>xs.iter().</code> offers the whole <code>Iterator</code> surface, not the one
+method <code>ListIterator</code>’s own <code>impl</code> block writes out, and a type that
+implements <code>Ord</code> offers <code>min</code>/<code>max</code>/<code>clamp</code> with the comparisons its
+supertraits provide.</li>
+<li><strong>Inside a string or a comment</strong> nothing is offered. A caption is text, not
+code, and a <code>.</code> in one is not a member access.</li>
 <li><strong>After <code>::</code></strong> offers an enum’s variants and statics, a struct’s statics,
 or a module’s members — and only when the name on the left is actually
 <strong>in scope</strong>. It used to match that name against every type the compiler
@@ -396,7 +406,7 @@ the <strong>Vilan Language Server</strong> output channel carries the server’s
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

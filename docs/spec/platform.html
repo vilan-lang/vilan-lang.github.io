@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -243,19 +243,26 @@ per dependency and opt-in (nothing is inherited implicitly), and
 <code>project = true</code> combines with no other key.</li>
 <li><strong><code>[build]</code></strong>: <code>run</code>, plus codegen options: <code>preset</code> (<code>"debug"</code> |
 <code>"release"</code>) and the per-feature overrides <code>indent</code>, <code>spaces</code>,
-<code>debug-names</code>. Build options never change program semantics (§7.6),
-only the emitted text. <code>run</code> is a command line (or a list of them)
-executed through the host shell <strong>before</strong> each build (each <code>--watch</code>
-round included), in the manifest’s directory, in order; a non-zero
-exit fails the build. <code>vilan check</code> builds nothing and runs none.</li>
+<code>debug-names</code>. The <strong>codegen options</strong> never change program semantics
+(§7.6), only the emitted text; <code>run</code> is not one of them. <code>run</code> is a
+command line (or a list of them) executed through the host shell
+<strong>before</strong> each build (each <code>--watch</code> round included), in the
+manifest’s directory, in order; a non-zero exit fails the build. It
+runs with the invoking user’s privileges and environment — no
+sandbox, no allowlist, no timeout, no prompt — and the implementation
+prints each command before spawning it. Only the manifest being built
+contributes hooks: a dependency’s <code>[build] run</code> is never executed.
+<code>vilan check</code> builds nothing and runs none.</li>
 <li><strong><code>[macro]</code></strong>: the compile-time interpreter budget: <code>fuel</code> (steps
 per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
 </ul>
-<p><code>std</code>, <code>pkg</code>, and <code>macro_std</code> are <strong>reserved package names</strong>: they name
-the import roots themselves (§4.2), so a <code>[package] name</code> or a key in
-any <code>dependencies</code> table claiming one is a manifest error — a dependency
-under such a key could only shadow the root or be unreachable behind it.
-<code>[library] name</code> is exempt: the standard library itself is the
+<p><code>std</code>, <code>pkg</code>, <code>macro_std</code>, and <code>vilan</code> are <strong>reserved package names</strong>.
+The first three name the import roots themselves (§4.2), so a
+<code>[package] name</code> or a key in any <code>dependencies</code> table claiming one is a
+manifest error — a dependency under such a key could only shadow the
+root or be unreachable behind it. <code>vilan</code> is the language’s own name,
+held for its official namespace; the same claim is refused in the same
+places. <code>[library] name</code> is exempt: the standard library itself is the
 <code>[library]</code> named <code>std</code> (likewise <code>macro_std</code>), and a library’s own
 name, unlike a dependency key, never binds an import root.</p>
 <h2 id="115-build-products"><a class="header" href="#115-build-products">11.5 Build products</a></h2>
@@ -337,7 +344,7 @@ only one, the designated <code>default-entry</code>, or the one <code>--entry</c
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

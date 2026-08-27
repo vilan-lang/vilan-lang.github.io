@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,6 +191,15 @@ project directory:</p>
 to. From then on every save rebuilds all legs and the channel tells the
 browser exactly what changed. There is no separate <code>dev</code> command:
 <code>run --watch</code> already <em>means</em> “the dev loop”.</p>
+<p>The channel binds <code>127.0.0.1</code> only, and every one of its routes requires a
+token minted fresh for that <code>run --watch</code> process. Your page has it because
+<code>run --watch</code> bakes it into the browser bundle your own server hands out;
+nothing else does, so another page open in the same browser cannot read your
+compile diagnostics off the channel or trigger reloads at it. Nothing to
+configure — the token is per-run and dies with the process — but it does mean
+a browser tab left over from a <em>previous</em> watch session cannot talk to the
+new one until you reload it, and that hand-driving the routes with <code>curl</code>
+needs the token out of <code>dist/&lt;leg&gt;.js</code>.</p>
 <h2 id="what-each-edit-does"><a class="header" href="#what-each-edit-does">What each edit does</a></h2>
 <p>Change detection is by output bytes, not by guessing from the source: each
 save rebuilds every leg, and the <em>artifacts</em> are compared. That makes the
@@ -202,7 +211,8 @@ verdict exact.</p>
 </thead>
 <tbody>
 <tr><td><strong>Client code</strong></td><td>The browser bundle changes → a <strong>swap</strong>: the new bundle is evaluated in place, module state carried across (below). No reload.</td></tr>
-<tr><td><strong>A stylesheet only</strong></td><td>Only the CSS sidecar changed → the stylesheet is <strong>hot-swapped</strong>, with no reload and no swap; the page doesn’t flicker.</td></tr>
+<tr><td><strong>A stylesheet only</strong></td><td>Only the CSS sidecar’s <em>text</em> changed → the stylesheet is <strong>hot-swapped</strong>, with no reload and no swap; the page doesn’t flicker.</td></tr>
+<tr><td><strong>A stylesheet appearing or disappearing</strong></td><td>A leg that emitted no styles now does (or stops) → a <strong>swap</strong>. What changed is which stylesheets the page has, not what one of them says, and that is a change to the browser’s output like any other. The round declares its stylesheets, so the new sheet lands even on a page whose markup has no <code>&lt;link&gt;</code> for it, and a removed one is taken back out.</td></tr>
 <tr><td><strong>Server code</strong></td><td>The server bundle changed → the <strong>Node process restarts</strong>. The browser stays connected; its live rpc mirror reconnects on its own (the same backoff that survives a server crash) and resyncs from the server’s current values.</td></tr>
 <tr><td><strong>Shared code</strong> (a module both entries reach, or a <code>common</code> library both legs use)</td><td>Both bundles change → the server restarts and the browser swaps. The fresh client dials the new contract, so a changed rpc shape never leaves a stale client talking to a new server.</td></tr>
 <tr><td><strong>A file with a mistake</strong></td><td>The compile error shows in the terminal <em>and</em> as an in-page <strong>overlay</strong> (the real file, line, and message) while the running app keeps its last good build. Fix it and the next good save clears the overlay and swaps normally.</td></tr>
@@ -297,11 +307,19 @@ hook exists to produce something the build then consumes.</li>
 <li>Each is a command line for your shell (<code>sh -c</code> / <code>cmd /C</code>), so pipes, globs
 and <code>&amp;&amp;</code> work; the working directory is the manifest’s own, so relative paths
 mean what they say in the file you wrote them in.</li>
+<li>They run as you. A hook has your privileges — your files, your environment,
+your keys — and nothing prompts: building a project runs its hooks, silently
+and unsandboxed, exactly as if you had typed the command. That is the trust
+<code>cargo build</code> and <code>npm run</code> already take, and Vilan doesn’t ask for code you
+wrote. Only the manifest being built declares hooks — a dependency’s are never
+run — so an unfamiliar <code>vilan.toml</code> is worth reading before you build it, the
+way you would read a <code>Makefile</code>.</li>
 <li>A hook that exits non-zero fails the build, naming the command. Nothing
 after it runs.</li>
-<li>Output goes straight to your terminal. (Under <code>vilan build --stdout</code>, which
-writes the emitted JS to stdout, a chatty hook shares that stream; redirect
-it in the command if you pipe the build.)</li>
+<li>Vilan prints each command before spawning it, and the output goes straight to
+your terminal. (Under <code>vilan build --stdout</code>, which writes the emitted JS to
+stdout, a chatty hook shares that stream; redirect it in the command if you
+pipe the build.)</li>
 <li><code>vilan check</code> produces no artifacts, so it runs no hooks.</li>
 </ul>
 <h2 id="freshness-for-a-hand-rolled-server"><a class="header" href="#freshness-for-a-hand-rolled-server">Freshness for a hand-rolled server</a></h2>
@@ -369,8 +387,7 @@ aren’t launched. Under <code>--watch</code> the browser legs hot-swap as usual
 chosen server restarts on its own edits, and a change to a leg that isn’t running
 does nothing visible (its <code>dist/</code> bundle refreshes, but nothing restarts).</p>
 <h2 id="the-css-link-idiom"><a class="header" href="#the-css-link-idiom">The CSS <code>&lt;link&gt;</code> idiom</a></h2>
-<p>CSS hot-swap finds your stylesheet by looking for a <code>&lt;link&gt;</code>, so it needs
-the stylesheet to <em>be</em> a <code>&lt;link&gt;</code> to <code>dist/&lt;leg&gt;.css</code>:</p>
+<p>CSS hot-swap looks for your stylesheet as a <code>&lt;link&gt;</code> to <code>dist/&lt;leg&gt;.css</code>:</p>
 <pre><code class="language-text">&lt;link rel="stylesheet" href="/client.css"&gt;
 </code></pre>
 <p>What it does <em>not</em> do is re-fetch that href. The href is your own server’s
@@ -385,6 +402,16 @@ reload therefore always starts clean, and a fetch that fails warns and
 leaves the current stylesheet exactly as it was rather than reloading onto
 stale bytes. A named sidecar updates only the <code>&lt;link&gt;</code> whose file it is, so
 a workspace with two browser legs refreshes exactly the one that changed.</p>
+<p>The <code>&lt;link&gt;</code> is where the sheet is <em>superseded</em>, not the only way it can
+arrive. A page rendered before your leg emitted any styles carries no
+<code>&lt;link&gt;</code> for them — and since a client-only round never restarts your
+server, it never grows one — so this leg’s own stylesheet joins <code>&lt;head&gt;</code> on
+its own when there is nothing to supersede. (Only ever this leg’s: another
+browser leg’s sidecar is that leg’s page’s business, and is left alone
+here.) The same reconciliation runs on a swap, which is why a round that
+changed both your code and your styles updates both, and why deleting your
+styles takes the sheet back out of the page instead of leaving the last
+version showing.</p>
 <p>An app that inlines its CSS into the page instead gets a full swap on a
 style change rather than the flicker-free stylesheet reload. That is still
 correct (the byte-diff classifies inlined CSS as a bundle change), but not
@@ -569,7 +596,7 @@ of <a href="../std/dev.html"><code>std::dev</code></a>.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

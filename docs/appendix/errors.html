@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -394,6 +394,18 @@ JavaScript’s exact-integer window. Bigger integers take <code>BigInt</code> (<
 The letters after the number aren’t a type. If it says <code>i64</code> or <code>u64</code>:
 those were renamed to <code>i53</code>/<code>u53</code>.
 → <a href="../tour/values-and-types.html">Values and types</a></p>
+<p><strong>“substring start … is negative”</strong>, <strong>“substring end … is negative”</strong>,
+<strong>“substring end … is before its start …”</strong>, <strong>“substring end … is past the
+length … of this string”</strong> (each continuing “— the range must satisfy
+<code>0 &lt;= start &lt;= end &lt;= len</code>, and substring never clamps or swaps”)
+<code>substring(start, end)</code> was written with literal bounds outside its rule, so
+it is refused here rather than at run time. The host’s own <code>substring</code> would
+have <em>corrected</em> the call — clamping a negative to <code>0</code>, swapping an inverted
+pair — and returned a string that is not the one asked for; <code>s.substring(k, -1)</code>
+in JavaScript is <code>s[0..k]</code>, the prefix, not the suffix. Write <code>s.len()</code> for
+“to the end”, and reach for <code>strip_prefix</code>/<code>strip_suffix</code> to drop a known
+affix. Non-literal bounds are checked at run time (below).
+→ <a href="../std/strings.html">Strings</a></p>
 <p><strong>“type of … could not be resolved”</strong>
 Inference gave up somewhere upstream. This error is usually the <em>echo</em>
 of another one, so fix the first error in the list. When it appears
@@ -706,13 +718,21 @@ draft’s next push already does.
 <p><strong>“<code>asset::emit</code> outside a <code>const</code> expression”</strong>
 Styles (and other build assets) are constructed at compile time. Build
 the <code>Style</code> in a <code>const</code> (<code>let card = const style()…</code>); select and merge
-already-built styles at runtime.
+already-built styles at runtime. The channel’s input direction,
+<code>asset::read</code>, is compile-time-only the same way.
 → <a href="../guide/styling.html">Styling</a>, <a href="../tour/macros-and-const.html">Macros &amp; const</a></p>
 <p><strong>“… is compile-time-only; evaluate this call inside a <code>const</code> expression”</strong>
 The same rule, caught statically: some function on this call path reaches
-<code>asset::emit</code>, and the call itself sits in runtime code. The span is the
-outermost runtime crossing — the call that leaves ordinary code and enters
-style-building territory — so wrap <em>that</em> call in a <code>const</code>.</p>
+<code>asset::emit</code> or <code>asset::read</code>, and the call itself sits in runtime code.
+The span is the outermost runtime crossing — the call that leaves ordinary
+code and enters compile-time territory — so wrap <em>that</em> call in a <code>const</code>.</p>
+<p><strong>“cannot read <code>…</code> (resolved against the package root to <code>…</code>): …”</strong>
+A <code>const asset::read(path)</code> found no readable file. Paths are relative
+to the <strong>package root</strong> — the directory imports resolve under, never the
+directory the compiler happens to run from — and the message shows where
+the resolution landed. An absolute path, or one that escapes the package
+root (<code>../…</code>), is refused before any read: the file channel reads the
+project, so the build can track every input it depends on.</p>
 <p><strong>“… is compile-time-only; call it directly inside a <code>const</code> expression — a
 compile-time-only function has no runtime value form”</strong>
 A compile-time-only function (or a closure that reaches one) was used as a
@@ -787,8 +807,9 @@ static (<code>Point::new(…)</code>).
 → <a href="../spec/names.html">spec §4.2</a></p>
 <h2 id="panics"><a class="header" href="#panics">Panics</a></h2>
 <p>These are not compile errors — they are what the program prints when it
-stops at run time. Both exist because the alternative was a host-level
-message naming nothing you wrote.</p>
+stops at run time. Each exists because the alternative was a host-level
+message naming nothing you wrote — or, worse, no message at all and a
+quietly wrong answer.</p>
 <p><strong>“… : … is not one of its values”</strong> (e.g. <code>Align: "middle" is not one of its values</code>)
 An <strong>exhaustive</strong> <code>match</code> over a backed enum met a value outside its
 variant set. A backed enum lowers to a bare host string or number, so its
@@ -801,6 +822,16 @@ answering with whichever variant happened to be last. A <code>match</code> with 
 <code>Enum::parse(text)</code> is the shape to reach for where an unrecognized value
 is one of the answers you expect: it returns <code>Option</code>.
 → <a href="../tour/data-and-traits.html">Data and traits</a>, <a href="../spec/types.html">spec §5.2</a></p>
+<p><strong>“substring out of range: the length is … but the range is …..…”</strong>
+<code>substring(start, end)</code> was called with bounds outside <code>0 &lt;= start &lt;= end &lt;= len</code>, computed rather than literal (a literal pair is refused at compile time
+instead). The rule is absolute: no clamping, no swapping, and an <code>end</code> past the
+length is an error rather than a truncation. This one is a panic <em>because</em> the
+host would not have raised anything — JavaScript’s <code>substring</code> clamps a
+negative to <code>0</code> and swaps an inverted pair, so <code>s.substring(offset, -1)</code> there
+quietly yields <code>s[0..offset]</code>, the complement of the intended cut. Pass
+<code>s.len()</code> as the <code>end</code> to mean “the rest”, and use
+<code>strip_prefix</code>/<code>strip_suffix</code> (which return <code>Option&lt;str&gt;</code>) to drop an affix.
+→ <a href="../std/strings.html">Strings</a></p>
 <p><strong>“mount: no element with id ‘…’”</strong>
 <code>mount</code> or <code>mount_root</code> was given an id nothing on the page carries. The
 host’s <code>get_element_by_id</code> hands back <code>null</code> typed as an <code>Element</code>, so the
@@ -860,7 +891,7 @@ page, <code>check_shell</code> catches the same mismatch at boot.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

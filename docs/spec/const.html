@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -203,30 +203,51 @@ requires the host (the clock, the filesystem, network, randomness, any
 <code>external</code> function without a compile-time definition) is a compile
 error inside <code>const</code> (“<code>now()</code> is not const-evaluable”), not a deferred
 runtime call: the answer would not be a constant.</p>
-<p>The one deliberate exception is <code>std::asset::emit(kind, content)</code>,
-callable <strong>only</strong> during const evaluation: it declares a build asset
-(the styling system’s CSS, for example) that the build writes beside
-the output. Asset emission is deterministic: same inputs, same files.</p>
-<p>A function that reaches <code>emit</code> is <strong>compile-time-only</strong>, transitively,
-and the compiler enforces that statically. A call from runtime code
-into compile-time-only territory is an error at the outermost crossing
-— the call that leaves ordinary code. Because a call made <em>through a
-value</em> has no statically known callee, a compile-time-only function
-also has <strong>no runtime value form</strong>: naming one as a value (passing it
-to a higher-order function, binding it, or writing a closure literal
-that reaches <code>emit</code>) is an error at that reference, outside a <code>const</code>.
-Inside a <code>const</code> the restriction lifts entirely — the interpreter makes
-the call, so <code>const apply(styled)</code> is legal where <code>apply(styled)</code> is
-not.</p>
+<p>The deliberate exception is the <strong>compile-time file channel</strong>,
+<code>std::asset</code>, callable <strong>only</strong> during const evaluation, in three
+directions. <code>emit(kind, content)</code> is the output direction for lines: it
+declares a build asset (the styling system’s CSS, for example) that the
+build writes beside the output. <code>read(path)</code> is the input direction: it
+returns a project file’s text so the result of parsing or transforming
+it can fold into the output. <code>bundle(path)</code> is the output direction for
+whole files: it tells the build to carry a non-code resource into the
+output directory unchanged, and evaluates to the url the copy answers
+on. Every path here is relative to the <strong>package root</strong> (the base
+imports resolve under — never the process working directory), may not
+be absolute or escape that root, and the file becomes a <strong>tracked build
+input</strong>: a change to it invalidates every build product that named it,
+exactly as editing a source file would, and a missing file is a compile
+error at the <code>const</code> expression. The channel keeps const evaluation
+deterministic <em>per build-input closure</em>: same sources and same project
+files, same output — <code>emit</code> same lines out, <code>read</code> same values in,
+<code>bundle</code> same files carried.</p>
+<p>A function that reaches <code>emit</code>, <code>read</code> or <code>bundle</code> is
+<strong>compile-time-only</strong>,
+transitively, and the compiler enforces that statically. A call from
+runtime code into compile-time-only territory is an error at the
+outermost crossing — the call that leaves ordinary code. Because a
+call made <em>through a value</em> has no statically known callee, a
+compile-time-only function also has <strong>no runtime value form</strong>: naming
+one as a value (passing it to a higher-order function, binding it, or
+writing a closure literal that reaches the channel) is an error at
+that reference, outside a <code>const</code>. Inside a <code>const</code> the restriction
+lifts entirely — the interpreter makes the call, so
+<code>const apply(styled)</code> is legal where <code>apply(styled)</code> is not.</p>
 <h2 id="93-failure-and-resource-limits"><a class="header" href="#93-failure-and-resource-limits">9.3 Failure and resource limits</a></h2>
 <p>Const evaluation is total by construction of the budget: each run is
-bounded by the interpreter’s <strong>fuel</strong> (steps) and <strong>depth</strong> (nesting).
-Exhausting either, or panicking during evaluation, is a compile error
-carrying the const expression’s span; a budget failure says so, rather
-than reading as a program error. A runaway <code>const</code> fails the build; it
-cannot hang it. The budgets are the interpreter’s own defaults — the
-manifest’s <code>[macro]</code> section (§11.4) sizes macro <em>expansion</em> only, and
-does not size <code>const</code>.</p>
+bounded by the interpreter’s <strong>fuel</strong> (steps; an <code>asset::read</code> charges
+one per byte read, so fuel bounds input size too — an <code>asset::bundle</code>
+charges a flat cost instead, since its bytes never enter the program
+and a size charge would cap resources rather than work) and <strong>depth</strong>
+(nesting). Exhausting either, or panicking during evaluation, is a
+compile error carrying the const expression’s span; a budget failure
+says so, rather than reading as a program error. A runaway <code>const</code>
+fails the build; it cannot hang it. The fuel budget is sized so that
+real compile-time workloads fit with room to spare — parsing the
+largest page of this book at compile time uses about an eighth of it —
+while a runaway still fails fast. The budgets are compiler constants —
+the manifest’s <code>[macro]</code> section (§11.4) sizes macro <em>expansion</em> only,
+and does not size <code>const</code>.</p>
 <p>The primary span is the <code>const</code> expression itself, always: the tree the
 interpreter evaluates is compiled output and carries no source
 positions, so there is no inner expression to anchor to. The diagnostic
@@ -324,7 +345,7 @@ report.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -197,7 +197,8 @@ though std has one: <code>pkg::ui</code> is always the package’s own module,
 <code>pkg::</code> never reaches a std module.) The root names themselves are
 <strong>reserved</strong>: a manifest may not declare a dependency — or a
 <code>[package] name</code> — as <code>std</code>, <code>pkg</code>, or <code>macro_std</code> (§11.4), so no
-package can shadow a root or vanish behind one. A module name that
+package can shadow a root or vanish behind one; <code>vilan</code>, the language’s
+own name, is reserved alongside them (§11.4). A module name that
 resolves both as <code>name.vl</code> and <code>name/lib.vl</code> is an <strong>ambiguity error</strong>.</p>
 <p>A module name must match the on-disk directory entry <strong>byte for byte</strong>: a
 case-insensitive filesystem that answers <code>import foo</code> with <code>Foo.vl</code> is a
@@ -380,7 +381,7 @@ must be imported. (The exact prelude is the lang-item table, appendix
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

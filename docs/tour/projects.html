@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,17 +191,20 @@ work offline and a moved tag cannot change what you already built.
 Nothing else fetches: the editor uses the cache when it’s there and
 never reaches the network.</p>
 <h2 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h2>
-<p>Three names are refused wherever a manifest names a package: <code>std</code>,
-<code>pkg</code>, and <code>macro_std</code>. They are the import roots the toolchain owns —
-<code>std::</code> is always the standard library, <code>pkg::</code> is always your own
-package, <code>macro_std::</code> is always the macro world’s std — so a dependency
-declared under one of them could only shadow the root or vanish behind
-it. The dependency key is yours to choose, so pick any other name; the
-library it points at keeps its own.</p>
+<p>Four names are refused wherever a manifest names a package: <code>std</code>,
+<code>pkg</code>, <code>macro_std</code>, and <code>vilan</code>. The first three are the import roots
+the toolchain owns — <code>std::</code> is always the standard library, <code>pkg::</code> is
+always your own package, <code>macro_std::</code> is always the macro world’s std —
+so a dependency declared under one of them could only shadow the root or
+vanish behind it. <code>vilan</code> is the language’s own name, held for official
+packages to come. The dependency key is yours to choose, so pick any
+other name; the library it points at keeps its own.</p>
 <h2 id="pre-build-commands-and-default-entry"><a class="header" href="#pre-build-commands-and-default-entry">Pre-build commands and <code>default-entry</code></a></h2>
-<p>Two more keys matter once a project grows. <code>[build] run</code> names a
-command (or a list of them) to run before each build and each <code>--watch</code>
-round: an asset pipeline, a codegen sidecar. And
+<p>Two more keys matter once a project grows. <code>[build] run</code> is a command
+line (or a list of them) for your shell, run before each build and each
+<code>--watch</code> round: an asset pipeline, a codegen sidecar. It runs with your
+privileges and Vilan doesn’t prompt — the manifest is yours, and this is
+the trust <code>cargo build</code> and <code>npm run</code> already take. And
 <code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
 has several. Both are covered in <a href="../guide/dev-loop.html">the dev loop</a>.</p>
 <h2 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h2>
@@ -280,7 +283,7 @@ to remember, because inheritance only happens where you ask for it.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

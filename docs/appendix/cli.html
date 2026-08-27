@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,7 +178,9 @@ command’s flags; this page adds the behavior the one-line help can’t
 carry. One rule up front: <strong><code>vilan upgrade</code> is the only command that
 touches the network.</strong> Everything else (builds, dependency resolution,
 tests) works offline (git dependencies are fetched once by the first
-build that needs them, then served from the cache forever).</p>
+build that needs them, then served from the cache forever). That rule is
+about the network; locally, <code>build</code> and <code>run</code> execute the manifest’s
+<code>[build] run</code> hooks with your own privileges, without prompting.</p>
 <p>For the guided on-ramp, see <a href="../tour/hello-vilan.html">Hello Vilan</a>; for
 <code>--watch</code>, HMR, and the manifest keys that shape the dev loop, see
 <a href="../guide/dev-loop.html">the dev loop</a>.</p>
@@ -213,7 +215,9 @@ the target’s: <code>.mjs</code> on a process runtime (Node/Deno/Bun), so the h
 classifies the emitted ESM without inspecting it, and <code>.js</code> on the
 browser, whose <code>&lt;script type="module"&gt;</code> already declares it. Assets emitted at
 compile time (the styling system’s CSS) land beside the output.
-<code>[build] run</code> hooks execute first; a failing hook fails the build.</p>
+<code>[build] run</code> hooks execute first — through your shell, with your
+privileges, each command printed before it runs; a failing hook fails the
+build.</p>
 <ul>
 <li><code>--stdout</code>: print the JavaScript instead of writing a file.</li>
 <li><code>--platform &lt;p&gt;</code>: <code>node</code>, <code>deno</code>, <code>bun</code>, <code>browser</code>, or <code>none</code>;
@@ -323,6 +327,26 @@ argument. This is deliberately not symmetric with the parameter rule
 above — an argument list sits inside an expression, where the builder
 convention decides layout, while a parameter list is a declaration’s own
 contract and has no shape but one-per-line.</li>
+<li>A <code>style()</code> builder chain’s links are put in a canonical ORDER — the only
+place <code>vilan fmt</code> reorders your code rather than re-laying it out. The order
+is Tailwind CSS’s category sequence (layout, flexbox/grid, spacing, sizing,
+typography, backgrounds, borders, effects, filters, tables,
+transitions/animation, transforms, interactivity, svg, accessibility), with
+every condition combinator after every property method, in the axis order the
+selector nests them: <code>md</code>, then <code>dark</code>, then <code>attribute</code>, then the
+pseudo-classes. Two rules keep it safe, because a chain merges last-wins per
+property slot. A method the formatter does not know — one of your own
+<code>impl Style</code> extensions, or an escape hatch whose slot is an argument
+(<code>raw</code>, <code>with_length</code>, <code>with_color</code>, <code>with_border</code>) — is a <strong>barrier</strong>:
+links sort only within the runs between barriers, and nothing crosses one, so
+a chain of your own methods is left exactly as written. And methods whose
+slots are entangled — the same property, or a CSS shorthand over it
+(<code>padding</code> over <code>padding_x</code> over <code>padding_left</code>, <code>size</code> over <code>width</code> and
+<code>height</code>, <code>border</code> over <code>border_color</code>) — keep their written order, because
+<code>padding</code> then <code>padding_x</code> means something the reverse does not. Only
+independent slots ever cross, so the rendered stylesheet is byte-identical
+before and after. <code>Style + Style</code> operands are never reordered: that merge’s
+order is yours.</li>
 <li>A file the formatter cannot yet print faithfully is left byte-for-byte
 untouched, never half-formatted.</li>
 </ul>
@@ -651,7 +675,7 @@ a newer release exists and changes nothing.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

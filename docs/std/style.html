@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-307743ae.js";
+            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e7aff2b2.js"></script>
+        <script src="../toc-a869b85a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -204,12 +204,14 @@ impl Color {
 	fun black(): Color
 	fun transparent(): Color
 	fun hex(value: str): Color     // "#663399"
+	fun var(name: str): Color      // a custom-property reference ("--accent"); the app declares it
 	fun gray(step: i32): Color     // ramps: 50…900
 	fun blue(step: i32): Color
 	fun red(step: i32): Color
 	fun green(step: i32): Color
 
 	fun rgba(red: i32, green: i32, blue: i32, alpha: f64): Color  // a literal, 0-255 / 0.0-1.0
+	fun oklch(lightness: f64, chroma: f64, hue: f64): Color  // perceptual: 0.0-1.0 / 0.0-0.5 / degrees
 	fun alpha(self, value: f64): Color   // THIS colour at that alpha
 }
 
@@ -224,6 +226,21 @@ so a ramp step stays a <code>var(--gray-900)</code> and keeps re-theming — whi
 8-digit hex could not do. Channels, alphas and the two-stop gradient
 minimum are checked during const evaluation, so a bad value stops the
 build naming itself.</p>
+<p><code>oklch</code> is the perceptual literal — hold a hue angle and step the
+lightness, and the steps look even across hues, which is what deriving a
+palette wants and what <code>rgba</code> cannot promise. Lightness takes the CSS
+<strong>number</strong> form (0.0–1.0, not a percentage), chroma runs 0.0–0.5 (0 is
+achromatic; sRGB tops out near 0.37), and the hue angle is degrees in its
+canonical 0–360 turn — angles wrap in CSS, so one colour keeps one
+spelling and one class. All three ranges are checked during const
+evaluation, and <code>.alpha()</code> composes over the result like over any other
+colour.</p>
+<p><code>Color::var</code> is <code>Length::var</code>’s counterpart — the typed end of the
+dynamic-value channel. It renders <code>var(--name)</code> and <strong>declares nothing</strong>:
+the app owns the custom property’s declaration (its emitted theme block,
+or <code>view.style_var</code> writing it at runtime). <code>.alpha()</code> composes over it
+through the same relative-colour form, so a variable-backed colour
+translucifies exactly like a ramp token.</p>
 <p><code>calc</code> wraps and <code>css</code> does not: <code>Length::calc(e)</code> is
 <code>Length::css("calc(" + e + ")")</code>. Write <code>calc</code> for arithmetic, <code>css</code> for a
 value that is already whole — <code>clamp()</code>, <code>min()</code>, <code>max()</code>, <code>env()</code>,
@@ -272,6 +289,7 @@ one atomic rule, deduplicated build-wide.</p>
 <tr><td><code>padding_top</code>, <code>padding_right</code>, <code>padding_bottom</code>, <code>padding_left</code></td><td><code>Length</code> — one edge</td></tr>
 <tr><td><code>margin_top</code>, <code>margin_right</code>, <code>margin_bottom</code>, <code>margin_left</code></td><td><code>Length</code> — one edge</td></tr>
 <tr><td><code>width</code>, <code>height</code>, <code>min_width</code>, <code>max_width</code>, <code>min_height</code>, <code>max_height</code></td><td><code>Length</code></td></tr>
+<tr><td><code>size</code></td><td><code>Length</code> — width <em>and</em> height, the square case (<code>size(Length::rem(1.0))</code> for an icon box); writes the same two slots, so mixing with <code>width</code>/<code>height</code> is last-wins</td></tr>
 <tr><td><code>top</code>, <code>right</code>, <code>bottom</code>, <code>left</code>, <code>inset</code></td><td><code>Length</code></td></tr>
 <tr><td><code>overflow</code></td><td><code>Overflow</code></td></tr>
 </tbody>
@@ -327,10 +345,19 @@ after a longhand replaces the family outright. Per condition, so a
 <code>hover</code> or <code>dark</code> variant never disturbs the base, and through <code>raw</code>
 too, since the family is a fact about the CSS property.</p>
 <p>Escape hatches:</p>
-<pre><code class="language-vilan fragment">fun raw(self, property: str, value: str): Style
+<pre><code class="language-vilan fragment">fun raw&lt;V: CssValue&gt;(self, property: str, value: V): Style
 fun with_length(self, property: str, value: Length): Style
 fun with_color(self, property: str, value: Color): Style
 </code></pre>
+<p><code>CssValue</code> is what a declaration’s value may be: a <code>str</code> (a complete CSS
+value, verbatim), a <code>Length</code>, or a <code>Color</code>. A <code>Length</code> or <code>Color</code> that is a
+theme token — <code>space(4)</code>, <code>Color::blue(300)</code> — carries its own <code>:root</code>
+declaration onto the stylesheet, so <code>.raw("padding", space(4))</code> is never a
+dangling <code>var()</code>. <code>with_length</code> and <code>with_color</code> are <code>raw</code> at those two value
+types, kept for the spelling the surface has always had.</p>
+<p>Pass the value, not its text: <code>space(4).css</code> is the string
+<code>var(--space-4)</code> with the declaration left behind, and a <code>str</code> carries no
+token.</p>
 <h2 id="conditions"><a class="header" href="#conditions">Conditions</a></h2>
 <p>Each takes an inner <code>Style</code> and conditions all of its slots:</p>
 <pre><code class="language-vilan fragment">fun hover(self, inner: Style): Style
@@ -340,6 +367,7 @@ fun disabled(self, inner: Style): Style
 fun first(self, inner: Style): Style      // :first-child
 fun last(self, inner: Style): Style       // :last-child
 fun dark(self, inner: Style): Style       // :root[data-theme="dark"] ancestor
+fun attribute(self, name: str, value: str, inner: Style): Style  // .sX[name="value"] — the element itself
 fun pseudo(self, name: str, inner: Style): Style
 
 fun sm(self, inner: Style): Style          // breakpoints (min-width):
@@ -349,21 +377,108 @@ fun xl(self, inner: Style): Style
 fun media(self, min_width: str, inner: Style): Style
 </code></pre>
 <h3 id="stacking"><a class="header" href="#stacking">Stacking</a></h3>
-<p>The three condition axes nest <strong>outside-in, in the order the selector
-nests them</strong> — media, then dark, then the pseudo-class:</p>
+<p>The four condition axes nest <strong>outside-in, in the order the selector
+nests them</strong> — media, then dark, then the attribute, then the
+pseudo-class:</p>
 <pre><code class="language-vilan fragment">style().md(style().dark(style().hover(style().opacity(0.8))))
 // @media (min-width: 768px){:root[data-theme="dark"] .sX:hover{opacity:0.8}}
+
+style().md(style().dark(style().attribute("data-open", "true", style().hover(style().opacity(0.8)))))
+// @media (min-width: 768px){:root[data-theme="dark"] .sX[data-open="true"]:hover{opacity:0.8}}
 </code></pre>
 <p>Every other order is a compile-time-evaluation panic naming the fix
 (<code>hover(dark(..))</code> says to write <code>dark(hover(..))</code>), and no axis can wrap
-itself — one media, one dark, one pseudo-class per slot. Media rules emit
-in ascending min-width order, so a chain like <code>.sm(x).lg(y)</code> is
-mobile-first: the widest matching breakpoint wins.</p>
+itself — one media, one dark, one attribute, one pseudo-class per slot.
+Media rules emit in ascending min-width order, so a chain like
+<code>.sm(x).lg(y)</code> is mobile-first: the widest matching breakpoint wins.</p>
+<p><code>attribute</code> conditions on the element <strong>itself</strong> — <code>.sX[data-open="true"]</code>
+— where <code>dark</code> is the ancestor form. It is the general spelling of state
+carried in markup: <code>data-state</code>, <code>data-open</code>, <code>aria-expanded</code> — any
+attribute rides, <code>aria-*</code> included, and the value matches exactly. The
+app owns <em>setting</em> the attribute on the element; the style only selects
+on it. Name and value refuse quotes, spaces and <code>:</code> at const time (they
+delimit the machinery underneath), and a styling hook is a single token
+in practice.</p>
 <p><code>dark</code> is an ancestor selector, so a composed <code>dark(hover(..))</code> rule is
 more specific than either <code>dark(..)</code> or <code>hover(..)</code> alone and wins
-against both. Between an <em>un</em>composed <code>dark(x)</code> and <code>hover(y)</code> on the
-same property the two are equally specific and dark wins, so use
-<code>dark(hover(..))</code> when a dark theme needs its own hover.</p>
+against both — and the same holds along the attribute axis:
+<code>attribute(.., hover(..))</code> outranks both of its parts. Between an
+<em>un</em>composed <code>dark(x)</code> and <code>hover(y)</code> on the same property the two are
+equally specific and dark wins, so use <code>dark(hover(..))</code> when a dark
+theme needs its own hover.</p>
+<h2 id="declaration-blocks"><a class="header" href="#declaration-blocks">Declaration blocks</a></h2>
+<p><code>Style</code> dresses an <em>element</em>. A <strong>declaration block</strong> puts a set of
+declarations under a selector <strong>you</strong> choose — a theme’s custom properties
+under <code>[data-theme="…"]</code>, a <code>:root</code> token table, a reset’s <code>box-sizing</code> —
+minting no class, producing no <code>Style</code> and touching no slot key.</p>
+<pre><code class="language-vilan fragment">fun declarations(): Declarations                 // opens a declaration chain
+fun declare(selector: str, body: Declarations)   // puts the block in the stylesheet
+
+impl Declarations {
+    fun raw&lt;V: CssValue&gt;(self, property: str, value: V): Declarations
+    fun color(self, property: str, value: Color): Declarations     // `raw` at that value type
+    fun length(self, property: str, value: Length): Declarations   // likewise
+}
+</code></pre>
+<p><code>declare</code> is compile-time-only — it reaches <code>std::asset::emit</code>, so it belongs
+inside a <code>const</code> expression. Building the chain is ordinary code: a
+<code>Declarations</code> value accumulates the token lines it owes and <code>declare</code> puts
+them on the sheet with the block.</p>
+<pre><code class="language-vilan">import std::style::{ Color, declare, declarations, space };
+
+fun theme(id: str) {
+    declare(
+        i"[data-theme=\"{id}\"]",
+        declarations()
+            .color("--color-ink", Color::hex("#fafafa"))
+            .color("--color-ground", Color::hex("#161616"))
+            .length("--gap", space(4)),
+    );
+}
+
+let _iron = const theme("iron-dark");
+
+fun main() {}
+</code></pre>
+<p>That emits one line into the build’s stylesheet:</p>
+<pre><code class="language-text">@layer vilan{[data-theme="iron-dark"]{--color-ink:#fafafa;--color-ground:#161616;--gap:var(--space-4)}}
+</code></pre>
+<p>A <code>Color</code> or <code>Length</code> spent in a block — through <code>raw</code>, <code>color</code> or <code>length</code>,
+which are one method — carries its own <code>:root</code> token line onto the sheet
+exactly as a <code>Style</code> property does, so a ramp or spacing token used here is
+never a dangling <code>var()</code>. The line lands when <code>declare</code> does: a chain that is
+never declared reaches the stylesheet with nothing.</p>
+<h3 id="ordering"><a class="header" href="#ordering">Ordering</a></h3>
+<p>Every block emits inside one cascade layer, <code>@layer vilan</code>, and that is the
+whole ordering rule. Unlayered styles beat layered ones whatever their
+specificity, so <strong>a <code>Style</code> always wins against a declaration block</strong>: a
+block cannot reach in and out-specify a view’s own rules, however specific
+the selector it names, and where its line lands in the stylesheet’s sort
+decides nothing. Among blocks, ordinary CSS applies — specificity first,
+then the sheet’s own deterministic line order.</p>
+<p>The other face of the same rule: a block cannot override an <strong>unlayered</strong>
+declaration either, which includes std’s own token lines (<code>--space-4</code>,
+<code>--gray-50</code>) and any hand-written CSS the page loads. Declare your own
+custom properties and read them back with <code>Color::var</code> / <code>Length::var</code> —
+that composes exactly, and it is what a theme wants anyway.</p>
+<h3 id="refusals"><a class="header" href="#refusals">Refusals</a></h3>
+<p>Checked at const time, each naming its fix:</p>
+<ul>
+<li>a selector that is blank, carries a <strong>newline</strong> — the asset channel is
+line-granular, so a newline does not indent the rule, it splits it into
+two independently deduplicated and sorted lines — or carries a <strong>brace</strong>,
+which is <code>declare</code>’s to write;</li>
+<li>a selector that is an <strong>at-rule</strong>: <code>declare</code> puts declarations under a
+selector, and a group at-rule (<code>@media</code>, <code>@supports</code>) holds rules, not
+declarations;</li>
+<li>a block with <strong>no declarations</strong>;</li>
+<li>a property carrying <code>:</code> or <code>;</code>, the two separators it owns, or a blank
+value. A <code>;</code> inside a <em>value</em> stays legal, so a data URI rides
+(<code>url("data:image/svg+xml;base64,…")</code>).</li>
+</ul>
+<p><code>vilan fmt</code> never reorders a <code>declarations()</code> chain. Its links are cascade
+text joined in authoring order, where a <code>style()</code> chain’s links each own a
+slot and may be sorted freely.</p>
 <h2 id="runtime-legal-operations"><a class="header" href="#runtime-legal-operations">Runtime-legal operations</a></h2>
 <p>Construction emits rules and therefore lives in <code>const</code>; these do not emit
 and work anywhere:</p>
@@ -422,7 +537,7 @@ style.class_list(): str    // the space-joined class attribute (what `styled` us
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-73359ec7.js"></script>
+        <script src="../theme/vilan-7f5c53e4.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
