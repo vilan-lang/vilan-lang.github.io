@@ -99,13 +99,11 @@ deliberately — the book rebuilds on a daily cron whose "commit only if it
 changed" guard a build date would defeat, and the hand-kept pair follows
 the same rule so the trio reads alike.
 
-## The 404 forwarder's sunset (N8 — proposed, not ruled)
+## The 404 forwarder's sunset (N8 — RULED and executed 2026-08-28)
 
-`404.html` forwards `/vilan/<page>` → `/docs/<page>` for the editor-hover
-deep links that released binaries through v0.15.0 still emit (the book
-moved to `/docs/` at road-to-launch P2). GitHub Pages keeps no access
-logs, so there is no traffic number to retire it on. Proposed condition,
-awaiting the owner's ruling: drop the forwarder at the beta switch — the
-version jump is already the moment old-toolchain accommodations reset,
-and every binary that emits the old path will be more than twenty
-releases stale by then. Until ruled, the shim stays.
+The `/vilan/<page>` → `/docs/<page>` forwarder that lived in `404.html`
+was removed 2026-08-28 on the owner's ruling: remove now and let the old
+links die — an exception made deliberately because the project is in
+alpha with no traction yet, not a precedent for retiring accommodations
+early. `404.html` remains as the plain not-found page. The deep links
+affected were editor hovers from binaries at or before v0.15.0.
