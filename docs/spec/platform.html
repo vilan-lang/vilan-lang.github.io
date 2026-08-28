@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -241,18 +241,38 @@ member writes <code>dep = { project = true }</code> to take that declaration
 (paths in it resolve against the <strong>project root</strong>). Inheritance is
 per dependency and opt-in (nothing is inherited implicitly), and
 <code>project = true</code> combines with no other key.</li>
-<li><strong><code>[build]</code></strong>: <code>run</code>, plus codegen options: <code>preset</code> (<code>"debug"</code> |
-<code>"release"</code>) and the per-feature overrides <code>indent</code>, <code>spaces</code>,
-<code>debug-names</code>. The <strong>codegen options</strong> never change program semantics
-(§7.6), only the emitted text; <code>run</code> is not one of them. <code>run</code> is a
-command line (or a list of them) executed through the host shell
-<strong>before</strong> each build (each <code>--watch</code> round included), in the
-manifest’s directory, in order; a non-zero exit fails the build. It
-runs with the invoking user’s privileges and environment — no
-sandbox, no allowlist, no timeout, no prompt — and the implementation
-prints each command before spawning it. Only the manifest being built
-contributes hooks: a dependency’s <code>[build] run</code> is never executed.
-<code>vilan check</code> builds nothing and runs none.</li>
+<li><strong><code>[build]</code></strong>: <code>run</code> and <code>[[build.hook]]</code>, plus codegen options:
+<code>preset</code> (<code>"debug"</code> | <code>"release"</code>) and the per-feature overrides
+<code>indent</code>, <code>spaces</code>, <code>debug-names</code>. The <strong>codegen options</strong> never
+change program semantics (§7.6), only the emitted text; the hooks are
+not among them. <code>run</code> is a command line (or a list of them) executed
+through the host shell <strong>before</strong> each build (each <code>--watch</code> round
+included), in the manifest’s directory, in order; a non-zero exit
+fails the build. It runs with the invoking user’s privileges and
+environment — no sandbox, no allowlist, no timeout, no prompt — and
+the implementation prints each command before spawning it. Only the
+manifest being built contributes hooks: a dependency’s are never
+executed, whatever they declare, and a dependency that declares one
+is reported rather than passed over in silence. <code>vilan check</code> builds
+nothing and runs none.
+<code>[[build.hook]]</code> is the same execution with a <code>name</code> and, optionally,
+declared <code>inputs</code> and <code>outputs</code>: file or directory paths, relative to
+the manifest, matched literally (there is no glob matching, and a
+pattern is an error). Such a hook is <strong>skipped</strong> when it has a
+recorded stamp and every declared input and output hashes, by
+content, to the value recorded when it last ran, with the command
+string unchanged; a declared input that was absent is recorded as
+absent, so its appearance invalidates. A hook declaring neither
+<code>inputs</code> nor <code>outputs</code> is never fresh and always runs. Skipping is a
+cost optimization over code already trusted to run, never a security
+property. Where the stamp is recorded, and its format, are
+implementation-defined; that it is inside the project — so deleting
+the build output directory re-runs every hook — is not.</li>
+<li><strong>Dependency trust</strong>: a dependency declaration takes <code>build-hooks</code>, a
+boolean granting <em>that one dependency</em> permission to run its own
+build hooks. Absent means no. Nothing runs a dependency’s hooks in
+this version, granted or not; the key records the grant so it is a
+reviewable line before there is a mechanism behind it.</li>
 <li><strong><code>[macro]</code></strong>: the compile-time interpreter budget: <code>fuel</code> (steps
 per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
 </ul>
@@ -273,6 +293,18 @@ The extension states the module kind to the host: <code>.mjs</code> on the proce
 platforms, whose runtimes classify a file as ESM or CommonJS before
 running it, and <code>.js</code> on the browser, where the loading
 <code>&lt;script type="module"&gt;</code> tag classifies it instead.</p>
+<p>Any other emitted kind (§9.2’s channel takes an arbitrary kind) lands
+the same way: <code>dist/&lt;name&gt;.&lt;kind&gt;</code>, holding the kind’s deduplicated
+lines in a kind-specific deterministic order — <code>css</code> sorts in cascade
+order (base rules before <code>@media</code> blocks, media blocks by ascending
+min-width), and every other kind sorts lexically by line — so a kind’s
+bytes are a function of the set of contributions, never of the order
+const evaluation reached them. A kind that stops being emitted stops
+shipping: the build records which kind files each entry’s flush wrote
+(<code>dist/.vilan-asset-kinds</code>) and removes a recorded file when a later
+build emits nothing for its kind. Only recorded files are ever
+removed — a file the record does not name is never the build’s to
+touch.</p>
 <p>A <code>browser</code> entry declaring <strong><code>split = true</code></strong> emits <strong>route chunks</strong>
 instead of one file: <code>dist/&lt;name&gt;.js</code> carries every module-level binding
 (so §7.6’s initialization order is untouched) and every function two or
@@ -344,7 +376,7 @@ only one, the designated <code>default-entry</code>, or the one <code>--entry</c
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

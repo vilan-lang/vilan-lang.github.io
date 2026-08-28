@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -485,7 +485,9 @@ at-least-once — see
 <p><strong>Going deeper.</strong> The backoff dials at 250 ms doubling to a 4 s cap,
 ten attempts before giving up (<code>Closed</code>). Mirrors rebind by
 re-running the contract check and re-attaching each subscription; you
-never re-subscribe manually. The full state machine is in the
+never re-subscribe manually — and if either step is refused, the
+connection goes <code>Closed</code> too, rather than reporting itself live over
+mirrors that can no longer update. The full state machine is in the
 <a href="../std/rpc.html">rpc reference</a>.</p>
 </blockquote>
 <h2 id="authentication"><a class="header" href="#authentication">Authentication</a></h2>
@@ -655,7 +657,7 @@ tasks that write signals when done.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

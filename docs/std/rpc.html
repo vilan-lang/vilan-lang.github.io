@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -255,8 +255,16 @@ impl SocketTransport {
 calls reject with <code>Transport("connection lost")</code>, new calls fail fast with
 <code>Transport("not connected")</code>; dial with backoff (250 ms doubling, 4 s cap,
 10 attempts); on success → contract re-check, mirrors re-attach and resync,
-<code>Connected</code>. Backoff exhausted → <code>Closed</code>. Nothing is ever silently
-retried; retry is the app’s decision.</p>
+<code>Connected</code>. Nothing is ever silently retried; retry is the app’s decision.</p>
+<p><code>Closed</code> is terminal, and three things reach it: the attempt budget runs
+out; the re-dialled server’s contract has <strong>drifted</strong> (it redeployed a
+different surface, so typed mirrors would decode against a shape they were
+not built for); or the <strong>re-attach itself is refused</strong> — the server answers,
+but will not hand back channel ids. The last two close the socket rather
+than staying <code>Connected</code>, because a mirror that cannot be rebound is pointed
+at the previous connection’s dead channels: it would never update again, and
+the socket would say nothing was wrong. Bind <code>Closed</code> and offer the restart;
+that decision is the app’s.</p>
 <p><code>on_reconnect</code> is where that decision goes. Hooks run after each successful
 re-dial, awaited in order, and the generated client registers its own mirror
 re-attach when it connects — so <strong>a hook you register runs after the mirrors
@@ -387,7 +395,7 @@ transport or protocol bridge.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

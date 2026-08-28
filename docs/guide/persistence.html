@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -288,14 +288,98 @@ async fun main() {
 no edit here: the build says what it emitted and the server believes it.
 An rpc app adds <code>.with_service(Service::new(protocol))</code> to the same chain
 — <a href="services.html#the-server-side">Services &amp; RPC</a> has it whole.</p>
+<h3 id="caching-etag-and-304"><a class="header" href="#caching-etag-and-304">Caching: ETag and 304</a></h3>
+<p>Anything you serve at a <strong>fixed URL</strong> re-downloads on every page load
+until you give the browser a validator. The policy every static layer
+converges on has two tiers, and the <em>name</em> decides which one a response
+gets:</p>
+<ul>
+<li>A <strong>fingerprinted name</strong> — one that carries a content hash, so a new
+build writes a new URL — is free to be cached for a year and never asked
+about again: <code>Cache-Control: public, max-age=31536000, immutable</code>. No
+validator needed; the name already is one.</li>
+<li>A <strong>fixed URL</strong> — <code>/</code>, a favicon, a page the browser asks for by that
+exact path — can change under the cache, so it gets a short life or
+<code>no-cache</code>, plus an <code>ETag</code>, and a revalidation answers <code>304 Not Modified</code> instead of re-sending the bytes.</li>
+</ul>
+<p><code>std::http</code> ships the validator tier whole. <code>etag_of(bytes)</code> mints a
+strong, quoted tag from the bytes’ sha-256 — compute it once, where the
+bytes settle. <code>etag_response(request, tag, bytes, content_type)</code> answers
+the request: <code>304</code> with the tag echoed and no body when the request’s
+<code>If-None-Match</code> already names it, the full <code>200</code> otherwise. It returns the
+builder still open, so the Cache-Control tier chains after it and reaches
+both arms:</p>
+<pre><code class="language-vilan norun">import std::bytes::encode_utf8;
+import std::http::{ Server, etag_of, etag_response };
+
+async fun main() {
+	let page = encode_utf8("&lt;!doctype html&gt;&lt;h1&gt;hello&lt;/h1&gt;");
+	let tag = etag_of(page);   // once, at boot — the bytes are settled
+
+	Server::builder()
+		.port(8080)
+		.on_request(|request| {
+			// A fixed URL revalidates: no-cache + ETag means every load
+			// asks, and an unchanged page answers 304 with no body.
+			etag_response(request, tag, page, "text/html; charset=utf-8")
+				.set_header("Cache-Control", "no-cache")
+				.build()
+		})
+		.build()
+		.start();
+}
+</code></pre>
+<p>A page you render per request works the same way — hash the rendered
+bytes with <code>etag_of</code> before answering, and an unchanged render still
+saves the transfer, just not the render. The matching semantics (the
+list and <code>*</code> forms, weak comparison, the GET/HEAD gate) are in the
+<a href="../std/process.html#stdhttp-the-server">reference</a>.</p>
+<p><strong>The same two tiers, for a served build.</strong> The artifacts <code>serve_build</code>
+installs get no caching by default — one
+<code>Content-Type</code> header and the bytes — because which tier a build’s files
+belong in is a deployment’s decision and not one std can make for you. Opt
+in with <code>cache_build</code>, which asks your policy per artifact, keyed on the
+route:</p>
+<pre><code class="language-vilan norun">import std::build::require_build;
+import std::http::{ CachePolicy, Response, Server };
+
+async fun main() {
+	Server::builder()
+		.port(8080)
+		.serve_build(require_build("client"))
+		.cache_build(|url| if url.starts_with("/chunk-") {
+			// Fingerprinted: the name changes when the bytes do.
+			CachePolicy::none().cache_control("public, max-age=31536000, immutable")
+		} else {
+			// Fixed URL: revalidate, and pay a body only when it changed.
+			CachePolicy::validated().cache_control("no-cache")
+		})
+		.on_request(|request| Response::builder().code(404).body("Not Found").build())
+		.build()
+		.start();
+}
+</code></pre>
+<p>That is the same two tiers as above, written once instead of per route:
+<code>validated()</code> is the <code>etag_of</code> + <code>etag_response</code> pair applied to the
+artifact’s own bytes, and <code>cache_control</code> is the header, reaching the <code>304</code>
+arm as well as the <code>200</code>. Delete the <code>cache_build</code> line and the server is
+byte-for-byte back to no caching — there is no third state, and no default
+moved under you.</p>
 <h2 id="files-stdfs"><a class="header" href="#files-stdfs">Files: <code>std::fs</code></a></h2>
-<pre><code class="language-vilan fragment">fun exists(path: str): bool                 // sync — the module's one blocking call
-fun read_file_to_str(path: str): str        // async (implicitly awaited), UTF-8
+<pre><code class="language-vilan fragment">fun read_file_to_str(path: str): str        // async (implicitly awaited), UTF-8
 fun read_file_encoded(path: str, encoding: str): str   // async — any host encoding
 fun read_bytes(path: str): Bytes            // async — the true binary read
 fun write_file(path: str, contents: str)    // async
 fun read_dir(path: str): List&lt;str&gt;          // async — entry names, flat
 fun stat(path: str): Option&lt;Stat&gt;           // async — None if the path isn't there
+
+resource external struct File               // an open file — the handle tier
+fun with_file&lt;T&gt;(path: str, body: |File| T): T   // open, run, close (awaited)
+
+resource external struct Watcher            // a live watch — the watch tier
+fun Watcher::watch(path: str): Watcher      // the path, and a directory's own entries
+fun Watcher::watch_all(path: str): Watcher  // the whole tree beneath it
+fun Watcher::next(self): Change             // async — the next change
 </code></pre>
 <p><code>read_bytes</code> reads a file with no decode in between — the host’s buffer
 binds straight to <code>Bytes</code> — which is what anything that is not text needs.
@@ -306,8 +390,72 @@ directory’s immediate entries by name — flat and unordered, so call <code>st
 per entry when you need file-vs-directory. <code>stat</code> reads <code>size</code>,
 <code>modified_at_ms</code> (epoch millis) and <code>is_directory</code>, and is the one read
 here that answers <code>None</code> instead of throwing on a missing path: it exists
-for a caller asking “is this here yet”. Full signatures:
+for a caller asking “is this here yet” — <code>stat(path).is_some()</code> is the
+existence probe (there is no <code>exists</code>; everything in this module is
+async, and <code>stat</code> answers strictly more).</p>
+<p>When one open file needs more than one act — read a header, then seek
+into the middle; write, then <code>sync</code> for durability — you open a handle.
+<code>File::open(path)</code> (and <code>create</code>, <code>create_new</code>, <code>append_to</code>, <code>modify</code>)
+hands back a <em>resource</em>: it moves rather than copies, and its destructor
+closes the handle at scope end, so there is no <code>close()</code> to forget —
+<code>drop(file)</code> closes early. Reads and writes are positional
+(<code>file.read_at(buffer, position)</code>, <code>file.write_at(buffer, position)</code>),
+<code>file.stat()</code> answers with no <code>Option</code> (the handle is already open, and
+nothing re-resolves the path between probe and act), and <code>file.sync()</code> is
+<code>fsync</code>, the durability step <code>write_atomic</code> alone cannot give you. The
+documented idiom is the scoped form:</p>
+<pre><code class="language-vilan norun">import std::bytes::{ Bytes, decode_utf8 };
+import std::fs::with_file;
+
+fun main() {
+	let head = with_file("data.bin", |file| {
+		let buffer = Bytes::alloc(16);
+		file.read_at(buffer, 0);
+		decode_utf8(buffer.slice(0, 16))
+	});
+}
+main();
+</code></pre>
+<p><code>with_file</code> opens the file, hands it to your closure as a per-call
+parameter, and closes it before returning — with the close <em>awaited</em>, so
+a failure to close is a failure of <code>with_file</code>; a <code>File</code> you hold
+yourself closes through its destructor instead, which starts the close
+without waiting on it. Full signatures:
 <a href="../std/process.html#stdfs">the process reference</a>.</p>
+<p>When you want to know that a file changed rather than to read it once,
+you open a <em>watch</em>. <code>Watcher::watch(path)</code> observes a path (and a
+directory’s immediate entries); <code>Watcher::watch_all(path)</code> observes the
+whole tree under it. You pull changes out one at a time:</p>
+<pre><code class="language-vilan norun">import std::fs::{ Change, ChangeKind, Watcher };
+import std::print;
+
+fun main() {
+	let watcher = Watcher::watch_all("content");
+	let change = watcher.next();
+	match change.kind {
+		ChangeKind::Created =&gt; print(i"new: {change.path}"),
+		ChangeKind::Modified =&gt; print(i"changed: {change.path}"),
+		ChangeKind::Removed =&gt; print(i"gone: {change.path}"),
+	}
+}
+main();
+</code></pre>
+<p><code>next()</code> is async like everything else here, so it reads as a plain call
+and suspends until something happens, and <code>change.path</code> is ready to hand
+to <code>read_file_to_str</code>. There is no callback form: a <code>|Change| void</code>
+handler could not await the read of the file it was told about, and could
+not hold a <code>File</code> open across events either — a pull returns into a scope
+that can. Under the hood it <em>polls</em>, comparing stats every 300 ms, which
+is what lets it tell creation from modification from removal on every
+platform (the host’s own <code>fs.watch</code> cannot); the costs are up to an
+interval of latency, blindness to a change that cancels itself out inside
+one interval, and a <code>stat</code> per watched entry per interval — so watch the
+narrowest path that answers your question. A <code>Watcher</code> is a <code>resource</code>
+like <code>File</code>, its destructor stops the poll, and that matters more than it
+does for a handle: a live poll holds the event loop open, so <strong>a watcher
+that is never dropped is a program that never exits.</strong></p>
+<p><code>std::watch</code> is a different thing wearing a similar name — the dev-refresh
+channel (<code>is_watching()</code>, <code>force_refresh()</code>), not a file watcher.</p>
 <p>What a server does <em>not</em> read by hand any more is its own build.
 <code>serve_build</code> knows the bundle’s name, the stylesheet’s, and every chunk’s,
 so the boot reads and the content-type table that used to live here are
@@ -401,7 +549,7 @@ state that was never stored.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

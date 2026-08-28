@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -219,6 +219,7 @@ impl ServerBuilder {
 	fun on_start(own self, callback: |Server| void): ServerBuilder
 	fun on_stop(own self, callback: |Server| void): ServerBuilder
 	fun serve_build(own self, build: LegBuild): ServerBuilder   // one route per artifact
+	fun cache_build(own self, policy: |str| CachePolicy): ServerBuilder   // opt in to caching
 	fun build(self): Server
 }
 impl Server {
@@ -251,30 +252,62 @@ impl ResponseStream {
 	fun close(self)                     // end the response
 	fun on_close(self, handler: || void)   // the client went away
 }
-</code></pre>
-<p><code>Request::header</code> reads one header off the request, which is what a
-conditional request needs — the validator arrives as <code>If-None-Match</code>, and
-the response side (<code>code(304)</code> + <code>set_header</code>) could already express the
-answer:</p>
-<pre><code class="language-vilan norun">import std::http::{ Response, Server };
-import std::option::Option::{ None, Some, self };
 
-fun main() {
+// conditional requests (ETag / If-None-Match)
+fun etag_of(body: Bytes): str          // async — a strong validator, quoted
+fun if_none_match_matches(header: str, etag: str): bool
+fun etag_response(request: Request, etag: str, body: Bytes, content_type: str): ResponseBuilder
+
+// what `cache_build` asks for, per served artifact
+impl CachePolicy {
+	fun none(): CachePolicy                                    // no validator, no header
+	fun validated(): CachePolicy                               // ETag + 304
+	fun cache_control(own self, value: str): CachePolicy       // the field value, verbatim
+}
+</code></pre>
+<p><code>Request::header</code> reads one header off the request, and the conditional
+request built on it ships whole. <code>etag_of</code> mints a <strong>strong validator</strong> for
+a body: the first 32 hex digits of its sha-256 with the quotes included,
+because an entity-tag <em>is</em> quoted on the wire — 128 bits is enough that
+colliding with a body you did not choose is a second preimage, at half the
+header weight of the full digest. <code>etag_response</code> then answers the request:
+a <code>304 Not Modified</code> with the ETag echoed and no body when the request’s
+<code>If-None-Match</code> already names the tag, or the full <code>200</code> with <code>ETag</code>,
+<code>Content-Type</code> and the bytes. It hands back the <code>ResponseBuilder</code> still
+open, so your policy headers chain after it and land on <strong>whichever arm
+answered</strong> — which is exactly what a 304 needs, since it carries the
+headers its 200 would have carried:</p>
+<pre><code class="language-vilan norun">import std::bytes::encode_utf8;
+import std::http::{ Server, etag_of, etag_response };
+
+async fun main() {
+	let page = encode_utf8("&lt;h1&gt;hello&lt;/h1&gt;");
+	let tag = etag_of(page);   // once, where the bytes settle
+
 	Server::builder()
 		.on_request(|request| {
-			let tag = "\"v1\"";
-			match request.header("If-None-Match") {
-				Some(let seen) =&gt; if seen == tag {
-					ret Response::builder().code(304).build();
-				},
-				None =&gt; {}
-			}
-			Response::builder().set_header("ETag", tag).body("hello").build()
+			etag_response(request, tag, page, "text/html; charset=utf-8")
+				.set_header("Cache-Control", "no-cache")
+				.build()
 		})
 		.build()
 		.start();
 }
 </code></pre>
+<p>The matching is RFC 9110’s, all three forms of the field: a single
+entity-tag, a comma-separated list of them, and <code>*</code> (which matches any
+representation the server holds). Comparison is <strong>weak</strong>, as the RFC
+mandates for <code>If-None-Match</code> — a <code>W/</code> marker on either side is ignored — so
+a client revalidating through a proxy that weakened the tag it forwarded
+still gets its 304. Only <code>GET</code> and <code>HEAD</code> revalidate: on any other method a
+matching <code>If-None-Match</code> means <code>412 Precondition Failed</code>, a state-changing
+route’s protocol, so there the header is not consulted and the full
+response goes out. One documented limit: the list form is split on commas,
+so an <code>etag</code> that itself embeds a comma cannot be found in a list — no tag
+<code>etag_of</code> mints does. <code>if_none_match_matches(header, etag)</code> is the
+comparison half on its own, for a handler that wants to build both arms
+itself. Task-oriented usage — the two-tier cache policy this slots into —
+is in <a href="../guide/persistence.html#caching-etag-and-304">the guide</a>.</p>
 <p>Header names are <strong>case-insensitive</strong>: node lowercases every name it parses
 off the wire, and <code>header</code> lowers <code>name</code> to match, so the casing you write
 and the casing the client sent are both irrelevant. <code>None</code> means the request
@@ -342,6 +375,42 @@ work. Media belongs behind the static file server §5.10 defers, not here.</p>
 rebuild is served without a restart; otherwise the copy read at boot is
 served from memory. Both halves read bytes, so a watch never serves a
 freshly decoded — and freshly corrupted — copy of a binary artifact.</p>
+<p><strong>Caching is opt-in, and off by default.</strong> <code>serve_build</code> sends one header,
+<code>Content-Type</code>, and the bytes — a browser cache policy is an application’s
+decision, not a default std can guess right for every deployment, and
+<code>serve_build</code> serves a build rather than a directory. <code>cache_build</code> is the
+one call that opts in: it asks your policy, per artifact, what to send
+beyond the bytes, keyed on the route the build claimed. The two-tier shape
+every static layer converges on is one expression:</p>
+<pre><code class="language-vilan norun">import std::build::require_build;
+import std::http::{ CachePolicy, Response, Server };
+
+async fun main() {
+	Server::builder()
+		.serve_build(require_build("client"))
+		.cache_build(|url| if url.starts_with("/chunk-") {
+			// A fingerprinted name cannot go stale: cache it for a year.
+			CachePolicy::none().cache_control("public, max-age=31536000, immutable")
+		} else {
+			// Everything else revalidates — a round trip, but never a body.
+			CachePolicy::validated().cache_control("no-cache")
+		})
+		.on_request(|request| Response::builder().code(404).body("Not Found").build())
+		.build()
+		.start();
+}
+</code></pre>
+<p><code>CachePolicy::validated()</code> mints an <a href="#stdhttp-the-server"><code>etag_of</code></a>
+validator over the bytes being served and answers a matching
+<code>If-None-Match</code> with a <code>304</code>; <code>cache_control</code> sets the field value
+verbatim, on either base, and it reaches the <code>304</code> arm as well as the
+<code>200</code>. The policy is asked about the <strong>url</strong> and nothing else, so it cannot
+quietly become a second request handler — anything genuinely per-request
+belongs in <code>on_request</code>, built from <code>etag_response</code> directly. A validator
+costs one sha-256 per hit, over the bytes actually served, which is what
+keeps it correct under <code>run --watch</code>. Leave <code>cache_build</code> off the chain and
+nothing changes: the response is byte-for-byte what it was before the hook
+existed.</p>
 <p>A <strong>streaming</strong> response holds the connection open: once the status and
 headers are written, <code>on_open</code> receives the live <code>ResponseStream</code> and
 writes chunks over time (SSE’s shape; a suspending <code>on_open</code> runs as
@@ -379,7 +448,6 @@ side: <a href="../guide/services.html">Services &amp; RPC</a> and the
 fun read_file_to_str(path: str): str            // async, UTF-8
 fun read_file_encoded(path: str, encoding: str): str   // async — decode with any host encoding
 fun read_bytes(path: str): Bytes                // async, true binary read
-fun exists(path: str): bool                     // sync — the one blocking call here
 fun stat(path: str): Option&lt;Stat&gt;               // async — None if `path` doesn't exist; every other failure throws
 
 // writing
@@ -415,6 +483,43 @@ struct Entry {
     is_file: bool,
     is_symlink: bool,
 }
+
+// the handle tier — an open file, positional and stateless
+resource external struct File
+
+impl File {
+    fun open(path: str): File        // "r"  — read; must exist
+    fun create(path: str): File      // "w"  — create, truncating what was there
+    fun create_new(path: str): File  // "wx" — create; FAIL if it already exists
+    fun append_to(path: str): File   // "a"  — every write lands at the end
+    fun modify(path: str): File      // "r+" — read/write in place; must exist
+
+    fun read_at(self, buffer: Bytes, position: i53): i32   // bytes read; 0 at EOF
+    fun write_at(self, buffer: Bytes, position: i53): i32  // bytes written
+    fun stat(self): Stat             // no Option — the handle is already open
+    fun truncate(self, length: i53)  // shrink, or extend zero-filled
+    fun sync(self)                   // fsync — the durability primitive
+    fun data_sync(self)              // fdatasync — data only
+}
+
+fun with_file&lt;T&gt;(path: str, body: |File| T): T   // open, run, close — close AWAITED
+
+// the watch tier — a live watch, pulled one change at a time
+resource external struct Watcher
+
+enum ChangeKind { Created, Modified, Removed }
+
+struct Change {
+    path: str,          // the watched root joined with the entry — addressable as-is
+    kind: ChangeKind,
+}
+
+impl Watcher {
+    fun watch(path: str): Watcher      // the path and, if a directory, its immediate entries
+    fun watch_all(path: str): Watcher  // the path and everything under it, however deep
+
+    fun next(self): Change             // async — the next change, awaiting one if none is pending
+}
 </code></pre>
 <p>Everything here throws host-side on any failure, missing path included —
 the same posture <code>read_file_to_str</code> always had — with exactly two
@@ -426,15 +531,17 @@ which a path that was never there already is, so removing something absent
 is a no-op. Any <em>other</em> failure of either — a permissions error, a busy
 directory — still throws. If you need to know whether a thing was there,
 <code>stat</code> before you act.</p>
-<p>There is no synchronous read. There used to be one, justified by a caller
-that could not suspend; no such caller existed, so it is gone. Async <em>is</em>
-the calling convention here — <code>read_file_to_str(path)</code> is implicitly
-awaited and reads like a plain call — so a sync variant buys a caller
-nothing and costs the event loop the length of the read. <code>exists</code> is the
-module’s one blocking call, and it blocks for a different reason:
-<code>node:fs/promises</code> has no <code>exists</code>, and syncness is the only thing
-separating it from <code>stat(path).is_some()</code>. It is sized for a boot-time
-branch; on a request path, call <code>stat</code>.</p>
+<p>Nothing here is synchronous, and that is the whole calling convention:
+<code>read_file_to_str(path)</code> is implicitly awaited and reads like a plain
+call, so a sync variant buys a caller nothing and costs the event loop the
+length of the operation. There used to be two synchronous entries, and
+both are gone — a sync read justified by a caller that could not suspend
+(no such caller existed), and <code>exists</code>, which outlived it by one release:
+its justification named a category (“boot code”) rather than a caller,
+every caller it actually had was already async, and
+<code>stat(path).is_some()</code> answers strictly more. That is the probe now —
+<code>stat(path).is_some()</code> for “is this here”, <code>stat(path).is_none()</code> for the
+guard clause.</p>
 <p>Three directory listings, one honesty policy. <code>read_dir</code> is deliberately
 flat: immediate entry <em>names</em>, not path-joined, no file-vs-directory
 distinction. <code>read_dir_all</code> walks the whole tree in one call — every entry
@@ -486,8 +593,8 @@ previous file intact or the complete new one, never a mix. Use it for
 anything the program reads back later — a JSON store, a cache, a config
 the app rewrites. Atomic is not durable, though: after a <em>power</em> loss the
 rename may not have reached the device, and closing that last gap needs
-<code>fsync</code>, which the host exposes only on an open file handle — std has no
-handle type yet. The temporary is a sibling because a rename across
+<code>fsync</code>, which the host exposes only on an open file handle — that is
+<code>File::open(path)</code> then <code>file.sync()</code>, below. The temporary is a sibling because a rename across
 filesystems is not atomic and would fail outright, which also means a
 crashed run can strand a <code>&lt;path&gt;.&lt;uuid&gt;.tmp</code> file beside the target;
 <code>vilan</code> has no <code>try</code>/<code>catch</code> to sweep it up. <code>rename</code> is the primitive
@@ -527,6 +634,43 @@ of an async operation has to name the caller that cannot suspend, and in
 this module there is exactly one such caller in the whole language — a
 module-level <code>let</code>, which cannot await — so the bar is a name, not a
 category.</p>
+<p>Everything above is a complete operation on a path — open, act, close, in
+one call. What needs more than one act on the <em>same</em> open file is the
+handle tier. <code>File</code> is a <code>resource</code>: it moves rather than copies, a stale
+binding is a compile error rather than an <code>EBADF</code>, and its destructor
+closes the underlying handle at the owner’s scope end — there is no
+<code>close()</code> to forget or to call twice, and <code>drop(file)</code> is the early form.
+The five constructors replace node’s flags string (“wx” and friends —
+an untyped enum whose failure mode is a runtime <code>EINVAL</code>): each says in
+its name what it does to a file that already exists, which is the only
+thing anyone ever looks up. <code>create_new</code> is the exclusive create — how a
+process claims a name without racing another — and <code>append_to</code> carries
+the host’s own rule, kept rather than papered over: on an append handle
+every write lands at the end, position ignored.</p>
+<p>Reads and writes are positional and stateless <em>by design</em>. A <code>File</code> has
+no cursor, so two loans of one handle cannot silently interleave through
+hidden position state; <code>read_at</code> answers with the byte count — short near
+the end of the file, <code>0</code> at end of file, neither an error. The handle is
+also what makes read-then-act sequences TOCTOU-free: <code>file.stat()</code>
+answers <code>Stat</code> with no <code>Option</code>, because the handle addresses the <em>open
+file</em>, not the path — rename or remove the path and the handle still
+reads the file it holds. And <code>sync()</code> is the durability primitive nothing
+path-addressed can offer: <code>write_atomic</code> guarantees you a whole file or
+the old one, <code>sync</code> is what makes it survive the power going out.</p>
+<p>The documented idiom is <code>with_file(path, |file| …)</code>: the body receives
+the open file as a per-call parameter, the value comes back out, and the
+close is <em>awaited</em> — which the destructor’s close deliberately is not.
+<code>FileHandle.close()</code> is asynchronous on the host and a destructor cannot
+await, so a dropped <code>File</code> <em>initiates</em> its close without waiting: written
+data is safe either way, but only <code>with_file</code> can observe a close
+failure. Scope-end <code>Drop</code> stays underneath as the safety net. Two shapes
+to know before reaching for a handle: a closure cannot capture a <code>File</code>
+(hand it in as a parameter, which is exactly what <code>with_file</code> does), and
+<code>List</code>/<code>Map</code>/<code>Set</code> cannot hold one — <code>Option&lt;File&gt;</code> is the sanctioned
+container, so “a pool of open files” is not expressible today. A
+module-level <code>File</code> is not expressible either — every constructor is
+async and a module-level <code>let</code> cannot await — so a process-lifetime
+handle is a local in <code>main</code>, held across whatever <code>main</code> awaits.</p>
 <p>Reading a build’s assets, rewriting one, and putting the result somewhere
 new is the shape most of this is for:</p>
 <pre><code class="language-vilan norun">import std::fs::{ create_dir_all, read_bytes, scan_dir, update, write_bytes_atomic };
@@ -542,6 +686,71 @@ fun main() {
 }
 main();
 </code></pre>
+<p>Watching is the last tier, and it is a <code>resource</code> for the same reason a
+handle is. <code>Watcher::watch(path)</code> observes a path and, when it is a
+directory, its immediate entries; <code>watch_all</code> observes the whole tree
+beneath it — <code>read_dir</code> and <code>read_dir_all</code>’s reach, and the <code>_all</code> suffix
+means the same thing here. The path does not have to exist yet: a watch on
+something absent reports <code>Created</code> when it appears. You consume a watch by
+<em>pulling</em>:</p>
+<pre><code class="language-vilan norun">import std::fs::{ Change, ChangeKind, Watcher };
+import std::print;
+
+fun describe(change: Change): str {
+	match change.kind {
+		ChangeKind::Created =&gt; i"created {change.path}",
+		ChangeKind::Modified =&gt; i"modified {change.path}",
+		ChangeKind::Removed =&gt; i"removed {change.path}",
+	}
+}
+
+fun main() {
+	let watcher = Watcher::watch_all("src");
+	print(describe(watcher.next()));
+	print(describe(watcher.next()));
+}
+main();
+</code></pre>
+<p><code>next()</code> is async, so it reads like a plain call and suspends until
+something happens; <code>change.path</code> is the watched root joined with the
+entry, which means it is the string to hand straight to
+<code>read_file_to_str</code> or <code>File::open</code> with no joining of your own. There is
+no callback form, and the reason is the language rather than taste: a
+<code>|Change| void</code> observer is a <em>void</em> channel, so a handler could not await
+the read of the file it was just told about, and a closure cannot capture
+a <code>File</code> to hold one open across events either. A pull returns into a
+scope that can already own a handle.</p>
+<p><strong>The mechanism is polling, and the tier says so out loud.</strong> Every 300 ms
+— the interval the compiler’s own <code>--watch</code> has used since it shipped —
+the watcher stats what it is watching and compares. That buys an honest
+three-way answer on every platform, which the host’s own <code>fs.watch</code>
+cannot give: it coalesces events and sometimes duplicates them, folds
+creation, deletion and renaming into one <code>"rename"</code> you have to <code>stat</code> to
+disambiguate, varies by platform and version on recursive watching, and
+throws outright on a path that is not there yet. What polling costs
+instead: up to one interval of latency; a change that <em>cancels out</em> inside
+one interval (a file created and deleted between two observations) is
+never reported, because nothing is left to compare; a modification that
+alters neither the size nor the mtime is invisible, which matters on
+filesystems whose mtime is second-granular; and one <code>stat</code> per watched
+entry per interval, so <code>watch_all</code> on a large tree is the expensive call
+in this module. Watch the narrowest path that answers your question.
+A rename arrives as <code>Removed</code> on the old path and <code>Created</code> on the new
+one — what a rename <em>is</em> to an observer comparing two listings. A
+directory reports <code>Created</code> and <code>Removed</code> but never <code>Modified</code>: its mtime
+moves whenever its contents do, and those entry changes are already
+reported one by one. Changes seen in the same interval arrive one pull at
+a time, path-sorted, and the order among them carries no timing
+information.</p>
+<p>A <code>Watcher</code> moves rather than copies, a closure cannot capture one, and
+<code>List</code>/<code>Map</code>/<code>Set</code> cannot hold one — <code>File</code>’s rules exactly. Its
+destructor stops the poll at scope end, <code>drop(watcher)</code> is the early form,
+and there is no <code>stop()</code> to forget or to call twice. That destructor is
+load-bearing rather than tidy: a pending host timer keeps the process
+alive, so <strong>a watcher that is never dropped is a program that never
+exits.</strong> Unlike <code>File</code>, its teardown is genuinely synchronous — stopping a
+poll is a <code>clearTimeout</code>, not a promise — so nothing here inherits the
+handle’s asynchronous-close exception.</p>
 <h2 id="stdbuild"><a class="header" href="#stdbuild">std::build</a></h2>
 <p>What a browser leg’s build emitted, as the build itself knows it — the
 value that lets a server stop restating <code>"dist/client.js"</code> from memory.</p>
@@ -735,6 +944,11 @@ here and is not planned — the node leg restarts.</p>
 <pre><code class="language-vilan fragment">fun is_watching(): bool     // is this a `vilan run --watch` child?
 fun force_refresh(): void   // ask every connected browser to reload once
 </code></pre>
+<p><strong>This module is not a file watcher</strong>, despite its name — that is
+<a href="#stdfs"><code>std::fs</code>’s <code>Watcher</code></a>, above. <code>std::watch</code> is the dev-refresh
+channel: whether <em>this process</em> is a <code>vilan run --watch</code> child, and how to
+tell connected browsers to reload. The two never meet; a program can use
+both.</p>
 <p><code>is_watching()</code> is defined under every run and is <code>true</code> only under
 <code>vilan run --watch</code>, so a program branches on it without knowing how it
 was started. It is about <em>data</em> freshness, not code: <code>serve_build</code> uses it
@@ -819,7 +1033,7 @@ fun main() {
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

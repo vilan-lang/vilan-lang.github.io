@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -725,7 +725,13 @@ already-built styles at runtime. The channel’s input direction,
 The same rule, caught statically: some function on this call path reaches
 <code>asset::emit</code> or <code>asset::read</code>, and the call itself sits in runtime code.
 The span is the outermost runtime crossing — the call that leaves ordinary
-code and enters compile-time territory — so wrap <em>that</em> call in a <code>const</code>.</p>
+code and enters compile-time territory — so wrap <em>that</em> call in a <code>const</code>.
+A crossing through trait dispatch counts too: a generic call is charged at
+the entry whose concrete type selects an emitting impl (a clean impl of the
+same trait member through the same generic stays legal), and a dispatch the
+compiler cannot resolve — a shared default body’s <code>self</code> call — is refused
+for every receiver, conservatively, since letting one through would compile
+clean and throw at run time.</p>
 <p><strong>“cannot read <code>…</code> (resolved against the package root to <code>…</code>): …”</strong>
 A <code>const asset::read(path)</code> found no readable file. Paths are relative
 to the <strong>package root</strong> — the directory imports resolve under, never the
@@ -891,7 +897,7 @@ page, <code>check_shell</code> catches the same mismatch at boot.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

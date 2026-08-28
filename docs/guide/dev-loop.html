@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -322,6 +322,50 @@ stdout, a chatty hook shares that stream; redirect it in the command if you
 pipe the build.)</li>
 <li><code>vilan check</code> produces no artifacts, so it runs no hooks.</li>
 </ul>
+<p>Running on every round is right for a Tailwind pass and wrong for a step that
+downloads something, or generates a thousand files. A hook that should run
+only when its inputs move gets a name and says what it reads and writes:</p>
+<pre><code class="language-toml">[[build.hook]]
+name    = "icons"
+run     = "node scripts/generate-icons.mjs"
+inputs  = ["scripts/generate-icons.mjs", "icons.lock"]
+outputs = ["src/icons.vl"]
+</code></pre>
+<p>It runs on a clean checkout, and then it doesn’t: while every <code>inputs</code> entry
+and every <code>outputs</code> entry still hashes to what it hashed last time, and the
+command itself hasn’t changed, the build prints <code>Fresh   icons</code> and moves on.
+The rest of the rules:</p>
+<ul>
+<li><strong>Content, never timestamps.</strong> Rewriting a file with the same bytes is not a
+change. Touching it isn’t either.</li>
+<li><strong>Declared paths only, and no globs.</strong> A path is a file or a directory (a
+directory hashes its whole tree, so <code>inputs = ["src/static"]</code> means what it
+looks like it means). A pattern such as <code>src/**/*.css</code> is a manifest error,
+not a match — it would hash as a file that is never there and freeze the
+hook after its first run.</li>
+<li><strong>A missing input is recorded as missing</strong>, so creating it later re-runs the
+hook. A missing or hand-edited output re-runs it too.</li>
+<li><strong>A hook that declares neither <code>inputs</code> nor <code>outputs</code> runs every time</strong>,
+exactly like a <code>run = [...]</code> entry. That is the default, and <code>run</code> keeps
+working unchanged.</li>
+<li><strong>The record lives in <code>dist/.build-hooks.json</code></strong>, so <code>rm -rf dist</code> means
+what you already think it means: rebuild everything, hooks included. Nothing
+is cached outside your project. <code>vilan build --rerun-hooks</code> is the one-off
+version, for a hook that reads something it forgot to declare.</li>
+<li>Hooks run in declaration order, with every <code>run = [...]</code> command first.</li>
+</ul>
+<p>Freshness is about cost, never about safety: a skipped hook is code you
+already trusted to run, and skipping it buys time, not containment.</p>
+<p>A dependency’s hooks are a different question, and the answer is still no. If
+a package you depend on declares one, the build says so — one dim <code>note:</code> line
+naming it, once per build — and does not run it. Granting one is a line in
+your own manifest, next to where the dependency comes from:</p>
+<pre><code class="language-toml">[package.dependencies]
+icons = { git = "https://example.com/icons.git", tag = "v1.2.0", build-hooks = true }
+</code></pre>
+<p>Absent means no, and today so does present: <strong>no dependency’s hooks run yet</strong>,
+opted in or not. The key exists now so the grant is a reviewable line in a diff
+before there is any mechanism behind it.</p>
 <h2 id="freshness-for-a-hand-rolled-server"><a class="header" href="#freshness-for-a-hand-rolled-server">Freshness for a hand-rolled server</a></h2>
 <p>A running server that reads a file once at boot (<code>fs::read_file_to_str</code>
 before <code>Server::builder()...start()</code>, say) keeps serving those bytes for
@@ -509,7 +553,7 @@ manifest</strong>, and <code>serve_build</code> turns it into routes:</p>
 split gets <code>"chunks": []</code> and <code>"classic_script": false</code>. That is deliberate:
 an absent file cannot tell “did not split” from “was never built”, and
 <code>build_of</code> needs the difference. <code>styles</code> is <code>null</code> when the leg compiled no
-<code>const style()</code>, which is the one thing an <code>fs::exists</code> probe could never
+<code>const style()</code>, which is the one thing an <code>fs::stat</code> probe could never
 answer in both directions.</p>
 <p><code>examples/fullstack</code>’s server reads it with <code>build_of("client")</code> and hands
 the result to <code>serve_build</code>, which installs one route per artifact — so
@@ -596,7 +640,7 @@ of <a href="../std/dev.html"><code>std::dev</code></a>.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

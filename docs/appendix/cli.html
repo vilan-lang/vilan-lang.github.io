@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -180,7 +180,9 @@ touches the network.</strong> Everything else (builds, dependency resolution,
 tests) works offline (git dependencies are fetched once by the first
 build that needs them, then served from the cache forever). That rule is
 about the network; locally, <code>build</code> and <code>run</code> execute the manifest’s
-<code>[build] run</code> hooks with your own privileges, without prompting.</p>
+own build hooks with your own privileges, without prompting — a
+dependency’s are never executed, and one that declares them is named in
+a <code>note:</code> line rather than passed over silently.</p>
 <p>For the guided on-ramp, see <a href="../tour/hello-vilan.html">Hello Vilan</a>; for
 <code>--watch</code>, HMR, and the manifest keys that shape the dev loop, see
 <a href="../guide/dev-loop.html">the dev loop</a>.</p>
@@ -215,11 +217,17 @@ the target’s: <code>.mjs</code> on a process runtime (Node/Deno/Bun), so the h
 classifies the emitted ESM without inspecting it, and <code>.js</code> on the
 browser, whose <code>&lt;script type="module"&gt;</code> already declares it. Assets emitted at
 compile time (the styling system’s CSS) land beside the output.
-<code>[build] run</code> hooks execute first — through your shell, with your
-privileges, each command printed before it runs; a failing hook fails the
-build.</p>
+Build hooks execute first — through your shell, with your privileges,
+each command printed before it runs; a failing hook fails the build.
+Every <code>[build] run</code> command runs on every build; a named
+<code>[[build.hook]]</code> that declared <code>inputs</code>/<code>outputs</code> is skipped while none
+of them has moved, and says <code>Fresh &lt;name&gt;</code> instead
+(<a href="../guide/dev-loop.html#running-something-alongside-the-build">the dev loop</a>).
+A <em>dependency</em> that declares hooks gets a <code>note:</code> line and no execution.</p>
 <ul>
 <li><code>--stdout</code>: print the JavaScript instead of writing a file.</li>
+<li><code>--rerun-hooks</code>: run every <code>[[build.hook]]</code> even if it is fresh — the
+escape for a hook that reads something it did not declare. (<code>rm -rf dist</code> is the bigger hammer: the freshness record lives there.)</li>
 <li><code>--platform &lt;p&gt;</code>: <code>node</code>, <code>deno</code>, <code>bun</code>, <code>browser</code>, or <code>none</code>;
 overrides the package’s <code>target</code> (<code>--target</code> is an accepted alias).
 <code>none</code> checks against no platform’s layers, the strictest reading.</li>
@@ -333,8 +341,8 @@ is Tailwind CSS’s category sequence (layout, flexbox/grid, spacing, sizing,
 typography, backgrounds, borders, effects, filters, tables,
 transitions/animation, transforms, interactivity, svg, accessibility), with
 every condition combinator after every property method, in the axis order the
-selector nests them: <code>md</code>, then <code>dark</code>, then <code>attribute</code>, then the
-pseudo-classes. Two rules keep it safe, because a chain merges last-wins per
+selector nests them: <code>md</code>, then the relation (<code>within</code>, <code>children</code>,
+<code>divide</code>), then <code>attribute</code>, then the pseudo-classes. Two rules keep it safe, because a chain merges last-wins per
 property slot. A method the formatter does not know — one of your own
 <code>impl Style</code> extensions, or an escape hatch whose slot is an argument
 (<code>raw</code>, <code>with_length</code>, <code>with_color</code>, <code>with_border</code>) — is a <strong>barrier</strong>:
@@ -675,7 +683,7 @@ a newer release exists and changes nothing.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -196,7 +196,7 @@ impl Length {
 	fun zero(): Length             // bare `0`, not `0px`
 	fun var(name: str): Length     // a CSS custom-property reference ("--w")
 	fun calc(expression: str): Length  // "100% - 2rem" — no calc(..) wrapper
-	fun css(expression: str): Length   // a COMPLETE value, verbatim: "clamp(..)"
+	fun raw(expression: str): Length   // a COMPLETE value, verbatim: "clamp(..)"
 }
 
 impl Color {
@@ -241,8 +241,8 @@ the app owns the custom property’s declaration (its emitted theme block,
 or <code>view.style_var</code> writing it at runtime). <code>.alpha()</code> composes over it
 through the same relative-colour form, so a variable-backed colour
 translucifies exactly like a ramp token.</p>
-<p><code>calc</code> wraps and <code>css</code> does not: <code>Length::calc(e)</code> is
-<code>Length::css("calc(" + e + ")")</code>. Write <code>calc</code> for arithmetic, <code>css</code> for a
+<p><code>calc</code> wraps and <code>raw</code> does not: <code>Length::calc(e)</code> is
+<code>Length::raw("calc(" + e + ")")</code>. Write <code>calc</code> for arithmetic, <code>raw</code> for a
 value that is already whole — <code>clamp()</code>, <code>min()</code>, <code>max()</code>, <code>env()</code>,
 <code>fit-content()</code>, or one named expression reused across properties. Both
 refuse an empty value at const time.</p>
@@ -342,7 +342,7 @@ others forms a family — <code>padding</code>, <code>margin</code>, <code>inset
 <code>background</code>, <code>flex</code> — and last-wins applies to the whole family: a
 longhand written after the shorthand narrows it, a shorthand written
 after a longhand replaces the family outright. Per condition, so a
-<code>hover</code> or <code>dark</code> variant never disturbs the base, and through <code>raw</code>
+<code>hover</code> or <code>within</code> variant never disturbs the base, and through <code>raw</code>
 too, since the family is a fact about the CSS property.</p>
 <p>Escape hatches:</p>
 <pre><code class="language-vilan fragment">fun raw&lt;V: CssValue&gt;(self, property: str, value: V): Style
@@ -355,7 +355,7 @@ theme token — <code>space(4)</code>, <code>Color::blue(300)</code> — carries
 declaration onto the stylesheet, so <code>.raw("padding", space(4))</code> is never a
 dangling <code>var()</code>. <code>with_length</code> and <code>with_color</code> are <code>raw</code> at those two value
 types, kept for the spelling the surface has always had.</p>
-<p>Pass the value, not its text: <code>space(4).css</code> is the string
+<p>Pass the value, not its text: <code>space(4).text</code> is the string
 <code>var(--space-4)</code> with the declaration left behind, and a <code>str</code> carries no
 token.</p>
 <h2 id="conditions"><a class="header" href="#conditions">Conditions</a></h2>
@@ -366,7 +366,9 @@ fun active(self, inner: Style): Style
 fun disabled(self, inner: Style): Style
 fun first(self, inner: Style): Style      // :first-child
 fun last(self, inner: Style): Style       // :last-child
-fun dark(self, inner: Style): Style       // :root[data-theme="dark"] ancestor
+fun within(self, name: str, value: str, inner: Style): Style     // [name="value"] .sX — an ancestor guard
+fun children(self, inner: Style): Style   // @layer vilan{.sX &gt; *} — every direct child
+fun divide(self, inner: Style): Style     // @layer vilan{.sX &gt; :not(:first-child)} — every child but the first
 fun attribute(self, name: str, value: str, inner: Style): Style  // .sX[name="value"] — the element itself
 fun pseudo(self, name: str, inner: Style): Style
 
@@ -378,34 +380,55 @@ fun media(self, min_width: str, inner: Style): Style
 </code></pre>
 <h3 id="stacking"><a class="header" href="#stacking">Stacking</a></h3>
 <p>The four condition axes nest <strong>outside-in, in the order the selector
-nests them</strong> — media, then dark, then the attribute, then the
-pseudo-class:</p>
-<pre><code class="language-vilan fragment">style().md(style().dark(style().hover(style().opacity(0.8))))
-// @media (min-width: 768px){:root[data-theme="dark"] .sX:hover{opacity:0.8}}
+nests them</strong> — media, then the relation (<code>within</code>, <code>children</code>, <code>divide</code>),
+then the attribute, then the pseudo-class:</p>
+<pre><code class="language-vilan fragment">style().md(style().within("data-theme", "dark", style().hover(style().opacity(0.8))))
+// @media (min-width: 768px){[data-theme="dark"] .sX:hover{opacity:0.8}}
 
-style().md(style().dark(style().attribute("data-open", "true", style().hover(style().opacity(0.8)))))
-// @media (min-width: 768px){:root[data-theme="dark"] .sX[data-open="true"]:hover{opacity:0.8}}
+style().md(style().within("data-theme", "dark", style().attribute("data-open", "true", style().hover(style().opacity(0.8)))))
+// @media (min-width: 768px){[data-theme="dark"] .sX[data-open="true"]:hover{opacity:0.8}}
 </code></pre>
 <p>Every other order is a compile-time-evaluation panic naming the fix
-(<code>hover(dark(..))</code> says to write <code>dark(hover(..))</code>), and no axis can wrap
-itself — one media, one dark, one attribute, one pseudo-class per slot.
-Media rules emit in ascending min-width order, so a chain like
-<code>.sm(x).lg(y)</code> is mobile-first: the widest matching breakpoint wins.</p>
+(<code>hover(within(..))</code> says to write <code>within(.., hover(..))</code>), and no axis
+can wrap itself — one media, one relation, one attribute, one
+pseudo-class per slot. Media rules emit in ascending min-width order, so
+a chain like <code>.sm(x).lg(y)</code> is mobile-first: the widest matching
+breakpoint wins.</p>
 <p><code>attribute</code> conditions on the element <strong>itself</strong> — <code>.sX[data-open="true"]</code>
-— where <code>dark</code> is the ancestor form. It is the general spelling of state
+— where <code>within</code> is the ancestor form. It is the general spelling of state
 carried in markup: <code>data-state</code>, <code>data-open</code>, <code>aria-expanded</code> — any
 attribute rides, <code>aria-*</code> included, and the value matches exactly. The
 app owns <em>setting</em> the attribute on the element; the style only selects
 on it. Name and value refuse quotes, spaces and <code>:</code> at const time (they
 delimit the machinery underneath), and a styling hook is a single token
-in practice.</p>
-<p><code>dark</code> is an ancestor selector, so a composed <code>dark(hover(..))</code> rule is
-more specific than either <code>dark(..)</code> or <code>hover(..)</code> alone and wins
-against both — and the same holds along the attribute axis:
-<code>attribute(.., hover(..))</code> outranks both of its parts. Between an
-<em>un</em>composed <code>dark(x)</code> and <code>hover(y)</code> on the same property the two are
-equally specific and dark wins, so use <code>dark(hover(..))</code> when a dark
-theme needs its own hover.</p>
+in practice — the same fences guard <code>within</code>’s name and value.</p>
+<p><code>within</code> prepends an ancestor selector, so a composed
+<code>within(.., hover(..))</code> rule is more specific than either <code>within(..)</code> or
+<code>hover(..)</code> alone and wins against both — and the same holds along the
+attribute axis: <code>attribute(.., hover(..))</code> outranks both of its parts.
+Between an <em>un</em>composed <code>within(.., x)</code> and <code>hover(y)</code> on the same
+property the guard wins — a theme shouldn’t be undone by a hover — so use
+<code>within(.., hover(..))</code> when a dark theme needs its own hover.</p>
+<h3 id="relations"><a class="header" href="#relations">Relations</a></h3>
+<p><code>within</code> guards the element’s own slots on an <strong>ancestor’s</strong> attribute —
+the theme condition (<code>within("data-theme", "dark", ..)</code>, or any theme id
+under kolt-style n-ary theming) and every other “when an ancestor says
+so” state. Its rule is unlayered and beats the element’s own base rule
+exactly when the guard matches. For colours, prefer declaring per-theme
+custom properties with a <a href="#declaration-blocks">declaration block</a> and
+reading them with <code>Color::var(..)</code>; <code>within</code> covers the structural
+changes a value swap cannot.</p>
+<p><code>children</code> and <code>divide</code> style the element’s <strong>children</strong> — the
+parent-owned spacing idioms (Tailwind’s <code>space-*</code>/<code>divide-*</code>). Their
+rules emit inside <code>@layer vilan</code>, and that is the whole cascade story:
+<strong>a child’s own <code>Style</code> always wins against a rule reaching in from an
+ancestor</strong>, whatever the specificity — they set defaults the child may
+refuse, never force. (The cost is symmetric: a <code>children</code>/<code>divide</code> rule
+cannot override <em>any</em> unlayered CSS.) Where both touch one property,
+<code>divide</code> outranks <code>children</code> on every child but the first, whichever was
+written first. Both take an <strong>unconditioned</strong> inner style in this
+version — a hover or attribute condition belongs on the child’s own
+style — and a breakpoint wraps either (<code>md(children(..))</code>).</p>
 <h2 id="declaration-blocks"><a class="header" href="#declaration-blocks">Declaration blocks</a></h2>
 <p><code>Style</code> dresses an <em>element</em>. A <strong>declaration block</strong> puts a set of
 declarations under a selector <strong>you</strong> choose — a theme’s custom properties
@@ -413,6 +436,7 @@ under <code>[data-theme="…"]</code>, a <code>:root</code> token table, a reset
 minting no class, producing no <code>Style</code> and touching no slot key.</p>
 <pre><code class="language-vilan fragment">fun declarations(): Declarations                 // opens a declaration chain
 fun declare(selector: str, body: Declarations)   // puts the block in the stylesheet
+fun preflight()                                  // the opt-in base stylesheet (below)
 
 impl Declarations {
     fun raw&lt;V: CssValue&gt;(self, property: str, value: V): Declarations
@@ -461,6 +485,39 @@ declaration either, which includes std’s own token lines (<code>--space-4</cod
 <code>--gray-50</code>) and any hand-written CSS the page loads. Declare your own
 custom properties and read them back with <code>Color::var</code> / <code>Length::var</code> —
 that composes exactly, and it is what a theme wants anyway.</p>
+<p><strong>The base stylesheet: <code>preflight()</code>.</strong> std ships no reset by default —
+UA defaults are fully in force, so <code>body</code> keeps its 8px margin and
+<code>width(px(200)).padding(space(4))</code> measures 232px. <code>const preflight()</code>
+opts in to one, and deleting the line opts back out; there is no build
+flag and nothing to switch off, because the only door into the stylesheet
+is a <code>const</code> expression:</p>
+<pre><code class="language-vilan">import std::style::preflight;
+
+let _reset = const preflight();
+
+fun main() {}
+</code></pre>
+<p>It is Tailwind’s preflight scope, adapted: <code>box-sizing: border-box</code>
+everywhere, the UA’s margins zeroed, its form-control chrome stripped so a
+button inherits the page’s font and colour, replaced elements (<code>img</code>,
+<code>svg</code>, <code>video</code>, …) laid out as blocks that cannot overflow their
+container, list markers and heading sizes removed — <strong>plus one addition
+that is not in any reset it is adapted from: <code>a</code>, <code>button</code> and <code>select</code>
+are <code>display: block</code>.</strong> That is the most visible rule in it. An anchor in
+running prose becomes a block, so a page that wants inline links styles
+them back; this is an opinionated default, not a normalization.</p>
+<p>Ordering is the whole design, and it is settled by the layer rather than by
+where a line lands. Every reset rule emits inside <code>@layer vilan.preflight</code>,
+a <strong>sub-layer</strong> of the layer declaration blocks use, and the same cascade
+sentence applies twice in the same direction: unlayered beats layered, so
+every <code>Style</code> wins against every reset rule whatever the specificity; and a
+layer’s own rules beat its sub-layers’, so every <code>declare</code> block wins
+against every reset rule too. An app tightening one of the reset’s own
+rules writes <code>declare("a", …)</code> and needs neither <code>!important</code> nor a longer
+selector. The reset is therefore the weakest author-origin thing in the
+sheet — which is what a reset should be — and still stronger than every UA
+default, because cascade layers order <em>author</em> declarations and the UA
+origin loses to all of them.</p>
 <h3 id="refusals"><a class="header" href="#refusals">Refusals</a></h3>
 <p>Checked at const time, each naming its fix:</p>
 <ul>
@@ -537,7 +594,7 @@ style.class_list(): str    // the space-joined class attribute (what `styled` us
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

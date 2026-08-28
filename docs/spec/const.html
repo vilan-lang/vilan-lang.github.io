@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -225,7 +225,15 @@ files, same output — <code>emit</code> same lines out, <code>read</code> same 
 <strong>compile-time-only</strong>,
 transitively, and the compiler enforces that statically. A call from
 runtime code into compile-time-only territory is an error at the
-outermost crossing — the call that leaves ordinary code. Because a
+outermost crossing — the call that leaves ordinary code. A crossing
+made <strong>through trait dispatch</strong> counts too: a generic call whose bound
+selects an emitting impl is refused at the call that selected it,
+while a clean impl of the same trait member through the same generic
+stays legal — the check follows the resolved instantiation, per call
+site. Where the compiler cannot see which impl a dispatch selects (a
+shared default body’s <code>self</code> call, for instance) it refuses every
+receiver rather than let one slip through and throw at run time.
+Because a
 call made <em>through a value</em> has no statically known callee, a
 compile-time-only function also has <strong>no runtime value form</strong>: naming
 one as a value (passing it to a higher-order function, binding it, or
@@ -345,7 +353,7 @@ report.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

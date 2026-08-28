@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-a869b85a.js"></script>
@@ -203,7 +203,15 @@ to and the one most readers want.</p>
 <p>The source is markdown in the
 <a href="https://github.com/vilan-lang/vilan">repository</a> under <code>vilan/docs/</code>, so
 everything also reads fine as plain files. If you have the repository
-checked out, <code>cargo install mdbook</code> once and then <code>mdbook serve vilan/docs</code> gives you the same site locally with live reload.</p>
+checked out, <code>cargo install mdbook --version 0.5.4 --locked</code> once and then
+<code>mdbook serve vilan/docs</code> gives you the same site locally with live reload.</p>
+<p>The version is a <strong>pin, not a suggestion</strong>: mdBook’s heading-id algorithm
+decides every anchor on the published site, and three things in this tree are
+held to v0.5.4’s answer — <code>std::markdown</code>’s parser (the book-wide anchor
+golden, <code>crates/vilan-core/tests/markdown_anchors.golden</code>), the language
+server’s keyword-hover deep links (<code>book_sync.rs</code>), and the site build itself
+(the pages repo fetches the v0.5.4 release by sha256). A newer renderer can
+move an anchor, and a moved anchor is a broken link.</p>
 <h2 id="conventions"><a class="header" href="#conventions">Conventions</a></h2>
 <ul>
 <li>Examples are complete programs unless explicitly labelled a fragment:
@@ -351,7 +359,7 @@ affected docs page <strong>in the same commit</strong>.</li>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/vilan-7f5c53e4.js"></script>
+        <script src="theme/vilan-9da96573.js"></script>
         <script src="theme/picker-309f18e2.js"></script>
 
 

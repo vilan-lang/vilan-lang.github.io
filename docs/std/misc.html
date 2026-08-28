@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -329,6 +329,26 @@ choose is <code>std::style::declare</code>, which builds the line — and the la
 around it — for you. A browser build with emissions produces
 <code>&lt;entry&gt;.css</code> beside <code>&lt;entry&gt;.js</code> (beside <code>&lt;entry&gt;.mjs</code> on a process
 target).</p>
+<p>Each kind flushes to its own file — <code>&lt;entry&gt;.&lt;kind&gt;</code> — holding the
+kind’s lines deduplicated and deterministically ordered. The order is
+kind-specific: <code>css</code> sorts in cascade order (base rules before <code>@media</code>
+blocks, media blocks by ascending min-width), and every other kind
+sorts lexically by line — either way the file is a function of the
+<em>set</em> of lines emitted, never of the order const evaluation reached
+them. A kind that stops being emitted stops shipping: the build records
+the kind files it wrote (<code>.vilan-asset-kinds</code>, beside the outputs), and
+the next build removes a recorded file whose kind emitted nothing —
+only recorded files, never a file it merely found.</p>
+<p>Because the kind becomes a filename, it must <strong>be</strong> a filename: one path
+segment, so a kind carrying <code>/</code>, <code>\</code>, or <code>..</code> is refused. It must also
+not be a name the build already writes there. Refused for that reason:
+<code>vl</code> (the entry source — a lone package’s outputs sit exactly where its
+entry does, so this kind would overwrite the program), <code>js</code> and <code>mjs</code>
+(the compiled bundle), <code>chunks.json</code> (the build manifest), and anything
+ending in <code>.js</code> (the route-chunk namespace, which the build also
+sweeps). <code>css</code> is the exception — the build owns that file <em>and</em> <code>emit</code>
+is how it is written. Both refusals are compile errors at the <code>const</code>
+expression, and each names the file the kind would have taken.</p>
 <p><code>read</code> is the channel’s input direction: it returns a project file’s
 text at build time, so its result can fold into the output —
 <code>const markdown::parse(asset::read("pages/intro.md"))</code> bakes a parsed
@@ -419,7 +439,7 @@ of your own — reachability stays the compiler’s, and a resource no
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

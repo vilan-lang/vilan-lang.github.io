@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c31e3ec.js";
+            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -204,7 +204,9 @@ other name; the library it points at keeps its own.</p>
 line (or a list of them) for your shell, run before each build and each
 <code>--watch</code> round: an asset pipeline, a codegen sidecar. It runs with your
 privileges and Vilan doesn’t prompt — the manifest is yours, and this is
-the trust <code>cargo build</code> and <code>npm run</code> already take. And
+the trust <code>cargo build</code> and <code>npm run</code> already take. A step too expensive
+to repeat gets a <code>[[build.hook]]</code> instead: a name, and the <code>inputs</code> and
+<code>outputs</code> that decide whether it needs to run at all. And
 <code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
 has several. Both are covered in <a href="../guide/dev-loop.html">the dev loop</a>.</p>
 <h2 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h2>
@@ -283,7 +285,7 @@ to remember, because inheritance only happens where you ask for it.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-7f5c53e4.js"></script>
+        <script src="../theme/vilan-9da96573.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
