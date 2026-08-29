@@ -1,0 +1,25 @@
+# Keeps the workflow's SHA-pinned actions moving (L18; L14's class, and the
+# same file vilan and the website carry).
+#
+# Pinning every `uses:` to a commit SHA closes the hijacked-tag hole, and it
+# matters more here than almost anywhere in the fleet: docs.yml is the one
+# workflow in this repo that holds `contents: write` and auto-pushes the
+# rendered book readers visit. But a pin with nothing tending it is just a
+# frozen dependency, and a frozen action stops receiving its own security
+# fixes: the pin and this file are one measure, not two.
+#
+# Dependabot reads the `# v4.4.0` comment beside each pin as the human-facing
+# version and rewrites BOTH the SHA and the comment when it opens a bump PR,
+# so the pins stay readable as they move.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - "*"
