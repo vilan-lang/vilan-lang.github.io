@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -422,7 +422,7 @@ postfix = "." member
 atom    = literal | IDENT | IDENT generic-args
         | "(" expression ")" | tuple | list
         | tuple-comprehension | macro-invocation | macro-block
-        | element ;
+        | element | css-block ;
 tuple   = "(" ( spread | expression "," entry { "," entry } [ "," ] ) ")" ;
 entry   = spread | expression ;
 spread  = ".." expression ;
@@ -437,6 +437,17 @@ head-item    = "." member                          (* a chain link, verbatim *)
                                           (* attribute; bare name = boolean *)
 element-name = NAME { "-" NAME } ;   (* NAME: an identifier or any keyword *)
 child        = element | STRING | ISTRING | "{" expression "}" ;
+
+css-block    = "css" css-body ;        (* atom position; excluded in conditions *)
+css-body     = "{" { css-item } "}" ;
+css-item     = css-declaration | css-rule ;
+css-declaration = css-property ":" css-value ";" ;
+css-property = { "-" } element-name ;  (* span-adjacent, as an element name is *)
+css-rule     = "." IDENT [ "(" [ expression { "," expression } [ "," ] ] ")" ]
+               css-body ;
+css-value    = css-piece { css-piece } ;   (* to the ";" at brace depth 0 *)
+css-piece    = "{" expression "}"          (* a hole *)
+             | TOKEN ;                     (* any token but ";", "{", "}" *)
 </code></pre>
 <p><code>Name&lt;Args&gt;</code> is read as a generic path head only when <code>::</code> immediately
 follows (<code>List&lt;str&gt;::new()</code>); otherwise <code>&lt;</code> is a comparison. A member
@@ -468,6 +479,30 @@ an ordinary expression: it desugars before analysis to the <code>std::ui</code>
 view chain (<code>view("tag")</code> with one method call per head item and a
 <code>.child(…)</code> per child), and postfix suffixes apply to it
 (<code>&lt;div /&gt;.show(flag)</code>).</p>
+<p>A <strong><code>css</code> block</strong> is the same shape on the style side, and it appears in
+atom position too — but where an element occupies grammar space nothing
+else could want, a <code>css</code> block is <strong>brace-initial</strong>, so it is excluded
+from condition operands exactly as a struct initializer is (§3.8).
+<code>css</code> is a reserved word (lexical spec §2.2); the block is the keyword
+followed immediately by <code>{</code>.</p>
+<p>Inside the body the <strong>dot decides, and decides alone</strong>: an undotted item
+is a <em>declaration</em> and a dotted one is a <em>condition rule</em>, so the
+grammar never consults any method list and a method added to <code>Style</code>
+cannot change what an existing block means. A property name is a
+span-adjacent name-<code>-</code>-name run, the element-name rule (so
+<code>flex-direction</code> is three tokens and <code>--color-ink</code> is five, while
+<code>data - id</code> is arithmetic). The <code>;</code> is <strong>required</strong> after every
+declaration, the last one included: the formatter may never invent a
+token, and a required terminator makes value scanning decidable in one
+pass. A value is a run of tokens and <code>{expression}</code> holes — there is no
+typed value grammar, and typed values arrive through the holes. A
+condition rule’s parenthesized arguments are ordinary expressions
+(<code>.within("data-theme", "dark") { … }</code>).</p>
+<p>Like an element, a block is an ordinary expression that desugars before
+analysis — to the <code>std::style</code> chain: <code>style()</code>, then <code>.raw(property, value)</code> per declaration and <code>.name(args…, style() … )</code> per condition
+rule, with the rule’s own chain appended as the final argument, in
+written order. <code>#</code> and <code>@</code> do not lex at all, so there are no hex
+literals and no at-rules inside one (lexical spec §2.4).</p>
 <h2 id="37-operator-precedence"><a class="header" href="#37-operator-precedence">3.7 Operator precedence</a></h2>
 <p>From tightest to loosest; every binary level is left-associative:</p>
 <div class="table-wrapper">
@@ -499,7 +534,7 @@ view chain (<code>view("tag")</code> with one method call per head item and a
 secondary-expr = closure | block | if-expr | for-expr | match-expr
                | jump | let | ret | assignment
                | operator-expr ;           (* §3.7 levels 1–12 *)
-condition-expr = secondary-expr ;          (* struct-init excluded from operands *)
+condition-expr = secondary-expr ;    (* struct-init and css-block excluded *)
 
 struct-init   = IDENT [ generic-args ]
                 "{" [ init-field { "," init-field } [ "," ] ] "}" ;
@@ -516,7 +551,9 @@ the member chain), except in <strong>condition positions</strong>: an <code>if</
 condition, a <code>for … in</code> iterable, and a <code>match</code> subject parse
 <code>condition-expr</code>, whose operands exclude struct initializers, so the
 <code>{</code> after <code>if Foo</code> is the block. Parenthesize a literal to use it in a
-condition (<code>if p == (Point { x = 1 }) { … }</code>).</li>
+condition (<code>if p == (Point { x = 1 }) { … }</code>). A <strong><code>css</code> block</strong>
+(§3.6) is brace-initial for the same reason and is excluded in the
+same three places, with the same escape: <code>if (css { … }).class_list() != "" { … }</code>.</li>
 <li><code>const</code> captures <strong>weakly</strong>: everything to the end of the expression
 (up to the enclosing bracket or comma) folds; parenthesize to narrow
 (§9).</li>

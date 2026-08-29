@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -235,9 +235,19 @@ for the explicit keywords when you <em>don’t</em> want to wait. The
 <tr><td>JSX: <code>&lt;div className="x"&gt;</code></td><td><code>&lt;div class("x")&gt;</code> — text children are quoted</td></tr>
 <tr><td>JSX: <code>onClick={handler}</code></td><td><code>on:click(handler)</code></td></tr>
 <tr><td>JSX: <code>&lt;TodoRow todo={t} /&gt;</code></td><td>a function call in a hole: <code>{todo_row(t)}</code></td></tr>
+<tr><td>CSS: <code>display: flex;</code></td><td>the same, inside <code>css { … }</code></td></tr>
+<tr><td>CSS: <code>color: #333;</code></td><td><code>color: {Color::hex("#333")};</code> — a hole</td></tr>
+<tr><td>CSS: <code>:hover { … }</code></td><td><code>.hover { … }</code> — a condition rule</td></tr>
+<tr><td>CSS: <code>@media (min-width: …)</code></td><td><code>.md { … }</code>, and <code>.sm</code> <code>.lg</code> <code>.xl</code></td></tr>
+<tr><td>CSS: <code>!important</code></td><td>nothing — a later declaration wins</td></tr>
+<tr><td>CSS: <code>gap: 1rem;</code> (hard-coded)</td><td><code>gap: {space(4)};</code> (a scale token)</td></tr>
 </tbody>
 </table>
 </div>
+<p>The CSS rows are a real block, not a template string: <code>css { … }</code> is
+core syntax that lowers to a <code>std::style</code> chain, so the property names
+are tokens the compiler sees and <code>vilan fmt</code> orders them for you. The
+<a href="../guide/styling.html#the-css-block">styling guide</a> has the whole shape.</p>
 <h2 id="things-that-look-the-same-and-mostly-are"><a class="header" href="#things-that-look-the-same-and-mostly-are">Things that look the same and mostly are</a></h2>
 <p>Closures (<code>|x| x * 2</code> instead of <code>x =&gt; x * 2</code>), string concatenation with
 <code>+</code>, <code>if</code>/<code>else</code>, comments with <code>//</code>, modules as files. The standard
@@ -252,6 +262,9 @@ want a <code>Signal</code> (reactive state) or a <code>Shared</code> cell, both 
 <li><strong>Don’t wrap things in <code>try</code>/<code>catch</code>.</strong> Errors are values. Look at the
 <code>Result</code> and decide.</li>
 <li><strong>Don’t sprinkle <code>await</code>.</strong> It’s already there.</li>
+<li><strong>Don’t type <code>#</code> or <code>@</code>.</strong> Neither is a vilan character anywhere, a
+<code>css</code> block included. A colour goes through <code>Color</code>, a media query
+through <code>.md { … }</code>.</li>
 </ul>
 <h2 id="where-to-go-next"><a class="header" href="#where-to-go-next">Where to go next</a></h2>
 <p>Read <a href="hello-vilan.html">Hello Vilan</a> to get a program running, then follow

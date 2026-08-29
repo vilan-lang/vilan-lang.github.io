@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -220,17 +220,34 @@ know. A <code>css { … }</code> block <strong>is</strong> a <code>Style</code> 
 above, lowered before anything else in the compiler sees it — so the two
 forms mix freely in one file, one function, one expression, and both
 emit exactly the same stylesheet.</p>
-<pre><code class="language-vilan fragment">let card = const css {
+<p>Here is one style written both ways, in one program. <code>card</code> and
+<code>card_as_a_chain</code> mint the <em>same classes</em>: the block does not emit
+beside the chain, it becomes the chain.</p>
+<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+import std::style::{ style, space, Style, Color };
+
+let card = const css {
 	display: flex;
-	flex-direction: column;
 	gap: {space(2)};
 	padding: {space(4)};
 	background-color: {Color::gray(100)};
-
 	.hover {
 		background-color: {Color::gray(200)};
 	}
 };
+
+let card_as_a_chain = const style()
+	.raw("display", "flex")
+	.raw("gap", space(2))
+	.raw("padding", space(4))
+	.raw("background-color", Color::gray(100))
+	.hover(style().raw("background-color", Color::gray(200)));
+
+fun main() {
+	let _root = mount_root("app", || {
+		view("div").styled(card).child(view("p").text("hello"))
+	});
+}
 </code></pre>
 <p><strong>One rule, and the whole feature falls out of it.</strong> An undotted
 <code>property: value;</code> is a declaration and becomes <code>.raw(property, value)</code>;
@@ -272,7 +289,28 @@ later declaration on the same property already wins.</li>
 a <code>for … in</code> iterable and a <code>match</code> subject take one only in
 parentheses: <code>if (css { … }).class_list() != "" { … }</code>.</li>
 </ul>
-<p><code>vilan fmt</code> currently prints a block back exactly as you wrote it.</p>
+<p><strong><code>vilan fmt</code> orders a block, and orders it exactly as it orders the
+chain.</strong> One item per line, nested rules one level in, holes tidied like
+any other vilan expression — and the items sorted into the canonical
+order: properties in Tailwind’s category sequence, then the condition
+rules in the order the selector nests them (media, relation, attribute,
+pseudo-class). So the two spellings of one style format alike, and
+grouping declarations by hand is not a thing you have to maintain.</p>
+<p>Two carve-outs worth knowing. A property no <code>Style</code> method writes — a
+vendor prefix, a custom property like <code>--brand-ink</code> — is a <strong>barrier</strong>:
+it holds its place and nothing sorts across it, because the formatter
+cannot know what it is entangled with. And a block containing a
+<strong>comment</strong> is never reordered at all; it still prints canonically, but
+the items stay where you wrote them, so a comment can never end up
+explaining the wrong declaration.</p>
+<pre><code class="language-vilan fragment">// formats as: display, padding, then `.md` before `.hover`
+let button = const css {
+	.hover { background-color: {Color::gray(200)}; }
+	padding: {space(2)};
+	.md { padding: {space(4)}; }
+	display: flex;
+};
+</code></pre>
 <h2 id="getting-the-stylesheet-onto-the-page"><a class="header" href="#getting-the-stylesheet-onto-the-page">Getting the stylesheet onto the page</a></h2>
 <p>The build writes every emitted rule into a sidecar beside the bundle —
 <code>app.js</code> gets <code>app.css</code>, <code>dist/client.js</code> gets <code>dist/client.css</code> — and

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -397,8 +397,8 @@ async, and <code>stat</code> answers strictly more).</p>
 into the middle; write, then <code>sync</code> for durability — you open a handle.
 <code>File::open(path)</code> (and <code>create</code>, <code>create_new</code>, <code>append_to</code>, <code>modify</code>)
 hands back a <em>resource</em>: it moves rather than copies, and its destructor
-closes the handle at scope end, so there is no <code>close()</code> to forget —
-<code>drop(file)</code> closes early. Reads and writes are positional
+closes the handle after its last use, so there is no <code>close()</code> to forget —
+<code>drop(file)</code> closes early, at the same point the compiler would have. Reads and writes are positional
 (<code>file.read_at(buffer, position)</code>, <code>file.write_at(buffer, position)</code>),
 <code>file.stat()</code> answers with no <code>Option</code> (the handle is already open, and
 nothing re-resolves the path between probe and act), and <code>file.sync()</code> is

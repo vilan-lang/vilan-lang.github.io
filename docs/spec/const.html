@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -207,7 +207,9 @@ runtime call: the answer would not be a constant.</p>
 <code>std::asset</code>, callable <strong>only</strong> during const evaluation, in three
 directions. <code>emit(kind, content)</code> is the output direction for lines: it
 declares a build asset (the styling system’s CSS, for example) that the
-build writes beside the output. <code>read(path)</code> is the input direction: it
+build writes beside the output; its ordered spelling
+<code>emit_keyed(kind, key, content)</code> carries the contribution’s own sort
+key, and <code>emit(kind, content)</code> is exactly <code>emit_keyed(kind, content, content)</code>. <code>read(path)</code> is the input direction: it
 returns a project file’s text so the result of parsing or transforming
 it can fold into the output. <code>bundle(path)</code> is the output direction for
 whole files: it tells the build to carry a non-code resource into the
@@ -221,7 +223,7 @@ error at the <code>const</code> expression. The channel keeps const evaluation
 deterministic <em>per build-input closure</em>: same sources and same project
 files, same output — <code>emit</code> same lines out, <code>read</code> same values in,
 <code>bundle</code> same files carried.</p>
-<p>A function that reaches <code>emit</code>, <code>read</code> or <code>bundle</code> is
+<p>A function that reaches <code>emit</code>, <code>emit_keyed</code>, <code>read</code> or <code>bundle</code> is
 <strong>compile-time-only</strong>,
 transitively, and the compiler enforces that statically. A call from
 runtime code into compile-time-only territory is an error at the

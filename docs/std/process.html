@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -744,7 +744,8 @@ a time, path-sorted, and the order among them carries no timing
 information.</p>
 <p>A <code>Watcher</code> moves rather than copies, a closure cannot capture one, and
 <code>List</code>/<code>Map</code>/<code>Set</code> cannot hold one — <code>File</code>’s rules exactly. Its
-destructor stops the poll at scope end, <code>drop(watcher)</code> is the early form,
+destructor stops the poll after its last use, <code>drop(watcher)</code> is the
+explicit form,
 and there is no <code>stop()</code> to forget or to call twice. That destructor is
 load-bearing rather than tidy: a pending host timer keeps the process
 alive, so <strong>a watcher that is never dropped is a program that never

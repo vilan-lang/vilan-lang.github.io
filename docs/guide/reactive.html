@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -575,9 +575,11 @@ call it directly to build your own list-rendering primitive.</p>
 and let the owner handle it.</li>
 <li>Disposal stops <em>future</em> deliveries. A watcher already queued in the
 currently-settling turn may fire one final time.</li>
-<li>Derived signals (<code>map</code>/<code>combine</code>) live as long as their sources, by
-design. They don’t need owners, and they don’t leak into disposed
-subtrees.</li>
+<li>Derived signals (<code>map</code>/<code>combine</code>/<code>flatten</code>) take the ambient owner when
+there is one, so a derivation built inside a view dies with the view.
+Built where no owner is ambient — module level, the top of <code>main</code> — it
+lives as long as its source, which is what a module-level
+<code>current_path().map(parse)</code> is for. Either way you never hold a handle.</li>
 </ul>
 
                     </main>

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -298,6 +298,11 @@ pending-call registry, inbound dispatch, <code>on_reconnect</code> hooks) and th
 <code>DuplexTransport</code> machinery (<code>duplex_pair</code>, <code>bridge</code>, <code>connect_split</code> for
 the SSE/split fallback). App code doesn’t construct these; the generated
 <code>connect</code> does.</p>
+<p>Disposing a reactive session (<code>ReactiveServer</code>/<code>ReactiveClient</code>) also clears
+its end’s inbound handler — <code>DuplexEnd::clear_on_frame</code>, the teardown half of
+<code>on_frame</code>. Without it the wire kept the closure that captured the session, so
+a closed connection stayed reachable from its transport; the server half runs
+per disconnect, through <code>drop_session</code>.</p>
 <pre><code class="language-vilan fragment">fun connect_socket(url: str): Result&lt;SocketDuplex, str&gt;   // dial + announcement (backoff)
 impl SocketDuplex {
 	fun transport(self): SocketTransport

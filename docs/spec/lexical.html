@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -198,10 +198,11 @@ block comments.</p>
 </code></pre>
 <p>Identifiers are ASCII. The following words are <strong>reserved</strong>; they lex as
 keyword tokens and are never <code>IDENT</code>:</p>
-<pre><code class="language-text">async  await  borrows  const     else    enum   export  external
-for    fun    if       impl      import  in     is      jump
-let    macro  match    mod       mut     null   own     resource
-ret    struct trait    type      use     with   true    false
+<pre><code class="language-text">async     await  borrows  const  css   else    enum  export
+external  for    fun      if     impl  import  in    is
+jump      let    macro    match  mod   mut     null  own
+resource  ret    struct   trait  type  use     with  true
+false
 </code></pre>
 <p>(<code>true</code>/<code>false</code> lex as boolean literals; <code>null</code> as the null literal.)</p>
 <p><strong>Contextual keywords</strong> lex as <code>IDENT</code> and take meaning only by position:
@@ -330,12 +331,29 @@ span-adjacent pairs, <code>on:</code> joins by adjacency, and a hyphenated eleme
 or attribute name (<code>aria-label</code>, <code>my-widget</code>) is a span-adjacent
 name-<code>-</code>-name run — <code>data - id</code> is three tokens of arithmetic, not a
 name. The lexer itself is untouched by the element form: every token it
-produces already existed.</p>
+produces already existed. The <code>css</code> block (grammar spec, <em>atom</em>) is the
+same: a property name is that identical span-adjacent run, and a
+dimension such as <code>1px</code> or <code>1.5rem</code> was already one number token (§2.3),
+so CSS’s own value shape needed nothing new.</p>
+<p><strong><code>#</code> and <code>@</code> are in neither class, and lex as nothing at all.</strong> They
+belong to no run and open no literal, so either one is a lex error
+wherever it is written — including inside a <code>css</code> block, which cannot
+change that, because lexing finishes before any parser exists (§2.5).
+The two consequences are stated rather than worked around, and each
+diagnostic names its spelling: a colour is a hole,
+<code>color: {Color::hex("#333")};</code>, which routes the value through the
+<code>Color</code> type that carries its own <code>:root</code> line; and a block has no
+at-rules, so a media query is a breakpoint condition rule
+(<code>.md { … }</code>) and a declaration block under a selector of your own is
+<code>std::style::declare</code>. <code>#id</code> selectors are unwritable for the same
+reason; <code>[id="x"]</code> is the spelling.</p>
 <h2 id="25-trivia-and-token-separation"><a class="header" href="#25-trivia-and-token-separation">2.5 Trivia and token separation</a></h2>
 <p>Whitespace (any Unicode whitespace) and comments may appear between any
 two tokens and are required only where two tokens would otherwise lex as
 one (<code>fun main</code> needs the space; <code>a + b</code> does not). Lexing is greedy and
-context-free: no token depends on parse state.</p>
+context-free: no token depends on parse state — which is why a construct
+whose body reads as another language, such as the <code>css</code> block, still
+lexes as ordinary vilan tokens and admits not one byte more.</p>
 
                     </main>
 

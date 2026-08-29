@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -304,10 +304,9 @@ caller’s copy — never a view, through its final expression and through
 every <code>ret</code> alike.</p>
 </blockquote>
 <h2 id="sharedt-one-cell-many-holders"><a class="header" href="#sharedt-one-cell-many-holders"><code>Shared&lt;T&gt;</code>: one cell, many holders</a></h2>
-<p>When two places need to see the same mutable state (a closure and its
-creator, most commonly), reach for <code>Shared&lt;T&gt;</code>. It’s a small
-heap cell. Copying the <code>Shared</code> value copies the <em>handle</em>, and both
-handles point at one cell. That’s the point:</p>
+<p>When two places need to see the same mutable state, reach for
+<code>Shared&lt;T&gt;</code>. It’s a small heap cell. Copying the <code>Shared</code> value copies
+the <em>handle</em>, and both handles point at one cell. That’s the point:</p>
 <pre><code class="language-vilan">import std::print;
 import std::shared::Shared;
 
@@ -331,7 +330,11 @@ through the cell: <code>shared.write().push(x)</code>.</li>
 </ul>
 <p>If you’re reaching for <code>Shared</code> to “avoid a copy” on a hot path,
 don’t: values are cheap, and the compiler already elides copies it can
-prove away.</p>
+prove away. And you don’t need one merely to let a closure write to its
+creator’s binding — a closure captures the binding itself
+(<a href="functions-and-closures.html">Closures</a>). What the cell buys is state
+that outlives the frame the closure was made in, and state two closures
+reach that neither of them declared.</p>
 <h2 id="arena--handle-graphs-and-cycles"><a class="header" href="#arena--handle-graphs-and-cycles"><code>Arena</code> + <code>Handle</code>: graphs and cycles</a></h2>
 <p>Values copy, and views can’t be stored. So how do you build a tree with
 parent pointers, or a graph where nodes reference each other? With an

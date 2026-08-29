@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -448,6 +448,23 @@ through a sync-looking function that reaches something async.
 <code>mut v = &amp;mut x</code> doesn’t mean what it would in Rust. Declare the view
 with <code>let</code>; assigning through it (<code>v = …</code>) already writes the target.
 → <a href="../tour/memory-model.html">The memory model</a></p>
+<p><strong>“a closure cannot capture the view ‘…’: a view is second-class and the closure may outlive the place it views. …”</strong>
+A closure body named a view binding (<code>let v = &amp;mut x</code>, a <code>for e in &amp;mut list</code> item, or the result of a view-returning call) declared outside it.
+A closure captures the <em>binding</em>, and nothing says when the closure runs,
+so the capture would outlive the place. The two fixes are the two ways it
+stops being a capture: read the value out first (<code>let n = *v;</code>, then
+capture <code>n</code>), or take the view as a <strong>parameter</strong> of the closure
+(<code>|v: &amp;mut i32| *v</code>), which is a per-call loan. A <code>&amp;</code>/<code>&amp;mut</code> parameter of
+the <em>enclosing function</em> may be named inside a closure — it views the
+caller’s place — but that closure may not then escape. An async closure
+gets the sharper message below instead.
+→ <a href="../tour/functions-and-closures.html">Functions and closures</a>, <a href="../spec/memory.html">spec §6.9</a></p>
+<p><strong>“an async closure cannot capture the view ‘…’: the capture would be held across the closure’s suspension points. …”</strong>
+The rule above, at a closure that suspends: on top of outliving the
+place, the capture would be live across an <code>await</code>, where any turn may
+invalidate it. Re-acquire the view inside the closure after the
+suspension, or pass a value or a <code>Shared</code>/<code>Handle</code> in.
+→ <a href="../tour/memory-model.html">The memory model</a>, <a href="../tour/async.html">Async</a></p>
 <h2 id="resources"><a class="header" href="#resources">Resources</a></h2>
 <p>A <code>resource</code> type has a single owner and moves rather than copies; a
 struct, enum, or tuple holding one is a resource too, inferred by
@@ -455,12 +472,13 @@ containment (<code>Option&lt;Database&gt;</code> is a resource, <code>Option&lt;
 resource <em>moves</em> on binding (<code>let b = a</code>), on <code>own</code>-passing, on return, and
 into a constructor; it is <em>loaned</em> (no ownership change) through <code>self</code>,
 <code>&amp;</code>, and <code>&amp;mut</code>. The <code>Drop</code> destructor trait and its restrictions are below.
-At each scope end the compiler runs the destructor on the still-owned resource
-locals, in reverse declaration order. Destruction goes through
-<code>try</code>/<code>finally</code>, so <code>ret</code>, <code>jump</code>, and a thrown panic all run it on the way
-out; a resource without a <code>Drop</code> impl still has its fields destroyed. A
-module-level resource lives for
-the process and never drops. A drop that panics while a panic is already
+After a resource’s last use the compiler runs its destructor; resources
+whose last use is the same statement discharge in reverse declaration
+order. Destruction goes through <code>try</code>/<code>finally</code>, so <code>ret</code>, <code>jump</code>, and a
+thrown panic all run it on the way out; a resource without a <code>Drop</code> impl
+still has its fields destroyed. A resource built inside one expression and
+never bound is owned by its statement and destroyed at that statement’s
+end. A module-level resource lives for the process and never drops. A drop that panics while a panic is already
 unwinding replaces the in-flight error (JS <code>finally</code> semantics). The tutorial
 is <a href="../tour/resources.html">Resources</a>; the normative rules are spec
 <a href="../spec/memory.html">§6.8</a>.</p>
@@ -494,8 +512,8 @@ serve-forever server’s <code>Database</code>). Consuming it (moving it into a 
 passing it to an <code>own</code> parameter, or <code>drop(x)</code>) would hand a
 process-lifetime resource to a droppable owner and close the shared handle
 out from under the rest of the program. Reach it by loan only: method calls,
-<code>&amp;x</code>, <code>&amp;mut x</code>. To own a database that closes at a scope’s end, open it in a
-local instead.
+<code>&amp;x</code>, <code>&amp;mut x</code>. To own a database that closes after its last use, open it
+in a local instead.
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“a closure cannot capture the resource <code>…</code>; …”</strong>
 A closure or <code>async</code>/spawn body referenced a <em>local</em> or <em>parameter</em> resource
@@ -718,12 +736,21 @@ draft’s next push already does.
 <p><strong>“<code>asset::emit</code> outside a <code>const</code> expression”</strong>
 Styles (and other build assets) are constructed at compile time. Build
 the <code>Style</code> in a <code>const</code> (<code>let card = const style()…</code>); select and merge
-already-built styles at runtime. The channel’s input direction,
-<code>asset::read</code>, is compile-time-only the same way.
+already-built styles at runtime. The channel’s other directions —
+<code>asset::emit_keyed</code> and <code>asset::read</code> — are compile-time-only the same
+way.
 → <a href="../guide/styling.html">Styling</a>, <a href="../tour/macros-and-const.html">Macros &amp; const</a></p>
+<p><strong>“<code>asset::emit_keyed</code> cannot order the <code>css</code> kind: the style sidecar is
+ordered by the CSS cascade, not by a contribution’s key”</strong>
+The stylesheet’s order is decided by the cascade — base rules before
+<code>@media</code> blocks, media blocks by ascending min-width — so a sort key
+handed to it would have nowhere to apply. Write the rule with
+<code>asset::emit("css", …)</code>, or let <a href="../std/style.html"><code>std::style</code></a> own the
+sheet. <code>emit_keyed</code> is for a kind of the program’s own.</p>
 <p><strong>“… is compile-time-only; evaluate this call inside a <code>const</code> expression”</strong>
 The same rule, caught statically: some function on this call path reaches
-<code>asset::emit</code> or <code>asset::read</code>, and the call itself sits in runtime code.
+<code>asset::emit</code>, <code>asset::emit_keyed</code> or <code>asset::read</code>, and the call itself
+sits in runtime code.
 The span is the outermost runtime crossing — the call that leaves ordinary
 code and enters compile-time territory — so wrap <em>that</em> call in a <code>const</code>.
 A crossing through trait dispatch counts too: a generic call is charged at

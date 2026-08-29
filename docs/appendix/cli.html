@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -232,8 +232,14 @@ escape for a hook that reads something it did not declare. (<code>rm -rf dist</c
 overrides the package’s <code>target</code> (<code>--target</code> is an accepted alias).
 <code>none</code> checks against no platform’s layers, the strictest reading.</li>
 <li><code>--watch</code>: rebuild whenever a watched source changes (Ctrl-C stops).</li>
-<li><code>-d, --debug</code>: also emit <code>.parse.out</code> / <code>.analyze.out</code> /
-<code>.callgraph.out</code> dumps, for poking at the compiler’s view of your code.</li>
+<li><code>-d, --debug</code>: also emit a dump per pipeline stage beside the source, for
+poking at the compiler’s view of your code. <code>.parse-raw.out</code> is the tree
+the parser produced; <code>.parse.out</code> is that tree after the desugars hooked
+at every parse entry (the <code>css</code> block, element syntax, <code>?</code> lifting) — the
+one analysis actually receives, so the pair brackets the desugars and a
+node in one and not the other is something they added or removed.
+<code>.analyze.out</code> is the analyzed program and <code>.callgraph.out</code> the call
+graph its post-analysis passes shared.</li>
 <li><code>--print-chunks</code>: report the route-chunk plan — what a <code>split = true</code>
 browser leg would load lazily per route, with function counts and a byte
 estimate, plus a <code>verdict:</code> line measuring what splitting would actually

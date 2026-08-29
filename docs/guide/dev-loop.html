@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -345,6 +345,11 @@ not a match — it would hash as a file that is never there and freeze the
 hook after its first run.</li>
 <li><strong>A missing input is recorded as missing</strong>, so creating it later re-runs the
 hook. A missing or hand-edited output re-runs it too.</li>
+<li><strong>A hook that succeeds without writing a declared output is told so</strong>, by
+name and by path. Nothing is recorded for a hook whose output isn’t there, so
+it would otherwise re-run on every build in silence while the failure
+surfaced somewhere else — at the import of the module it was supposed to
+write. Write the file, or drop it from <code>outputs</code>.</li>
 <li><strong>A hook that declares neither <code>inputs</code> nor <code>outputs</code> runs every time</strong>,
 exactly like a <code>run = [...]</code> entry. That is the default, and <code>run</code> keeps
 working unchanged.</li>

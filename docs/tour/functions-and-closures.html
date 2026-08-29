@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -326,10 +326,32 @@ return type is inferred exactly the way a function’s is: from the final
 expression when the body can reach it, and from every <code>ret</code>, which have
 to agree — a body that only ever leaves by <code>ret</code> is typed by those
 <code>ret</code>s. A <code>ret</code> that disagrees is reported at that <code>ret</code>.</p>
-<p>Closures capture their surroundings <strong>by value</strong> at the moment they are
-created. Vilan copies, remember. When a closure needs to share mutable
-state with its creator, they hold a <code>Shared</code> cell together. The
-<a href="memory-model.html">memory model</a> explains that pattern.</p>
+<p>A closure captures the <strong>bindings</strong> around it, not their values — the
+one alias in Vilan you get without asking for one. The closure and its
+creator share the binding, so a write on either side shows up on the
+other, and even reassigning the whole binding is visible inside:</p>
+<pre><code class="language-vilan">import std::print;
+
+fun main() {
+	mut label = "before";
+	let show = || label;
+	label = "after";
+	print(show());        // after — same binding, not a copy of it
+}
+</code></pre>
+<p>That is usually what you want: it is how a click handler reads the
+counter you just bumped. Three things it does not extend to. A
+<strong>resource</strong> cannot be captured at all — a closure would be a second
+owner of it. A <strong>view</strong> (<code>&amp;x</code>, <code>&amp;mut x</code>) cannot either: the closure may
+outlive the place, so read the value out with <code>*</code> first, or take the
+view as a parameter of the closure. And an ambient
+<a href="../spec/contexts.html">context</a> value is the one thing genuinely copied
+when the closure is made, so a deferred body reads the context it was
+written in.</p>
+<p>When two closures need to share mutable state that outlives the frame
+they were made in, they hold a <code>Shared</code> cell together. The
+<a href="memory-model.html">memory model</a> explains that pattern, and
+<a href="../spec/memory.html">spec §6.9</a> is the rule.</p>
 <h2 id="named-functions-as-closures"><a class="header" href="#named-functions-as-closures">Named functions as closures</a></h2>
 <p>When a function already does what your closure would do, pass the
 function itself:</p>

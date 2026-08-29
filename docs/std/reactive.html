@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -252,8 +252,15 @@ fun main() {
 }
 </code></pre>
 <ul>
-<li><code>map</code>’s result is a live derived signal; its internal subscription is
-unowned (lives as long as the source).</li>
+<li><code>map</code>’s result is a live derived signal, and its internal subscription is
+<strong>detachable</strong>: made inside a boundary — a mounted view, a <code>bind_each</code> row —
+it is registered with the ambient owner and dies when that boundary is
+disposed. <code>combine</code> and <code>flatten</code> register theirs the same way (<code>flatten</code>
+also releases whichever inner subscription is live at disposal).</li>
+<li>Made <strong>outside</strong> every boundary — module level, the top of <code>main</code> — a
+derivation has no owner to register with and lives as long as its source.
+That is what a module-level <code>current_path().map(parse)</code> wants, and it is why
+the derivations read the ambient owner optionally where <code>effect</code> demands one.</li>
 <li><code>effect</code> requires an ambient owner; calling it outside every owner is a
 compile error (context coverage). It fires once immediately.</li>
 <li><code>sub</code> fires once immediately with the current value, like <code>effect</code>, and

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -206,7 +206,7 @@ impl OwnedNursery {
 	fun enter&lt;T&gt;(&amp;self, body: (|| T) context ambient_nursery): T  // spawns inside → owned
 	fun cancel(&amp;self)                                             // early, idempotent
 }
-// `impl OwnedNursery with Drop` cancels the owned nursery at scope end.
+// `impl OwnedNursery with Drop` cancels the owned nursery after its last use.
 
 fun ambient_signal(): Option&lt;CancelSignal&gt;   // the enclosing nursery's, if any
 </code></pre>
@@ -233,7 +233,7 @@ deterministically. <code>new()</code> makes a detached owner; <code>enter(body)<
 <code>body</code> with the owner’s nursery ambient, so every task spawned inside
 registers with it. Unlike <code>nursery</code>, <code>enter</code> does NOT join: it
 returns as soon as the body settles, leaving the tasks running.
-Dropping the owner (at scope end, or <code>drop(owner)</code>) cancels them, so
+Dropping the owner (after its last use, or <code>drop(owner)</code>) cancels them, so
 in-flight bridged IO aborts. Because the owner’s nursery is never joined
 it runs <strong>detached</strong>: a child’s REAL failure reports to the console with
 its spawn origin (as a free-floating task would) instead of being
@@ -317,11 +317,12 @@ fun decode_claims&lt;C: Wire&gt;(segment: str): Option&lt;C&gt;   // decode WITH
 <p><code>verify_hs512</code> checks the signature (constant-time) before yielding claims;
 <code>decode_claims</code> is for non-security introspection only.</p>
 <h2 id="stdasset"><a class="header" href="#stdasset">std::asset</a></h2>
-<pre><code class="language-vilan fragment">fun emit(kind: str, line: str)   // compile-time only: append to a build asset
-fun read(path: str): str         // compile-time only: read a project file
-fun bundle(path: str): str       // compile-time only: carry a file into the build
+<pre><code class="language-vilan fragment">fun emit(kind: str, line: str)               // compile-time only: append to a build asset
+fun emit_keyed(kind: str, key: str, line: str)  // …with the contribution's own sort key
+fun read(path: str): str                     // compile-time only: read a project file
+fun bundle(path: str): str                   // compile-time only: carry a file into the build
 </code></pre>
-<p>All three callable only from <code>const</code> evaluation — a runtime call path
+<p>All four callable only from <code>const</code> evaluation — a runtime call path
 to any of them is a compile error. <code>emit</code> is how <code>std::style</code> writes the CSS
 file (<code>emit("css", rule)</code>). Reach for it directly only for a shape std
 has no spelling for: a whole declaration block under a selector you
@@ -333,14 +334,39 @@ target).</p>
 kind’s lines deduplicated and deterministically ordered. The order is
 kind-specific: <code>css</code> sorts in cascade order (base rules before <code>@media</code>
 blocks, media blocks by ascending min-width), and every other kind
-sorts lexically by line — either way the file is a function of the
-<em>set</em> of lines emitted, never of the order const evaluation reached
+sorts by <code>(key, line)</code> — either way the file is a function of the
+<em>set</em> of contributions, never of the order const evaluation reached
 them. A kind that stops being emitted stops shipping: the build records
 the kind files it wrote (<code>.vilan-asset-kinds</code>, beside the outputs), and
 the next build removes a recorded file whose kind emitted nothing —
 only recorded files, never a file it merely found.</p>
+<p><code>emit_keyed</code> is where that key comes from. A line’s position in its
+file is often not its own bytes — a route sorts by its path, an icon by
+its name, a ranked entry by its rank — and the code making the
+contribution is the only code that knows which. So it passes the key,
+the flush orders by it, and nothing has to recover an ordering by
+parsing lines back:</p>
+<pre><code class="language-vilan fragment">// Ranks, not bytes: "02" before "09" before "10" whatever the lines say.
+fun routes(): i32 {
+	asset::emit_keyed("routes", "02", "GET /about");
+	asset::emit_keyed("routes", "09", "GET /");
+	1
+}
+let _routes = const routes();
+</code></pre>
+<p>The key is never written — only the line reaches the file. Deduplication
+is per <code>(key, line)</code> pair, so the same line contributed under two keys
+appears twice and the same contribution made twice appears once.
+<code>emit(kind, line)</code> is exactly <code>emit_keyed(kind, line, line)</code>, which is
+why an un-keyed kind’s file comes out lexically ordered by line and why
+mixing the two spellings in one kind needs no rule of its own.</p>
+<p>The <code>css</code> kind is the one <code>emit_keyed</code> refuses: the stylesheet is
+ordered by the cascade rather than by a contribution’s key, so a key
+passed for it would have no meaning. Write CSS with <code>emit</code>, or leave it
+to <code>std::style</code>.</p>
 <p>Because the kind becomes a filename, it must <strong>be</strong> a filename: one path
-segment, so a kind carrying <code>/</code>, <code>\</code>, or <code>..</code> is refused. It must also
+segment, so a kind carrying <code>/</code>, <code>\</code>, or <code>..</code> is refused — for either
+spelling. It must also
 not be a name the build already writes there. Refused for that reason:
 <code>vl</code> (the entry source — a lone package’s outputs sit exactly where its
 entry does, so this kind would overwrite the program), <code>js</code> and <code>mjs</code>

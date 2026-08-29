@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -280,7 +280,7 @@ browser. Decides which std <a href="#layer">layers</a> are importable.
 types, <code>List</code>, <code>void</code>. Everything else is imported explicitly.
 <a href="../spec/names.html">Spec §4</a>.</p>
 <p><a id="resource"></a><strong>resource</strong>: a value with a single owner that <em>moves</em> instead of copying
-and is destroyed deterministically at scope end (a <code>Database</code>, an
+and is destroyed deterministically after its last use (a <code>Database</code>, an
 <code>OwnedNursery</code>). <a href="../tour/resources.html">Resources</a>.</p>
 <p><a id="safe-integer"></a><strong>safe integer</strong>: an integer JavaScript’s 64-bit floats represent
 exactly: anything within ±2^53. Vilan’s <code>i53</code>/<code>u53</code> are named for this

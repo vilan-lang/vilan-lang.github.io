@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f2eff341.js";
+            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -237,7 +237,7 @@ the value out of the <code>Option</code>, so they must own it (<code>docs/spec/m
 For plain data that is invisible — <code>own</code> copies, and <code>opt.unwrap()</code> leaves
 <code>opt</code> perfectly readable. For an <code>Option&lt;SomeResource&gt;</code> it is the affine rule
 biting: <code>opt.unwrap()</code> <em>moves</em> <code>opt</code>, a later use of <code>opt</code> is a
-use-after-move error, and <code>opt</code> is not torn down at scope end (the payload
+use-after-move error, and <code>opt</code> is not torn down at all (the payload
 you now hold is). The pure predicates — <code>is_some</code>, <code>is_none</code> — keep a
 borrowing <code>self</code> and never consume, so they stay free on a resource.</p>
 <p>Reaching a resource payload is a <code>match</code>, not a guarded <code>unwrap</code>: <code>match opt { Some(let value) =&gt; .., None =&gt; .. }</code> consumes <code>opt</code> on <em>every</em> path, which
