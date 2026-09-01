@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -223,7 +223,29 @@ error at the <code>const</code> expression. The channel keeps const evaluation
 deterministic <em>per build-input closure</em>: same sources and same project
 files, same output — <code>emit</code> same lines out, <code>read</code> same values in,
 <code>bundle</code> same files carried.</p>
-<p>A function that reaches <code>emit</code>, <code>emit_keyed</code>, <code>read</code> or <code>bundle</code> is
+<p>That containment rule is a rule about the path you <strong>write</strong>. A
+<strong>symlink is a supported spelling of project layout</strong>, not an escape: a
+link is an ordinary way a tree gets its name inside a package — a
+shared icon set, a generator’s output directory, a vendored asset
+folder — so the channel follows one, reads what it points at, and
+tracks that file as the build input it is. What the fence refuses is a
+path that <em>says</em> it is leaving (an absolute path, a <code>..</code>); it does not
+refuse a name that happens to resolve elsewhere, and it never claims to
+have resolved anything.</p>
+<p>The same doctrine governs the rest of the toolchain, so one project
+layout means one thing everywhere: paths resolve honestly, every fence
+and scope is applied to the <strong>resolved</strong> tree, and a walk that follows
+links guards against cycles. Concretely — a <code>[[build.hook]]</code>’s declared
+input is followed and hashed as what it points at, while links <em>inside</em>
+a declared tree hash as their target path rather than being followed
+(so the hash can neither leave the tree nor loop); a package’s
+<code>generated</code> root is still that package’s products when the directory is
+a link out of the package; and <code>vilan fmt</code> walks a directory link,
+recognizes a directory it has already walked under another name, and
+stops at a link whose target leaves the project — saying so, since that
+is where the command’s scope ends and not a judgement about the link.</p>
+<p>A function that reaches any verb of the channel — <code>emit</code>, <code>emit_keyed</code>,
+<code>read</code>, <code>bundle</code>, <code>bundle_as</code>, <code>read_dir</code>, <code>read_dir_all</code>, <code>digest</code> — is
 <strong>compile-time-only</strong>,
 transitively, and the compiler enforces that statically. A call from
 runtime code into compile-time-only territory is an error at the
@@ -248,8 +270,9 @@ lifts entirely — the interpreter makes the call, so
 bounded by the interpreter’s <strong>fuel</strong> (steps; an <code>asset::read</code> charges
 one per byte read, so fuel bounds input size too — an <code>asset::bundle</code>
 charges a flat cost instead, since its bytes never enter the program
-and a size charge would cap resources rather than work) and <strong>depth</strong>
-(nesting). Exhausting either, or panicking during evaluation, is a
+and a size charge would cap resources rather than work, a listing
+charges per entry, and an <code>asset::digest</code> charges per byte at an eighth
+of <code>read</code>’s rate) and <strong>depth</strong> (nesting). Exhausting either, or panicking during evaluation, is a
 compile error carrying the const expression’s span; a budget failure
 says so, rather than reading as a program error. A runaway <code>const</code>
 fails the build; it cannot hang it. The fuel budget is sized so that

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -182,8 +182,7 @@ sits on top is <a href="services.html">Services &amp; RPC</a>.</p>
 <p>Vilan ships with an embedded SQLite binding (Node’s built-in SQLite
 underneath). There is no ORM and no query builder. You write SQL, with
 <code>?</code> placeholders for values:</p>
-<pre><code class="language-vilan norun">import std::print;
-import std::db::{ Database, Statement, Row };
+<pre><code class="language-vilan norun">import std::db::{ Database, Statement, Row };
 import std::option::Option::{ self, Some, None };
 
 fun main() {
@@ -233,11 +232,99 @@ in practice: spell it <code>description</code>.</li>
 </ul>
 <p>The API is synchronous, which fits rpc handlers (the dispatch path is
 synchronous too), and there is no connection pool to manage.</p>
+<h3 id="migrations-carrying-a-schema-forward"><a class="header" href="#migrations-carrying-a-schema-forward">Migrations: carrying a schema forward</a></h3>
+<p><code>CREATE TABLE IF NOT EXISTS</code> is a schema <strong>ensure</strong>, and it is right
+exactly until the first schema <strong>change</strong>. Add a <code>description</code> column to
+<code>task</code> and the clause does nothing at all — the table exists, so the
+statement is a no-op, and the deployed database keeps the old shape while
+the code querying it has the new one. Deleting the file is not a
+deployment strategy.</p>
+<p><code>db.migrate(migrations)</code> is the spelling for “carry this database
+forward”. You give it named steps in order; it applies the ones this
+database has not seen and records them in a <code>vilan_migrations</code> table it
+owns. Call it at boot, unconditionally, before the first query:</p>
+<pre><code class="language-vilan norun">import std::db::{ Database, Migration };
+
+fun main() {
+	let db = Database::open("app.db");
+	let applied = db.migrate([
+		Migration {
+			name = "001-create-task",
+			sql = "CREATE TABLE task (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)",
+		},
+		Migration {
+			name = "002-task-description",
+			sql = "ALTER TABLE task ADD COLUMN description TEXT",
+		},
+	]);
+	print(i"applied {applied.len()} migrations");
+}
+</code></pre>
+<p>The first boot applies both and prints <code>applied 2 migrations</code>. Every boot
+after that applies nothing and prints <code>applied 0</code>. Append a third step and
+only the third one runs.</p>
+<p><strong>A step is recorded if and only if its SQL committed.</strong> Each step runs
+in its own transaction <em>with</em> its record insert, so there is no window
+where the schema moved and the record did not. A process killed
+mid-migration leaves a database whose recorded set exactly describes its
+schema, and the next boot resumes from there.</p>
+<p>Three things stop the boot loudly, all of them before a single statement
+is applied — so a database <code>migrate</code> refuses is a database it did not
+touch:</p>
+<ul>
+<li><strong>A step fails.</strong> The message names the step and quotes SQLite’s own
+diagnosis (<code>migration '003-add-index' failed and was not applied: no such table: taks</code>). Nothing is recorded for it. Fix the SQL, boot
+again, and it resumes exactly there — the steps before it stay applied.</li>
+<li><strong>The database is ahead of the code</strong> — it records a step your list
+does not contain. That is a rolled-back deploy: an older binary, whose
+queries predate a schema change, about to run against a database that
+already has it.</li>
+<li><strong>A step was inserted into the past</strong> — an unapplied step sits before
+one that is already applied. That is two branches merged, and applying
+it out of order would produce a schema no fresh database can reproduce.</li>
+</ul>
+<p>Rules for writing a step:</p>
+<ul>
+<li><strong>The name is forever.</strong> It is the row’s key in <code>vilan_migrations</code>.
+Renaming an applied step makes the database look like it is ahead of
+the code; editing an applied step’s SQL does nothing at all, because
+it will never run again. To change a shipped migration, write a new one.</li>
+<li><strong>Never manage transactions inside a step.</strong> <code>migrate</code> supplies the
+transaction. A step containing its own <code>COMMIT</code> commits that one out
+from under it — the schema change lands permanently while its record is
+still unwritten, which is the one way to break the invariant above.
+For the same reason a step cannot use a statement SQLite refuses in a
+transaction (<code>VACUUM</code>, <code>PRAGMA journal_mode</code>).</li>
+<li>A step’s SQL may hold as many statements as you like, separated by <code>;</code>.</li>
+<li>Names must be unique, but they need not sort in order — the <em>list’s</em>
+order is what <code>migrate</code> applies. <code>001-slug</code> prefixes are a convention
+worth keeping anyway, for the reason below.</li>
+</ul>
+<p>Vilan has no down-migrations. The recovery for a bad migration is a new
+migration that undoes it, which is what production uses in practice.</p>
+<h4 id="carrying-the-sql-into-dist"><a class="header" href="#carrying-the-sql-into-dist">Carrying the SQL into <code>dist/</code></a></h4>
+<p>Inline strings are fine for two steps and unpleasant for twenty. Keep the
+real SQL in files and pull them through the <strong>const channel</strong>, so the
+deployed app is still <code>dist/</code> and nothing else:</p>
+<pre><code class="language-vilan fragment">// migrations/001-create-task.sql, 002-task-description.sql, ...
+db.migrate([
+	Migration { name = "001-create-task", sql = const asset::read("migrations/001-create-task.sql") },
+	Migration { name = "002-task-description", sql = const asset::read("migrations/002-task-description.sql") },
+]);
+</code></pre>
+<p><code>asset::read</code> runs at compile time, so each file’s <em>text</em> is compiled
+into the bundle. There is no runtime path to get wrong on the deployment
+machine, and every migration edit is a tracked build input — change a
+<code>.sql</code> file and the compile that read it is invalidated.</p>
+<p>The intended idiom, once the const <code>read_dir</code> recipe lands, is to write
+that loop once: list <code>migrations/</code>, sort by name, and turn each entry
+into a <code>Migration</code> named after its file. That is what makes the
+<code>NNN-slug.sql</code> convention pay — a name-sorted listing <em>is</em> the migration
+order.</p>
 <h2 id="serving-http-stdhttp"><a class="header" href="#serving-http-stdhttp">Serving http: <code>std::http</code></a></h2>
 <p>Every server in vilan is a <code>Server::builder()</code> chain — a port, a handler,
 and <code>start()</code>:</p>
-<pre><code class="language-vilan norun">import std::print;
-import std::http::{ Server, Request, Response };
+<pre><code class="language-vilan norun">import std::http::{ Server, Request, Response };
 
 fun main() {
 	Server::builder()
@@ -375,6 +462,11 @@ fun stat(path: str): Option&lt;Stat&gt;           // async — None if the path 
 
 resource external struct File               // an open file — the handle tier
 fun with_file&lt;T&gt;(path: str, body: |File| T): T   // open, run, close (awaited)
+fun with_file_create&lt;T&gt;(path: str, body: |File| T): T   // …and one per constructor
+
+resource struct Reader                      // a cursor over an open file
+fun Reader::of(own file: File): Reader      // takes the handle; starts at byte 0
+fun Reader::next(self, size: i32): Bytes    // the next chunk; empty at end of file
 
 resource external struct Watcher            // a live watch — the watch tier
 fun Watcher::watch(path: str): Watcher      // the path, and a directory's own entries
@@ -420,14 +512,42 @@ main();
 parameter, and closes it before returning — with the close <em>awaited</em>, so
 a failure to close is a failure of <code>with_file</code>; a <code>File</code> you hold
 yourself closes through its destructor instead, which starts the close
-without waiting on it. Full signatures:
+without waiting on it. There is one scoped form per constructor
+(<code>with_file_create</code>, <code>with_file_create_new</code>, <code>with_file_append</code>,
+<code>with_file_modify</code>), and on a <em>writing</em> handle the awaited close is the
+one that earns its keep: the OS is entitled to report a write’s failure
+at close time — a full disk, a quota — and only the scoped form makes
+that a failure of your call rather than a line on stderr.</p>
+<p>To read a big file without holding it all in memory, wrap the handle in a
+<code>Reader</code> and pull chunks. <code>next(size)</code> advances a cursor this program
+owns — the handle itself stays positional, so nothing hidden moves — and
+answers an <strong>empty</strong> chunk at end of file:</p>
+<pre><code class="language-vilan norun">import std::fs::{ File, Reader };
+
+fun main() {
+	let reader = Reader::of(File::open("big.bin"));
+	mut total = 0;
+	for {
+		let chunk = reader.next(65536);
+		if chunk.len() == 0 {
+			jump break;
+		}
+		total += chunk.len();
+	}
+	print(total);
+}
+main();
+</code></pre>
+<p>Stop on empty, not on short: a chunk shorter than you asked for is
+ordinary near the end, and only the empty one means the file is done. A
+<code>Reader</code> owns its <code>File</code>, so it is a resource too — it moves, and dropping
+it closes the file. Full signatures:
 <a href="../std/process.html#stdfs">the process reference</a>.</p>
 <p>When you want to know that a file changed rather than to read it once,
 you open a <em>watch</em>. <code>Watcher::watch(path)</code> observes a path (and a
 directory’s immediate entries); <code>Watcher::watch_all(path)</code> observes the
 whole tree under it. You pull changes out one at a time:</p>
 <pre><code class="language-vilan norun">import std::fs::{ Change, ChangeKind, Watcher };
-import std::print;
 
 fun main() {
 	let watcher = Watcher::watch_all("content");

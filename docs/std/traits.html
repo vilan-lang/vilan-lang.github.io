@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -235,8 +235,7 @@ operator:</p>
 </div>
 <p>The <code>B = Self</code> parameter types the right-hand side; mixed-operand impls
 are how std’s <code>Instant + Duration</code> works:</p>
-<pre><code class="language-vilan">import std::print;
-import std::operators::Add;
+<pre><code class="language-vilan">import std::operators::Add;
 
 struct Celsius {
 	degrees: f64,
@@ -275,8 +274,7 @@ the operators actually call is a pair of ordinary methods your container
 supplies — <code>map&lt;U&gt;(self, |T| U)</code> for the plain case, and
 <code>and_then&lt;U&gt;(self, |T| Self-of-U)</code> for the flattening one. The element is the
 container’s <strong>first type argument</strong>.</p>
-<pre><code class="language-vilan">import std::print;
-import std::operators::Lift;
+<pre><code class="language-vilan">import std::operators::Lift;
 
 struct Tagged&lt;T&gt; {
 	value: T,

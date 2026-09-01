@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -281,7 +281,7 @@ impl HashBuffer {
 [extern("node:timers/promises", "setTimeout")]
 async external fun sleep(ms: i32): void;
 </code></pre>
-<p>The four binding forms:</p>
+<p>The binding forms:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -291,10 +291,22 @@ async external fun sleep(ms: i32): void;
 <tr><td><code>[extern("module", "name")]</code></td><td>an import from a host module</td></tr>
 <tr><td><code>[extern("global.path")]</code></td><td>a dotted global, like <code>history.pushState</code></td></tr>
 <tr><td><code>[extern(method, "name")]</code></td><td>a method on a host object</td></tr>
+<tr><td><code>[extern(method)]</code></td><td>the same, taking the host name from the vilan function’s own</td></tr>
 <tr><td><code>[extern(get, "prop")]</code> / <code>[extern(set, "prop")]</code></td><td>a property read / write</td></tr>
+<tr><td><code>[extern(new, "Class")]</code></td><td>construction — <code>new Class(…)</code>, which a host constructor requires</td></tr>
+<tr><td><code>[extern(new, "module", "Class")]</code></td><td>the same, on a class imported from a host module</td></tr>
 </tbody>
 </table>
 </div>
+<p>Any of them takes a trailing <code>retains</code> —
+<code>[extern(method, "addEventListener", retains)]</code> — and you need it whenever
+the host <em>keeps</em> what you hand it instead of reading it only until the
+call returns: an event listener, a queued callback, a stashed value.
+Without the flag the compiler assumes the host is done at the call and may
+destroy the argument’s binding at its last use, which the host then reads
+after the fact. The <a href="../spec/memory.html#externs-and-retention">memory
+chapter</a> states what the flag
+promises.</p>
 <p>Keep externs in platform-specific packages (they are host-specific by
 nature). When a binding proves itself, consider promoting it into std
 rather than copying it between apps.</p>

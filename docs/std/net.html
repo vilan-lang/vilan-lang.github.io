@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -193,8 +193,7 @@ impl Response {
 	fun bytes(self): Bytes     // async (whole body)
 }
 </code></pre>
-<pre><code class="language-vilan norun">import std::print;
-import std::fetch;
+<pre><code class="language-vilan norun">import std::fetch;
 
 fun main() {
 	let response = fetch::get("https://example.com/api/health")

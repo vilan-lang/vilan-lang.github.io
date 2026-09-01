@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -250,7 +250,7 @@ let db: Database = open_database();
 
 [service(NotesClient)]
 struct NotesStore {
-	[expose] notes: Signal&lt;List&lt;Note&gt;&gt;,
+	[expose] notes: SignalCell&lt;List&lt;Note&gt;&gt;,
 }
 </code></pre>
 <p>Why module-level, and not a field on <code>NotesStore</code>? A <code>Database</code> is a
@@ -379,7 +379,7 @@ from <code>import pkg::store::NotesClient;</code>, the same module whose bodies 
 SQL on the server. This build sees only the stub. The mirror is not
 wired here at all: <code>client.notes</code> is a <code>RemoteSource&lt;List&lt;Note&gt;&gt;</code>, and
 the screen reads it where it is shown —</p>
-<pre><code class="language-vilan fragment">fun screen(client: NotesClient&lt;SocketTransport&gt;, token: Signal&lt;str&gt;, route: Signal&lt;Route&gt;): View {
+<pre><code class="language-vilan fragment">fun screen(client: NotesClient&lt;SocketTransport&gt;, token: SignalCell&lt;str&gt;, route: SignalCell&lt;Route&gt;): View {
 	let notes = client.notes.or([]);
 	…
 }

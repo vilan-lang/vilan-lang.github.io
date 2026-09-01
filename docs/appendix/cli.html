@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -224,6 +224,13 @@ Every <code>[build] run</code> command runs on every build; a named
 of them has moved, and says <code>Fresh &lt;name&gt;</code> instead
 (<a href="../guide/dev-loop.html#running-something-alongside-the-build">the dev loop</a>).
 A <em>dependency</em> that declares hooks gets a <code>note:</code> line and no execution.</p>
+<p><strong>A file named by path is a file of its package.</strong> The nearest <code>vilan.toml</code>
+above it supplies its source root, dependencies, prelude and build options,
+exactly as addressing the directory would — so <code>vilan check src/main.vl</code>
+answers about that file what <code>vilan check .</code> answers. What it does <em>not</em> do is
+run the package’s <code>[build]</code> hooks: naming one file asks for that file, not for
+the package’s build pipeline. A file with no <code>vilan.toml</code> above it compiles on
+its own, with the default prelude and no dependencies.</p>
 <ul>
 <li><code>--stdout</code>: print the JavaScript instead of writing a file.</li>
 <li><code>--rerun-hooks</code>: run every <code>[[build.hook]]</code> even if it is fresh — the
@@ -247,6 +254,8 @@ cost the first load (the entry is emitted both ways and compared).
 Analysis only; the emitted JavaScript is unchanged, so this is how to
 measure a leg before opting it in
 (<a href="../guide/dev-loop.html#shipping-routes-separately">the dev loop</a>).</li>
+<li><code>--explain</code>: after the build, print where every output came from — see
+below.</li>
 <li><code>--backend js</code>: the only backend today; the flag exists so a future
 one has somewhere to live.</li>
 </ul>
@@ -258,6 +267,84 @@ cost the first load more than it deferred. The leg’s chunk files belong to
 its last build: a build that writes none removes any a previous one left,
 and rewrites the manifest to say the leg emitted none. <code>vilan run</code> ignores
 <code>split</code> — the dev loop swaps whole bundles — and emits the leg as one file.</p>
+<h3 id="vilan-build---explain"><a class="header" href="#vilan-build---explain"><code>vilan build --explain</code></a></h3>
+<p><em>Where did this file come from?</em> The compile-time asset channel scatters
+its contributions across files on purpose — that scatter <strong>is</strong>
+import-driven composition — so a stylesheet in <code>dist/</code> is the sum of
+however many <code>emit</code> calls the program reached, and finding them was a
+grep. <code>--explain</code> asks the build instead. It builds first, exactly as
+<code>vilan build</code> does, and then prints what it wrote:</p>
+<pre><code class="language-text">output  dist/client.css
+  role         emitted kind `css`
+  emitted      src/client.vl:14
+  emitted      src/theme.vl:9
+
+output  dist/brand/logo.svg
+  role         bundled copy
+  source       src/static/logo.svg
+  named        src/client.vl:17 (asset::bundle_as)
+
+output  dist/client.js
+  role         compiled bundle
+  leg          client
+
+output  src/icons.vl
+  role         hook output
+  hook         icons (Fresh)
+
+input   src/static/logo.svg
+  read         src/client.vl:17 (asset::bundle_as)
+  invalidates  dist/brand/logo.svg
+  invalidates  dist/client.js
+</code></pre>
+<p><strong>One block per file the build wrote</strong>, headed <code>output</code> and its path,
+then a fixed <code>role</code> and whatever the build knows about it:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>role</code></th><th>What follows</th></tr>
+</thead>
+<tbody>
+<tr><td><code>emitted kind &lt;k&gt;</code></td><td>one <code>emitted</code> line per <code>const</code> site that contributed to it</td></tr>
+<tr><td><code>bundled copy</code></td><td>the <code>source</code> file, and a <code>named</code> line per <code>const</code> site that named it, with the spelling (<code>asset::bundle</code> / <code>asset::bundle_as</code>)</td></tr>
+<tr><td><code>compiled bundle</code></td><td>the <code>leg</code> whose JavaScript it is</td></tr>
+<tr><td><code>build manifest</code></td><td>the <code>leg</code> it describes</td></tr>
+<tr><td><code>route chunk</code></td><td>the <code>leg</code> and the route <code>arm</code></td></tr>
+<tr><td><code>hook output</code></td><td>the <code>hook</code> that declares it, and this build’s verdict — <code>(ran)</code> or <code>(Fresh)</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Then one block per tracked input</strong>, headed <code>input</code>: a <code>read</code> line per
+<code>const</code> site that touched it (with the call — <code>asset::read</code>,
+<code>asset::read_dir</code>, <code>asset::read_dir_all</code>, <code>asset::digest</code>, or a bundle’s
+source read), a <code>declared</code> line per <code>[[build.hook]]</code> that names it in
+<code>inputs</code>, and an <code>invalidates</code> line per output a change to it would move.
+“Invalidates” is read off the same records, not guessed: a const input
+moves its leg’s <strong>compiled bundle</strong> (the channel’s inputs are sources to
+the compile, which is why editing one starts a <code>--watch</code> round) plus the
+flushes and copies of the sites that read it; a hook input moves that
+hook’s declared outputs. The build manifest is deliberately absent — every
+build of a browser leg rewrites it, so naming it under every input would be
+true and would say nothing.</p>
+<p>Three things worth knowing:</p>
+<ul>
+<li><strong>It builds.</strong> Explaining a tree without building it would describe
+whatever the last build happened to leave, which is the one answer that
+is never useful. Under <code>--watch</code>, every round prints its own report.</li>
+<li><strong>A site is a <code>const</code> expression</strong>, not the <code>emit</code> call inside it. That
+is the granularity the compiler keeps: the const evaluator runs a
+lowered tree whose frames carry function names and no spans, so the
+<code>const</code> site is what a const-eval <em>error</em> points at too, and the two
+locations are counted from one set of bytes.</li>
+<li><strong><code>--stdout</code> is refused with it.</strong> <code>--stdout</code> prints a bundle, not a
+build: it writes no output directory at all, so there would be nothing
+to explain, and the report would corrupt the one stream the flag exists
+to produce.</li>
+</ul>
+<p>The shape is line-oriented on purpose — a fixed key per line, paths spelled
+exactly as the build’s own <code>Compiled</code> / <code>Emitted</code> / <code>Bundled</code> lines spell
+them — so <code>grep '^output'</code> lists a <code>dist/</code>, <code>grep invalidates</code> answers
+“what does this file feed”, and two builds diff cleanly.</p>
 <h2 id="vilan-check-file"><a class="header" href="#vilan-check-file"><code>vilan check [file]</code></a></h2>
 <p><code>build</code> without the output: type-checks and reports diagnostics, writes
 nothing, and runs no <code>[build] run</code> hooks. Same path forms and flags
@@ -366,6 +453,28 @@ untouched, never half-formatted.</li>
 </ul>
 <p><code>--check</code> reports the files that would change and exits 1 if any (the
 CI spelling). Nothing is rewritten.</p>
+<p><strong>Generated sources are skipped.</strong> A package that declares
+<code>[package] generated = "…"</code> is saying that directory holds <em>products</em> — files
+a build hook writes, not files anyone authored — and <code>vilan fmt</code> leaves every
+one of them byte-identical, in <code>--check</code> too. It prints one dim <code>note:</code> line
+per run saying how many it skipped and which root they were under; the exit
+code doesn’t move, because skipping a product is the right answer rather than
+a degraded one.</p>
+<p><strong>Directory symlinks are walked</strong>, because a link is ordinary project layout —
+<code>src/icons</code> pointing at a generator’s output tree, <code>src/shared</code> at a sibling.
+Two limits, both about the walk and neither about the link: a directory already
+walked under another name is not walked again (so a cycle terminates and every
+file is reported once), and a link whose target resolves outside the project is
+not followed — <code>vilan fmt</code> prints one dim <code>note:</code> naming it, since that is where
+this command’s scope ends. Format that tree where it lives. A <code>generated</code> root
+declared through a link is still the package’s products, and is skipped as such.</p>
+<p>The exclusion holds however the file is reached, naming it on the command line
+included, and your editor’s format-on-save honors it through the same rule.
+That is the point of it: formatting a generated module rewrites bytes the hook
+that wrote them digests, so the hook goes stale, regenerates the file
+unformatted, and the two undo each other on every round — quietly, since
+neither tool is doing anything wrong. If a file should be formatted, it isn’t
+a product: move it out of the root, or drop the key.</p>
 <h2 id="vilan-test-path"><a class="header" href="#vilan-test-path"><code>vilan test [path]</code></a></h2>
 <p>Runs <code>*_test.vl</code> files: the given file, a directory of tests, or every
 test in the project. A test file lives beside the code it tests and
@@ -408,6 +517,15 @@ bound, and which TypeScript constructs did not.</li>
 <p>Attribute order in the output is not stylistic: the parser reads
 <code>[extern(…)]</code> before <code>[platform(…)]</code>, and the other way round is a parse
 error. Keep the pair in that order if you edit a generated file.</p>
+<p>One thing a <code>.d.ts</code> cannot tell bindgen is whether the host <em>keeps</em> an
+argument past the call — a listener it registers, a callback it queues, a
+value it stashes. It generates no <code>retains</code> flag, so add the trailing
+<code>retains</code> to <code>[extern(…)]</code> yourself on any binding that hands the host
+something it holds on to (<code>[extern(method, "on", retains)]</code> for the
+<code>Marker.on</code> below): without it the compiler is free to destroy the
+argument’s binding at its last use while the host is still reading it. See
+<a href="../spec/memory.html#externs-and-retention">Externs and retention</a> for what
+the flag promises.</p>
 <h3 id="what-you-get"><a class="header" href="#what-you-get">What you get</a></h3>
 <pre><code class="language-ts">declare function greet(name: string, loudly?: boolean): string;
 

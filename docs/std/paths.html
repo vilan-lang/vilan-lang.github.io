@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -192,8 +192,7 @@ fun starts_with(path: str, prefix: str): bool        // by component, not by tex
 fun strip_prefix(path: str, prefix: str): Option&lt;str&gt;
 fun relative(from: str, to: str): Option&lt;str&gt;
 </code></pre>
-<pre><code class="language-vilan">import std::print;
-import std::path;
+<pre><code class="language-vilan">import std::path;
 
 fun main() {
 	print(path::join("src/static", "app.css"));   // src/static/app.css
@@ -230,8 +229,7 @@ given and every comparison is byte-for-byte, so <code>/A</code> and <code>/a</co
 paths.</li>
 </ul>
 <h2 id="normalize-is-canonical-which-means-the-trailing-separator-goes"><a class="header" href="#normalize-is-canonical-which-means-the-trailing-separator-goes"><code>normalize</code> is canonical, which means the trailing separator goes</a></h2>
-<pre><code class="language-vilan">import std::print;
-import std::path;
+<pre><code class="language-vilan">import std::path;
 
 fun main() {
 	print(path::normalize("a//b/./c"));                    // a/b/c
@@ -251,8 +249,7 @@ functions answer differently from <code>path.posix</code>.</p>
 against the name before it even when that name is a symlink pointing
 somewhere else.</p>
 <h2 id="join-concatenates-resolve-follows-a-reference"><a class="header" href="#join-concatenates-resolve-follows-a-reference"><code>join</code> concatenates; <code>resolve</code> follows a reference</a></h2>
-<pre><code class="language-vilan">import std::print;
-import std::path;
+<pre><code class="language-vilan">import std::path;
 
 fun main() {
 	print(path::join("/a", "/b"));      // /a/b — an absolute part does NOT reset
@@ -268,8 +265,7 @@ fun main() {
 <p><code>extname(".gitignore")</code> is <code>""</code>, not <code>".gitignore"</code>. The leading dot marks the
 file as hidden — it does not name a type — and getting this wrong is the most
 common bug in hand-rolled path code.</p>
-<pre><code class="language-vilan">import std::print;
-import std::path;
+<pre><code class="language-vilan">import std::path;
 
 fun main() {
 	print(path::extname("index.html"));   // .html
@@ -283,8 +279,7 @@ fun main() {
 <p><code>extname</code> includes the leading dot, and <code>stem(p) + extname(p) == basename(p)</code>
 holds for every <code>p</code>.</p>
 <h2 id="starts_with-compares-components-strstarts_with-compares-text"><a class="header" href="#starts_with-compares-components-strstarts_with-compares-text"><code>starts_with</code> compares components, <code>str::starts_with</code> compares text</a></h2>
-<pre><code class="language-vilan">import std::print;
-import std::path;
+<pre><code class="language-vilan">import std::path;
 
 fun main() {
 	print("/a/bc".starts_with("/a/b"));           // true  — about the TEXT
@@ -296,8 +291,7 @@ fun main() {
 derive a key or an asset URL is the same mistake in the other direction.</p>
 <p><code>starts_with</code> tests and <code>strip_prefix</code> cuts, exactly as the two <code>str</code> verbs
 divide the same work on text:</p>
-<pre><code class="language-vilan">import std::print;
-import std::path;
+<pre><code class="language-vilan">import std::path;
 import std::option::{ Some, None };
 
 fun main() {
@@ -314,8 +308,7 @@ has an answer for two paths under one root and will climb with <code>..</code> t
 it; <code>strip_prefix</code> is “is this mine, and if so what do I call it”, and says
 <code>None</code> when it is not.</p>
 <h2 id="relative-inverts-resolve"><a class="header" href="#relative-inverts-resolve"><code>relative</code> inverts <code>resolve</code></a></h2>
-<pre><code class="language-vilan">import std::print;
-import std::path;
+<pre><code class="language-vilan">import std::path;
 import std::option::{ Some, None };
 
 fun main() {

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -240,6 +240,16 @@ implements <code>Ord</code> offers <code>min</code>/<code>max</code>/<code>clamp
 supertraits provide.</li>
 <li><strong>Inside a string or a comment</strong> nothing is offered. A caption is text, not
 code, and a <code>.</code> in one is not a member access.</li>
+<li><strong>Inside a <code>css</code> block</strong> the vocabulary is CSS, and nothing in scope is
+offered at all. An undotted item completes <strong>property names</strong> — every slot
+a <code>Style</code> method writes, so the list is std’s own surface rather than an
+invented one — and a dotted item completes the <strong>condition combinators</strong>
+(<code>md</code>, <code>hover</code>, <code>within</code>, …). A value offers nothing: it is source text,
+not an expression, so a name in scope would be the wrong answer. A <code>{…}</code>
+hole is an ordinary expression and completes as one, which is how a typed
+value gets in. All four answers hold in a block you are still <strong>writing</strong> —
+one whose closing <code>}</code> you have not typed yet — because that is when
+completion is most use; a nested rule left open the same way is a body too.</li>
 <li><strong>After <code>::</code></strong> offers an enum’s variants and statics, a struct’s statics,
 or a module’s members — and only when the name on the left is actually
 <strong>in scope</strong>. It used to match that name against every type the compiler
@@ -267,7 +277,7 @@ turns that down to parentheses only, or off.</p>
 of values — from the server rather than from a JSON schema, so every editor
 sees it.</p>
 <h2 id="quick-fixes"><a class="header" href="#quick-fixes">Quick fixes</a></h2>
-<p>Four, each attached to the diagnostic that earns it:</p>
+<p>Seven, each attached to the diagnostic that earns it:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -278,6 +288,9 @@ sees it.</p>
 <tr><td><code>Change to `entries` </code></td><td>a <code>did you mean …?</code> note on a misspelled struct-initializer field</td></tr>
 <tr><td><code>Insert `;` </code></td><td><code>expected `;` to end this statement</code>, at the gap the diagnostic points at</td></tr>
 <tr><td><code>Remove `;` </code></td><td><code>the `;` discards this body's last value</code> — it finds the right <code>;</code> from the diagnostic’s own bookkeeping, and declines rather than guess when a comment sits in the gap</td></tr>
+<tr><td><code>Wrap as `{Color::hex("#333")}` </code></td><td>a <code>#</code> in a <code>css</code> block. The character cannot lex at all, so the diagnostic is one column wide; the fix reads the whole colour off the line and routes it through <code>Color</code>, which carries its own <code>:root</code> line. Offered only when the run really is a colour (3, 4, 6 or 8 hex digits)</td></tr>
+<tr><td><code>Use `.md { … }` </code></td><td><code>@media (min-width: …)</code> in a <code>css</code> block. The breakpoint is chosen by the query’s own min-width, and an arbitrary one becomes <code>.media("900px")</code> rather than no fix. The other at-rules have no combinator spelling, so they get the explanation alone</td></tr>
+<tr><td><code>Remove `!important` </code></td><td><code>!important</code> in a <code>css</code> block — a <code>Style</code> merges by record update, so a later declaration on the same property already wins. Takes the space before the marker with it</td></tr>
 </tbody>
 </table>
 </div>
@@ -288,11 +301,16 @@ sees it.</p>
 <tr><th>Action</th><th>Does</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Organize Imports</strong></td><td>sorts each top-level import run into canonical order (the same key <code>vilan fmt</code> uses) and prunes unused leaves, shrinking a brace set rather than deleting it. Offered only when it would change something</td></tr>
+<tr><td><strong>Organize Imports</strong></td><td>sorts each top-level import run into canonical order (the same key <code>vilan fmt</code> uses), prunes unused leaves (shrinking a brace set rather than deleting it), and strips imports the prelude already covers. Offered only when it would change something</td></tr>
 <tr><td><strong>Add All Missing Imports</strong></td><td>applies every unambiguous import quickfix in the file at once, skipping the ambiguous ones</td></tr>
 </tbody>
 </table>
 </div>
+<p>An import the <strong>prelude</strong> covers is stripped for the same reason an unused
+one is: <code>import std::io::print;</code> in a package whose prelude binds <code>print</code>
+is redundant, and removing it changes nothing about what the file means.
+The match is on the <em>definition</em>, not the name — an import of a
+different <code>print</code> survives.</p>
 <p>Organizing prunes only against a clean, current analysis: a file with
 diagnostics, or one you are mid-edit in, is sorted and never pruned —
 because “unused” is an answer you can only trust from a program that
@@ -303,6 +321,28 @@ is kept.</p>
 save. It is the extension’s own hook rather than a line in your
 <code>editor.codeActionsOnSave</code>, and organizing is a fixed point, so turning
 both on is harmless.</p>
+<h2 id="refactors"><a class="header" href="#refactors">Refactors</a></h2>
+<p>A refactor is offered on the construct your cursor is in, rather than on a
+diagnostic or on the file:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Action</th><th>Does</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Convert to a <code>style()</code> chain</strong></td><td>rewrites the <code>css { … }</code> block the cursor is in as the builder chain it lowers to — a declaration becomes a <code>.raw</code> link, a nested rule becomes a combinator link carrying the inner chain</td></tr>
+<tr><td><strong>Convert to a <code>css</code> block</strong></td><td>the inverse, on a <code>style()</code> chain. Only the two rows of that lowering have a block spelling, so a chain carrying a typed property method (<code>.padding(space(4))</code>, which writes its slot through <code>with_length</code>) is not offered the conversion at all</td></tr>
+</tbody>
+</table>
+</div>
+<p>Both directions decline rather than guess. A <strong>comment</strong> inside the
+construct stops the conversion, because its attachment is not recoverable
+across the reshape — the same refusal <code>vilan fmt</code> makes when it declines to
+reorder a commented block. So does a value carrying a <strong>backslash</strong>: a
+chain’s string literal has its escapes processed at emission and a block’s
+token run does not, so the two spellings would stop meaning the same thing.
+A quoted value is fine — escaping a <code>"</code> into the literal round-trips
+exactly — and the two directions are inverses on everything they accept.</p>
 <h2 id="what-it-does-while-you-type"><a class="header" href="#what-it-does-while-you-type">What it does while you type</a></h2>
 <p>Half-typed code is what a compiler is asked about most of the time. Two
 behaviors follow from that, and both are worth knowing because they are the

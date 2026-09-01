@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -179,9 +179,7 @@
 <h2 id="bindings"><a class="header" href="#bindings">Bindings</a></h2>
 <p><code>let</code> declares a binding you won’t change. <code>mut</code> declares one you will.
 Types are inferred, and you can annotate when you want to pin one down:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let name = "Ada";
 	mut count = 0;
 	count += 1;
@@ -211,9 +209,7 @@ that quietly isn’t one, Vilan names the type for what it delivers. If
 you need more than 53 bits, use <code>BigInt</code>.</p>
 <p>The compiler checks every literal against its type’s range, so an
 out-of-range literal is a compile error rather than a wrong value.</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	print(7 / 2);           // 3 — integer division truncates
 	print((3.9).as_i32());  // 3 — conversions are explicit, via as_*
 	print((300).as_u8());   // 44 — narrowing folds into the target width
@@ -243,25 +239,45 @@ Details in spec <a href="../spec/execution.html">§7.2a</a>.</p>
 <h2 id="strings-and-interpolation"><a class="header" href="#strings-and-interpolation">Strings and interpolation</a></h2>
 <p><code>"…"</code> is a plain string, and Vilan does <strong>not</strong> interpret <code>{}</code> inside it.
 To interpolate, prefix the string with <code>i</code>:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let name = "John";
 	print("Hello, {name}!");    // Hello, {name}!  — a plain string
 	print(i"Hello, {name}!");   // Hello, John!
 	print(i"literal \{braces\}");
 }
 </code></pre>
-<p>Concatenation is <code>+</code>. The full method list (split, trim, contains, and so
-on) is in the <a href="../std/strings.html">strings reference</a>.</p>
+<p>Concatenation is <code>+</code>, and an interpolated string is exactly that: a hole
+is a <code>+</code> operand, so both spellings take the same right-hand values —
+another <code>str</code>, a number, or a <code>bool</code>. Anything else has no string form
+and is refused rather than printed as its runtime shape, which is what
+<code>"p=" + point</code> would have done (<code>p=1,2</code>). Render it yourself:</p>
+<pre><code class="language-vilan">import std::display::Display;
+
+struct Point { x: i32, y: i32 }
+
+impl Point with Display {
+	fun to_string(self): str {
+		i"({self.x}, {self.y})"
+	}
+}
+
+fun main() {
+	let point = Point { x = 1, y = 2 };
+	print("p=" + point.to_string());
+	print(i"p={point.to_string()}");
+}
+</code></pre>
+<p>The order matters too, because the expression takes its type from its
+left operand: <code>"n=" + count</code> concatenates, and <code>count + "n="</code> is an
+error rather than a silently <code>i32</code>-typed string.</p>
+<p>The full method list (split, trim, contains, and so on) is in the
+<a href="../std/strings.html">strings reference</a>.</p>
 <p>For text that spans lines, <code>"""…"""</code> is a <strong>raw</strong> multiline string:
 nothing follows the opening delimiter on its line, the closing delimiter
 sits alone on its line, and the whitespace before it is the indentation
 stripped from every line, so the literal can sit at the indentation of
 the code around it. Prefix it with <code>i</code> to get holes as well:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let name = "John";
 	print("""
 		raw: \n stays two characters, {braces} are literal
@@ -291,9 +307,7 @@ the next <code>"</code> somewhere below and burying the real mistake.</p>
 <h2 id="tuples"><a class="header" href="#tuples">Tuples</a></h2>
 <p><code>(a, b)</code> groups a few values without declaring a struct. Take them
 apart with a destructuring <code>let</code>, or reach one element by position:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let pair = (1, "one");
 	let (number, word) = pair;
 	print(i"{number} = {word}");
@@ -307,9 +321,7 @@ through a <code>mut</code> binding you can also assign one (<code>pair.0 = 5</co
 <p>A <code>..</code> entry <strong>spreads</strong> a tuple you already have — its elements go into
 the new tuple, so the type is the two concatenated. Spreads work in any
 position, as many as you like, mixed with ordinary entries:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let pair = (1, 2);
 	let lead = (..pair, 3);       // (i32, i32, i32)
 	let mid = (0, ..pair, 9);     // (i32, i32, i32, i32)
@@ -326,8 +338,7 @@ a spread, and vilan has no range operator for it to be confused with.</p>
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <p><code>List&lt;T&gt;</code> is built in and has literal syntax. <code>Map&lt;K, V&gt;</code> and <code>Set&lt;T&gt;</code>
 come from std:</p>
-<pre><code class="language-vilan">import std::print;
-import std::map::Map;
+<pre><code class="language-vilan">import std::map::Map;
 import std::set::Set;
 
 fun main() {
@@ -355,9 +366,7 @@ from several places, that’s the habit to unlearn. The
 array</strong>: the length is part of the type, so it can’t grow or shrink,
 and <code>[i32; 3]</code> is a different type from <code>[i32; 4]</code>. Write <code>[value; n]</code>
 to fill <code>n</code> slots, or a plain literal under a <code>[T; n]</code> annotation:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let buffer = [0; 4];            // [i32; 4] — four zeros
 	mut rgb: [u8; 3] = [255u8, 128u8, 0u8];
 	rgb[2] = 64u8;                  // indexed like a List

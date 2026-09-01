@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -293,8 +293,7 @@ one: spawning a computation that produces a task yields <code>Task&lt;T&gt;</cod
 <code>Task&lt;Task&lt;T&gt;&gt;</code>, and one <code>await</code> reaches the value. This holds however the
 type arises — including a generic <code>T</code> that instantiates at a task — so
 <code>Task&lt;..&gt;</code> is idempotent: <code>Task&lt;Task&lt;T&gt;&gt;</code> is not a type any expression has.</p>
-<pre><code class="language-vilan">import std::print;
-import std::task::Task;
+<pre><code class="language-vilan">import std::task::Task;
 
 fun wrap&lt;T&gt;(value: T): Task&lt;T&gt; {
 	async { value }
@@ -318,8 +317,7 @@ discarded. A task’s failure is <strong>absorbed at the spawn</strong>: it is
 delivered to whichever <code>await</code> observes the task, and a failed task
 that is never observed is reported to the host console with its spawn
 origin; it does not terminate the program.</p>
-<pre><code class="language-vilan">import std::print;
-import std::time::{ sleep_for, Duration };
+<pre><code class="language-vilan">import std::time::{ sleep_for, Duration };
 
 fun step(label: str): str {
 	sleep_for(Duration::millis(1));

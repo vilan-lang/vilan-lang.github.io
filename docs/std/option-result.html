@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -201,8 +201,8 @@ impl Option&lt;type T&gt; {
 
 	// in-place partial move — read/replace the slot through `&amp;mut self`,
 	// always leaving a valid Option behind
-	fun take(&amp;mut self): Option&lt;T&gt;               // Some(v) -&gt; None here, Some(v) out
-	fun replace(&amp;mut self, value: T): Option&lt;T&gt;  // value in, old contents out
+	fun take(&amp;mut self): Option&lt;T&gt;                   // Some(v) -&gt; None here, Some(v) out
+	fun replace(&amp;mut self, own value: T): Option&lt;T&gt;  // value in, old contents out
 
 	// transformation
 	fun map&lt;U&gt;(own self, fn: |T| U): Option&lt;U&gt;
@@ -305,8 +305,7 @@ impl Result&lt;type T: Default, type E&gt; { fun unwrap_or_default(self): T }
 impl Result&lt;Option&lt;type T&gt;, type E&gt; { fun transpose(self): Option&lt;Result&lt;T, E&gt;&gt; }
 </code></pre>
 <h2 id="idioms"><a class="header" href="#idioms">Idioms</a></h2>
-<pre><code class="language-vilan">import std::print;
-import std::option::Option::{ self, Some, None };
+<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
 import std::result::Result::{ self, Ok, Err };
 
 fun parse_port(text: str): Result&lt;i32, str&gt; {

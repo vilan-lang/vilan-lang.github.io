@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -199,9 +199,9 @@ host over WebSocket, waits for the server’s announcement, and verifies the
 
 impl RemoteSource&lt;type T&gt; {
 	fun get(self): Option&lt;T&gt;                              // passive: the cache, `None` before the first update
-	fun status(self): Signal&lt;Status&gt;                      // passive: `Waiting` until a value has arrived, then `Ready`
-	fun or(self, initial: T): Signal&lt;T&gt;                   // counted, owner-scoped: `initial` until the first update
-	fun map&lt;U&gt;(self, transform: sync |Option&lt;T&gt;| U): Signal&lt;U&gt;   // counted, owner-scoped: the `Option` confronted once
+	fun status(self): SignalCell&lt;Status&gt;                      // passive: `Waiting` until a value has arrived, then `Ready`
+	fun or(self, initial: T): SignalCell&lt;T&gt;                   // counted, owner-scoped: `initial` until the first update
+	fun map&lt;U&gt;(self, transform: sync |Option&lt;T&gt;| U): SignalCell&lt;U&gt;   // counted, owner-scoped: the `Option` confronted once
 	[must_use]
 	fun sub(self, observer: |T| void): Subscription       // counted, manual: present values; dispose to release
 }
@@ -226,11 +226,11 @@ code with no owner: you hold the <code>Subscription</code> and <code>dispose</co
 <code>Waiting → Ready</code></strong>: <code>status</code> reports, it does not ask; until something
 that renders the value subscribes, the mirror stays <code>Waiting</code>, and that is
 correct — the channel was never opened.</p>
-<p>The <code>Signal&lt;T&gt;</code> that <code>or</code>/<code>map</code> return is a local derivative: writing it
+<p>The <code>SignalCell&lt;T&gt;</code> that <code>or</code>/<code>map</code> return is a local derivative: writing it
 writes nothing back (the server owns the source) and the next update
 overwrites it. An empty-list <code>initial</code> needs no annotation — the <code>[]</code>
 takes its element type from the mirror
-(<code>let notes = client.notes.or([]);</code> is a <code>Signal&lt;List&lt;Note&gt;&gt;</code>).</p>
+(<code>let notes = client.notes.or([]);</code> is a <code>SignalCell&lt;List&lt;Note&gt;&gt;</code>).</p>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
 <pre><code class="language-vilan fragment">[derive(Wire, Debug)]
 enum RpcError {
@@ -247,7 +247,7 @@ rpc’s own return type (<code>Option&lt;Task&gt;</code>), not here.</p>
 <pre><code class="language-vilan fragment">enum ConnectionState { Connected, Reconnecting, Closed }
 
 impl SocketTransport {
-	fun connection_state(self): Signal&lt;ConnectionState&gt;
+	fun connection_state(self): SignalCell&lt;ConnectionState&gt;
 	fun on_reconnect(self, hook: async || void)
 }
 </code></pre>
@@ -265,6 +265,16 @@ than staying <code>Connected</code>, because a mirror that cannot be rebound is 
 at the previous connection’s dead channels: it would never update again, and
 the socket would say nothing was wrong. Bind <code>Closed</code> and offer the restart;
 that decision is the app’s.</p>
+<p>On <strong>every</strong> path that reaches <code>Closed</code> the client <strong>disposes itself</strong>: its
+update routes are emptied and its transport forgets it. The state is what
+decides, not the reason for it — a spent budget releases exactly as a drifted
+contract does. <code>Closed</code> is terminal, so nothing on that socket can ever reach
+those mirrors again and nothing keeps holding them: the mirrors read their
+last value forever, exactly as they did before, and the graph behind them is
+released instead of wedged open. What does <em>not</em> dispose is a connection that
+is merely slow — a redial in progress, or a server unreachable when the
+re-attach runs — because that socket is <code>Reconnecting</code>, not <code>Closed</code>: it keeps
+trying, and its mirrors resync when it succeeds.</p>
 <p><code>on_reconnect</code> is where that decision goes. Hooks run after each successful
 re-dial, awaited in order, and the generated client registers its own mirror
 re-attach when it connects — so <strong>a hook you register runs after the mirrors

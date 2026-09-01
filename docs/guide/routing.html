@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -187,7 +187,7 @@ the <code>link</code> helper, and <code>segments</code> for parsing.</p>
 their own sub-pages.</p>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
 import std::router::{ current_path, navigate, segments, link, Routable };
-import std::reactive::Signal;
+import std::reactive::{ Signal, SignalCell };
 import std::option::Option::{ self, Some, None };
 
 [derive(PartialEq)]
@@ -262,7 +262,7 @@ string. In exchange it’s ordinary code: type-checked, debuggable, and
 free to do things pattern strings can’t (validation, aliases, redirects).
 Now the pieces one at a time.</p>
 <h2 id="the-live-path-becomes-a-route-signal"><a class="header" href="#the-live-path-becomes-a-route-signal">The live path becomes a route signal</a></h2>
-<p><code>current_path()</code> is a <code>Signal&lt;str&gt;</code> of <code>location.pathname</code>. It stays
+<p><code>current_path()</code> is a <code>SignalCell&lt;str&gt;</code> of <code>location.pathname</code>. It stays
 current across <code>navigate</code> calls and the browser’s back/forward buttons.
 Derive your typed route from it once:</p>
 <pre><code class="language-vilan fragment">let route = current_path().map(parse);
@@ -300,7 +300,6 @@ on your server’s builder chain does it:</p>
 <pre><code class="language-vilan norun">import std::build::require_build;
 import std::document::require_shell;
 import std::http::{ Response, Server };
-import std::print;
 
 async fun main() {
 	let build = require_build("client");

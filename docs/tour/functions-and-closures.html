@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -179,9 +179,7 @@
 <h2 id="functions"><a class="header" href="#functions">Functions</a></h2>
 <p><code>fun</code> declares a function. The last expression in the body is the return
 value, and <code>ret</code> returns early:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun clamp(value: i32, low: i32, high: i32): i32 {
+<pre><code class="language-vilan">fun clamp(value: i32, low: i32, high: i32): i32 {
 	if value &lt; low {
 		ret low;
 	}
@@ -202,9 +200,7 @@ end of a block is the block’s value. You’ll see this everywhere in Vilan.
 from the body — from the final expression and from every <code>ret</code>, which
 have to agree. A body that only ever leaves by <code>ret</code> is typed by those
 <code>ret</code>s:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun sign(x: i32) {
+<pre><code class="language-vilan">fun sign(x: i32) {
 	if x &lt; 0 {
 		ret -1;
 	}
@@ -232,9 +228,7 @@ make one a scratch copy the body can rebind and mutate — the caller
 never sees it, because parameters arrive by value (to change the
 caller’s value, take <code>&amp;mut</code> instead). It works on <code>self</code> and closure
 parameters too:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun bump(mut x: i32): i32 {
+<pre><code class="language-vilan">fun bump(mut x: i32): i32 {
 	x = x + 1;
 	x
 }
@@ -252,9 +246,7 @@ tuple parameter — <code>fun f(...items: T)</code> is <code>fun f(items: T)</co
 <code>f(a, b)</code> is <code>f((a, b))</code> — so <code>T</code> is the whole <strong>pack</strong>, a tuple of
 however many arguments arrived, and its bound decides how many are
 allowed:</p>
-<pre><code class="language-vilan">import std::print;
-
-// `(..)` admits any arity, including none at all.
+<pre><code class="language-vilan">// `(..)` admits any arity, including none at all.
 fun how_many&lt;T: (..)&gt;(...items: T): i32 {
 	1
 }
@@ -281,9 +273,7 @@ to a closure, a trait method, an <code>impl</code> member, or an <code>external 
 <code>f((..pair))</code> — the arguments you already hold, written out flat. That is
 how a pack is forwarded to another spread function, and it is not the
 same as passing the tuple itself, which would arrive as a pack of one:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun how_many&lt;T: (..)&gt;(...items: T): i32 {
+<pre><code class="language-vilan">fun how_many&lt;T: (..)&gt;(...items: T): i32 {
 	1
 }
 
@@ -306,9 +296,7 @@ is an error — write the tuple yourself (<code>takes_a_tuple((..pair))</code>).
 <p>A closure is an inline function value. Where JavaScript writes
 <code>x =&gt; x * 2</code>, Vilan writes <code>|x| x * 2</code>. Parameter types are usually
 inferred from where the closure is used. Annotate them when they aren’t:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun apply(seed: i32, transform: |i32| i32): i32 {
+<pre><code class="language-vilan">fun apply(seed: i32, transform: |i32| i32): i32 {
 	transform(seed)
 }
 
@@ -330,9 +318,7 @@ to agree — a body that only ever leaves by <code>ret</code> is typed by those
 one alias in Vilan you get without asking for one. The closure and its
 creator share the binding, so a write on either side shows up on the
 other, and even reassigning the whole binding is visible inside:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	mut label = "before";
 	let show = || label;
 	label = "after";
@@ -355,8 +341,7 @@ they were made in, they hold a <code>Shared</code> cell together. The
 <h2 id="named-functions-as-closures"><a class="header" href="#named-functions-as-closures">Named functions as closures</a></h2>
 <p>When a function already does what your closure would do, pass the
 function itself:</p>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::Signal;
+<pre><code class="language-vilan">import std::reactive::Signal;
 
 fun exclaim(text: str): str {
 	text + "!"
@@ -370,9 +355,7 @@ fun main() {
 </code></pre>
 <p>You can also just name one and call it later. A binding holding a
 function is a function:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun exclaim(text: str): str {
+<pre><code class="language-vilan">fun exclaim(text: str): str {
 	text + "!"
 }
 

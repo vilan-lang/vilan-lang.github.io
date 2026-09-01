@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -183,8 +183,7 @@ would cancel the wrong tasks. These are <strong>resources</strong>: values with 
 owner, that <em>move</em> instead of copying, and that are torn down
 deterministically when their owner’s scope ends.</p>
 <p>You mark one with <code>resource</code> and, if it needs cleanup, give it a <code>Drop</code>:</p>
-<pre><code class="language-vilan">import std::print;
-import std::drop::Drop;
+<pre><code class="language-vilan">import std::drop::Drop;
 
 resource struct Guard {
 	label: str,
@@ -221,8 +220,7 @@ it by value.</p>
 <p>Usually you don’t want to give a resource away; you want to <em>use</em> it
 and keep it. Lend a <strong>loan</strong> (a view, <code>&amp;</code> or <code>&amp;mut</code>), as with ordinary
 values:</p>
-<pre><code class="language-vilan">import std::print;
-import std::drop::Drop;
+<pre><code class="language-vilan">import std::drop::Drop;
 
 resource struct Guard { label: str }
 impl Guard with Drop {
@@ -278,8 +276,7 @@ reads the very slot the write is about to overwrite.</p>
 <p>A <strong>pattern capture is a binding like any other</strong>. Matching by value
 consumes what you matched, so the capture becomes the payload’s owner —
 and it drops at the end of the arm that bound it:</p>
-<pre><code class="language-vilan">import std::print;
-import std::drop::Drop;
+<pre><code class="language-vilan">import std::drop::Drop;
 import std::option::Option::{ self, Some, None };
 
 resource struct Guard { label: str }
@@ -306,8 +303,7 @@ or <code>slot is Some(let g)</code> — owns nothing, because nothing was consum
 <h2 id="tearing-down-early-dropx"><a class="header" href="#tearing-down-early-dropx">Tearing down early: <code>drop(x)</code></a></h2>
 <p>Sometimes you want a resource gone <em>before</em> its scope ends. Move it into
 <code>drop</code>:</p>
-<pre><code class="language-vilan">import std::print;
-import std::drop::{ Drop, drop };
+<pre><code class="language-vilan">import std::drop::{ Drop, drop };
 
 resource struct Guard { label: str }
 impl Guard with Drop {
@@ -329,8 +325,7 @@ to call and no way to use <code>a</code> afterward by mistake. (On plain data,
 <p>A resource can live in an <code>Option</code>, which is the one container that holds
 one. <code>take()</code> moves the resource out and leaves <code>None</code> behind, which is
 what “tear it down only if it’s there” needs:</p>
-<pre><code class="language-vilan">import std::print;
-import std::drop::{ Drop, drop };
+<pre><code class="language-vilan">import std::drop::{ Drop, drop };
 import std::option::Option::{ self, Some, None };
 
 resource struct Guard { label: str }
@@ -356,8 +351,7 @@ alive.</p>
 itself on drop. A short-lived database closes when its function returns; a
 server that runs forever wants the opposite, so it keeps the database at
 <strong>module level</strong>, where it lives for the whole process and never drops:</p>
-<pre><code class="language-vilan norun">import std::print;
-import std::db::{ Database, Row };
+<pre><code class="language-vilan norun">import std::db::{ Database, Row };
 import std::option::Option::{ self, Some, None };
 
 let db: Database = Database::open(":memory:");
@@ -415,8 +409,7 @@ second owner, so that stays rejected (below).</p>
 which is a problem for background tasks that need to outlive the function
 that starts them. <code>OwnedNursery</code> is the answer: a resource that <em>owns</em> the tasks
 spawned inside its <code>enter</code>, and cancels them when it drops.</p>
-<pre><code class="language-vilan norun">import std::print;
-import std::time::sleep;
+<pre><code class="language-vilan norun">import std::time::sleep;
 import std::task::OwnedNursery;
 
 fun main() {

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -215,23 +215,27 @@ error; <code>i64</code>/<code>u64</code> were renamed to <code>i53</code>/<code>
 → <code>i32</code>, fractional → <code>f64</code>.</p>
 <h2 id="a4-lang-items"><a class="header" href="#a4-lang-items">A.4 Lang items</a></h2>
 <p>Std declarations the language itself depends on:</p>
+<p>The <strong>prelude</strong> column says whether the default (base) prelude makes the
+name ambient too — <code>Option</code> is both a lang item and a prelude member, and
+that is where the two ideas meet (§4.7). <code>built-in</code> means the language
+has it with no prelude at all.</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Item</th><th>Module</th><th>Language use</th></tr>
+<tr><th>Item</th><th>Module</th><th>Language use</th><th>Prelude</th></tr>
 </thead>
 <tbody>
-<tr><td>primitives (<code>bool</code>, <code>str</code>, numerics, <code>BigInt</code>)</td><td><code>std::boolean</code>/<code>string</code>/<code>number</code></td><td>literal types</td></tr>
-<tr><td><code>List&lt;T&gt;</code></td><td><code>std::list</code></td><td>list literals, <code>for</code></td></tr>
-<tr><td><code>Option&lt;T&gt;</code></td><td><code>std::option</code></td><td><code>?.</code> results, view-returning lookups</td></tr>
-<tr><td><code>Try</code>, <code>Verdict</code>, <code>Lift</code></td><td><code>std::operators</code></td><td><code>!</code>, <code>?.</code> (§5.10)</td></tr>
-<tr><td><code>Add Sub Mul Div Rem Shl Shr BitAnd BitOr BitXor</code></td><td><code>std::operators</code></td><td>operators (§5.7)</td></tr>
-<tr><td><code>PartialEq</code>, <code>PartialOrd</code></td><td><code>std::compare</code></td><td><code>==</code>/ordering (§5.7)</td></tr>
-<tr><td><code>Iterator</code>/<code>Iterable</code></td><td><code>std::iterator</code></td><td><code>for … in</code></td></tr>
-<tr><td><code>Task&lt;T&gt;</code></td><td><code>std::task</code></td><td><code>async</code>/<code>await</code> (§7.3)</td></tr>
-<tr><td><code>Promise&lt;T&gt;</code></td><td><code>std::promise</code></td><td>host-interop promises (§7.3)</td></tr>
-<tr><td><code>Context&lt;T&gt;</code></td><td><code>std::context</code></td><td>contexts (§8)</td></tr>
-<tr><td><code>panic</code>, <code>assert</code></td><td><code>std::io</code></td><td>divergence, <code>vilan test</code></td></tr>
+<tr><td>primitives (<code>bool</code>, <code>str</code>, numerics, <code>BigInt</code>)</td><td><code>std::boolean</code>/<code>string</code>/<code>number</code></td><td>literal types</td><td>built-in</td></tr>
+<tr><td><code>List&lt;T&gt;</code></td><td><code>std::list</code></td><td>list literals, <code>for</code></td><td>built-in</td></tr>
+<tr><td><code>Option&lt;T&gt;</code></td><td><code>std::option</code></td><td><code>?.</code> results, view-returning lookups</td><td>base (with <code>Some</code>/<code>None</code>)</td></tr>
+<tr><td><code>Try</code>, <code>Verdict</code>, <code>Lift</code></td><td><code>std::operators</code></td><td><code>!</code>, <code>?.</code> (§5.10)</td><td>— (but <code>Result</code>/<code>Ok</code>/<code>Err</code> are base)</td></tr>
+<tr><td><code>Add Sub Mul Div Rem Shl Shr BitAnd BitOr BitXor</code></td><td><code>std::operators</code></td><td>operators (§5.7)</td><td>—</td></tr>
+<tr><td><code>PartialEq</code>, <code>PartialOrd</code></td><td><code>std::compare</code></td><td><code>==</code>/ordering (§5.7)</td><td>—</td></tr>
+<tr><td><code>Iterator</code>/<code>Iterable</code></td><td><code>std::iterator</code></td><td><code>for … in</code></td><td>—</td></tr>
+<tr><td><code>Task&lt;T&gt;</code></td><td><code>std::task</code></td><td><code>async</code>/<code>await</code> (§7.3)</td><td>—</td></tr>
+<tr><td><code>Promise&lt;T&gt;</code></td><td><code>std::promise</code></td><td>host-interop promises (§7.3)</td><td>—</td></tr>
+<tr><td><code>Context&lt;T&gt;</code></td><td><code>std::context</code></td><td>contexts (§8)</td><td>—</td></tr>
+<tr><td><code>panic</code>, <code>assert</code></td><td><code>std::io</code></td><td>divergence, <code>vilan test</code></td><td>—</td></tr>
 </tbody>
 </table>
 </div>

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -178,9 +178,7 @@
 </blockquote>
 <h2 id="structs"><a class="header" href="#structs">Structs</a></h2>
 <p>A struct is a named record type:</p>
-<pre><code class="language-vilan">import std::print;
-
-struct Task {
+<pre><code class="language-vilan">struct Task {
 	id: i32,
 	name: str,
 }
@@ -200,9 +198,7 @@ identical fields are still different types.</p>
 <p>An enum is a type with a fixed set of variants, and variants can carry
 data. If you’ve used discriminated unions in TypeScript, this is that
 idea with language support:</p>
-<pre><code class="language-vilan">import std::print;
-
-enum Shape {
+<pre><code class="language-vilan">enum Shape {
 	Circle(f64),
 	Rectangle(f64, f64),
 	Point,
@@ -228,8 +224,7 @@ cases.</p>
 <h3 id="backed-enums"><a class="header" href="#backed-enums">Backed enums</a></h3>
 <p>A variant with no payload can instead carry the value it stands for —
 the number or string the outside world already speaks:</p>
-<pre><code class="language-vilan">import std::print;
-import std::option::Option;
+<pre><code class="language-vilan">import std::option::Option;
 
 enum Align {
 	Start = "flex-start",
@@ -274,9 +269,7 @@ knowing before you name a backing value, because renaming one later is a
 wire change.</p>
 <h2 id="impl-methods-and-statics"><a class="header" href="#impl-methods-and-statics">impl: methods and statics</a></h2>
 <p>Methods live in <code>impl</code> blocks, separate from the data:</p>
-<pre><code class="language-vilan">import std::print;
-
-struct Counter {
+<pre><code class="language-vilan">struct Counter {
 	value: i32,
 }
 
@@ -308,8 +301,7 @@ Vilan. The <a href="memory-model.html">memory model</a> chapter makes this preci
 <h2 id="generics-and-bounds"><a class="header" href="#generics-and-bounds">Generics and bounds</a></h2>
 <p>Type parameters work on functions, structs, enums, and impls. A bound
 constrains what the code may do with the parameter:</p>
-<pre><code class="language-vilan">import std::print;
-import std::compare::PartialOrd;
+<pre><code class="language-vilan">import std::compare::PartialOrd;
 
 struct Pair&lt;T&gt; {
 	first: T,
@@ -344,9 +336,7 @@ call site, not at the declaration alone.</p>
 <h2 id="traits"><a class="header" href="#traits">Traits</a></h2>
 <p>A trait declares a capability. <code>impl Type with Trait</code> provides it. Trait
 methods can have default bodies written in terms of the required ones:</p>
-<pre><code class="language-vilan">import std::print;
-
-trait Greet {
+<pre><code class="language-vilan">trait Greet {
 	fun name(self): str;
 
 	// A default, in terms of the required method.
@@ -373,9 +363,7 @@ fun main() {
 The bound is in scope inside the trait’s default bodies — the same way a
 bound on a function or an impl is inside theirs — so a default can call
 the bound’s methods on a value of that type:</p>
-<pre><code class="language-vilan">import std::print;
-
-trait Label {
+<pre><code class="language-vilan">trait Label {
 	fun label(self): str;
 }
 
@@ -425,8 +413,56 @@ Different arguments are different implementations, so <code>impl DogBox with Hol
 <p>Traits are like interfaces, with two differences. They’re implemented
 explicitly (<code>impl Robot with Greet</code>), never structurally. And they
 appear as <em>bounds</em> on generics (<code>T: Greet</code>) rather than as standalone
-types: <code>let x: Greet = …</code> is a compile error. When you want
-“one of several things at runtime”, use an enum.</p>
+types: <code>fun f(v: Greet)</code>, <code>fun make(): Greet</code> and <code>struct H { item: Greet }</code> are all compile errors. When you want “one of several things at
+runtime”, use an enum.</p>
+<h2 id="a-trait-on-a-binding-is-a-constraint"><a class="header" href="#a-trait-on-a-binding-is-a-constraint">A trait on a binding is a constraint</a></h2>
+<p>The one place a trait’s name reads well in an annotation is a <code>let</code>, and
+there it means something narrower than it looks: a <strong>constraint</strong> on the
+value, not the value’s type.</p>
+<pre><code class="language-vilan">trait Greet {
+	fun greet(self): str;
+}
+
+struct Robot { id: i32 }
+impl Robot with Greet {
+	fun greet(self): str { "beep" }
+}
+
+fun main() {
+	// `unit` is a `Robot`. The annotation only checks that `Robot`
+	// implements `Greet` — it does not hide the type behind it.
+	let unit: Greet = Robot { id = 1 };
+	print(unit.id);      // a Robot's own field, still readable
+	print(unit.greet());
+}
+</code></pre>
+<p>Write it when you want the compiler to hold a value to a trait while you
+keep working with its real type. Because the type stays concrete, two
+<code>if</code> arms of <em>different</em> types are still an error, even when both
+implement the trait — there is no widening for them to meet in. And a
+trait nested inside the annotation (<code>List&lt;Greet&gt;</code>) is an ordinary value
+position, so it is still refused: there are no heterogeneous containers.</p>
+<h2 id="associated-functions"><a class="header" href="#associated-functions">Associated functions</a></h2>
+<p>A trait <code>fun</code> with no <code>self</code> is an <strong>associated function</strong> — a name in
+the trait’s namespace rather than a method. Give it a default body and it
+becomes callable on the trait itself:</p>
+<pre><code class="language-vilan">struct Counter { value: i32 }
+
+trait Source {
+	fun new(initial: i32): Counter { Counter { value = initial } }
+}
+impl Counter with Source {}
+
+fun main() {
+	print(Source::new(7).value);
+}
+</code></pre>
+<p><code>Source::new(..)</code> always runs the trait’s own body. An impl may declare
+its own <code>new</code> to override it, and that one is reached the way any of a
+type’s own statics is — <code>Counter::new(..)</code>. There is no receiver here for
+the compiler to pick an implementation with, which is why the two
+spellings mean two different bodies rather than one dispatch, and why a
+declaration with <em>no</em> default body can only be called through a type.</p>
 <p>Operators are traits too. <code>+</code> dispatches through <code>Add</code>, <code>==</code> through
 <code>PartialEq</code>, <code>&lt;</code> through <code>PartialOrd</code>, and so on. Implement the trait and
 your type gets the operator. <code>std::time</code> does this so that
@@ -449,8 +485,7 @@ write the boilerplate:</p>
 </tbody>
 </table>
 </div>
-<pre><code class="language-vilan">import std::print;
-import std::debug::Debug;
+<pre><code class="language-vilan">import std::debug::Debug;
 
 [derive(PartialEq, Debug)]
 struct Point {

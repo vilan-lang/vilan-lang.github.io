@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -179,9 +179,7 @@
 <h2 id="if--else"><a class="header" href="#if--else"><code>if</code> / <code>else</code></a></h2>
 <p><code>if</code> is an expression. Both branches produce a value, and the whole thing
 has that value:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let n = 7;
 	let label = if n % 2 == 0 { "even" } else { "odd" };
 	print(label);
@@ -192,8 +190,7 @@ fun main() {
 <p><code>match</code> is the workhorse, a <code>switch</code> that can take values apart and that
 the compiler checks for completeness. Arms are <code>pattern =&gt; expression</code>.
 Payloads bind with <code>let</code>, and <code>_</code> catches everything else:</p>
-<pre><code class="language-vilan">import std::print;
-import std::option::Option::{ self, Some, None };
+<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
 
 fun describe(slot: Option&lt;i32&gt;): str {
 	match slot {
@@ -259,8 +256,7 @@ other arms decide it:</p>
 </code></pre>
 <h2 id="loops"><a class="header" href="#loops">Loops</a></h2>
 <p><code>for</code> covers every loop. It has three forms:</p>
-<pre><code class="language-vilan">import std::print;
-import std::range::Range;
+<pre><code class="language-vilan">import std::range::Range;
 
 fun main() {
 	for item in ["a", "b", "c"] {
@@ -306,8 +302,7 @@ or <code>Err(error)</code>.</li>
 Two operators make the common patterns short.</p>
 <p><strong><code>!</code> unwraps, or propagates the failure.</strong> Think of it as “give me the
 value, and if there isn’t one, return the failure from this function”:</p>
-<pre><code class="language-vilan">import std::print;
-import std::option::Option::{ self, Some, None };
+<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
 import std::result::Result::{ self, Ok, Err };
 
 fun to_number(text: str): Result&lt;i32, str&gt; {
@@ -338,8 +333,7 @@ When the
 types differ, convert at the value, before the <code>!</code>: <code>.map_err(…)</code> changes
 a <code>Result</code>’s error, and <code>.ok_or(err)</code> turns an <code>Option</code>’s <code>None</code> into an
 <code>Err</code> you supply.</p>
-<pre><code class="language-vilan">import std::print;
-import std::option::Option::{ self, Some, None };
+<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
 import std::result::Result::{ self, Ok, Err };
 
 fun lookup(key: str): Option&lt;i32&gt; {
@@ -365,8 +359,7 @@ fun main() {
 <p><strong><code>?.</code> reaches inside the container.</strong> It looks like optional chaining
 from JS, and on <code>Option</code> it plays the same role, with the compiler
 checking it:</p>
-<pre><code class="language-vilan">import std::print;
-import std::option::Option::{ self, Some, None };
+<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
 
 struct Book {
 	title: str,
@@ -391,8 +384,7 @@ too, passing an <code>Err</code> through untouched.</p>
 <p><strong>A bare <code>?</code> lifts a whole expression.</strong> Where <code>?.</code> continues a member
 chain, a <code>?</code> on its own lifts the rest of the surrounding expression,
 operators included:</p>
-<pre><code class="language-vilan">import std::print;
-import std::option::Option::{ self, Some, None };
+<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
 
 fun main() {
 	let price = Some(40);

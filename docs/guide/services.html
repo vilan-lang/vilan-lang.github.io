@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -181,14 +181,13 @@ handling without writing any protocol code.</p>
 <ul>
 <li><code>[service(ClientName)]</code> on the struct names the generated client type.</li>
 <li><code>[rpc]</code> on a method makes it callable from the client.</li>
-<li><code>[expose]</code> on a <code>Signal&lt;T&gt;</code> field <strong>mirrors</strong> it: every connected
+<li><code>[expose]</code> on a <code>SignalCell&lt;T&gt;</code> field <strong>mirrors</strong> it: every connected
 client gets a live copy that updates when the server writes it.</li>
 </ul>
 <p>There are no REST endpoints, fetch calls, or JSON shapes to keep in
 sync by hand. The compiler knows both sides.</p>
 <p>Here’s a complete little server:</p>
-<pre><code class="language-vilan norun">import std::print;
-import std::reactive::Signal;
+<pre><code class="language-vilan norun">import std::reactive::{ Signal, SignalCell };
 import std::json::json_codec;
 import std::http::{ Response, Server };
 import std::rpc_server::Service;
@@ -202,7 +201,7 @@ struct Note {
 
 [service(NotesClient)]
 struct Notes {
-	[expose] entries: Signal&lt;List&lt;Note&gt;&gt;,
+	[expose] entries: SignalCell&lt;List&lt;Note&gt;&gt;,
 	next_id: Shared&lt;i32&gt;,
 }
 
@@ -237,8 +236,7 @@ fun main() {
 <p>And a client. <code>NotesClient::connect</code> gives you an object whose exposed
 fields are typed <strong>mirrors</strong> (<code>RemoteSource&lt;T&gt;</code>, one per <code>[expose]</code>) and
 whose rpc methods are ordinary calls that return <code>Result</code>:</p>
-<pre><code class="language-vilan browser">import std::print;
-import std::reactive::Signal;
+<pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell };
 import std::json::json_codec;
 import std::result::Result::{ self, Ok, Err };
 import std::shared::Shared;
@@ -251,7 +249,7 @@ struct Note {
 
 [service(NotesClient)]
 struct Notes {
-	[expose] entries: Signal&lt;List&lt;Note&gt;&gt;,
+	[expose] entries: SignalCell&lt;List&lt;Note&gt;&gt;,
 	next_id: Shared&lt;i32&gt;,
 }
 
@@ -387,28 +385,27 @@ commit is the rpc, and <code>adopt</code> mirror updates into them. Typing stays
 instant, remote edits fold in, and your own echoes are no-ops.</li>
 </ul>
 <h3 id="reading-a-mirror"><a class="header" href="#reading-a-mirror">Reading a mirror</a></h3>
-<p>A mirror is a <code>RemoteSource&lt;T&gt;</code>, not a <code>Signal&lt;T&gt;</code>, for one honest
+<p>A mirror is a <code>RemoteSource&lt;T&gt;</code>, not a <code>SignalCell&lt;T&gt;</code>, for one honest
 reason: before the first update lands it has <strong>no value</strong>, and nothing
 about the type pretends otherwise. You read it one of four ways:</p>
 <ul>
-<li><code>mirror.or(initial): Signal&lt;T&gt;</code> — the common one, for a view. A plain
+<li><code>mirror.or(initial): SignalCell&lt;T&gt;</code> — the common one, for a view. A plain
 signal you hand to <code>bind_each</code>, <code>bind_text</code>, or a <code>{…}</code> hole: <code>initial</code>
 until the first sync, the mirrored value after. Write it inside the
 view (not in <code>main</code>), because it is a <strong>subscription</strong>: it opens the
 channel, and it is released when the view that created it is unmounted.</li>
-<li><code>mirror.map(|value| …): Signal&lt;U&gt;</code> — the same, with the <code>Option&lt;T&gt;</code>
+<li><code>mirror.map(|value| …): SignalCell&lt;U&gt;</code> — the same, with the <code>Option&lt;T&gt;</code>
 in your hands once, which is where a fallback of a <em>different</em> type
 belongs (<code>"loading…"</code> from a <code>RemoteSource&lt;i32&gt;</code>). <code>or</code> is <code>map</code> for
 the same-type case.</li>
 <li><code>mirror.sub(|value| …): Subscription</code> — the manual form: an observer
 of present values, and a handle you dispose yourself. For code with no
 view and no owner (a probe, a script).</li>
-<li><code>mirror.get(): Option&lt;T&gt;</code> and <code>mirror.status(): Signal&lt;Status&gt;</code>
+<li><code>mirror.get(): Option&lt;T&gt;</code> and <code>mirror.status(): SignalCell&lt;Status&gt;</code>
 (<code>Waiting</code> / <code>Ready</code>) — passive reads. They open nothing.</li>
 </ul>
-<pre><code class="language-vilan browser">import std::print;
-import std::json::json_codec;
-import std::reactive::Signal;
+<pre><code class="language-vilan browser">import std::json::json_codec;
+import std::reactive::{ Signal, SignalCell };
 import std::result::Result::{ self, Ok, Err };
 import std::rpc::SocketTransport;
 import std::shared::Shared;
@@ -422,7 +419,7 @@ struct Note {
 
 [service(NotesClient)]
 struct Notes {
-	[expose] entries: Signal&lt;List&lt;Note&gt;&gt;,
+	[expose] entries: SignalCell&lt;List&lt;Note&gt;&gt;,
 	next_id: Shared&lt;i32&gt;,
 }
 
@@ -487,7 +484,10 @@ ten attempts before giving up (<code>Closed</code>). Mirrors rebind by
 re-running the contract check and re-attaching each subscription; you
 never re-subscribe manually — and if either step is refused, the
 connection goes <code>Closed</code> too, rather than reporting itself live over
-mirrors that can no longer update. The full state machine is in the
+mirrors that can no longer update. Reaching <code>Closed</code> — by any of those
+routes, the spent budget included — also tears the client’s own wiring
+down, since those mirrors are unreachable from that socket forever; a
+redial that is merely slow does not. The full state machine is in the
 <a href="../std/rpc.html">rpc reference</a>.</p>
 </blockquote>
 <h2 id="authentication"><a class="header" href="#authentication">Authentication</a></h2>
@@ -551,8 +551,7 @@ default session lifecycle (see the <a href="../std/rpc.html">rpc reference</a>).
 service’s routes answer before <code>on_request</code>, which is what lets a page
 and a service sit on the same builder chain instead of one replacing the
 other:</p>
-<pre><code class="language-vilan norun">import std::print;
-import std::shared::Shared;
+<pre><code class="language-vilan norun">import std::shared::Shared;
 import std::json::json_codec;
 import std::http::{ Response, Server };
 import std::rpc_server::Service;

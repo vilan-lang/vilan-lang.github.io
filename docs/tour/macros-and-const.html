@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -182,9 +182,7 @@ up rarely, so treat the second half of this chapter as reference.</p>
 <h2 id="const-compute-it-at-compile-time"><a class="header" href="#const-compute-it-at-compile-time"><code>const</code>: compute it at compile time</a></h2>
 <p>Put <code>const</code> in front of an expression and the compiler evaluates it
 during the build, then writes the <em>result</em> into the output as a literal:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun squares(): List&lt;i32&gt; {
+<pre><code class="language-vilan">fun squares(): List&lt;i32&gt; {
 	mut result: List&lt;i32&gt; = [];
 	for i in [1, 2, 3, 4] {
 		result.push(i * i);
@@ -215,9 +213,7 @@ time and emit CSS. See the <a href="../guide/styling.html">styling guide</a>.</p
 <h3 id="release-builds-fold-without-the-keyword"><a class="header" href="#release-builds-fold-without-the-keyword">Release builds fold without the keyword</a></h3>
 <p>A <code>release</code> build also folds ordinary initializers it can work out for
 itself, under the same rules — no keyword needed:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun square(n: i32): i32 {
+<pre><code class="language-vilan">fun square(n: i32): i32 {
 	n * n
 }
 
@@ -246,8 +242,7 @@ it breaks); let inference pick up the rest.</p>
 function that runs at compile time, receives the type it annotates as
 <em>data</em>, and returns source code to splice into the program. You can
 write your own:</p>
-<pre><code class="language-vilan">import std::print;
-import std::display::{ Display, format };
+<pre><code class="language-vilan">import std::display::{ Display, format };
 
 macro fun derive_display(item: Item): Source {
 	import macro_std::source;
@@ -308,9 +303,7 @@ code is checked like code you wrote by hand.</li>
 <h2 id="macro----blocks"><a class="header" href="#macro----blocks"><code>macro { … }</code> blocks</a></h2>
 <p>An anonymous macro that expands on the spot. In item position it stamps
 out a family of items; in expression position it folds to a value:</p>
-<pre><code class="language-vilan">import std::print;
-
-macro fun labeled(name: str, value: i32): str {
+<pre><code class="language-vilan">macro fun labeled(name: str, value: i32): str {
 	i"fun {name}(): i32 \{ {value} \}\n"
 }
 

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -184,8 +184,15 @@ organized by message instead of by topic.</p>
 <li><strong>A bare integer literal adapts to its peer; two typed variables
 don’t.</strong> <code>stamp + 1000</code> and <code>stamp &lt; 1000</code> are fine on an <code>i53</code> (the
 literal takes the peer’s type), but mixing two differently-typed
-<em>variables</em> in a comparison is an error: there are no implicit
-conversions. Convert with <code>as_*</code> or unify the declarations.</li>
+<em>variables</em> in a comparison or an addition is an error: there are no
+implicit conversions. Convert with <code>as_*</code> or unify the declarations.</li>
+<li><strong>Concatenation renders nothing for you, and an i-string is
+concatenation.</strong> <code>"p=" + point</code> and <code>i"p={point}"</code> are the same
+expression, and both refuse a value with no string form rather than
+printing its runtime shape (<code>p=1,2</code>). Call <code>to_string()</code> — writing an
+<code>impl … with Display</code> if the type has none. The string also has to be
+on the <em>left</em>: an expression takes its type from its left operand, so
+<code>count + "!"</code> is an error, not an <code>i32</code> holding <code>"1!"</code>.</li>
 <li><strong>A guarded last <code>match</code> arm proves nothing.</strong> A guard tests the value
 and exhaustiveness reasons about the type, so <code>B if ready =&gt; …</code> leaves
 <code>B</code> missing. Write the arm you meant to fall through to:

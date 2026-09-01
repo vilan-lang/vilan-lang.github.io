@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -205,9 +205,7 @@ that overflows a type’s range is <strong>undefined behavior</strong>
 artifacts; a checked <code>add_safe</code> family is recorded future work.</p>
 <p>Because overflow is undefined, the boundary values have to be <em>askable</em>.
 Every integer type carries its two bounds as niladic functions:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	print(i32::max_value());   // 2147483647
 	print(i32::min_value());   // -2147483648
 	print(u8::max_value());    // 255
@@ -291,9 +289,7 @@ comparison.</p>
 <p><code>clamp</code> confines a value to a range. The integers inherit it from <code>Ord</code>; the
 floats are deliberately <em>not</em> <code>Ord</code> (NaN has no place in a total order), so
 <code>f64</code> and <code>f32</code> carry their own — same recipe, same result.</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	print(9.clamp(0, 5));       // 5   — i32, through Ord
 	print(9f.clamp(0f, 5f));    // 5
 	print((0f - 1f).clamp(0f, 5f));   // 0
@@ -303,9 +299,7 @@ fun main() {
 <p>Every numeric type converts to every other with Rust-<code>as</code> semantics.
 Floats truncate toward zero; integers fold two’s-complement into the
 target width:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	print((3.9).as_i32());    // 3
 	print((-1).as_u8());      // 255 — folded
 	print((300).as_u8());     // 44
@@ -324,8 +318,7 @@ fun minmax&lt;T: Ord&gt;(a: T, b: T): (T, T)   // (smaller, larger)
 <pre><code class="language-vilan fragment">fun range&lt;T: Random&gt;(low: T, high: T): T   // uniform in [low, high)
 // implemented for i32, u32, f64
 </code></pre>
-<pre><code class="language-vilan">import std::print;
-import std::random;
+<pre><code class="language-vilan">import std::random;
 
 fun main() {
 	let roll = random::range(1, 7);   // 1..=6

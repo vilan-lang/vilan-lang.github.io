@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -195,9 +195,7 @@ are the other two routes; the
 has both. Every command in this book assumes only that <code>vilan</code> is on your
 PATH.</p>
 <h2 id="a-first-program"><a class="header" href="#a-first-program">A first program</a></h2>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	print("hello");
 }
 </code></pre>
@@ -208,10 +206,12 @@ vilan check hello.vl    # just type-check — writes nothing
 </code></pre>
 <p><code>fun main</code> is the entrypoint. It runs automatically, so there is no
 <code>main()</code> call at the bottom of the file.</p>
-<p>Two small things you’ll notice compared to JS. First, the standard library
-is imported explicitly, even <code>print</code>. Your files will start with a few
-<code>import</code> lines, like ES modules. Second, indentation is tabs by
-convention, and <code>vilan fmt</code> will format files for you.</p>
+<p>Two small things you’ll notice compared to JS. First, no import: <code>print</code>
+is in the <strong>prelude</strong>, the small set of names every package gets for
+free. So are <code>Option</code>/<code>Some</code>/<code>None</code> and <code>Result</code>/<code>Ok</code>/<code>Err</code>. Everything
+else in the standard library is imported explicitly, so your files will
+start with a few <code>import</code> lines, like ES modules. Second, indentation is
+tabs by convention, and <code>vilan fmt</code> will format files for you.</p>
 <h2 id="start-a-project"><a class="header" href="#start-a-project">Start a project</a></h2>
 <p>A single file is fine for a first look. For anything you will come back
 to, scaffold a project: <code>vilan init</code> writes a manifest, sources that
@@ -294,7 +294,7 @@ manifest) or <code>entry = "app.vl"</code>.</p>
 <p>Dependencies from git, pre-build commands, <code>default-entry</code>, and
 workspaces are covered in <a href="projects.html">Projects and dependencies</a>.</p>
 <h2 id="imports"><a class="header" href="#imports">Imports</a></h2>
-<pre><code class="language-vilan fragment">import std::print;                          // one item
+<pre><code class="language-vilan fragment">import std::json::json_codec;               // one item
 import std::reactive::{ Signal, combine };  // several at once
 import std::option::Option::{ self, Some, None };  // a type plus its variants
 import pkg::routes::{ Route, parse };       // another file in YOUR package
@@ -310,7 +310,34 @@ module declaration.</li>
 <code>vilan.toml</code>.</li>
 </ul>
 <p>The <code>{ self, Some, None }</code> form imports the <code>Option</code> type <em>and</em> its
-variants, so you can write <code>Some(x)</code> without qualifying it.</p>
+variants, so you can write <code>Some(x)</code> without qualifying it. (That
+particular line is redundant in most packages — <code>Option</code> and its variants
+are in the prelude already — but it is the form to use for any other
+enum, and writing it is harmless: an explicit import of a prelude name
+simply wins, silently.)</p>
+<h3 id="the-prelude"><a class="header" href="#the-prelude">The prelude</a></h3>
+<p>A <strong>prelude</strong> is a set of names in scope with no import. Every package
+gets one, chosen in <code>vilan.toml</code>:</p>
+<pre><code class="language-toml">[package]
+name = "app"
+prelude = "std::web"    # omit the key for the default set
+</code></pre>
+<p>The default set is <code>print</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code>.
+The <strong>web</strong> set adds <code>Signal</code>, <code>view</code>, <code>View</code>, and the modules <code>style</code>
+and <code>ui</code> — so a UI file writes <code>view("div")</code> and <code>style::Display::Flex</code>
+with no import at all. <code>prelude = false</code> turns it off entirely.</p>
+<p>Two rules worth knowing:</p>
+<ul>
+<li><strong>It is the weakest scope.</strong> Declaring your own <code>print</code>, or importing a
+different one, wins silently. Nothing you write can be broken by a
+name the prelude happens to carry.</li>
+<li><strong>It is per package.</strong> A dependency resolves under the prelude <em>its</em>
+author chose, never yours — so a library can never inject names into
+your files, and you can never change what its source means.</li>
+</ul>
+<p>Your editor knows: Organize Imports removes an import the prelude
+already covers, and completion offers prelude names with no import edit
+attached.</p>
 <h2 id="the-shape-of-a-full-stack-app"><a class="header" href="#the-shape-of-a-full-stack-app">The shape of a full-stack app</a></h2>
 <p>When you get to building a client + server app, the smallest layout is
 <strong>one package with two entries</strong>. The browser client and the Node

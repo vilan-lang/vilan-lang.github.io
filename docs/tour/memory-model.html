@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -197,9 +197,7 @@ with <strong><code>Handle</code></strong> ids.</li>
 <h2 id="values-the-default"><a class="header" href="#values-the-default">Values: the default</a></h2>
 <p><code>let</code> binds immutably. <code>mut</code> allows reassignment and field mutation.
 Either way, binding an existing value makes a copy:</p>
-<pre><code class="language-vilan">import std::print;
-
-struct Counter { value: i32 }
+<pre><code class="language-vilan">struct Counter { value: i32 }
 
 fun main() {
 	mut original = Counter { value = 10 };
@@ -221,9 +219,7 @@ again). You reason in copies; it optimizes.</p>
 <h2 id="views-lending-a-value-out"><a class="header" href="#views-lending-a-value-out">Views: lending a value out</a></h2>
 <p>Sometimes you <em>want</em> a function to mutate your value. You lend it a
 <strong>view</strong> with <code>&amp;mut</code>:</p>
-<pre><code class="language-vilan">import std::print;
-
-struct Counter { value: i32 }
+<pre><code class="language-vilan">struct Counter { value: i32 }
 
 fun bump(&amp;mut c: Counter) {
 	c.value = c.value + 10;
@@ -267,9 +263,7 @@ horror stories, this is the part Vilan deliberately keeps small.</p>
 <p>Views also make loops that mutate in place. A plain <code>for x in list</code>
 copies each element; <code>for e in &amp;mut list</code> gives you writable views
 instead:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	mut xs: List&lt;i32&gt; = [1, 2, 3];
 	for e in &amp;mut xs {
 		e = *e * 10;
@@ -307,8 +301,7 @@ every <code>ret</code> alike.</p>
 <p>When two places need to see the same mutable state, reach for
 <code>Shared&lt;T&gt;</code>. It’s a small heap cell. Copying the <code>Shared</code> value copies
 the <em>handle</em>, and both handles point at one cell. That’s the point:</p>
-<pre><code class="language-vilan">import std::print;
-import std::shared::Shared;
+<pre><code class="language-vilan">import std::shared::Shared;
 
 fun main() {
 	let count = Shared::new(0);

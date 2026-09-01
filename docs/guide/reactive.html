@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -187,8 +187,7 @@ signal changes, exactly the code that watches it runs.</p>
 </ul>
 <p>The UI layer, the rpc mirrors, and the router are all built on these, so
 this chapter pays for itself quickly.</p>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::{ Signal, Owner, run_with_owner };
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Owner, run_with_owner };
 
 fun main() {
 	let count = Signal::new(0);
@@ -201,22 +200,37 @@ fun main() {
 }
 </code></pre>
 <h2 id="signals"><a class="header" href="#signals">Signals</a></h2>
-<p>A <code>Signal&lt;T&gt;</code> is a mutable cell whose readers can subscribe to changes.</p>
-<pre><code class="language-vilan fragment">Signal::new(value: T): Signal&lt;T&gt;       // a fresh signal
+<p>A <code>SignalCell&lt;T&gt;</code> is a mutable cell whose readers can subscribe to changes.</p>
+<pre><code class="language-vilan fragment">Signal::new(value: T): SignalCell&lt;T&gt;       // a fresh signal
 signal.get(): T                        // current value
 signal.set(value: T)                   // write + notify subscribers
 signal.set_with(transform: sync |T| T) // read-modify-write in one step
 signal.update(mutate: sync |&amp;mut T| void) // mutate in place + notify once
 </code></pre>
+<p>Two names, one idea. <strong><code>Signal&lt;T&gt;</code> is a trait</strong> — the writable half of the
+reactive contract, <code>set</code> and <code>notify</code> over <code>Source</code>’s <code>get</code> and <code>sub</code> — and
+<strong><code>SignalCell&lt;T&gt;</code> is the canonical type that implements it</strong>, the cell
+<code>Signal::new</code> hands back. Day to day you write <code>Signal::new(0)</code> and never
+think about it. The split matters in two places: when a <em>component</em> wants to
+accept any signal (bound it on <code>Signal&lt;T&gt;</code>, and a caller may pass a cell of
+their own that clamps or persists — see
+<a href="../std/reactive.html#writing-a-signal">Writing a Signal</a>), and when you need to
+<em>name the type</em> in a struct field or a return type, where a trait may not go
+and <code>SignalCell&lt;T&gt;</code> is the word.</p>
+<pre><code class="language-vilan fragment">struct Store { todos: SignalCell&lt;List&lt;str&gt;&gt; }   // a field names the cell
+let count: Signal&lt;i32&gt; = SignalCell::new(1);    // an annotation may name the trait
+</code></pre>
+<p>An annotation naming a trait is a <strong>checked constraint</strong>, not the binding’s
+type: <code>count</code> is still a <code>SignalCell&lt;i32&gt;</code> and still has <code>update</code>, which lives
+on the cell alone.</p>
 <p>Signals hold <strong>values</strong>. Vilan copies, so <code>get</code> hands you a copy, and the
 only way to change what subscribers see is a write through the signal
 itself. For a collection, <code>update</code> is the one you want: the closure gets a
 <strong>writable view of the stored value</strong>, so you mutate it directly.</p>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::Signal;
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell };
 
 fun main() {
-	let items: Signal&lt;List&lt;str&gt;&gt; = Signal::new([]);
+	let items: SignalCell&lt;List&lt;str&gt;&gt; = Signal::new([]);
 	items.update(|&amp;mut list| {
 		list.push("first");
 	});
@@ -233,8 +247,7 @@ any other write. <code>update</code> works for any <code>T</code> a closure can 
 <code>Set</code>, a struct’s fields, a nested aggregate.</p>
 <p><code>set_with</code> remains the read-<strong>transform</strong>-write form, and it still reads
 better when you’re computing a new value rather than editing one:</p>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::Signal;
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell };
 
 fun main() {
 	let count = Signal::new(1);
@@ -250,8 +263,7 @@ feature.)</p>
 <ul>
 <li>
 <p><code>signal.map(transform)</code> gives a signal of the transformed value:</p>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::Signal;
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell };
 fun main() {
 	let count = Signal::new(2);
 	let doubled = count.map(|n: i32| n * 2);
@@ -266,12 +278,11 @@ fun main() {
 signals’ values. It fires when any of them changes. Takes two or more.</p>
 </li>
 <li>
-<p><code>nested.flatten()</code> on a <code>Signal&lt;Signal&lt;U&gt;&gt;</code> follows whichever inner
+<p><code>nested.flatten()</code> on a <code>SignalCell&lt;SignalCell&lt;U&gt;&gt;</code> follows whichever inner
 signal is current, and detaches from a replaced one.</p>
 </li>
 </ul>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::{ Signal, combine };
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, combine };
 
 fun main() {
 	let first = Signal::new("Ada");
@@ -319,8 +330,7 @@ into it.</li>
 <li><code>get_owner()</code> reads the ambient owner, e.g. to attach custom cleanup
 with <code>owner.defer(…)</code>.</li>
 </ul>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::{ Signal, Owner, run_with_owner };
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Owner, run_with_owner };
 
 fun main() {
 	let source = Signal::new(0);
@@ -408,8 +418,8 @@ on failure (rolling back mid-typing would eat their input) and retries
 naturally on the next push. Bind an input to a draft and every keystroke
 can safely commit through an rpc:</p>
 <pre><code class="language-vilan fragment">struct Draft&lt;T&gt; {
-	local: Signal&lt;T&gt;,          // bind inputs to this
-	state: Signal&lt;DraftState&gt;, // Synced | Dirty | Failed(str)
+	local: SignalCell&lt;T&gt;,          // bind inputs to this
+	state: SignalCell&lt;DraftState&gt;, // Synced | Dirty | Failed(str)
 	…
 }
 draft&lt;T: PartialEq&gt;(initial: T, commit: async |T| Option&lt;str&gt;): Draft&lt;T&gt;
@@ -433,8 +443,7 @@ the wire, and every remote change funnels through <code>adopt</code>’s three r
                     ├─ local has no edits?   take the remote value
                     └─ local is DIRTY?       your text wins for now
 </code></pre>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::{ draft, Draft, DraftState };
+<pre><code class="language-vilan">import std::reactive::{ draft, Draft, DraftState };
 import std::option::Option::{ self, Some, None };
 import std::shared::Shared;
 
@@ -467,8 +476,7 @@ frame for every character. <code>debounce(millis)</code> coalesces a burst into 
 commit, and it does <strong>not</strong> slow the typing down — <code>local</code> and the <code>Dirty</code>
 state still land the instant you press a key, so the input is as immediate
 as ever. Only the commit waits for you to stop:</p>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::{ draft, Draft, DraftState };
+<pre><code class="language-vilan">import std::reactive::{ draft, Draft, DraftState };
 import std::option::Option::{ self, Some, None };
 import std::shared::Shared;
 import std::time::{ sleep_for, Duration };
@@ -521,8 +529,7 @@ not enough for the usual case: a button that should grey out while its
 write is in flight, and a banner that should say why it failed.</p>
 <p><code>Optimistic::over(signal)</code> wraps the signal you already have — no binding
 changes — and adds a <code>state</code> signal to bind:</p>
-<pre><code class="language-vilan">import std::print;
-import std::reactive::{ Signal, Optimistic, WriteState };
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Optimistic, WriteState };
 import std::result::Result::{ self, Ok, Err };
 
 fun main() {

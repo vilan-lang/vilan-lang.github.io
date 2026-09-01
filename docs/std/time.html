@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -211,8 +211,7 @@ impl Duration with Sub { … }
 impl Duration with PartialOrd { … }
 </code></pre>
 <p>The <code>"{age} ago"</code> UI idiom:</p>
-<pre><code class="language-vilan">import std::print;
-import std::time::{ now, Instant, Duration };
+<pre><code class="language-vilan">import std::time::{ now, Instant, Duration };
 
 fun main() {
 	let started = now();
@@ -248,8 +247,7 @@ remembered, so every waiter sees the same answer (one parked before it
 settled, one arriving long after), and asking a settled timer is immediate.
 <code>cancel()</code> is idempotent: cancelling twice, or cancelling a timer that
 already fired, does nothing.</p>
-<pre><code class="language-vilan">import std::print;
-import std::time::Timer;
+<pre><code class="language-vilan">import std::time::Timer;
 
 fun main() {
 	let revert = Timer::after(2400);

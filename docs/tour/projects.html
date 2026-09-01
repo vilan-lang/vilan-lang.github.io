@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -190,6 +190,57 @@ pinned = { git = "https://github.com/someone/other", rev = "9f2c1ab" }
 work offline and a moved tag cannot change what you already built.
 Nothing else fetches: the editor uses the cache when it’s there and
 never reaches the network.</p>
+<h2 id="the-prelude-key"><a class="header" href="#the-prelude-key">The prelude key</a></h2>
+<p><code>prelude</code> names the module whose exports are in scope in every one of
+this package’s files with no <code>import</code>. It sits on <code>[package]</code> and on
+<code>[library]</code> alike:</p>
+<pre><code class="language-toml">[package]
+name = "app"
+prelude = "std::web"
+</code></pre>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Value</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><em>omitted</em></td><td>std’s base set: <code>print</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code></td></tr>
+<tr><td><code>"std::web"</code></td><td>the base set plus <code>Signal</code>, <code>view</code>, <code>View</code>, and the modules <code>style</code> and <code>ui</code></td></tr>
+<tr><td><code>"pkg::my_prelude"</code></td><td>your own module — its exports are the ambient names</td></tr>
+<tr><td><code>"some_dep::their_prelude"</code></td><td>a dependency’s module</td></tr>
+<tr><td><code>false</code></td><td>no prelude at all</td></tr>
+</tbody>
+</table>
+</div>
+<p>A custom prelude is an ordinary module of re-exports, and it <strong>replaces</strong>
+std’s rather than extending it — extension is spelled by re-exporting
+what you want to keep:</p>
+<pre><code class="language-vilan fragment">export import std::io::print;
+export import std::option::Option::{ self, Some, None };
+export import std::reactive::Signal;
+export import std::style;                 // a whole MODULE, as `style::…`
+</code></pre>
+<p>Three rules make the key safe to use:</p>
+<ul>
+<li><strong>Per package, never inherited.</strong> A dependency resolves under the
+prelude <em>its</em> manifest declares. You cannot change what a dependency’s
+source means, and it cannot inject names into yours — not even through
+a <code>[project]</code> workspace root, which has no <code>prelude</code> key at all. Each
+member states its own.</li>
+<li><strong>The weakest scope.</strong> A local declaration or an explicit import of a
+prelude name wins, silently. Adding a prelude cannot break code that
+compiles today.</li>
+<li><strong><code>"std"</code> is not a value.</strong> It names the package root, not a prelude
+module; the manifest refuses it and points at <code>"std::prelude"</code> (the
+default) or <code>"std::web"</code>.</li>
+</ul>
+<p>A prelude that re-exports a platform-layered name makes your package’s
+ambient scope platform-dependent. Nothing special happens — platform
+coloring still reports at the point the code becomes reachable — but
+“my prelude broke my server build” is a confusing way to learn it.</p>
+<p>The standard library declares <code>prelude = false</code>: 264 names across 59
+files, where “which module is this from” has to be answerable by reading
+the file.</p>
 <h2 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h2>
 <p>Four names are refused wherever a manifest names a package: <code>std</code>,
 <code>pkg</code>, <code>macro_std</code>, and <code>vilan</code>. The first three are the import roots
@@ -206,9 +257,12 @@ line (or a list of them) for your shell, run before each build and each
 privileges and Vilan doesn’t prompt — the manifest is yours, and this is
 the trust <code>cargo build</code> and <code>npm run</code> already take. A step too expensive
 to repeat gets a <code>[[build.hook]]</code> instead: a name, and the <code>inputs</code> and
-<code>outputs</code> that decide whether it needs to run at all. And
-<code>default-entry</code> names the entry <code>vilan run</code> should drive when a package
-has several. Both are covered in <a href="../guide/dev-loop.html">the dev loop</a>.</p>
+<code>outputs</code> that decide whether it needs to run at all. A hook that writes
+Vilan modules also wants <code>generated</code>, naming the directory it writes
+them into, so <code>vilan fmt</code> leaves them alone instead of rewriting bytes
+the hook is watching. And <code>default-entry</code> names the entry <code>vilan run</code>
+should drive when a package has several. All are covered in
+<a href="../guide/dev-loop.html">the dev loop</a>.</p>
 <h2 id="workspaces"><a class="header" href="#workspaces">Workspaces</a></h2>
 <p>A workspace groups several packages so they build together with one
 <code>vilan build .</code> at the root. You need it less often than you might

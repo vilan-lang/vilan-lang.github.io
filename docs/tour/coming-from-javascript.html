@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -184,9 +184,7 @@ variables can point at the same object, and a change through one is
 visible through the other. In Vilan, assigning or passing a value gives
 the receiver its own copy. Nothing is shared unless you ask for sharing
 explicitly.</p>
-<pre><code class="language-vilan">import std::print;
-
-struct Point { x: i32, y: i32 }
+<pre><code class="language-vilan">struct Point { x: i32, y: i32 }
 
 fun main() {
 	mut a = Point { x = 1, y = 2 };

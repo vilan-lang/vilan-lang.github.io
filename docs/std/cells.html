@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -186,8 +186,7 @@ value-semantics copying.</p>
 	fun write(self): &amp;mut T borrows self   // a writable view of the contents
 }
 </code></pre>
-<pre><code class="language-vilan">import std::print;
-import std::shared::Shared;
+<pre><code class="language-vilan">import std::shared::Shared;
 
 fun main() {
 	let log: Shared&lt;List&lt;str&gt;&gt; = Shared::new([]);
@@ -226,8 +225,7 @@ impl Arena&lt;type T&gt; {
 	fun is_empty(self): bool
 }
 </code></pre>
-<pre><code class="language-vilan">import std::print;
-import std::arena::{ Arena, Handle };
+<pre><code class="language-vilan">import std::arena::{ Arena, Handle };
 import std::option::Option::{ self, Some, None };
 
 struct Node {
@@ -268,8 +266,7 @@ payload, and a server-side arena becomes the <strong>naming layer</strong> for c
 the stable entity reference they quote back (“update node X”). The <code>T</code> is
 phantom; only <code>{ index, generation }</code> travels, so a handle names entities
 whose type is not itself Wire.</p>
-<pre><code class="language-vilan">import std::print;
-import std::arena::{ Arena, Handle };
+<pre><code class="language-vilan">import std::arena::{ Arena, Handle };
 import std::json::{ encode_json, decode_json };
 import std::result::Result::{ self, Ok, Err };
 import std::option::Option::{ self, Some, None };
@@ -306,8 +303,7 @@ the handle up in that session’s arena.</p>
 start at a random value instead of <code>0</code>, so a handle issued by one branded arena
 resolves to <code>None</code> in every other one rather than naming that arena’s slot of
 the same index.</p>
-<pre><code class="language-vilan">import std::print;
-import std::arena::{ Arena, Handle };
+<pre><code class="language-vilan">import std::arena::{ Arena, Handle };
 import std::option::Option::{ self, Some, None };
 
 fun main() {

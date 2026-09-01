@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -212,8 +212,8 @@ directory is spelled <code>foo</code>.</p>
 is idempotent and cycle-tolerant) and binds the imported items in the
 importing module’s scope:</p>
 <ul>
-<li><code>import std::print;</code> binds the item <code>print</code>.</li>
-<li><code>import std::reactive::{ Signal, combine };</code> binds each set member.</li>
+<li><code>import std::io::print;</code> binds the item <code>print</code>.</li>
+<li><code>import std::reactive::{ Signal, SignalCell, combine };</code> binds each set member.</li>
 <li><code>import std::option::Option::{ self, Some, None };</code> is a path into a
 TYPE: <code>self</code> binds the type itself; variant names bind the variants for
 unqualified use.</li>
@@ -230,9 +230,7 @@ code becomes <strong>reachable</strong> from the build’s entry (§11).</p>
 outward from the use site to the innermost binding. A <code>let</code>/<code>mut</code> binding
 <strong>shadows</strong> any outer binding of the same name from its point of
 declaration onward, including imports and items:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let print_count = 2;
 	mut label = "a";
 	{
@@ -247,6 +245,16 @@ fun main() {
 <strong>throughout</strong> the module regardless of declaration order (a function may
 call one declared later). Local <code>let</code> bindings are visible only after
 their declaration.</p>
+<p>The full ladder, weakest first: the <strong>prelude</strong> (§4.7) → module items and
+explicit <strong>imports</strong> → enclosing scopes → the innermost local binding.
+Two rungs deserve stating outright, because both are silent:</p>
+<ul>
+<li>An <strong>explicit import beats a same-file declaration.</strong> <code>import std::io::print;</code> in a file that also declares <code>fun print</code> binds the
+import; the file’s own function is unreachable by that name.</li>
+<li><strong>Everything beats the prelude.</strong> It is the weakest rung by
+construction, so shadowing one of its names — by declaring it or by
+importing it — is never a diagnostic.</li>
+</ul>
 <p>A <code>let</code> may also redeclare a name <strong>within the same scope</strong>: the later
 binding shadows the earlier one from its own declaration point onward,
 while uses before that point keep the earlier binding (parameters —
@@ -267,7 +275,7 @@ lookup prefers bindings that denote types; a value binding with the same
 name does not shadow a type there.</li>
 <li>In <strong>value position</strong>, lookup takes the nearest binding of any kind.</li>
 </ul>
-<p>Consequently a local variable named <code>Signal</code> does not break <code>let s: Signal&lt;i32&gt;</code> annotations in the same scope, but relying on this is poor
+<p>Consequently a local variable named <code>Signal</code> does not break <code>let s: SignalCell&lt;i32&gt;</code> annotations in the same scope, but relying on this is poor
 style.</p>
 <h2 id="46-statics-and-members"><a class="header" href="#46-statics-and-members">4.6 Statics and members</a></h2>
 <p><code>Type::member</code> (§3.6) resolves <code>member</code> in <code>Type</code>’s namespace: enum
@@ -296,9 +304,7 @@ ambiguity error — as does a <code>T: A + B</code> bound whose two arms supply 
 impls of <strong>one</strong> trait for one subject are rejected at the definition site
 too, by the coherence rule of §5.4: rule 2 above says “the method a trait
 provides”, and a trait provides one.</p>
-<pre><code class="language-vilan">import std::print;
-
-struct Bag { x: i32 }
+<pre><code class="language-vilan">struct Bag { x: i32 }
 trait Iter { fun pick(self): str; }
 
 impl Bag with Iter {
@@ -324,11 +330,54 @@ provider to use, and works on a concrete receiver or a trait-bounded
 generic one. <code>Type::member(receiver, args…)</code> means the type’s own member
 or nothing.</p>
 <h2 id="47-the-prelude"><a class="header" href="#47-the-prelude">4.7 The prelude</a></h2>
-<p>A small set of names is in scope without imports: the primitive types
-(<code>i32</code>, <code>str</code>, <code>bool</code>, …), <code>List</code>, <code>void</code>, and the boolean/<code>null</code>
-literals’ types. Everything else (including <code>Option</code>, <code>Result</code>, <code>print</code>)
-must be imported. (The exact prelude is the lang-item table, appendix
-§A.4.)</p>
+<p>Two sets of names are in scope without imports.</p>
+<p><strong>The built-in set</strong>, always: the primitive types (<code>i32</code>, <code>str</code>, <code>bool</code>,
+…), <code>List</code>, <code>void</code>, and the boolean/<code>null</code> literals’ types. (The exact
+set is the lang-item table, appendix §A.4.)</p>
+<p><strong>The package’s prelude</strong>, chosen by its manifest. A prelude is a
+<strong>module</strong>, and the names it makes ambient are exactly that module’s
+exports. <code>[package] prelude</code> (and <code>[library] prelude</code>) names it:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Value</th><th>Ambient names</th></tr>
+</thead>
+<tbody>
+<tr><td><em>omitted</em> — the default</td><td>std’s base set: <code>print</code>, <code>Option</code>, <code>Some</code>, <code>None</code>, <code>Result</code>, <code>Ok</code>, <code>Err</code></td></tr>
+<tr><td><code>"std::web"</code></td><td>the base set, plus <code>Signal</code>, <code>view</code>, <code>View</code>, and the <strong>modules</strong> <code>style</code> and <code>ui</code></td></tr>
+<tr><td>any module path (<code>pkg::…</code>, <code>std::…</code>, a dependency)</td><td>that module’s exports</td></tr>
+<tr><td><code>false</code></td><td>none — only the built-in set above</td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-vilan">fun main() {
+	// `Option`, `Some`, `None` and `print` with no import: the language
+	// manufactures the `Option` here, so it can also name it.
+	match [10, 20, 30].get(1) {
+		Some(let n) =&gt; print("found one"),
+		None =&gt; print("empty"),
+	}
+}
+</code></pre>
+<p>A prelude entry may name a <strong>module</strong> as well as a member. An ambient
+module contributes exactly one name to the bare namespace — its own — and
+its members are reached through it, so <code>style::Display</code> needs no import
+while bare <code>Display</code> still means <code>std::display::Display</code>.</p>
+<p><strong>The prelude is the weakest binding in the language.</strong> A local
+declaration or an explicit import of a prelude name wins, silently, with
+no diagnostic (§4.4). A file that declares its own <code>fun print</code> gets its
+own; a file that imports <code>std::io::print</code> gets that import, and the
+import is simply redundant rather than an error.</p>
+<p><strong>A prelude is per package and never inherited.</strong> A dependency’s files
+resolve under the prelude <em>its</em> manifest declares — not its consumer’s,
+not a workspace root’s, and not per platform layer. Two packages that
+disagree about what <code>Signal</code> means both keep compiling in one build.</p>
+<p>A shadowed prelude name has no qualified spelling at the use site:
+<code>std::io::print(x)</code> written inline is refused (§4.6). Recover by importing
+the module and qualifying through it — <code>import std::io;</code> then
+<code>io::print(…)</code>.</p>
+<p>The standard library itself declares <code>prelude = false</code>, so its own
+resolution stays greppable.</p>
 
                     </main>
 

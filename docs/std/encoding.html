@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -199,8 +199,7 @@ handle it with <code>!</code>, <code>match</code>, or <code>is Ok(..)</code>.</p
 <code>from_json_value</code>, which validates an already-parsed value’s shape. That
 is the one to call when a value is nested inside another decode, and the
 one to write when implementing the trait by hand.</p>
-<pre><code class="language-vilan">import std::print;
-import std::json::{ Json, FromJson, JsonValue, parse_json_value };
+<pre><code class="language-vilan">import std::json::{ Json, FromJson, JsonValue, parse_json_value };
 import std::result::Result::{ self, Ok, Err };
 
 [derive(Json)]
@@ -240,8 +239,7 @@ fun main() {
 </code></pre>
 <p>Written by hand — for a type whose encoding isn’t its shape — the
 signatures are the trait’s, <code>Self</code> included:</p>
-<pre><code class="language-vilan">import std::print;
-import std::json::{ Json, FromJson, JsonValue };
+<pre><code class="language-vilan">import std::json::{ Json, FromJson, JsonValue };
 import std::result::Result::{ self, Ok, Err };
 
 // A newtype that encodes as the bare string it wraps, not as an object.
@@ -304,8 +302,7 @@ bare <code>"Variant"</code>, the single key for a <code>{"Variant":…}</code> o
 derived decoder calls to pick a variant, so it only means anything on those
 two shapes: on a number or a bool it yields <code>"undefined"</code>, and on <code>null</code> it
 throws. Reach for <code>kind()</code> unless you are decoding an enum by hand.</p>
-<pre><code class="language-vilan">import std::print;
-import std::json::{ JsonKind, parse_json_value };
+<pre><code class="language-vilan">import std::json::{ JsonKind, parse_json_value };
 
 fun main() {
 	let value = parse_json_value("{\"name\":\"ada\",\"tags\":[\"x\",\"y\"]}");

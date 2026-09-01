@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -276,9 +276,13 @@ match, payloads to bind (<code>Some(let x)</code>), a literal, or <code>_</code>
 <p><a id="platform"></a><strong>platform</strong>: what a package builds for: Node, Deno, Bun, or the
 browser. Decides which std <a href="#layer">layers</a> are importable.
 <a href="../tour/platforms.html">Platforms</a>.</p>
-<p><a id="prelude"></a><strong>prelude</strong>: the few names available without imports: the primitive
-types, <code>List</code>, <code>void</code>. Everything else is imported explicitly.
-<a href="../spec/names.html">Spec §4</a>.</p>
+<p><a id="prelude"></a><strong>prelude</strong>: the names available without imports. Two layers: the
+built-in set the language always has (the primitive types, <code>List</code>,
+<code>void</code>), and a per-package set named by <code>[package] prelude</code> — std’s base
+one (<code>print</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code>) by default,
+<code>"std::web"</code> for applications, any module for a custom one, or <code>false</code>
+for none. A prelude is the weakest scope: declaring or importing one of
+its names shadows it silently. <a href="../spec/names.html">Spec §4.7</a>.</p>
 <p><a id="resource"></a><strong>resource</strong>: a value with a single owner that <em>moves</em> instead of copying
 and is destroyed deterministically after its last use (a <code>Database</code>, an
 <code>OwnedNursery</code>). <a href="../tour/resources.html">Resources</a>.</p>

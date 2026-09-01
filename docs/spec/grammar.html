@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -233,10 +233,30 @@ parameter  = [ "mut" | convention ] [ "..." ] binder [ ":" type ] ;
 convention = "own" | "&amp;" [ "mut" ] ;
 binder     = IDENT | "(" binder "," binder { "," binder } [ "," ] ")" ;
 
-extern-attr = "[" "extern" "(" extern-args ")" "]" ;
-extern-args = STRING [ "," STRING ]           (* module/global binding *)
-            | ("method"|"get"|"set") [ "," STRING ] ;
+extern-attr = "[" "extern" "(" extern-args [ "," "retains" ] [ "," ] ")" "]" ;
+extern-args = STRING [ "," STRING ]              (* global, or module and symbol *)
+            | "method" [ "," STRING ]            (* method on the receiver *)
+            | ( "get" | "set" ) "," STRING       (* property read / write *)
+            | "new" "," STRING [ "," STRING ] ;  (* construction *)
 </code></pre>
+<p>The four arms are the four host bindings. <code>"method"</code> is the only form
+word that stands alone: <code>[extern(method)]</code> binds the receiver method of
+the same name as the vilan function, and <code>[extern(method, "on")]</code> names a
+different one. <code>get</code> and <code>set</code> always take their property name — a bare
+<code>[extern(get)]</code> is not an accessor, it is a malformed attribute, and
+lowers as one. <code>new</code> reads its strings exactly as the first arm does: one
+is a global class (<code>[extern(new, "TextDecoder")]</code>), two are a module and
+the class imported from it (<code>[extern(new, "node:sqlite", "DatabaseSync")]</code>),
+and the call sites emit <code>new Symbol(…)</code> because a host constructor
+rejects a plain call.</p>
+<p><code>retains</code> is a <strong>flag</strong>, not a binding form: it is recognized in trailing
+position only — the one place it cannot displace a form word — and so
+composes with every shape above rather than needing an arm per
+combination. It declares that the host keeps an argument past the call;
+§6.8’s <a href="memory.html#externs-and-retention">Externs and retention</a> gives the
+semantics. Elsewhere in the argument list it is an unknown argument, and
+the attribute lowers to the empty global symbol as any other malformed
+extern attribute does.</p>
 <p>A <code>;</code> body is a signature-only declaration: legal for <code>external</code>
 functions and required trait methods. A parameter’s <strong>convention</strong> may
 come from the prefix (<code>own x</code>, <code>&amp;mut self</code>) or from a view type
@@ -378,6 +398,7 @@ available as user macro-attribute names.</p>
 <pre><code class="language-text">let        = ("let" | "mut") binder [ ":" type ] [ "=" expression ] ;
 assignment = [ "*" ] place ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" )
              expression ;
+place      = chain ;                 (* an assignable location, §3.6 *)
 ret        = "ret" [ expression ] ;
 jump       = "jump" IDENT ;          (* break | continue *)
 </code></pre>
@@ -390,19 +411,19 @@ assigns through a view. <code>jump break</code> / <code>jump continue</code> con
 innermost enclosing loop.</p>
 <h2 id="35-blocks-and-control-expressions"><a class="header" href="#35-blocks-and-control-expressions">3.5 Blocks and control expressions</a></h2>
 <pre><code class="language-text">block      = "{" { statement } [ expression ] "}" ;
-if-expr    = "if" secondary-expr block [ "else" ( block | if-expr ) ] ;
-for-expr   = "for" IDENT "in" secondary-expr block   (* iteration *)
-           | "for" secondary-expr block              (* while *)
+if-expr    = "if" condition-expr block [ "else" ( block | if-expr ) ] ;
+for-expr   = "for" IDENT "in" condition-expr block   (* iteration *)
+           | "for" condition-expr block              (* while *)
            | "for" block ;                           (* infinite *)
-match-expr = "match" secondary-expr "{" { match-leg [ "," ] } "}" ;
+match-expr = "match" condition-expr "{" { match-leg [ "," ] } "}" ;
 match-leg  = pattern { "," pattern } [ "if" expression ] "=&gt;" expression ;
 </code></pre>
 <p>A block’s value is its trailing expression, or <code>void</code> if none. Conditions
-and <code>match</code>/<code>for</code> subjects are <strong>secondary expressions</strong> (§3.8): struct
-initializers are excluded there, keeping <code>if Foo {</code> unambiguous. A
-match leg’s comma-separated patterns form an or-pattern; the optional
-<code>if</code> guard applies to the whole leg; the trailing comma after a leg is
-optional.</p>
+and <code>match</code>/<code>for</code> subjects are <strong>condition expressions</strong> (§3.8): struct
+initializers and <code>css</code> blocks are excluded there, keeping <code>if Foo {</code>
+unambiguous. A match leg’s comma-separated patterns form an or-pattern;
+the optional <code>if</code> guard applies to the whole leg; the trailing comma
+after a leg is optional.</p>
 <h2 id="36-chain-expressions-postfix"><a class="header" href="#36-chain-expressions-postfix">3.6 Chain expressions (postfix)</a></h2>
 <p>The tightest expression tier, <code>chain</code>:</p>
 <pre><code class="language-text">chain   = path { call-suffix | postfix } ;
@@ -419,10 +440,11 @@ postfix = "." member
                                           (* direct call on the chain result *)
         | "?." member ;                  (* lift link, §5.10 *)
 
-atom    = literal | IDENT | IDENT generic-args
+atom    = literal | IDENT | IDENT generic-args | struct-init
         | "(" expression ")" | tuple | list
         | tuple-comprehension | macro-invocation | macro-block
         | element | css-block ;
+literal = NUMBER | STRING | "true" | "false" | "null" ;
 tuple   = "(" ( spread | expression "," entry { "," entry } [ "," ] ) ")" ;
 entry   = spread | expression ;
 spread  = ".." expression ;
@@ -542,6 +564,16 @@ init-field    = IDENT [ "=" expression ] ;   (* shorthand: name alone *)
 closure       = ( "||" | "|" [ closure-param { "," closure-param } [ "," ] ] "|" )
                 [ ":" type ] expression ;
 closure-param = parameter ;   (* the same rule as a function's, less "..." *)
+
+operator-expr  = unary-expr { binary-op unary-expr } [ "is" pattern ] ;
+                 (* SHAPE only: §3.7's table is normative for precedence and
+                    associativity, and for the one-`is`-per-operand rule *)
+unary-expr     = { "!" | "-" | "await" | "async" | "&amp;" [ "mut" ] | "*" }
+                 ( chain | block ) ;   (* "async" also takes a block *)
+binary-op      = "*" | "/" | "%" | "+" | "-" | "&lt;&lt;" | "&gt;&gt;"
+               | "&amp;" | "^" | "|"
+               | "==" | "!=" | "&lt;" | "&lt;=" | "&gt;" | "&gt;="
+               | "&amp;&amp;" | "||" ;
 </code></pre>
 <p>Two consequences of the tier split are normative:</p>
 <ul>

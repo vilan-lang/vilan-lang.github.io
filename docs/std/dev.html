@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -190,8 +190,7 @@ fun take&lt;type T&gt;(key: str): Option&lt;T&gt;        // recover it (None out
 <code>false</code> in a normal <code>build</code>. Everything else in the module already guards on
 it, so you rarely call it directly. Reach for it when you want a whole block
 to exist only during development.</p>
-<pre><code class="language-vilan browser">import std::print;
-import std::dev;
+<pre><code class="language-vilan browser">import std::dev;
 
 fun main() {
 	if dev::hmr_active() {
@@ -226,8 +225,7 @@ value under a key before a swap; <code>take</code> it back in the re-evaluated b
 Module-level bindings carry across a swap automatically (see
 <a href="../guide/dev-loop.html">the dev loop</a>); <code>stash</code>/<code>take</code> is for the rest: a
 value minted inside a function that you want to survive one edit.</p>
-<pre><code class="language-vilan browser">import std::print;
-import std::dev;
+<pre><code class="language-vilan browser">import std::dev;
 import std::option::Option::{ self, Some, None };
 
 fun main() {
@@ -250,9 +248,9 @@ from them. A closure, a <code>View</code>, a resource, or a reactive cell
 (<code>Signal</code>/<code>Shared</code>) carries code or identity the new bundle can’t adopt, so
 stashing one is a <strong>compile error at the call site</strong>. The type system
 enforces what Vite leaves to convention:</p>
-<pre><code class="language-vilan fragment">let live: Signal&lt;i32&gt; = Signal::new(0);
+<pre><code class="language-vilan fragment">let live: SignalCell&lt;i32&gt; = Signal::new(0);
 dev::stash("live", live);
-// error: `Signal&lt;i32&gt;` cannot cross a hot swap: a closure, view, resource,
+// error: `SignalCell&lt;i32&gt;` cannot cross a hot swap: a closure, view, resource,
 // or reactive cell (`Signal`/`Shared`) carries code or identity the new
 // bundle cannot adopt; stash only plain data
 </code></pre>

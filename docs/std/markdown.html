@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -193,8 +193,7 @@ output, with the read file tracked as a build input
 <p><code>parse</code> takes the source text and returns <code>Result&lt;Doc, ParseError&gt;</code>.
 Decoding untrusted input is fallible the same way <code>from_json</code> is: handle
 the <code>Err</code> with <code>match</code>, <code>!</code>, or <code>unwrap_or_else</code>.</p>
-<pre><code class="language-vilan">import std::print;
-import std::markdown::{ parse, Block, Doc, Inline, ParseError };
+<pre><code class="language-vilan">import std::markdown::{ parse, Block, Doc, Inline, ParseError };
 import std::result::Result::{ Err, Ok };
 
 fun main() {
@@ -276,8 +275,7 @@ hard line breaks, backslash escapes (beyond <code>\|</code> in a cell), tilde
 fences, custom heading ids, lazy continuations, and raw HTML beyond the
 anchor shape. The point of the refusal is the docs gate: the first page
 to write a footnote fails the suite loudly instead of rendering wrong.</p>
-<pre><code class="language-vilan">import std::print;
-import std::markdown::{ parse, Doc, ParseError };
+<pre><code class="language-vilan">import std::markdown::{ parse, Doc, ParseError };
 import std::result::Result::{ Err, Ok };
 
 fun main() {
@@ -316,8 +314,7 @@ order of appearance. The consequences are unintuitive enough to pin:</p>
 </div>
 <p><code>heading_id</code> exposes the base algorithm (no dedupe) for consumers that
 need to predict an anchor — a link checker, a table of contents.</p>
-<pre><code class="language-vilan">import std::print;
-import std::markdown::{ heading_id, Inline };
+<pre><code class="language-vilan">import std::markdown::{ heading_id, Inline };
 
 fun main() {
 	mut content: List&lt;Inline&gt; = [];

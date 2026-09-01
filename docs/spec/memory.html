@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -261,9 +261,7 @@ this chapter’s values may take part.</p>
 return <strong>copies</strong> the value. After <code>mut b = a</code>, mutating <code>b</code> never
 affects <code>a</code>, for primitives, structs, enums, tuples, lists, and every
 other value type alike:</p>
-<pre><code class="language-vilan">import std::print;
-
-struct Point { x: i32, y: i32 }
+<pre><code class="language-vilan">struct Point { x: i32, y: i32 }
 
 fun main() {
 	mut a = Point { x = 4, y = 6 };
@@ -294,9 +292,7 @@ is a <code>(base, key)</code> pair at runtime, so <code>fun same(v: &amp;mut i32
 back the <code>i32</code> it promises rather than the pair. A <strong>resource</strong> crosses no such
 seam at all — it cannot copy (§6.8’s R1), so handing one back out of a loan is
 a move out of a loan and is refused, with or without the <code>&amp;</code>.</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	mut xs = [1, 2];
 	mut rows = [xs];        // a copy: the element is not xs's storage
 	rows[0].push(9);
@@ -315,9 +311,7 @@ everything that already read the old one keeps the old one. Every other form
 mutates the storage <strong>in place</strong> — assigning through a <strong>view</strong>, writing a
 <strong>component</strong> of a place (<code>t.1 = 9</code>, <code>h.pair.1 = 9</code>, <code>xs[0] = 9</code>), and calling
 a <code>&amp;mut self</code> method that does either. None of it is visible through a capture:</p>
-<pre><code class="language-vilan">import std::print;
-
-enum Feed { Ready(List&lt;str&gt;, i32), Done }
+<pre><code class="language-vilan">enum Feed { Ready(List&lt;str&gt;, i32), Done }
 
 impl Feed {
 	fun step(&amp;mut self): str {
@@ -348,9 +342,7 @@ owns: a place (<code>h.pair</code>), a dereference (<code>*view</code>), and a <
 its own). The last one asks its questions of the arguments the call projects —
 the receiver is right there at the call site — so a write reaching the receiver
 reaches the capture’s subject by the same reasoning:</p>
-<pre><code class="language-vilan">import std::print;
-
-struct Holder { cells: (List&lt;i32&gt;, i32) }
+<pre><code class="language-vilan">struct Holder { cells: (List&lt;i32&gt;, i32) }
 
 impl Holder {
 	fun slot(&amp;mut self): &amp;mut (List&lt;i32&gt;, i32) borrows self { &amp;mut self.cells }
@@ -589,8 +581,7 @@ place — that is how the write reaches the caller at all — so it destroys
 what it replaces even though the loan owns nothing. The two spellings are
 indistinguishable by design, because they write the same storage under
 different names:</p>
-<pre><code class="language-vilan">import std::print;
-import std::drop::Drop;
+<pre><code class="language-vilan">import std::drop::Drop;
 
 resource struct Guard { label: str }
 impl Guard with Drop {
@@ -626,8 +617,7 @@ its own, they are observable before the outgoing value’s <code>drop</code> bod
 resource-typed <em>component</em> — a field, a tuple element, a fixed-array
 element — destroys the outgoing value too, whether the aggregate is owned
 or reached through a view.</p>
-<pre><code class="language-vilan">import std::print;
-import std::drop::Drop;
+<pre><code class="language-vilan">import std::drop::Drop;
 
 resource struct Guard { label: str }
 impl Guard with Drop {
@@ -730,10 +720,20 @@ reject resource type arguments in v1: their internals are host code the
 move checker cannot see. <code>Option</code> is the sanctioned container (it is a
 Vilan enum, checkable under R11). The rule is read <strong>per instantiation</strong>,
 not per written head: a resource that reaches a container through a
-generic aggregate’s member is rejected the same way, so <code>Signal&lt;Database&gt;</code>
+generic aggregate’s member is rejected the same way, so <code>SignalCell&lt;Database&gt;</code>
 — whose storage is a <code>Shared&lt;T&gt;</code> — is refused exactly as
 <code>Shared&lt;Database&gt;</code> is. Holding the resource in a struct field of your own
 is the sanctioned alternative, and stays legal.</p>
+<p>The set is closed over the standard library’s own internals, not just the
+surface it publishes: the raw <code>NativeMap</code> that <code>Map</code> and <code>Set</code> are built on
+rejects a resource the same way, so the rule holds however the raw layer is
+reached. Because a <code>Map&lt;K, Database&gt;</code> offends at <em>both</em> heads — its own and
+the <code>NativeMap</code> inside it — and one mistake is one diagnostic, the refusal
+is reported at the head you wrote, and never a second time at the storage
+behind it. That collapse is scoped to the one mistake: it silences only the
+containers built out of the very type parameters the reported refusal
+already carried. A container the body builds out of a <em>different</em> parameter
+is an independent offense nobody has been told about, and is still reported.</p>
 <p>It is read per instantiation whatever the type’s <strong>provenance</strong>: an
 inferred container is a container. Deleting the annotation changes
 nothing, and neither does never writing one —</p>
@@ -846,6 +846,13 @@ and no runtime flag decides which (R7’s doctrine, intact).</li>
 more than one region, a loan it cannot follow to its end — the resource
 keeps the <strong>scope-end</strong> teardown, which is the previous law. The fallback
 is never a guess.</p>
+<p>One rule pushes a drop <em>later</em> than the last use. The region between an
+acquisition and its teardown is a block, so it cannot close while a name
+declared inside it is still read afterwards — the drop waits for that read
+instead of putting the name out of scope. In <code>let r = …; let size = r.size(); print("between"); print(size)</code>, <code>r</code>’s last read is <code>r.size()</code> but
+its teardown runs after <code>print(size)</code>, because <code>size</code> lives in the region
+<code>r</code> opened. This holds at <strong>every depth</strong>: inside an <code>if</code> arm, a <code>match</code>
+leg, a loop body or a nested block, exactly as at a body’s top level.</p>
 <ul>
 <li><strong>A loan takes no teardown.</strong> Only an owner destroys. A view <em>binding</em> of a
 resource (<code>let v = &amp;mut holder</code>) names storage another binding still owns,
@@ -911,14 +918,22 @@ composes with every binding form. An argument to a retaining extern keeps
 its liveness for the whole of its binding’s scope — the conservative
 envelope. Module-level bindings are exempt by construction: they never drop
 at all.</p>
+<p>An argument with no binding is exempt too, and for the same reason read the
+other way: a resource temporary handed to a retaining extern is <strong>not</strong> its
+statement’s to destroy, because there is no scope that could hold it open
+past the call. Such a temporary leaks rather than being freed under a host
+that is still reading it — the direction these rules always fail toward.</p>
 <h3 id="optiontake-and-optionreplace"><a class="header" href="#optiontake-and-optionreplace"><code>Option.take</code> and <code>Option.replace</code></a></h3>
 <p>Moving out of a place must leave a valid value behind. One intrinsic pair on
 <code>Option&lt;T&gt;</code> provides the sanctioned partial move:</p>
 <pre><code class="language-vilan fragment">impl Option&lt;type T&gt; {
-	fun take(&amp;mut self): Option&lt;T&gt;;              // Some(v) -&gt; None here, Some(v) out
-	fun replace(&amp;mut self, value: T): Option&lt;T&gt;; // new value in, old contents out
+	fun take(&amp;mut self): Option&lt;T&gt;;                  // Some(v) -&gt; None here, Some(v) out
+	fun replace(&amp;mut self, own value: T): Option&lt;T&gt;; // new value in, old contents out
 }
 </code></pre>
+<p><code>replace</code> takes its new value <code>own</code> because the slot <strong>keeps</strong> it: only <code>own</code>
+transfers (R3), so a bare declaration would have left the caller owning a
+value the slot also owned — readable after the move, and destroyed twice.</p>
 <p><code>self.slot.take()</code> is how a resource field leaves a live aggregate (R5), and
 <code>match opt.take() { Some(let c) =&gt; drop(c), None =&gt; {} }</code> is the
 conditional-teardown idiom R7 pushes toward. Both are ordinary std surface,
@@ -998,9 +1013,7 @@ is no epoch to outlive.</p>
 <strong>pattern</strong> capture is a binding, so it copies, and it copies at the
 moment the pattern matches. A <strong>closure</strong> capture is not a new binding at
 all, so it copies nothing and has no moment to copy at:</p>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	mut label = "before";
 	let show = || label;      // captures the binding, not "before"
 	label = "after";          // a rebinding installs a fresh value

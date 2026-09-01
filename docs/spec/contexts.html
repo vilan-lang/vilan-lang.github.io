@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -208,8 +208,7 @@ body argument must be a closure literal (or an injected closure value,
 §8.5).</p>
 <p><code>Context&lt;T&gt;</code>’s value type is inferred from its first <code>run</code>, exactly as
 a <code>List&lt;T&gt;</code>’s element type is inferred from <code>push</code>.</p>
-<pre><code class="language-vilan">import std::print;
-import std::context::Context;
+<pre><code class="language-vilan">import std::context::Context;
 
 let flavor: Context&lt;i32&gt; = Context::new();
 
@@ -304,8 +303,7 @@ is what lets library code ask “is there an ambient X?” from anywhere
 <p>A closure created inside a covered region <strong>captures the context value
 at its creation site</strong>, and the capture is what its body reads,
 regardless of where the closure is later called:</p>
-<pre><code class="language-vilan">import std::print;
-import std::context::Context;
+<pre><code class="language-vilan">import std::context::Context;
 
 let flavor: Context&lt;i32&gt; = Context::new();
 

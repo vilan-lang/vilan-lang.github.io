@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -177,13 +177,17 @@
 <code>Display</code>, <code>Debug</code>, and <code>Into</code>.</p>
 <h2 id="str"><a class="header" href="#str">str</a></h2>
 <p>Concatenate with <code>+</code>. Interpolate with <code>i"…{expr}…"</code> (see
-<a href="../tour/values-and-types.html">Values and types</a>).</p>
+<a href="../tour/values-and-types.html">Values and types</a>) — the two are one
+construct, so both take the same right-hand values: a <code>str</code>, a number,
+or a <code>bool</code>. Everything else needs <code>to_string()</code> first.</p>
 <pre><code class="language-vilan fragment">impl str {
 	fun len(self): i32
 	fun is_empty(self): bool
 	fun trim(self): str
-	fun to_uppercase(self): str
-	fun to_lowercase_ascii(self): str
+	fun to_uppercase(self): str                      // full Unicode; see below
+	fun to_lowercase(self): str                      // full Unicode; see below
+	fun to_uppercase_ascii(self): str                // A-Z only, length-preserving
+	fun to_lowercase_ascii(self): str                // A-Z only, length-preserving
 	fun contains(self, needle: str): bool
 	fun starts_with(self, prefix: str): bool
 	fun ends_with(self, suffix: str): bool
@@ -192,12 +196,69 @@
 	fun split(self, separator: str): List&lt;str&gt;
 	fun substring(self, start: i32, end: i32): str   // end-exclusive; see below
 	fun code_at(self, index: i32): u32               // UTF-16 code unit
-	fun strip_prefix(self, prefix: str): Option&lt;str&gt; // declared in std::option
+	fun index_of(self, needle: str): Option&lt;i32&gt;     // declared in std::option
+	fun last_index_of(self, needle: str): Option&lt;i32&gt; // likewise
+	fun strip_prefix(self, prefix: str): Option&lt;str&gt; // likewise
 	fun strip_suffix(self, suffix: str): Option&lt;str&gt; // likewise
 	fun parse_i32(self): Option&lt;i32&gt;                 // likewise
 	fun parse_f64(self): Option&lt;f64&gt;                 // likewise
 }
 </code></pre>
+<h3 id="case-the-full-pair-and-the-ascii-pair"><a class="header" href="#case-the-full-pair-and-the-ascii-pair">Case: the full pair and the ASCII pair</a></h3>
+<p>There are two case mappings here, and which one a call site wants is a
+question about the <em>text</em>, not about convenience.</p>
+<p><code>to_uppercase</code> / <code>to_lowercase</code> are <strong>the host’s full Unicode mapping</strong>,
+locale-independent. Non-ASCII letters map, and one-to-many mappings apply — so
+the result can be a different <strong>length</strong> than the receiver, and an index into
+one is not an index into the other. This is the pair for human text.</p>
+<p><code>to_uppercase_ascii</code> / <code>to_lowercase_ascii</code> shift <strong>exactly the 26 ASCII
+letters</strong> and touch nothing else. <code>ß</code>, <code>Ǳ</code>, <code>İ</code>, <code>É</code> and every other code unit
+come back unchanged, so the length is always preserved and indices survive.
+This is the pair for protocol text — file extensions, mime rows, HTTP header
+names, HTML tag names, hex — where “case-insensitive” is defined over ASCII to
+begin with.</p>
+<pre><code class="language-vilan">fun main() {
+	print("Straße".to_uppercase());          // "STRASSE" — ß became SS
+	print("Straße".to_uppercase().len());    // 7, from a 6-unit receiver
+	print("Straße".to_uppercase_ascii());    // "STRAßE" — ß untouched
+	print("Straße".to_uppercase_ascii().len());  // 6, always
+	print("STRASSE-Ǳ".to_lowercase());       // "strasse-ǳ" — U+01F1 mapped
+	print("STRASSE-Ǳ".to_lowercase_ascii()); // "strasse-Ǳ" — U+01F1 kept
+}
+</code></pre>
+<p><strong>Reaching for the full fold on protocol text is a bug, not a nicety.</strong> U+212A
+KELVIN SIGN lowers to a plain <code>k</code> under <code>to_lowercase</code>, so a full fold makes a
+character that is not an ASCII letter compare equal to one — which is how a
+tag-name test in <code>std::process</code> came to accept it. The <code>_ascii</code> pair cannot do
+that, and its length guarantee is what lets a scanner lowercase a whole
+document and keep using the indices it already computed.</p>
+<h3 id="locating-index_of-and-last_index_of"><a class="header" href="#locating-index_of-and-last_index_of">Locating: <code>index_of</code> and <code>last_index_of</code></a></h3>
+<p><code>contains</code> answers <em>whether</em>; these answer <em>where</em>. They are what
+<code>substring</code> needs and nothing else computed — without them, text is taken
+apart with <code>split</code> and put back together. The index is zero-based and
+counts UTF-16 code units — <code>substring</code>’s own unit, so a bound one of these
+returns feeds <code>substring</code> directly, non-BMP text included.</p>
+<pre><code class="language-vilan">import std::option::{ Some, None };
+
+fun main() {
+	let line = "key: value";
+	match line.index_of(": ") {
+		Some(let at) =&gt; {
+			print(line.substring(0, at));                 // "key"
+			print(line.substring(at + 2, line.len()));    // "value"
+		}
+		None =&gt; print("no separator"),
+	}
+	print("a.b.c".last_index_of(".").unwrap_or(-1));      // 3 — the final one
+}
+</code></pre>
+<p><strong>Absence is <code>None</code>, never <code>-1</code>.</strong> That is the whole reason these are not
+the host’s <code>indexOf</code> renamed: <code>-1</code> is an index nothing in the type system
+tells apart from a real one, and it would be reported one call later, by
+<code>substring</code>, about a number this call produced. The <code>Option</code> makes “not
+found” a case you have to answer.</p>
+<p>The empty needle sits at each end, as it does in the host: <code>s.index_of("")</code>
+is <code>Some(0)</code> and <code>s.last_index_of("")</code> is <code>Some(s.len())</code>.</p>
 <h3 id="slicing-substring-refuses-it-does-not-correct"><a class="header" href="#slicing-substring-refuses-it-does-not-correct">Slicing: <code>substring</code> refuses, it does not correct</a></h3>
 <p><code>substring(start, end)</code> requires</p>
 <pre><code class="language-text">0 &lt;= start &lt;= end &lt;= len()
@@ -227,8 +288,7 @@ is an error, not a truncation.</li>
 <p>Reaching for <code>substring</code> to drop a leading or trailing marker is what invited
 the arithmetic in the first place. Prefer the verbs, which return <code>Option&lt;str&gt;</code>
 so that “absent” is distinguishable from “present but empty”:</p>
-<pre><code class="language-vilan">import std::print;
-import std::option::{ Some, None };
+<pre><code class="language-vilan">import std::option::{ Some, None };
 
 fun main() {
 	match "data: 42".strip_prefix("data: ") {
@@ -244,9 +304,7 @@ fun main() {
 	print("ab".strip_prefix("zz").unwrap_or("?"));   // "?" — absent
 }
 </code></pre>
-<pre><code class="language-vilan">import std::print;
-
-fun main() {
+<pre><code class="language-vilan">fun main() {
 	let path = "/w/3/task/7";
 	let parts = path.split("/").filter(|part| !part.is_empty());
 	print(parts.len());
@@ -269,8 +327,10 @@ fun format&lt;T: Display&gt;(value: T): str
 </code></pre>
 <p>Implement <code>Display</code> for values that have a natural user-facing rendering;
 <code>format(value)</code> (from <code>std::display</code>) is the generic entry point.
-Interpolation accepts anything already <code>str</code>-shaped; call
-<code>format</code>/<code>to_string</code> explicitly for custom types.</p>
+Concatenation and interpolation accept only what already has a string
+form — a <code>str</code>, a number, a <code>bool</code> — and refuse everything else by name,
+so <code>format</code>/<code>to_string</code> on a custom type is a call you write rather than
+one the compiler guesses at.</p>
 <h2 id="debug-developer-facing-text"><a class="header" href="#debug-developer-facing-text">Debug: developer-facing text</a></h2>
 <pre><code class="language-vilan fragment">trait Debug {
 	fun debug(self): str;

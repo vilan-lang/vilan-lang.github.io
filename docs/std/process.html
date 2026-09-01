@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -179,10 +179,13 @@ usage: <a href="../guide/persistence.html">Persistence and the server</a>.</p>
 <h2 id="stddb-sqlite"><a class="header" href="#stddb-sqlite">std::db: SQLite</a></h2>
 <pre><code class="language-vilan fragment">resource external struct Database;       // a resource: moves, closes on drop
 
+struct Migration { name: str, sql: str }
+
 impl Database {
 	fun open(path: str): Database        // ":memory:" for an in-memory db
 	fun exec(self, sql: str)             // DDL / one-off statements
 	fun prepare(self, sql: str): Statement
+	fun migrate(self, migrations: List&lt;Migration&gt;): List&lt;str&gt;  // → the names applied
 }
 impl Statement {
 	fun run(self, parameters: List&lt;any&gt;): i32          // → last insert id
@@ -210,6 +213,25 @@ Being a resource, a <code>Database</code> cannot go into a <code>List</code> (us
 struct field), cross the wire (<code>[derive(Wire)]</code> rejects it), or be a field of a
 <code>[service]</code> struct (the generated dispatcher would capture the store; keep the
 database at module scope instead, next to the service).</p>
+<p><code>migrate</code> carries a schema forward, which <code>CREATE TABLE IF NOT EXISTS</code>
+cannot: it applies the named steps this database has not seen, <strong>in list
+order</strong>, and records each in a <code>vilan_migrations</code> table it owns
+(<code>name TEXT PRIMARY KEY</code>, <code>applied_at_ms INTEGER</code>). Call it at boot,
+before the first query; a re-run applies nothing and returns an empty
+list. Each step runs in its own transaction <em>with</em> its record insert, so
+a step is recorded if and only if its SQL committed — which is why a step
+must never contain <code>BEGIN</code>/<code>COMMIT</code>/<code>ROLLBACK</code> of its own, or a statement
+SQLite refuses inside a transaction (<code>VACUUM</code>, <code>PRAGMA journal_mode</code>).</p>
+<p>Three conditions stop the boot with a <code>panic</code>, all of them before
+anything is applied: a step whose SQL <strong>fails</strong> (named, with the host’s
+message, and nothing recorded for it); a <strong>recorded step absent from the
+list</strong>, meaning this database was migrated by a newer build; and an
+<strong>unapplied step ordered before an applied one</strong>, meaning a step was
+inserted into the past. Names must be unique and must never change once
+recorded; they need not sort in order, because the list’s order is the
+one that counts. No down-migrations — roll forward with a new step. The
+task-oriented version, including carrying <code>.sql</code> files through the const
+channel, is in <a href="../guide/persistence.html#migrations-carrying-a-schema-forward">Persistence</a>.</p>
 <h2 id="stdhttp-the-server"><a class="header" href="#stdhttp-the-server">std::http: the server</a></h2>
 <pre><code class="language-vilan fragment">impl Server { fun builder(): ServerBuilder }
 impl ServerBuilder {
@@ -321,8 +343,7 @@ through this accessor.</p>
 <p><code>ServerBuilder::port(0)</code> asks the OS for a free port instead of guessing
 one, and the <code>Server</code> handed to <code>on_start</code> carries the port it actually
 bound, so <code>port()</code> and <code>url()</code> are right in either case:</p>
-<pre><code class="language-vilan norun">import std::print;
-import std::http::{ Response, Server };
+<pre><code class="language-vilan norun">import std::http::{ Response, Server };
 
 fun main() {
 	Server::builder()
@@ -502,7 +523,22 @@ impl File {
     fun data_sync(self)              // fdatasync — data only
 }
 
-fun with_file&lt;T&gt;(path: str, body: |File| T): T   // open, run, close — close AWAITED
+// the scoped forms — open, run, close, one per constructor; the close is AWAITED
+fun with_file&lt;T&gt;(path: str, body: |File| T): T              // File::open
+fun with_file_create&lt;T&gt;(path: str, body: |File| T): T       // File::create
+fun with_file_create_new&lt;T&gt;(path: str, body: |File| T): T   // File::create_new
+fun with_file_append&lt;T&gt;(path: str, body: |File| T): T       // File::append_to
+fun with_file_modify&lt;T&gt;(path: str, body: |File| T): T       // File::modify
+
+// the incremental reader — a cursor over an open file, built on read_at
+resource struct Reader { file: File, cursor: Shared&lt;i53&gt; }
+
+impl Reader {
+    fun of(own file: File): Reader     // takes the handle; starts at byte 0
+    fun next(self, size: i32): Bytes   // the next chunk; EMPTY at end of file
+    fun position(self): i53            // where the cursor is
+    fun seek(self, position: i53)      // move it
+}
 
 // the watch tier — a live watch, pulled one change at a time
 resource external struct Watcher
@@ -671,6 +707,55 @@ container, so “a pool of open files” is not expressible today. A
 module-level <code>File</code> is not expressible either — every constructor is
 async and a module-level <code>let</code> cannot await — so a process-lifetime
 handle is a local in <code>main</code>, held across whatever <code>main</code> awaits.</p>
+<p>There is one scoped form per constructor — <code>with_file_create</code>,
+<code>with_file_create_new</code>, <code>with_file_append</code>, <code>with_file_modify</code> — and the
+suffix names the constructor it opens with, for the same reason the
+constructors replaced a flags string. The awaited close is worth most on
+a <strong>writing</strong> handle: a write that resolved was handed to the OS, but the
+OS may report its failure at close time rather than at write time (a full
+disk, a quota, a network filesystem that defers the error), and under the
+destructor that error goes to stderr while your program carries on
+believing it wrote. Durability against power loss is still <code>sync()</code>’s
+job, not the close’s.</p>
+<p>Reading a file <em>incrementally</em> is the <code>Reader</code>: a cursor built over
+<code>read_at</code>, so nothing hidden ever moves it. <code>next(size)</code> hands back the
+next chunk and advances; the chunk is shorter near the end and <strong>empty at
+end of file</strong>, which is the loop’s terminating condition — stop on empty,
+not on short, since a short chunk is not a promise that the next one is
+empty.</p>
+<pre><code class="language-vilan norun">import std::drop::drop;
+import std::fs::{ File, Reader };
+
+fun main() {
+	let reader = Reader::of(File::open("big.bin"));
+	let out = File::create("big.copy");
+	mut at = 0i53;
+	for {
+		let chunk = reader.next(65536);
+		if chunk.len() == 0 {
+			jump break;
+		}
+		out.write_at(chunk, at);
+		at += chunk.len().as_i53();
+	}
+	print(at);
+	drop(out);
+	drop(reader);
+}
+main();
+</code></pre>
+<p>Chunks are <strong>bytes</strong>, and a chunk boundary can fall in the middle of a
+multi-byte character — so decode a chunk at a time only when you know it
+cannot (counting newlines is fine; reassembling text is not). Note also
+what the copy above does <em>not</em> use: a scoped <code>with_file_create</code> cannot
+wrap this loop, because a closure cannot capture a resource and the
+<code>Reader</code> is one. Two handles held as locals is the shape that works.</p>
+<p>A <code>Reader</code> is a resource because it holds one: it moves, no closure or
+<code>List</code> can hold it, and dropping it closes the file. Its cursor is
+readable and writable (<code>position()</code>, <code>seek()</code>), and — because the
+primitive under it is positional — <code>reader.file.read_at(buffer, p)</code> reads
+anywhere in the file <em>without</em> moving the cursor, so a header probe and a
+sequential scan can share one open file.</p>
 <p>Reading a build’s assets, rewriting one, and putting the result somewhere
 new is the shape most of this is for:</p>
 <pre><code class="language-vilan norun">import std::fs::{ create_dir_all, read_bytes, scan_dir, update, write_bytes_atomic };
@@ -694,7 +779,6 @@ means the same thing here. The path does not have to exist yet: a watch on
 something absent reports <code>Created</code> when it appears. You consume a watch by
 <em>pulling</em>:</p>
 <pre><code class="language-vilan norun">import std::fs::{ Change, ChangeKind, Watcher };
-import std::print;
 
 fun describe(change: Change): str {
 	match change.kind {
@@ -762,7 +846,7 @@ value that lets a server stop restating <code>"dist/client.js"</code> from memor
 	styles: Option&lt;str&gt;,    // `client.css`, or None if the leg compiled no styles
 	chunks: List&lt;str&gt;,      // route chunks, empty unless the leg splits
 	classic_script: bool,   // true exactly when it splits
-	assets: List&lt;str&gt;,      // resources `const asset::bundle` carried in
+	assets: List&lt;str&gt;,      // resources the const asset channel carried in
 }
 
 fun build_of(leg: str): Result&lt;LegBuild, BuildError&gt;   // async
@@ -780,7 +864,10 @@ serve, so it stops with the error’s message instead of starting.</p>
 non-code resource the leg named with
 <a href="misc.html#stdasset"><code>const asset::bundle</code></a>, by its package-relative path, so
 <code>static/icon.svg</code> is served at <code>/static/icon.svg</code> from
-<code>dist/static/icon.svg</code>. A build written before bundling existed carries no
+<code>dist/static/icon.svg</code>. A row placed by <code>bundle_as</code> carries the TARGET
+instead — the url spelled at the call, minus its leading <code>/</code> — and is served
+and read exactly the same way, which is why a fingerprinted or path-pinned
+name needs nothing here. A build written before bundling existed carries no
 <code>assets</code> field and reads as a build with none, which is what it was.</p>
 <h2 id="stddocument"><a class="header" href="#stddocument">std::document</a></h2>
 <p>The HTML document a browser leg is loaded by, held against what that leg’s

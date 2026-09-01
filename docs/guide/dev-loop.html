@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-16dc5627.js";
+            window.path_to_searchindex_js = "../searchindex-554318aa.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-a869b85a.js"></script>
@@ -231,6 +231,36 @@ entry and the read, each located in the file the call sits in — so the
 overlay answers <em>which</em> call left the read uncovered, as the terminal’s
 labels and the editor’s related information do. The terminal stays
 authoritative; the overlay is the copy, and the next successful save clears it.</p>
+<h2 id="when-a-round-fails"><a class="header" href="#when-a-round-fails">When a round fails</a></h2>
+<p>A round is one pass of the loop: the build hooks below, then the compile, then
+whatever the command does with the result. A round can fail — a compile error, a
+hook that exits non-zero — and when it does the terminal says so and the session
+keeps watching.</p>
+<p>Under <code>vilan build --watch</code>, <code>vilan check --watch</code> and <code>vilan test --watch</code>, the
+change that started a failed round is <strong>kept, and the round is retried once</strong> on
+the next poll. That matters for the failure that is nobody’s fault: a hook
+command hiccups on a loaded machine, a generator races something outside your
+tree, a file is locked for the half-second the round needed it. Without the
+retry that save would be gone — not “failed” gone, <em>silently</em> gone, because the
+loop had already spent the change and would sit quiet until you touched some
+other file. The retry costs one extra run and closes that hole.</p>
+<p>It happens once, and then the loop waits for the next change:</p>
+<ul>
+<li>A <strong>compile error</strong> retried once fails the same way a second time and the
+session goes quiet — which is correct, because the fix for a broken tree is
+your next edit, not another attempt at the same bytes. You pay one extra
+compile per broken save.</li>
+<li>Nothing spins. A retry is an ordinary round on the ordinary poll interval, and
+a failing tree gets at most two runs per change however fast you save.</li>
+<li>The loop narrates it: a retried round says it is retrying, and the run that
+gives up says it is waiting for the next change.</li>
+</ul>
+<p><code>vilan run --watch</code> is the exception, deliberately. Its rounds handle their own
+failures — the terminal, the in-page error overlay, the app left running on its
+last good build — and hand the loop no verdict to act on, so a failed round
+there waits for the next change as it always has. Which is the same answer the
+retry reaches anyway for the failure you actually hit while iterating: fix the
+file, and the save that fixes it is the round that clears the overlay.</p>
 <h2 id="what-carries-across-a-swap-and-what-resets"><a class="header" href="#what-carries-across-a-swap-and-what-resets">What carries across a swap, and what resets</a></h2>
 <p>A swap re-evaluates the whole client bundle. Two things survive it:</p>
 <ul>
@@ -246,12 +276,12 @@ swap can afford to be simple about the rest.</li>
 <p>Top-level bindings like these keep their live values while you edit the view
 that renders them:</p>
 <pre><code class="language-vilan browser">import std::dev;
-import std::reactive::Signal;
+import std::reactive::{ Signal, SignalCell };
 
 // Carried across every swap by key + type. Edit main's body, save, and these
 // hold their values — only the view re-runs.
 mut opened = 0;
-let recent: Signal&lt;List&lt;str&gt;&gt; = Signal::new([]);
+let recent: SignalCell&lt;List&lt;str&gt;&gt; = Signal::new([]);
 
 fun main() {
 	opened = opened + 1;
@@ -315,7 +345,9 @@ wrote. Only the manifest being built declares hooks — a dependency’s are nev
 run — so an unfamiliar <code>vilan.toml</code> is worth reading before you build it, the
 way you would read a <code>Makefile</code>.</li>
 <li>A hook that exits non-zero fails the build, naming the command. Nothing
-after it runs.</li>
+after it runs. Under <code>--watch</code> that round is retried once before the loop
+goes back to waiting (<a href="#when-a-round-fails">When a round fails</a>), so a hook
+that failed on a hiccup gets a second chance at the save that started it.</li>
 <li>Vilan prints each command before spawning it, and the output goes straight to
 your terminal. (Under <code>vilan build --stdout</code>, which writes the emitted JS to
 stdout, a chatty hook shares that stream; redirect it in the command if you
@@ -343,8 +375,25 @@ directory hashes its whole tree, so <code>inputs = ["src/static"]</code> means w
 looks like it means). A pattern such as <code>src/**/*.css</code> is a manifest error,
 not a match — it would hash as a file that is never there and freeze the
 hook after its first run.</li>
+<li><strong>A directory’s tree is its members</strong>, so a subdirectory counts even while it
+is empty: creating or removing <code>src/static/icons</code> re-runs the hook the same
+way adding a file does, and so does replacing a directory with a file of the
+same name. That is also what <code>--watch</code> wakes on, so the round you get and the
+hook that runs in it always agree.</li>
 <li><strong>A missing input is recorded as missing</strong>, so creating it later re-runs the
-hook. A missing or hand-edited output re-runs it too.</li>
+hook. A missing or hand-edited output re-runs it too. A declared path that is
+a <em>symlink</em> is followed — <code>inputs = ["static"]</code> may name a link to the real
+directory, and it hashes as that directory’s tree — and a link with no target
+counts as missing, the same as an absent path. Links found <em>inside</em> a declared
+tree are a different question and are not followed: one hashes as its target
+path, so the walk can neither leave the tree nor run into a cycle.</li>
+<li><strong>Under <code>--watch</code>, a declared input starts a round.</strong> Saving a file the hook
+names in <code>inputs</code> — or adding to, or editing anything inside, a directory it
+names — wakes the loop exactly the way saving a <code>.vl</code> source does, and the
+round then re-runs the hook. One declaration, read the same way by the
+freshness check and by the watcher. <code>outputs</code> are deliberately <em>not</em> watched:
+a hook writing what it said it writes must never trigger the build that ran
+it.</li>
 <li><strong>A hook that succeeds without writing a declared output is told so</strong>, by
 name and by path. Nothing is recorded for a hook whose output isn’t there, so
 it would otherwise re-run on every build in silence while the failure
@@ -361,6 +410,53 @@ version, for a hook that reads something it forgot to declare.</li>
 </ul>
 <p>Freshness is about cost, never about safety: a skipped hook is code you
 already trusted to run, and skipping it buys time, not containment.</p>
+<p>When you want the whole picture rather than one <code>Fresh</code> line — which hook
+wrote which file, which <code>const</code> site emitted which stylesheet, and what a
+change to a given input would move — run
+<a href="../appendix/cli.html#vilan-build---explain"><code>vilan build --explain</code></a>. It
+builds and then prints one block per output, naming each declared hook
+output with this build’s verdict for it (<code>(ran)</code> or <code>(Fresh)</code>), and one
+block per tracked input — hook <code>inputs</code> included — with what it
+invalidates.</p>
+<h3 id="when-the-hook-generates-vilan"><a class="header" href="#when-the-hook-generates-vilan">When the hook generates Vilan</a></h3>
+<p>A hook that writes a <code>.vl</code> module has one more thing to say, and leaving it
+unsaid costs you the freshness you just bought. Run <code>vilan fmt</code> over a tree
+holding a generated module and you get a loop: the formatter rewrites the
+module, the rewrite is a change to a declared output, the hook goes stale, the
+next build regenerates the file — unformatted, because a generator emits what
+its templates produce — and the next format rewrites it again. Neither tool is
+wrong, nothing reports anything, and with format-on-save it happens to files
+you only opened to read.</p>
+<p>Say where the products live, and the formatter leaves them alone:</p>
+<pre><code class="language-toml">[package]
+name      = "app"
+generated = "src/icons"
+
+[[build.hook]]
+name    = "icons"
+run     = "node scripts/generate-icons.mjs"
+inputs  = ["scripts/generate-icons.mjs", "icons.lock"]
+outputs = ["src/icons/lib.vl"]
+</code></pre>
+<ul>
+<li><strong>Everything under the root is left byte-identical</strong> by <code>vilan fmt</code>, by
+<code>vilan fmt --check</code>, and by your editor’s format-on-save — however the file
+is reached, including by name. <code>fmt</code> says so once per run, with a count.</li>
+<li><strong>It’s a directory inside the package</strong>, and not the source <code>root</code> itself:
+pointing it there would leave every hand-written module unformatted, so it’s
+a manifest error. It doesn’t have to exist yet — before the first build, it
+usually doesn’t.</li>
+<li><strong>Nothing else reads the key.</strong> The generated module resolves exactly as it
+did: <code>src/icons/lib.vl</code> is <code>pkg::icons</code>, the same as any other module whose
+file is a directory’s <code>lib.vl</code>.</li>
+<li><strong>Whether you commit the directory is your call.</strong> Most projects add it to
+<code>.gitignore</code>; some deliberately commit generated sources so a reader doesn’t
+need the generator’s toolchain. Nothing enforces either, and the formatter’s
+rule holds the same way regardless — it reads the manifest, never
+<code>.gitignore</code>.</li>
+<li><strong>The escape is the manifest, not a flag.</strong> If a file should be formatted,
+it isn’t a product: move it out, or drop the key. Both land in review.</li>
+</ul>
 <p>A dependency’s hooks are a different question, and the answer is still no. If
 a package you depend on declares one, the build says so — one dim <code>note:</code> line
 naming it, once per build — and does not run it. Granting one is a line in
@@ -497,7 +593,7 @@ you were on is still there — and nothing is remembered as in flight, so
 one. Both are ordinary signals, so <code>show</code>, <code>bind_text</code> or a class is all it
 takes:</p>
 <pre><code class="language-vilan browser">import std::option::Option::{ None, Some, self };
-import std::reactive::Signal;
+import std::reactive::{ Signal, SignalCell };
 import std::router::{ chunk_error, current_path, pending, segments };
 import std::ui::{ View, mount_root, view };
 
