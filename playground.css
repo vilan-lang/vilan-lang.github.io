@@ -29,7 +29,6 @@
 .s19dy6kf{background-color:var(--primary)}
 .s19k3kma{--code-gutter-edge:var(--stroke-soft)}
 .s19qv9u6{font-family:inherit}
-.s1al0jmt{grid-template-rows:minmax(0, 7fr) minmax(0, 3fr)}
 .s1anvdo1{padding-right:var(--space-1)}
 .s1anvdoy{padding-right:var(--space-2)}
 .s1anvdpv{padding-right:var(--space-3)}
@@ -46,7 +45,6 @@
 .s1h4num7{background-color:var(--stroke-hard)}
 .s1hcpyu4{background-color:var(--stroke-soft)}
 .s1hggi4x{padding-bottom:0}
-.s1hjwrld{border-top:1px solid transparent}
 .s1iy45h3{user-select:none}
 .s1lr51x{flex-shrink:0}
 .s1miqier{color:var(--up-bright)}
@@ -63,19 +61,15 @@
 .s1rpzmas{align-items:center}
 .s1s7tv0o:hover{background-color:var(--down-hover)}
 .s1t1pcq8{--code-active-gutter:rgb(from var(--up-bright) r g b / 0.07)}
-.s1tqs9os{grid-template-columns:minmax(0, 3fr) minmax(0, 2fr)}
 .s1u3ovjb{--code-dim:var(--up-dim)}
 .s1uiy6wn{--bloom-plum:#95304D}
 .s1v5t6xm{border-left:2px solid var(--down-danger)}
 .s1v942yc{padding-bottom:var(--space-24)}
 .s1vtg8d6{padding-left:32px}
-.s1w6qbbk{filter:brightness(0.94)}
-.s1w7fix8{filter:brightness(1.08)}
 .s1wmjjx5{background-color:transparent}
 .s1wraoya{--reveal:1}
 .s1wxw92y{height:1px}
 .s1x0qwck{transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease}
-.s1x49iqk{background-color:var(--down-active)}
 .s1x5z460{gap:1px}
 .s1xx7ixb{--code-features:"ss01", "ss02", "ss03", "ss04", "ss05", "cv04", "cv06", "cv08"}
 .s1yauy2a{--code-caution:var(--up-caution)}
@@ -120,7 +114,6 @@
 .sc9brgc{border-bottom:1px solid rgb(from var(--stroke-hard) r g b / calc(var(--nav-fade, 0) * 0.9))}
 .scqkrg6{-webkit-mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat}
 .sdue9po:active{filter:brightness(0.94)}
-.see34qj{border-color:var(--stroke-hard)}
 .sehiopn{border-bottom:1px solid var(--stroke-hard)}
 .send2h{grid-template-columns:minmax(0, 1fr)}
 .sepksxk{border-bottom:1px solid var(--stroke-soft)}
@@ -151,7 +144,6 @@
 .sowfjmu{display:block}
 .sp4tc1m{margin-right:auto}
 .sq2xqkq:first-child{border-top:1px solid transparent}
-.sq8es5g{background-color:var(--down-hover)}
 .sr79rlz{--code-bg:var(--down-normal)}
 .ssxqr8g{background-color:var(--down-bright)}
 .ssxqrx8{color:var(--up-normal)}

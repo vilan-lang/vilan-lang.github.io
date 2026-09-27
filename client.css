@@ -30,11 +30,9 @@
 .s14catfn{mask-size:100% 100%}
 .s14j98t0{--code-attr:rgb(from var(--primary) r g b / 0.65)}
 .s14jzsqi{padding-bottom:1px}
-.s14sgsui{background-color:rgb(from var(--primary) r g b / 0.12)}
 .s1534wu5{background-image:radial-gradient(closest-side, rgba(216, 71, 48, 0.5) 0%, transparent 100%)}
 .s15t7ncn{color:#120004}
 .s164fd6n:hover{border-color:var(--primary)}
-.s166rtic{grid-template-columns:1fr 1fr 1fr}
 .s169txcv{font-size:max(18px, clamp(1100px, 100vw, 1920px) * 0.01667)}
 .s16f1e6t{position:relative}
 .s16k06qr{--code-callable:var(--tint-callable)}
@@ -81,7 +79,6 @@
 .s1d7ek7w{justify-content:center}
 .s1ddx1v8{mix-blend-mode:soft-light}
 .s1dm9aos{background-image:radial-gradient(closest-side, rgba(235, 104, 46, 0.35) 0%, transparent 100%)}
-.s1dn6abo{grid-template-columns:5fr 6fr}
 .s1dnt31w{align-self:center}
 .s1dq5yi8{background-color:rgb(from var(--down-dim) r g b / calc(var(--nav-fade, 0) * 0.86))}
 .s1dxptvb{--code-error:var(--up-error)}
@@ -106,7 +103,6 @@
 .s1leb7x8{background-color:rgb(from var(--down-normal) r g b / 0.92)}
 .s1lr51x{flex-shrink:0}
 .s1miqier{color:var(--up-bright)}
-.s1mm7hrg{border-color:rgb(from var(--primary) r g b / 0.45)}
 .s1mm88t6{justify-self:center}
 .s1mwnm2q{right:-14%}
 .s1n2n3b1{--code-type:var(--up-bright)}
@@ -176,7 +172,6 @@
 .s1ypvw5g{left:clamp(120px, 30%, 185px)}
 .s1ytnaev:hover{color:var(--up-bright)}
 .s1yv3ji6{justify-content:space-between}
-.s1z02wjo{grid-template-columns:6fr 5fr}
 .s22vxtl{font-size:10.5px}
 .s22x2l5{height:120%}
 .s22x3fv{height:11px}
@@ -193,7 +188,6 @@
 .s30a1k8{opacity:0.45}
 .s30a1l5{opacity:0.55}
 .s30a1nw{opacity:0.85}
-.s30a1nz{opacity:0.88}
 .s30khfz{color:var(--primary-on)}
 .s3a4es{opacity:0.5}
 .s3a4et{opacity:0.6}
@@ -203,7 +197,6 @@
 .s4vadk5:active{transform:scale(0.92)}
 .s4vadmw:active{transform:scale(0.95)}
 .s58iza0{position:absolute}
-.s5g859l{text-decoration:underline}
 .s5j3euk{--code-comment:var(--tint-comment)}
 .s5lsrvs{background-image:radial-gradient(closest-side, rgba(235, 104, 46, 0.4) 0%, transparent 100%)}
 .s644s24{width:140px}
@@ -214,9 +207,7 @@
 .s64rvxm{width:210px}
 .s64uyum{width:250px}
 .s667hsd{width:420px}
-.s6i64vs{grid-template-columns:1fr 230px 1fr}
 .s6maw3t{--bloom-violet:#8B2786}
-.s6qidh7{border-color:var(--primary)}
 .s7em04x{--code-path:rgb(from var(--up-bright) r g b / 0.6)}
 .s80ttlx{top:0}
 .s83cg9u{margin-top:96px}
@@ -255,7 +246,6 @@
 .sayk4ij{font-size:15px}
 .sayks1j{font-size:20px}
 .sayllga{font-size:32px}
-.sb1o0lq{grid-template-columns:2fr 1fr 1fr 1fr}
 .sbb9pzp{--code-keyword:var(--primary)}
 .sbcnc8a{transition:color 80ms ease}
 .sbiovxm{display:flex}
@@ -315,8 +305,6 @@
 .skw0huo{transform:translate(-50%, -50%)}
 .sllsl8{transform:translateX(40px) rotate(20deg)}
 .smbhl57{background-image:radial-gradient(closest-side, rgba(178, 48, 86, 0.6) 0%, transparent 100%)}
-.smeih8p{transform:scale(0.92)}
-.smeihbg{transform:scale(0.95)}
 .smhpc5c{right:0%}
 .smlee52{-webkit-mask:url(https://vilan-lang.org/assets/wordmark_hero_light.svg) center / contain no-repeat}
 .snky57a{--code-selection:rgb(from var(--up-bright) r g b / 0.18)}
@@ -372,7 +360,6 @@
 .sxyfb32{transform:translateX(-40px) rotate(160deg)}
 .syp1ckj{overflow:hidden}
 .syz58y5{background-color:var(--up-bright)}
-.sz8nnuj{grid-template-columns:1fr 1fr}
 .szfo4l9{align-self:flex-start}
 .szjsw2c{margin-left:1px}
 .szotvx1{flex-wrap:wrap}

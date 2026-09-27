@@ -12,11 +12,24 @@ function __clone(value) {
 	if (value instanceof Map) return new Map([ ...value ].map(([ k, v ]) => [ __clone(k), __clone(v) ]));
 	return value;
 }
+function __guarded(body) {
+	try {
+		body();
+		return [ 1 ];
+	} catch (error) {
+		return [ 0, error && error.message ? error.message : String(error) ];
+	}
+}
 function __hash(value) {
 	return (typeof value === "object" && value !== null) ? JSON.stringify(value) : value;
 }
 function __hmr_active() {
 	return typeof globalThis.__VILAN_HMR__ !== "undefined";
+}
+function __insert_at(list, index, value) {
+	if (index >= 0 && index < list.length) return void list.splice(index, 0, value);
+	if (index === list.length) return void list.push(value);
+	throw "index out of bounds: the length is " + list.length + " but the index is " + index;
 }
 function __is_null(value) {
 	return value === null || value === undefined;
@@ -32,6 +45,10 @@ function __map_get(map, key) {
 }
 function __map_values(map) {
 	return [ ...map.values() ].map(__clone);
+}
+function __remove_at(list, index) {
+	if (index >= 0 && index < list.length) return list.splice(index, 1)[0];
+	throw "index out of bounds: the length is " + list.length + " but the index is " + index;
 }
 function __shared_new(value) {
 	return { v: value };
@@ -105,7 +122,17 @@ class __Timer {
 function __timer(ms) {
 	return new __Timer(ms);
 }
+function __with_finally(body, after) {
+	try {
+		body();
+	} finally {
+		after();
+	}
+}
 function hash(self) {
+	return __hash(self);
+}
+function hash2(self) {
 	return __hash(self);
 }
 function fresh_id() {
@@ -113,211 +140,308 @@ function fresh_id() {
 	next_subscriber_id.v = id + 1;
 	return id;
 }
+function mint_subscriber(notify) {
+	const derived = minting_derivation.v;
+	minting_derivation.v = false;
+	return subscriber_of(notify, derived);
+}
+function subscriber_of(notify, derived) {
+	return [ fresh_id(), notify, __shared_new(true), derived ];
+}
 function new2() {
-	return [ __shared_new([  ]), __shared_new(false), __shared_new(false), __shared_new(false) ];
+	return [ __shared_new([  ]), __shared_new([  ]), __shared_new(new Map()), __shared_new(new Map()), __shared_new(false), __shared_new(false), __shared_new(false) ];
+}
+function is_quiescent(self) {
+	return $n(self[0].v) && $n(self[1].v);
 }
 function enqueue(turn, subscribers) {
 	for (const subscriber of subscribers) {
-		let seen = false;
-		for (const queued of turn[0].v) {
-			if (queued[0] === subscriber[0]) {
-				seen = true;
+		const key = hash2(subscriber[0]);
+		let $m = null;
+		if (subscriber[3]) {
+			if (!(turn[3].v.has(key))) {
+				turn[3].v.set(key, true);
+				turn[1].v.push(__clone(subscriber));
 			}
+			$m = undefined;
+		} else if (!(turn[2].v.has(key))) {
+			turn[2].v.set(key, true);
+			let index = turn[0].v.length;
+			while (index > 0 && __at(turn[0].v, index - 1)[0] > subscriber[0]) {
+				index = index - 1;
+			}
+			__insert_at(turn[0].v, index, __clone(subscriber));
 		}
-		if (!(seen)) {
-			turn[0].v.push(__clone(subscriber));
-		}
+		$m;
 	}
-	if (turn[2].v && !(turn[3].v) && !(turn[1].v)) {
-		turn[3].v = true;
+	if (turn[5].v && !(turn[6].v) && !(turn[4].v)) {
+		turn[6].v = true;
 		queueMicrotask(() => {
-			turn[3].v = false;
+			turn[6].v = false;
 			drain(turn);
 			return;
 		});
 	}
 }
 function drain(turn) {
-	if (!(turn[1].v)) {
-		turn[1].v = true;
+	if (!(turn[4].v)) {
+		turn[4].v = true;
 		draining_turns.v.push(__clone(turn));
-		let budget = 100000;
-		while (!($m(turn[0].v)) && budget > 0) {
-			const wave = turn[0].v;
-			turn[0].v = [  ];
-			for (const subscriber of wave) {
-				subscriber[1]();
-				budget = budget - 1;
+		__with_finally(() => {
+			let budget = 100000;
+			while (!(is_quiescent(turn)) && budget > 0) {
+				while (!($n(turn[1].v)) && budget > 0) {
+					const derivations = turn[1].v;
+					turn[1].v = [  ];
+					turn[3].v = new Map();
+					for (const subscriber of derivations) {
+						if (subscriber[2].v) {
+							subscriber[1]();
+						}
+						budget = budget - 1;
+					}
+				}
+				const wave = turn[0].v;
+				turn[0].v = [  ];
+				turn[2].v = new Map();
+				for (const subscriber2 of wave) {
+					if (subscriber2[2].v) {
+						subscriber2[1]();
+					}
+					budget = budget - 1;
+				}
 			}
-		}
-		__list_pop(draining_turns.v);
-		turn[1].v = false;
+			return;
+		}, () => {
+			__list_pop(draining_turns.v);
+			turn[4].v = false;
+			return;
+		});
 	}
 }
-function dispose(self, $av) {
-	let kept = [  ];
-	for (const subscriber of self[0].v) {
-		if (subscriber[0] !== self[1]) {
-			kept.push(__clone(subscriber));
-		}
+function reissued(subscriber) {
+	return [ subscriber[0], subscriber[1], subscriber[2], subscriber[3] ];
+}
+function dispose(self, $aI) {
+	const $aJ = $aI;
+	let $aK = null;
+	if ($aJ[0] === 0) {
+		const established = $aJ[1];
+		$aK = [ 0, established ];
+	} else {
+		$aK = $o(draining_turns.v);
 	}
-	self[0].v = kept;
-	const $aw = $av;
-	let $ax = null;
-	if ($aw[0] === 0) {
-		const turn = $aw[1];
+	const ambient = $aK;
+	release_under(self, ambient);
+}
+function release_under(handle, ambient) {
+	handle[2].v = false;
+	const $aL = [ 0, handle[0] ];
+	let $aM = null;
+	if ($aL[0] === 0) {
+		const subscribers = $aL[1];
+		let kept = [  ];
+		for (const subscriber of subscribers.v) {
+			if (subscriber[0] !== handle[1]) {
+				kept.push(__clone(subscriber));
+			}
+		}
+		subscribers.v = kept;
+		$aM = undefined;
+	} else {
+		$aM = undefined;
+	}
+	$aM;
+	const $aN = ambient;
+	let $aO = null;
+	if ($aN[0] === 0) {
+		const turn = $aN[1];
 		let kept_pending = [  ];
 		for (const subscriber2 of turn[0].v) {
-			if (subscriber2[0] !== self[1]) {
+			if (subscriber2[0] !== handle[1]) {
 				kept_pending.push(__clone(subscriber2));
 			}
 		}
 		turn[0].v = kept_pending;
-		$ax = undefined;
+		turn[2].v.delete(hash2(handle[1]));
+		let kept_derived = [  ];
+		for (const subscriber3 of turn[1].v) {
+			if (subscriber3[0] !== handle[1]) {
+				kept_derived.push(__clone(subscriber3));
+			}
+		}
+		turn[1].v = kept_derived;
+		turn[3].v.delete(hash2(handle[1]));
+		$aO = undefined;
 	} else {
-		$ax = undefined;
+		$aO = undefined;
 	}
-	$ax;
-	const $ay = self[2].v;
-	let $az = null;
-	if ($ay[0] === 0) {
-		const release = $ay[1];
-		self[2].v = [ 1 ];
-		release();
-		$az = undefined;
+	$aO;
+	const $aP = handle[3].v;
+	let $aQ = null;
+	if ($aP[0] === 0) {
+		const release = $aP[1];
+		handle[3].v = [ 1 ];
+		releasing_turns.v.push(ambient);
+		__with_finally(release, () => {
+			__list_pop(releasing_turns.v);
+			return;
+		});
+		$aQ = undefined;
 	} else {
-		$az = undefined;
+		$aQ = undefined;
 	}
-	return $az;
+	return $aQ;
 }
 function new3() {
-	return [ __shared_new([  ]) ];
+	return [ __shared_new([  ]), __shared_new(false) ];
 }
 function defer(self, cleanup) {
-	self[0].v.push(cleanup);
+	if (self[1].v) {
+		cleanup();
+	} else {
+		self[0].v.push(cleanup);
+	}
 }
 function dispose2(self) {
-	for (const cleanup of self[0].v) {
-		cleanup();
+	let $co = null;
+	if (!(self[1].v)) {
+		self[1].v = true;
+		let failure = [ 1 ];
+		for (const cleanup of self[0].v) {
+			const $ci = __guarded(cleanup);
+			let $cj = null;
+			if ($ci[0] === 0) {
+				const message = $ci[1];
+				if ($ck(failure)) {
+					failure = [ 0, message ];
+				}
+				$cj = undefined;
+			} else {
+				$cj = undefined;
+			}
+			$cj;
+		}
+		self[0].v = [  ];
+		const $cm = failure;
+		let $cn = null;
+		if ($cm[0] === 0) {
+			const message2 = $cm[1];
+			$cn = (() => {
+				throw message2;
+			})();
+		} else {
+			$cn = undefined;
+		}
+		$co = $cn;
 	}
-	self[0].v = [  ];
+	return $co;
 }
-function get_owner($aG) {
-	return $aG;
-}
-function register_with_owner(subscription, $ap, $aq) {
-	const $ar = $aq;
-	let $as = null;
-	if ($ar[0] === 0) {
-		const owner = $ar[1];
-		$as = $at(owner, subscription, $ap);
-	} else {
-		$as = __clone(subscription);
-	}
-	return $as;
+function get_owner($ay) {
+	return $ay;
 }
 function after(ms) {
 	return [ __timer(ms) ];
 }
-async function wait(self, $B) {
-	return await (self[0].wait(ambient_signal($B)));
+async function wait(self, $E) {
+	return await (self[0].wait(ambient_signal($E)));
 }
 function cancel(self) {
 	self[0].cancel();
 }
-function ambient_signal($C) {
-	const $D = $C;
-	let $E = null;
-	if ($D[0] === 0) {
-		const n = $D[1];
-		$E = [ 0, n.signal_of() ];
+function ambient_signal($F) {
+	const $G = $F;
+	let $H = null;
+	if ($G[0] === 0) {
+		const n = $G[1];
+		$H = [ 0, n.signal_of() ];
 	} else {
-		$E = [ 1 ];
+		$H = [ 1 ];
 	}
-	return $E;
+	return $H;
 }
 function view(tag) {
-	let $Q = null;
+	let $T = null;
 	if (is_svg_tag(tag)) {
-		$Q = [ document.createElementNS("http://www.w3.org/2000/svg", tag) ];
+		$T = [ document.createElementNS("http://www.w3.org/2000/svg", tag) ];
 	} else {
-		$Q = [ document.createElement(tag) ];
+		$T = [ document.createElement(tag) ];
 	}
-	return $Q;
+	return $T;
 }
 function is_svg_tag(tag) {
-	const $O = tag;
-	let $P = null;
-	if ($O === "svg") {
-		$P = true;
-	} else if ($O === "path") {
-		$P = true;
-	} else if ($O === "circle") {
-		$P = true;
-	} else if ($O === "ellipse") {
-		$P = true;
-	} else if ($O === "rect") {
-		$P = true;
-	} else if ($O === "line") {
-		$P = true;
-	} else if ($O === "polyline") {
-		$P = true;
-	} else if ($O === "polygon") {
-		$P = true;
-	} else if ($O === "g") {
-		$P = true;
-	} else if ($O === "defs") {
-		$P = true;
-	} else if ($O === "use") {
-		$P = true;
-	} else if ($O === "symbol") {
-		$P = true;
-	} else if ($O === "marker") {
-		$P = true;
-	} else if ($O === "pattern") {
-		$P = true;
-	} else if ($O === "mask") {
-		$P = true;
-	} else if ($O === "clipPath") {
-		$P = true;
-	} else if ($O === "linearGradient") {
-		$P = true;
-	} else if ($O === "radialGradient") {
-		$P = true;
-	} else if ($O === "stop") {
-		$P = true;
-	} else if ($O === "text") {
-		$P = true;
-	} else if ($O === "tspan") {
-		$P = true;
-	} else if ($O === "textPath") {
-		$P = true;
-	} else if ($O === "filter") {
-		$P = true;
-	} else if ($O === "foreignObject") {
-		$P = true;
-	} else if ($O === "feGaussianBlur") {
-		$P = true;
-	} else if ($O === "feColorMatrix") {
-		$P = true;
-	} else if ($O === "feOffset") {
-		$P = true;
-	} else if ($O === "feMerge") {
-		$P = true;
-	} else if ($O === "feMergeNode") {
-		$P = true;
-	} else if ($O === "feFlood") {
-		$P = true;
-	} else if ($O === "feComposite") {
-		$P = true;
-	} else if ($O === "feBlend") {
-		$P = true;
-	} else if ($O === "feDropShadow") {
-		$P = true;
+	const $R = tag;
+	let $S = null;
+	if ($R === "svg") {
+		$S = true;
+	} else if ($R === "path") {
+		$S = true;
+	} else if ($R === "circle") {
+		$S = true;
+	} else if ($R === "ellipse") {
+		$S = true;
+	} else if ($R === "rect") {
+		$S = true;
+	} else if ($R === "line") {
+		$S = true;
+	} else if ($R === "polyline") {
+		$S = true;
+	} else if ($R === "polygon") {
+		$S = true;
+	} else if ($R === "g") {
+		$S = true;
+	} else if ($R === "defs") {
+		$S = true;
+	} else if ($R === "use") {
+		$S = true;
+	} else if ($R === "symbol") {
+		$S = true;
+	} else if ($R === "marker") {
+		$S = true;
+	} else if ($R === "pattern") {
+		$S = true;
+	} else if ($R === "mask") {
+		$S = true;
+	} else if ($R === "clipPath") {
+		$S = true;
+	} else if ($R === "linearGradient") {
+		$S = true;
+	} else if ($R === "radialGradient") {
+		$S = true;
+	} else if ($R === "stop") {
+		$S = true;
+	} else if ($R === "text") {
+		$S = true;
+	} else if ($R === "tspan") {
+		$S = true;
+	} else if ($R === "textPath") {
+		$S = true;
+	} else if ($R === "filter") {
+		$S = true;
+	} else if ($R === "foreignObject") {
+		$S = true;
+	} else if ($R === "feGaussianBlur") {
+		$S = true;
+	} else if ($R === "feColorMatrix") {
+		$S = true;
+	} else if ($R === "feOffset") {
+		$S = true;
+	} else if ($R === "feMerge") {
+		$S = true;
+	} else if ($R === "feMergeNode") {
+		$S = true;
+	} else if ($R === "feFlood") {
+		$S = true;
+	} else if ($R === "feComposite") {
+		$S = true;
+	} else if ($R === "feBlend") {
+		$S = true;
+	} else if ($R === "feDropShadow") {
+		$S = true;
 	} else {
-		$P = false;
+		$S = false;
 	}
-	return $P;
+	return $S;
 }
 function text(self, content) {
 	self[0].textContent = content;
@@ -329,8 +453,8 @@ function styled(self, style) {
 }
 function on(self, event, handler) {
 	self[0].addEventListener(event, () => {
-		return $aK([ 1 ], ($aJ) => {
-			return handler($aJ);
+		return $aT([ 1 ], ($aS) => {
+			return handler($aS);
 		});
 	});
 	return __clone(self);
@@ -341,8 +465,142 @@ function children(self, items) {
 	}
 	return __clone(self);
 }
+function open(parent) {
+	const anchor = document.createTextNode("");
+	parent[0].appendChild(anchor);
+	return [ anchor, __shared_new([  ]), __shared_new([  ]) ];
+}
+function host(self) {
+	return self[0].parentNode;
+}
+function cut_row(self, row, end) {
+	const range = document.createRange();
+	range.setStartAfter(row[0]);
+	range.setEndBefore(end);
+	return range.extractContents();
+}
+function insert_row(self, row, content, end) {
+	host(self).insertBefore(row[0], end);
+	host(self).insertBefore(content, end);
+}
+function drop_row(self, row) {
+	row[0].remove();
+}
+function hold_rows(self, rows) {
+	self[2].v = __clone(rows);
+}
+function close(self) {
+	for (const view2 of self[1].v) {
+		view2[0].remove();
+	}
+	self[1].v = [  ];
+	const rows = __clone(self[2].v);
+	let at = 0;
+	for (const row of rows) {
+		let $cp = null;
+		if (at + 1 < rows.length) {
+			$cp = __at(rows, at + 1)[0];
+		} else {
+			$cp = self[0];
+		}
+		const end = $cp;
+		cut_row(self, row, end);
+		drop_row(self, row);
+		at = at + 1;
+	}
+	self[2].v = [  ];
+	self[0].remove();
+}
 function place(self, parent) {
 	parent[0].appendChild(self[0]);
+}
+function settled_steps(steps) {
+	let forward = [  ];
+	let forward_count = 0;
+	let highest = [ 1 ];
+	for (const step of steps) {
+		const $cG = step;
+		let $cH = null;
+		if ($cG[0] === 0) {
+			const index = $cG[1];
+			const $cI = highest;
+			let $cJ = null;
+			if ($cI[0] === 0) {
+				const top = $cI[1];
+				$cJ = index > top;
+			} else {
+				$cJ = true;
+			}
+			const rises = $cJ;
+			if (rises) {
+				highest = [ 0, index ];
+				forward_count = forward_count + 1;
+				forward.push(true);
+			} else {
+				forward.push(false);
+			}
+			$cH = undefined;
+		} else {
+			forward.push(false);
+			$cH = undefined;
+		}
+		$cH;
+	}
+	let backward = [  ];
+	let backward_count = 0;
+	let lowest = steps.length;
+	let at = steps.length;
+	while (at > 0) {
+		at = at - 1;
+		const $cK = __at(steps, at);
+		let $cL = null;
+		if ($cK[0] === 0) {
+			const index2 = $cK[1];
+			if (index2 < lowest) {
+				lowest = index2;
+				backward_count = backward_count + 1;
+				backward.push(true);
+			} else {
+				backward.push(false);
+			}
+			$cL = undefined;
+		} else {
+			backward.push(false);
+			$cL = undefined;
+		}
+		$cL;
+	}
+	let $cM = null;
+	if (forward_count >= backward_count) {
+		$cM = forward;
+	} else {
+		$cM = $cN(backward);
+	}
+	return $cM;
+}
+function row_references(steps, rows, settled, anchor) {
+	let references = [  ];
+	let reference = __clone(anchor);
+	let at = steps.length;
+	while (at > 0) {
+		at = at - 1;
+		references.push(__clone(reference));
+		let $cQ = null;
+		if (__at(settled, at)) {
+			const $cO = __at(steps, at);
+			let $cP = null;
+			if ($cO[0] === 0) {
+				const index = $cO[1];
+				reference = __clone(__at(rows, index)[0]);
+				$cP = undefined;
+			} else {
+				$cP = undefined;
+			}
+			$cQ = $cP;
+		}
+		$cQ;
+	}
+	return $cN(references);
 }
 function apply(self, parent, name) {
 	parent[0].setAttribute(name, self);
@@ -362,11 +620,11 @@ function mount(id, view2) {
 	element.appendChild(view2[0]);
 }
 function mount_root(id, body) {
-	const $bX = $aK([ 1 ], ($bU) => {
-		return $bV(body);
+	const $fq = $aT([ 1 ], ($fn) => {
+		return $fo(body);
 	});
-	const built = $bX[0];
-	const root = $bX[1];
+	const built = $fq[0];
+	const root = $fq[1];
 	mount(id, built);
 	if (__hmr_active()) {
 		const element = document.getElementById(id);
@@ -383,25 +641,34 @@ function on_teardown(cleanup) {
 		__hmr_register_teardown(cleanup);
 	}
 }
-function family_longhands(property) {
-	const $X = property;
-	let $Y = null;
-	if ($X === "padding") {
-		$Y = ";padding-top;padding-right;padding-bottom;padding-left;";
-	} else if ($X === "margin") {
-		$Y = ";margin-top;margin-right;margin-bottom;margin-left;";
-	} else if ($X === "inset") {
-		$Y = ";top;right;bottom;left;";
-	} else if ($X === "flex") {
-		$Y = ";flex-grow;flex-shrink;flex-basis;";
-	} else if ($X === "background") {
-		$Y = ";background-color;background-image;background-position;background-size;background-repeat;background-attachment;background-origin;background-clip;";
-	} else if ($X === "border") {
-		$Y = border_longhands();
-	} else {
-		$Y = "";
+function slot_of(key) {
+	const parts = key.split(":");
+	if (parts.length !== 3) {
+		(() => {
+			throw "this style\'s slot key is not one media:condition:property triple (got \"" + key + "\"" + ") \u{2014} every field that reaches a key is fenced against \':\' where it is written, so a key holding another one means a condition token was minted carrying the key\'s own separator; that is the bug, not this read";
+		})();
 	}
-	return $Y;
+	return [ __at(parts, 0), __at(parts, 1), __at(parts, 2) ];
+}
+function family_longhands(property) {
+	const $aa = property;
+	let $ab = null;
+	if ($aa === "padding") {
+		$ab = ";padding-top;padding-right;padding-bottom;padding-left;";
+	} else if ($aa === "margin") {
+		$ab = ";margin-top;margin-right;margin-bottom;margin-left;";
+	} else if ($aa === "inset") {
+		$ab = ";top;right;bottom;left;";
+	} else if ($aa === "flex") {
+		$ab = ";flex-grow;flex-shrink;flex-basis;";
+	} else if ($aa === "background") {
+		$ab = ";background-color;background-image;background-position;background-size;background-repeat;background-attachment;background-origin;background-clip;";
+	} else if ($aa === "border") {
+		$ab = border_longhands();
+	} else {
+		$ab = "";
+	}
+	return $ab;
 }
 function border_longhands() {
 	let out = ";border-width;border-style;border-color;";
@@ -419,20 +686,20 @@ function without_covered(rules, media, condition, property) {
 		return __clone(rules);
 	}
 	let out = __clone(rules);
-	for (const key of $R(rules)) {
-		const parts = key.split(":");
-		if (__at(parts, 0) === media && __at(parts, 1) === condition && longhands.includes(";" + __at(parts, 2) + ";")) {
-			$Z(out, key);
+	for (const key of $U(rules)) {
+		const slot = slot_of(key);
+		if (slot[0] === media && slot[1] === condition && longhands.includes(";" + slot[2] + ";")) {
+			$ac(out, key);
 		}
 	}
 	return out;
 }
 function class_list(self) {
 	let out = "";
-	for (const entry of $ab(self[0])) {
-		const $ac = entry;
-		const class2 = $ac[0];
-		const _declaration = $ac[1];
+	for (const entry of $ae(self[0])) {
+		const $af = entry;
+		const class2 = $af[0];
+		const _declaration = $af[1];
 		if (out === "") {
 			out = class2;
 		} else {
@@ -443,63 +710,63 @@ function class_list(self) {
 }
 function add(self, b) {
 	let rules = __clone(self[0]);
-	for (const key of $R(b[0])) {
-		const $V = $S(b[0], key);
-		let $W = null;
-		if ($V[0] === 0) {
-			const entry = $V[1];
-			const parts = key.split(":");
-			rules = without_covered(rules, __at(parts, 0), __at(parts, 1), __at(parts, 2));
-			$aa(rules, key, entry);
-			$W = undefined;
+	for (const key of $U(b[0])) {
+		const $Y = $V(b[0], key);
+		let $Z = null;
+		if ($Y[0] === 0) {
+			const entry = $Y[1];
+			const slot = slot_of(key);
+			rules = without_covered(rules, slot[0], slot[1], slot[2]);
+			$ad(rules, key, entry);
+			$Z = undefined;
 		} else {
-			$W = undefined;
+			$Z = undefined;
 		}
-		$W;
+		$Z;
 	}
 	return [ rules ];
 }
-function template_option(value, label, $aS, $aT) {
-	return text($ad(view("option"), "value", value, $aS, $aT), label);
+function template_option(value, label, $bf, $bg) {
+	return text($ag(view("option"), "value", value, $bf, $bg), label);
 }
 function template_title(name) {
-	const $aY = name;
-	let $aZ = null;
-	if ($aY === "counter") {
-		$aZ = "Counter";
-	} else if ($aY === "hello") {
-		$aZ = "Hello";
-	} else if ($aY === "styles") {
-		$aZ = "Styles";
-	} else if ($aY === "server") {
-		$aZ = "Server";
+	const $bs = name;
+	let $bt = null;
+	if ($bs === "counter") {
+		$bt = "Counter";
+	} else if ($bs === "hello") {
+		$bt = "Hello";
+	} else if ($bs === "styles") {
+		$bt = "Styles";
+	} else if ($bs === "server") {
+		$bt = "Server";
 	} else {
-		$aZ = name;
+		$bt = name;
 	}
-	return $aZ;
+	return $bt;
 }
 function severity_tag(row) {
-	const $bp = row[1];
-	let $bq = null;
-	if ($bp === "error") {
-		$bq = text(styled(view("span"), diag_error), "error");
+	const $bV = row[1];
+	let $bW = null;
+	if ($bV === "error") {
+		$bW = text(styled(view("span"), diag_error), "error");
 	} else {
-		$bq = text(styled(view("span"), diag_warning), "warning");
+		$bW = text(styled(view("span"), diag_warning), "warning");
 	}
-	return $bq;
+	return $bW;
 }
 function trace_row(hop) {
-	let $br = null;
+	let $bX = null;
 	if (hop[4]) {
-		$br = "  via " + hop[0] + ":" + hop[1] + ":" + hop[2] + " \u{2014} " + hop[3];
+		$bX = "  via " + hop[0] + ":" + hop[1] + ":" + hop[2] + " \u{2014} " + hop[3];
 	} else {
-		$br = "  " + hop[3];
+		$bX = "  " + hop[3];
 	}
-	const text2 = $br;
+	const text2 = $bX;
 	return text(styled(view("div"), diag_trace), text2);
 }
-function diagnostic_row(row, $bn, $bo) {
-	const head = $ag($ag($ag(view("div"), severity_tag(row), $bn, $bo), text(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " "), $bn, $bo), text(view("span"), row[5]), $bn, $bo);
+function diagnostic_row(row, $bT, $bU) {
+	const head = $aj($aj($aj(view("div"), severity_tag(row), $bT, $bU), text(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " "), $bT, $bU), text(view("span"), row[5]), $bT, $bU);
 	let lines = [ head ];
 	for (const hop of row[7]) {
 		lines.push(trace_row(hop));
@@ -508,80 +775,71 @@ function diagnostic_row(row, $bn, $bo) {
 		lines.push(text(styled(view("div"), diag_note), "  note: " + row[6]));
 	}
 	const body = children(view("div"), lines);
-	const $bs = row[1];
-	let $bt = null;
-	if ($bs === "error") {
-		$bt = $ag(styled(view("div"), diag_row_error), body, $bn, $bo);
+	const $bY = row[1];
+	let $bZ = null;
+	if ($bY === "error") {
+		$bZ = $aj(styled(view("div"), diag_row_error), body, $bT, $bU);
 	} else {
-		$bt = $ag(styled(view("div"), diag_row_warning), body, $bn, $bo);
+		$bZ = $aj(styled(view("div"), diag_row_warning), body, $bT, $bU);
 	}
-	return $bt;
+	return $bZ;
 }
 function console_row(row) {
-	const $bL = row[1];
-	let $bM = null;
-	if ($bL === "error") {
-		$bM = text(styled(view("div"), console_error), row[2]);
+	const $ed = row[1];
+	let $ee = null;
+	if ($ed === "error") {
+		$ee = text(styled(view("div"), console_error), row[2]);
 	} else {
-		$bM = text(styled(view("div"), console_line), row[2]);
+		$ee = text(styled(view("div"), console_line), row[2]);
 	}
-	return $bM;
+	return $ee;
 }
-function playground_page(status2, diagnostics2, console_lines2, can_format2, can_platform2, share_label2, mode2, modified_from2, confirm_target2, run2, format2, share2, confirm_replace2, cancel_replace2, $M, $N) {
-	return $ag($ag(styled(view("div"), add(add(shell, app_fill), code_palette)), $ag($ag($ag($ag($ag($ag($ag($ag($ag($ag($ag(styled(view("header"), app_bar), $ag($ag($ad(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $M, $N), $ad(styled(view("span"), add(nav_mark, no_drag)), "aria-hidden", "true", $M, $N), $M, $N), text(view("span"), "VILAN"), $M, $N), $M, $N), text(styled(view("h1"), page_title), "Playground"), $M, $N), styled(view("div"), rail_divider), $M, $N), on($aA(styled(view("button"), primary_button), $al(mode2, (current) => {
-		const $aj = current;
-		let $ak = null;
-		if ($aj === "node") {
-			$ak = "Check";
+function playground_page(status2, diagnostics2, console_lines2, can_format2, can_platform2, share_label2, mode2, modified_from2, confirm_target2, run2, format2, share2, confirm_replace2, cancel_replace2, $P, $Q) {
+	return $aj($aj(styled(view("div"), add(add(shell, app_fill), code_palette)), $aj($aj($aj($aj($aj($aj($aj($aj($aj($aj($aj(styled(view("header"), app_bar), $aj($aj($ag(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $P, $Q), $ag(styled(view("span"), add(nav_mark, no_drag)), "aria-hidden", "true", $P, $Q), $P, $Q), text(view("span"), "VILAN"), $P, $Q), $P, $Q), text(styled(view("h1"), page_title), "Playground"), $P, $Q), styled(view("div"), rail_divider), $P, $Q), on($ap(styled(view("button"), primary_button), $ao(mode2, (current) => {
+		const $am = current;
+		let $an = null;
+		if ($am === "node") {
+			$an = "Check";
 		} else {
-			$ak = "Run";
+			$an = "Run";
 		}
-		return $ak;
-	}, $M, [ 0, $N ]), $M, $N), "click", ($aI) => {
+		return $an;
+	}), $P, $Q), "click", ($aR) => {
 		return run2();
-	}), $M, $N), $ag($ag($aL($ad($ad(styled(view("select"), select_box), "id", "mode", $M, $N), "aria-label", "Compile mode", $M, $N), can_platform2, $M, $N), template_option("browser", "Browser: compile and run", $M, $N), $M, $N), template_option("node", "Server: check the process leg", $M, $N), $M, $N), $M, $N), $aL(on(text(styled(view("button"), ghost_button), "Format"), "click", ($aU) => {
+	}), $P, $Q), $aj($aj($aU($ag($ag(styled(view("select"), select_box), "id", "mode", $P, $Q), "aria-label", "Compile mode", $P, $Q), can_platform2, $P, $Q), template_option("browser", "Browser: compile and run", $P, $Q), $P, $Q), template_option("node", "Server: check the process leg", $P, $Q), $P, $Q), $P, $Q), $aU(on(text(styled(view("button"), ghost_button), "Format"), "click", ($bh) => {
 		return format2();
-	}), can_format2, $M, $N), $M, $N), on($aA(styled(view("button"), ghost_button), share_label2, $M, $N), "click", ($aV) => {
+	}), can_format2, $P, $Q), $P, $Q), on($bi(styled(view("button"), ghost_button), share_label2, $P, $Q), "click", ($bp) => {
 		return share2();
-	}), $M, $N), $aA($ad(styled(view("p"), status_line), "role", "status", $M, $N), status2, $M, $N), $M, $N), $ad($ad(styled(view("select"), version_select), "id", "version", $M, $N), "aria-label", "Compiler version", $M, $N), $M, $N), styled(view("div"), rail_divider), $M, $N), text($ad(styled(view("a"), nav_link), "href", "/docs/", $M, $N), "Docs"), $M, $N), $M, $N), $ag($ag($ag($ag(styled(view("main"), quad_grid), $ag($ag($ag(styled(view("div"), panel), $ag($ag(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Program"), $M, $N), $ag($ag($ag($ag($ag($ad($ad(styled(view("select"), select_box), "id", "template", $M, $N), "aria-label", "Load an example", $M, $N), $aA($ad($ad($ad(view("option"), "value", "", $M, $N), "disabled", "true", $M, $N), "hidden", "true", $M, $N), $al(modified_from2, (name) => {
-		const $aW = name;
-		let $aX = null;
-		if ($aW === "") {
-			$aX = "Examples";
+	}), $P, $Q), $bi($ag(styled(view("p"), status_line), "role", "status", $P, $Q), status2, $P, $Q), $P, $Q), $ag($ag(styled(view("select"), version_select), "id", "version", $P, $Q), "aria-label", "Compiler version", $P, $Q), $P, $Q), styled(view("div"), rail_divider), $P, $Q), text($ag(styled(view("a"), nav_link), "href", "/docs/", $P, $Q), "Docs"), $P, $Q), $P, $Q), $aj($aj($aj($aj(styled(view("main"), quad_grid), $aj($aj($aj(styled(view("div"), panel), $aj($aj(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Program"), $P, $Q), $aj($aj($aj($aj($aj($ag($ag(styled(view("select"), select_box), "id", "template", $P, $Q), "aria-label", "Load an example", $P, $Q), $ap($ag($ag($ag(view("option"), "value", "", $P, $Q), "disabled", "true", $P, $Q), "hidden", "true", $P, $Q), $ao(modified_from2, (name) => {
+		const $bq = name;
+		let $br = null;
+		if ($bq === "") {
+			$br = "Examples";
 		} else {
-			$aX = "Modified \u{2014} " + template_title(name);
+			$br = "Modified \u{2014} " + template_title(name);
 		}
-		return $aX;
-	}, $M, [ 0, $N ]), $M, $N), $M, $N), template_option("counter", "Counter: reactive state", $M, $N), $M, $N), template_option("hello", "Hello: mount and print", $M, $N), $M, $N), template_option("styles", "Styles: compile-time CSS", $M, $N), $M, $N), $aL(template_option("server", "Server: typed HTTP, checked", $M, $N), can_platform2, $M, $N), $M, $N), $M, $N), $M, $N), $ag($aL($ad(view("div"), "role", "alert", $M, $N), $ba(confirm_target2, (name) => {
+		return $br;
+	}), $P, $Q), $P, $Q), template_option("counter", "Counter: reactive state", $P, $Q), $P, $Q), template_option("hello", "Hello: mount and print", $P, $Q), $P, $Q), template_option("styles", "Styles: compile-time CSS", $P, $Q), $P, $Q), $aU(template_option("server", "Server: typed HTTP, checked", $P, $Q), can_platform2, $P, $Q), $P, $Q), $P, $Q), $P, $Q), $aj($bv($ag(view("div"), "role", "alert", $P, $Q), $ao(confirm_target2, (name) => {
 		return name !== "";
-	}, $M, [ 0, $N ]), $M, $N), $ag($ag($ag(styled(view("div"), confirm_bar), $aA(styled(view("p"), confirm_question), $al(confirm_target2, (name) => {
+	}), $P, $Q), $aj($aj($aj(styled(view("div"), confirm_bar), $ap(styled(view("p"), confirm_question), $ao(confirm_target2, (name) => {
 		return "Replace the current program with " + template_title(name) + "? The edits are not kept.";
-	}, $M, [ 0, $N ]), $M, $N), $M, $N), on(text(styled(view("button"), ghost_button), "Keep editing"), "click", ($bh) => {
+	}), $P, $Q), $P, $Q), on(text(styled(view("button"), ghost_button), "Keep editing"), "click", ($bD) => {
 		return cancel_replace2();
-	}), $M, $N), on(text(styled(view("button"), primary_button), "Replace"), "click", ($bi) => {
+	}), $P, $Q), on(text(styled(view("button"), primary_button), "Replace"), "click", ($bE) => {
 		return confirm_replace2();
-	}), $M, $N), $M, $N), $M, $N), $ad($ad(styled(view("div"), editor_host), "id", "editor", $M, $N), "aria-label", "Program editor", $M, $N), $M, $N), $M, $N), $ag($ag(styled(view("div"), panel), $ag(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Result"), $M, $N), $M, $N), $ad($ad(styled(view("div"), runner_host), "id", "runner", $M, $N), "aria-label", "Program result", $M, $N), $M, $N), $M, $N), $ag($ag(styled(view("div"), panel), $ag(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Diagnostics"), $M, $N), $M, $N), $ag($ag(styled(view("pre"), report_well), $aL(text(styled(view("div"), quiet_row), "Nothing to report."), $bj(diagnostics2, (rows) => {
+	}), $P, $Q), $P, $Q), $P, $Q), $ag($ag(styled(view("div"), editor_host), "id", "editor", $P, $Q), "aria-label", "Program editor", $P, $Q), $P, $Q), $P, $Q), $aj($aj(styled(view("div"), panel), $aj(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Result"), $P, $Q), $P, $Q), $ag($ag(styled(view("div"), runner_host), "id", "runner", $P, $Q), "aria-label", "Program result", $P, $Q), $P, $Q), $P, $Q), $aj($aj(styled(view("div"), panel), $aj(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Diagnostics"), $P, $Q), $P, $Q), $cb($aj(styled(view("pre"), report_well), $bG(text(styled(view("div"), quiet_row), "Nothing to report."), $ao(diagnostics2, (rows) => {
 		return rows.length === 0;
-	}, $M, [ 0, $N ]), $M, $N), $M, $N), $bu(view("div"), diagnostics2, (row) => {
+	}), $P, $Q), $P, $Q), $ca(diagnostics2, (row) => {
 		return row[0];
-	}, (row, $bm) => {
-		return diagnostic_row(row, $M, $bm);
-	}, $M, $N), $M, $N), $M, $N), $M, $N), $ag($ag(styled(view("div"), panel), $ag(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Console"), $M, $N), $M, $N), $ag($ag(styled(view("pre"), report_well), $aL(text(styled(view("div"), quiet_row), "Program output lands here."), $bj(console_lines2, (rows) => {
+	}, (row, $bR) => {
+		return diagnostic_row($B(row), $P, $bR);
+	}), $P, $Q), $P, $Q), $P, $Q), $aj($aj(styled(view("div"), panel), $aj(styled(view("div"), panel_head), text(styled(view("p"), panel_title), "Console"), $P, $Q), $P, $Q), $eg($aj(styled(view("pre"), report_well), $dQ(text(styled(view("div"), quiet_row), "Program output lands here."), $ao(console_lines2, (rows) => {
 		return rows.length === 0;
-	}, $M, [ 0, $N ]), $M, $N), $M, $N), $bN(view("div"), console_lines2, (row) => {
+	}), $P, $Q), $P, $Q), $ca(console_lines2, (row) => {
 		return row[0];
-	}, (row, $bK) => {
-		return console_row(row);
-	}, $M, $N), $M, $N), $M, $N), $M, $N), $M, $N);
-}
-function eq(self, other) {
-	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2] && self[3] === other[3] && self[4] === other[4] && self[5] === other[5] && self[6] === other[6] && $by(self[7], other[7]);
-}
-function eq2(self, other) {
-	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2] && self[3] === other[3] && self[4] === other[4];
-}
-function eq3(self, other) {
-	return self[0] === other[0] && self[1] === other[1] && self[2] === other[2];
+	}, (row, $eb) => {
+		return console_row($B(row));
+	}), $P, $Q), $P, $Q), $P, $Q), $P, $Q);
 }
 function $b(value) {
 	let subscribers = [  ];
@@ -593,11 +851,17 @@ function $a(value) {
 function $c(value) {
 	return $b(value);
 }
-function $m(self) {
+function $n(self) {
 	return self.length === 0;
 }
-function $n(self) {
-	return __list_get(self, self.length - 1);
+function $o(self) {
+	let $q = null;
+	if ($n(self)) {
+		$q = [ 1 ];
+	} else {
+		$q = __list_get(self, self.length - 1);
+	}
+	return $q;
 }
 function $i(self, $j) {
 	const $k = $j;
@@ -606,487 +870,1178 @@ function $i(self, $j) {
 		const turn = $k[1];
 		$l = enqueue(turn, self[1].v);
 	} else {
-		const $o = $n(draining_turns.v);
-		let $p = null;
-		if ($o[0] === 0) {
-			const draining = $o[1];
-			$p = enqueue(draining, self[1].v);
+		const $r = $o(draining_turns.v);
+		let $s = null;
+		if ($r[0] === 0) {
+			const draining = $r[1];
+			$s = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
-				subscriber[1]();
+				if (subscriber[2].v) {
+					subscriber[1]();
+				}
 			}
-			$p = undefined;
+			$s = undefined;
 		}
-		$l = $p;
+		$l = $s;
 	}
 	return $l;
 }
 function $g(self, value, $h) {
-	self[0].v = value;
+	self[0].v = __clone(value);
 	$i(self, $h);
 }
-function $t(self, $j) {
-	const $u = $j;
-	let $v = null;
-	if ($u[0] === 0) {
-		const turn = $u[1];
-		$v = enqueue(turn, self[1].v);
+function $w(self, $j) {
+	const $x = $j;
+	let $y = null;
+	if ($x[0] === 0) {
+		const turn = $x[1];
+		$y = enqueue(turn, self[1].v);
 	} else {
-		const $w = $n(draining_turns.v);
-		let $x = null;
-		if ($w[0] === 0) {
-			const draining = $w[1];
-			$x = enqueue(draining, self[1].v);
+		const $z = $o(draining_turns.v);
+		let $A = null;
+		if ($z[0] === 0) {
+			const draining = $z[1];
+			$A = enqueue(draining, self[1].v);
 		} else {
 			for (const subscriber of self[1].v) {
-				subscriber[1]();
+				if (subscriber[2].v) {
+					subscriber[1]();
+				}
 			}
-			$x = undefined;
+			$A = undefined;
 		}
-		$v = $x;
+		$y = $A;
 	}
-	return $v;
+	return $y;
 }
-function $s(self, value, $h) {
-	self[0].v = value;
-	$t(self, $h);
+function $v(self, value, $h) {
+	self[0].v = __clone(value);
+	$w(self, $h);
 }
-function $y(self) {
-	return self[0].v;
+function $B(self) {
+	return __clone(self[0].v);
 }
-function $G(self, $j) {
-	const $H = $j;
-	let $I = null;
-	if ($H[0] === 0) {
-		const turn = $H[1];
-		$I = enqueue(turn, self[1].v);
-	} else {
-		const $J = $n(draining_turns.v);
-		let $K = null;
-		if ($J[0] === 0) {
-			const draining = $J[1];
-			$K = enqueue(draining, self[1].v);
-		} else {
-			for (const subscriber of self[1].v) {
-				subscriber[1]();
-			}
-			$K = undefined;
-		}
-		$I = $K;
-	}
-	return $I;
+function $I(self, value, $h) {
+	self[0].v = __clone(value);
+	$w(self, $h);
 }
-function $F(self, value, $h) {
-	self[0].v = value;
-	$G(self, $h);
-}
-function $R(self) {
+function $U(self) {
 	let result = [  ];
 	for (const entry of __map_values(self[0])) {
 		result.push(__clone(entry[0]));
 	}
 	return result;
 }
-function $S(self, key) {
-	const $T = __map_get(self[0], hash(key));
-	let $U = null;
-	if ($T[0] === 0) {
-		const entry = $T[1];
-		$U = [ 0, __clone(entry[1]) ];
+function $V(self, key) {
+	const $W = __map_get(self[0], hash(key));
+	let $X = null;
+	if ($W[0] === 0) {
+		const entry = $W[1];
+		$X = [ 0, __clone(entry.slice(1, 3)) ];
 	} else {
-		$U = [ 1 ];
+		$X = [ 1 ];
 	}
-	return $U;
+	return $X;
 }
-function $Z(self, key) {
+function $ac(self, key) {
 	self[0].delete(hash(key));
 }
-function $aa(self, key, value) {
-	self[0].set(hash(key), [ __clone(key), __clone(value) ]);
+function $ad(self, key, value) {
+	self[0].set(hash(key), [ __clone(key), ...__clone(value) ]);
 }
-function $ab(self) {
+function $ae(self) {
 	let result = [  ];
 	for (const entry of __map_values(self[0])) {
-		result.push(__clone(entry[1]));
+		result.push(__clone(entry.slice(1, 3)));
 	}
 	return result;
 }
-function $ad(self, name, value, $ae, $af) {
-	apply(value, self, name, $ae, $af);
+function $ag(self, name, value, $ah, $ai) {
+	apply(value, self, name, $ah, $ai);
 	return __clone(self);
 }
-function $ag(self, content, $ah, $ai) {
-	place(content, self, $ah, $ai);
+function $aj(self, content, $ak, $al) {
+	place(content, self, $ak, $al);
 	return __clone(self);
 }
-function $ao(signal, observer) {
-	const id = fresh_id();
-	const cell = signal[0];
-	signal[1].v.push([ id, () => {
-		observer(cell.v);
-		return;
-	} ]);
-	return [ signal[1], id, __shared_new([ 1 ]) ];
+function $ao(self, transform) {
+	return [ __clone(self), transform ];
 }
-function $at(self, item, $au) {
-	self[0].v.push(() => {
-		dispose(item, $au);
-		return;
+function $aC(self) {
+	return self[1]($B(self[0]));
+}
+function $aB(source, observer) {
+	return mint_subscriber(() => {
+		return observer($aC(source));
 	});
+}
+function $aF(signal, subscriber) {
+	const handle = [ signal[1], subscriber[0], subscriber[2], __shared_new([ 1 ]) ];
+	signal[1].v.push(reissued(subscriber));
+	return handle;
+}
+function $aE(self, subscriber) {
+	return $aF(self, subscriber);
+}
+function $aD(self, subscriber) {
+	return $aE(self[0], subscriber);
+}
+function $aA(source, observer) {
+	const subscriber = $aB(source, observer);
+	return $aD(source, subscriber);
+}
+function $az(self, observer) {
+	return $aA(self, observer);
+}
+function $aG(self, item, $aH) {
+	if (self[1].v) {
+		dispose(item, $aH);
+	} else {
+		self[0].v.push(() => {
+			dispose(item, $aH);
+			return;
+		});
+	}
 	return __clone(item);
 }
-function $al(self, transform, $am, $an) {
-	const derived = $b(transform($y(self)));
-	register_with_owner($ao(self, (value) => {
-		$g(derived, transform(value), $am);
-		return;
-	}), $am, $an);
-	return derived;
+function $av(self, observer, $aw, $ax) {
+	$aG(get_owner($ax), $az(self, observer), $aw);
 }
-function $aH(self, observer) {
-	const subscription = $ao(self, observer);
-	observer($y(self));
-	return subscription;
+function $as(self, observer, $at, $au) {
+	$av(self, observer, $at, $au);
+	observer($aC(self));
 }
-function $aD(self, observer, $aE, $aF) {
-	$at(get_owner($aF), $aH(self, observer), $aE);
-}
-function $aA(self, source, $aB, $aC) {
+function $ap(self, source, $aq, $ar) {
 	const element = __clone(self[0]);
-	$aD(source, (value) => {
+	$as(source, (value) => {
 		element.textContent = value;
 		return;
-	}, $aB, $aC);
+	}, $aq, $ar);
 	return __clone(self);
 }
-function $aK(policy, body) {
+function $aT(policy, body) {
 	const fresh = new2();
 	const result = body(fresh);
 	drain(fresh);
-	fresh[2].v = true;
+	fresh[5].v = true;
 	return result;
 }
-function $aO(self, observer, $aE, $aF) {
-	$at(get_owner($aF), $aH(self, observer), $aE);
+function $ba(signal, observer) {
+	const cell = signal[0];
+	return $aF(signal, mint_subscriber(() => {
+		const $bb = [ 0, cell ];
+		let $bc = null;
+		if ($bb[0] === 0) {
+			const live = $bb[1];
+			$bc = observer(live.v);
+		} else {
+			$bc = undefined;
+		}
+		return $bc;
+	}));
 }
-function $aL(self, condition, $aM, $aN) {
+function $aZ(self, observer) {
+	return $ba(self, observer);
+}
+function $aY(self, observer, $aw, $ax) {
+	$aG(get_owner($ax), $aZ(self, observer), $aw);
+}
+function $aX(self, observer, $at, $au) {
+	$aY(self, observer, $at, $au);
+	observer($B(self));
+}
+function $aU(self, condition, $aV, $aW) {
 	const element = __clone(self[0]);
-	$aO(condition, (visible) => {
+	const restored = element.style.getPropertyValue("display");
+	$aX(condition, (visible) => {
 		element.hidden = !(visible);
+		if (visible) {
+			element.style.setProperty("display", restored);
+		} else {
+			element.style.setProperty("display", "none");
+		}
 		return;
-	}, $aM, $aN);
+	}, $aV, $aW);
 	return __clone(self);
 }
-function $bc(self, $j) {
-	const $bd = $j;
-	let $be = null;
-	if ($bd[0] === 0) {
-		const turn = $bd[1];
-		$be = enqueue(turn, self[1].v);
-	} else {
-		const $bf = $n(draining_turns.v);
-		let $bg = null;
-		if ($bf[0] === 0) {
-			const draining = $bf[1];
-			$bg = enqueue(draining, self[1].v);
+function $bl(self, observer) {
+	return $ba(self, observer);
+}
+function $bk(self, observer, $aw, $ax) {
+	$aG(get_owner($ax), $bl(self, observer), $aw);
+}
+function $bj(self, observer, $at, $au) {
+	$bk(self, observer, $at, $au);
+	observer($B(self));
+}
+function $bi(self, source, $aq, $ar) {
+	const element = __clone(self[0]);
+	$bj(source, (value) => {
+		element.textContent = value;
+		return;
+	}, $aq, $ar);
+	return __clone(self);
+}
+function $bA(source, observer) {
+	return mint_subscriber(() => {
+		return observer($aC(source));
+	});
+}
+function $bC(self, subscriber) {
+	return $aE(self[0], subscriber);
+}
+function $bz(source, observer) {
+	const subscriber = $bA(source, observer);
+	return $bC(source, subscriber);
+}
+function $by(self, observer) {
+	return $bz(self, observer);
+}
+function $bx(self, observer, $aw, $ax) {
+	$aG(get_owner($ax), $by(self, observer), $aw);
+}
+function $bw(self, observer, $at, $au) {
+	$bx(self, observer, $at, $au);
+	observer($aC(self));
+}
+function $bv(self, condition, $aV, $aW) {
+	const element = __clone(self[0]);
+	const restored = element.style.getPropertyValue("display");
+	$bw(condition, (visible) => {
+		element.hidden = !(visible);
+		if (visible) {
+			element.style.setProperty("display", restored);
 		} else {
-			for (const subscriber of self[1].v) {
-				subscriber[1]();
-			}
-			$bg = undefined;
+			element.style.setProperty("display", "none");
 		}
-		$be = $bg;
-	}
-	return $be;
-}
-function $bb(self, value, $h) {
-	self[0].v = value;
-	$bc(self, $h);
-}
-function $ba(self, transform, $am, $an) {
-	const derived = $b(transform($y(self)));
-	register_with_owner($ao(self, (value) => {
-		$bb(derived, transform(value), $am);
 		return;
-	}), $am, $an);
-	return derived;
+	}, $aV, $aW);
+	return __clone(self);
 }
-function $bj(self, transform, $am, $an) {
-	const derived = $b(transform($y(self)));
-	register_with_owner($ao(self, (value) => {
-		$bb(derived, transform(value), $am);
+function $bP(self, subscriber) {
+	return $aF(self, subscriber);
+}
+function $bO(self, subscriber) {
+	return $bP(self[0], subscriber);
+}
+function $bK(source, observer) {
+	const subscriber = $bA(source, observer);
+	return $bO(source, subscriber);
+}
+function $bJ(self, observer) {
+	return $bK(self, observer);
+}
+function $bI(self, observer, $aw, $ax) {
+	$aG(get_owner($ax), $bJ(self, observer), $aw);
+}
+function $bH(self, observer, $at, $au) {
+	$bI(self, observer, $at, $au);
+	observer($aC(self));
+}
+function $bG(self, condition, $aV, $aW) {
+	const element = __clone(self[0]);
+	const restored = element.style.getPropertyValue("display");
+	$bH(condition, (visible) => {
+		element.hidden = !(visible);
+		if (visible) {
+			element.style.setProperty("display", restored);
+		} else {
+			element.style.setProperty("display", "none");
+		}
 		return;
-	}), $am, $an);
-	return derived;
+	}, $aV, $aW);
+	return __clone(self);
 }
-function $by(self, b) {
-	if (self.length !== b.length) {
-		return false;
+function $ca(source, key, render) {
+	return [ __clone(source), key, render ];
+}
+function $ck(self) {
+	const $cl = self;
+	return $cl[0] === 1;
+}
+function $cq(held, at, count) {
+	if (at === 0 && count === held.v.length) {
+		const run2 = __clone(held.v);
+		return run2;
 	}
+	let span = [  ];
+	let index = at;
+	while (index < at + count) {
+		span.push(__clone(__at(held.v, index)));
+		index = index + 1;
+	}
+	return span;
+}
+function $cu(old_keys, old_items, items, key_of, same) {
+	let claimed = [  ];
+	for (const _ of old_keys) {
+		claimed.push(false);
+	}
+	const held = old_keys.length;
+	let first = new Map();
+	let next_same = [  ];
+	for (const _ of old_keys) {
+		next_same.push([ 1 ]);
+	}
+	let build = held;
+	while (build > 0) {
+		build = build - 1;
+		const canonical = hash2(__at(old_keys, build));
+		__at_put(next_same, build, __map_get(first, canonical));
+		first.set(canonical, build);
+	}
+	let steps = [  ];
+	for (const item of items) {
+		const item_key = key_of(item);
+		const canonical2 = hash2(item_key);
+		let head = __map_get(first, canonical2);
+		let advancing = true;
+		while (advancing) {
+			const $cv = head;
+			let $cw = null;
+			if ($cv[0] === 0) {
+				const at = $cv[1];
+				if (__at(claimed, at)) {
+					head = __at(next_same, at);
+				} else {
+					advancing = false;
+				}
+				$cw = undefined;
+			} else {
+				$cw = advancing = false;
+			}
+			$cw;
+		}
+		const $cx = head;
+		let $cy = null;
+		if ($cx[0] === 0) {
+			const at2 = $cx[1];
+			$cy = first.set(canonical2, at2);
+		} else {
+			$cy = first.delete(canonical2);
+		}
+		$cy;
+		let found = [ 1 ];
+		let walk = head;
+		let walking = true;
+		while (walking) {
+			const $cz = walk;
+			let $cA = null;
+			if ($cz[0] === 0) {
+				const at3 = $cz[1];
+				if (!(__at(claimed, at3)) && __at(old_keys, at3) === item_key) {
+					found = [ 0, at3 ];
+					walking = false;
+				} else {
+					walk = __at(next_same, at3);
+				}
+				$cA = undefined;
+			} else {
+				$cA = walking = false;
+			}
+			$cA;
+		}
+		let step = [ 2 ];
+		const $cB = found;
+		if ($cB[0] === 0) {
+			__at_put(claimed, $cB[1], true);
+			let $cC = null;
+			if (same(__at(old_items, $cB[1]), item)) {
+				$cC = [ 0, $cB[1] ];
+			} else {
+				$cC = [ 1, $cB[1] ];
+			}
+			step = $cC;
+		}
+		steps.push(step);
+	}
+	let removed = [  ];
 	let index = 0;
-	for (const item of self) {
-		if (!(eq2(item, __at(b, index)))) {
-			return false;
+	while (index < held) {
+		if (!(__at(claimed, index))) {
+			removed.push(index);
 		}
 		index = index + 1;
 	}
-	return true;
-}
-function $bx(old_keys, old_items, items, key_of) {
-	let claimed = [  ];
-	for (const _ of old_keys) {
-		claimed.push(false);
-	}
-	let steps = [  ];
-	for (const item of items) {
-		const item_key = key_of(item);
-		let step = [ 2 ];
-		let index = 0;
-		while (index < old_keys.length) {
-			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
-				__at_put(claimed, index, true);
-				let $bz = null;
-				if (eq(__at(old_items, index), item)) {
-					$bz = [ 0, index ];
-				} else {
-					$bz = [ 1, index ];
-				}
-				step = $bz;
-				break;
-			}
-			index = index + 1;
-		}
-		steps.push(step);
-	}
-	let removed = [  ];
-	let index2 = 0;
-	while (index2 < old_keys.length) {
-		if (!(__at(claimed, index2))) {
-			removed.push(index2);
-		}
-		index2 = index2 + 1;
-	}
 	return [ steps, removed ];
 }
-function $bD(owner, body) {
+function $cN(self) {
+	let result = [  ];
+	let index = self.length;
+	while (index > 0) {
+		index = index - 1;
+		result.push(__clone(__at(self, index)));
+	}
+	return result;
+}
+function $dk(self, content, end, $dl, $dm) {
+	const marker = document.createTextNode("");
+	host(self).insertBefore(marker, end);
+	const staging = document.createDocumentFragment();
+	place(content, [ __clone(staging) ], $dl, $dm);
+	host(self).insertBefore(staging, end);
+	return [ marker ];
+}
+function $dn(owner, body) {
 	return body(owner);
 }
-function $bu(self, source, key, render, $bv, $bw) {
-	const element = __clone(self[0]);
+function $ds(self) {
+	return [ 1 ];
+}
+function $dw(self, observer, $aw, $ax) {
+	$aG(get_owner($ax), $bl(self, observer), $aw);
+}
+function $dv(self, observer, $at, $au) {
+	$dw(self, observer, $at, $au);
+	observer($B(self));
+}
+function $dB(self, cursor) {
+
+}
+function $dC(self, cursor) {
+	let none = [  ];
+	return none;
+}
+function $dD(ops) {
+	let last = [ 1 ];
+	let index = 0;
+	for (const op of ops) {
+		const $dE = op;
+		let $dF = null;
+		if ($dE[0] === 2) {
+			const _items = $dE[1];
+			last = [ 0, index ];
+			$dF = undefined;
+		} else {
+			$dF = undefined;
+		}
+		$dF;
+		index = index + 1;
+	}
+	const $dG = last;
+	let $dH = null;
+	if ($dG[0] === 0 && $dG[1] > 0) {
+		$dH = $dG[1];
+	} else {
+		return __clone(ops);
+	}
+	const from = $dH;
+	let live = [  ];
+	index = from;
+	while (index < ops.length) {
+		live.push(__at(ops, index));
+		index = index + 1;
+	}
+	return live;
+}
+function $cf(parent, source, key, render, $cg, $ch) {
+	const region = open(parent);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
-	const row_views = __shared_new([  ]);
+	const row_cells = __shared_new([  ]);
+	const row_rows = region[2];
 	const row_owners = __shared_new([  ]);
-	defer(get_owner($bw), () => {
+	defer(get_owner($ch), () => {
 		for (const owner of row_owners.v) {
 			dispose2(owner);
 		}
+		close(region);
 		return;
 	});
-	$aO(source, (list) => {
-		const plan = $bx(row_keys.v, row_items.v, list, key);
-		const previous_views = row_views.v;
-		const previous_owners = row_owners.v;
-		for (const index of plan[1]) {
-			dispose2(__at(previous_owners, index));
-			__at(previous_views, index)[0].remove();
+	const reconcile_span = (at, count, list) => {
+		const whole = at === 0 && count === row_rows.v.length;
+		const previous_cells = $cq(row_cells, at, count);
+		const previous_rows = $cq(row_rows, at, count);
+		const previous_owners = $cq(row_owners, at, count);
+		let $ct = null;
+		if (at + count < row_rows.v.length) {
+			$ct = __at(row_rows.v, at + count)[0];
+		} else {
+			$ct = region[0];
 		}
-		let next_views = [  ];
-		let next_owners = [  ];
-		let position = 0;
+		const boundary = $ct;
+		const same = (_before, _after) => {
+			return true;
+		};
+		let $cD = null;
+		if (whole) {
+			$cD = $cu(row_keys.v, row_items.v, list, key, same);
+		} else {
+			$cD = $cu($cq(row_keys, at, count), $cq(row_items, at, count), list, key, same);
+		}
+		const plan = $cD;
+		const settled = settled_steps(plan[0]);
+		const references = row_references(plan[0], previous_rows, settled, boundary);
+		let staying = [  ];
+		let fill = 0;
+		while (fill < previous_rows.length) {
+			staying.push(false);
+			fill = fill + 1;
+		}
+		let settled_at = 0;
 		for (const step of plan[0]) {
-			const item = __clone(__at(list, position));
-			const $bA = step;
-			let $bB = null;
-			if ($bA[0] === 0) {
-				const index2 = $bA[1];
-				next_views.push(__clone(__at(previous_views, index2)));
-				next_owners.push(__clone(__at(previous_owners, index2)));
-				$bB = undefined;
-			} else if ($bA[0] === 1) {
-				const index3 = $bA[1];
-				dispose2(__at(previous_owners, index3));
-				__at(previous_views, index3)[0].remove();
-				const owner = new3();
-				next_views.push($bD(owner, ($bC) => {
-					return render(item, $bC);
-				}));
-				next_owners.push(owner);
-				$bB = undefined;
-			} else {
-				const owner2 = new3();
-				next_views.push($bD(owner2, ($bE) => {
-					return render(item, $bE);
-				}));
-				next_owners.push(owner2);
-				$bB = undefined;
-			}
-			$bB;
-			position = position + 1;
-		}
-		for (const row of next_views) {
-			element.appendChild(row[0]);
-		}
-		let next_keys = [  ];
-		for (const item2 of list) {
-			next_keys.push(key(item2));
-		}
-		row_keys.v = next_keys;
-		row_items.v = list;
-		row_views.v = next_views;
-		row_owners.v = next_owners;
-		return;
-	}, $bv, $bw);
-	return __clone(self);
-}
-function $bO(old_keys, old_items, items, key_of) {
-	let claimed = [  ];
-	for (const _ of old_keys) {
-		claimed.push(false);
-	}
-	let steps = [  ];
-	for (const item of items) {
-		const item_key = key_of(item);
-		let step = [ 2 ];
-		let index = 0;
-		while (index < old_keys.length) {
-			if (!(__at(claimed, index)) && __at(old_keys, index) === item_key) {
-				__at_put(claimed, index, true);
-				let $bP = null;
-				if (eq3(__at(old_items, index), item)) {
-					$bP = [ 0, index ];
+			let $cU = null;
+			if (__at(settled, settled_at)) {
+				const $cS = step;
+				let $cT = null;
+				if ($cS[0] === 0) {
+					const index = $cS[1];
+					__at_put(staying, index, true);
+					$cT = undefined;
 				} else {
-					$bP = [ 1, index ];
+					$cT = undefined;
 				}
-				step = $bP;
-				break;
+				$cU = $cT;
 			}
-			index = index + 1;
+			$cU;
+			settled_at = settled_at + 1;
 		}
-		steps.push(step);
-	}
-	let removed = [  ];
-	let index2 = 0;
-	while (index2 < old_keys.length) {
-		if (!(__at(claimed, index2))) {
-			removed.push(index2);
+		let cut = [  ];
+		let index2 = 0;
+		for (const row of previous_rows) {
+			if (__at(staying, index2)) {
+				cut.push([ 1 ]);
+			} else {
+				let $cV = null;
+				if (index2 + 1 < previous_rows.length) {
+					$cV = __at(previous_rows, index2 + 1)[0];
+				} else {
+					$cV = boundary;
+				}
+				const end = $cV;
+				cut.push([ 0, cut_row(region, row, end) ]);
+			}
+			index2 = index2 + 1;
 		}
-		index2 = index2 + 1;
-	}
-	return [ steps, removed ];
-}
-function $bN(self, source, key, render, $bv, $bw) {
-	const element = __clone(self[0]);
-	const row_keys = __shared_new([  ]);
-	const row_items = __shared_new([  ]);
-	const row_views = __shared_new([  ]);
-	const row_owners = __shared_new([  ]);
-	defer(get_owner($bw), () => {
-		for (const owner of row_owners.v) {
-			dispose2(owner);
+		for (const gone of plan[1]) {
+			dispose2(__at(previous_owners, gone));
+			drop_row(region, __at(previous_rows, gone));
 		}
-		return;
-	});
-	$aO(source, (list) => {
-		const plan = $bO(row_keys.v, row_items.v, list, key);
-		const previous_views = row_views.v;
-		const previous_owners = row_owners.v;
-		for (const index of plan[1]) {
-			dispose2(__at(previous_owners, index));
-			__at(previous_views, index)[0].remove();
-		}
-		let next_views = [  ];
+		let next_cells = [  ];
+		let next_rows = [  ];
 		let next_owners = [  ];
 		let position = 0;
-		for (const step of plan[0]) {
+		for (const step2 of plan[0]) {
 			const item = __clone(__at(list, position));
-			const $bQ = step;
-			let $bR = null;
-			if ($bQ[0] === 0) {
-				const index2 = $bQ[1];
-				next_views.push(__clone(__at(previous_views, index2)));
-				next_owners.push(__clone(__at(previous_owners, index2)));
-				$bR = undefined;
-			} else if ($bQ[0] === 1) {
-				const index3 = $bQ[1];
-				dispose2(__at(previous_owners, index3));
-				__at(previous_views, index3)[0].remove();
+			const reference = __clone(__at(references, position));
+			const $cW = step2;
+			let $cX = null;
+			if ($cW[0] === 0) {
+				const kept = $cW[1];
+				const cell = __clone(__at(previous_cells, kept));
+				$I(cell, item, $cg);
+				next_cells.push(cell);
+				const $de = __at(cut, kept);
+				let $df = null;
+				if ($de[0] === 0) {
+					const content = __clone($de[1]);
+					insert_row(region, __at(previous_rows, kept), content, reference);
+					$df = undefined;
+				} else {
+					$df = undefined;
+				}
+				$df;
+				next_rows.push(__clone(__at(previous_rows, kept)));
+				next_owners.push(__clone(__at(previous_owners, kept)));
+				$cX = undefined;
+			} else if ($cW[0] === 1) {
+				const kept2 = $cW[1];
+				const cell2 = __clone(__at(previous_cells, kept2));
+				$I(cell2, item, $cg);
+				next_cells.push(cell2);
+				const $dg = __at(cut, kept2);
+				let $dh = null;
+				if ($dg[0] === 0) {
+					const content2 = __clone($dg[1]);
+					insert_row(region, __at(previous_rows, kept2), content2, reference);
+					$dh = undefined;
+				} else {
+					$dh = undefined;
+				}
+				$dh;
+				next_rows.push(__clone(__at(previous_rows, kept2)));
+				next_owners.push(__clone(__at(previous_owners, kept2)));
+				$cX = undefined;
+			} else {
+				const cell3 = $b(item);
 				const owner = new3();
-				next_views.push($bD(owner, ($bC) => {
-					return render(item, $bC);
+				next_cells.push(__clone(cell3));
+				next_rows.push($dn(owner, ($dj) => {
+					return $dk(region, render(cell3, $dj), reference, $cg, $dj);
 				}));
 				next_owners.push(owner);
-				$bR = undefined;
-			} else {
-				const owner2 = new3();
-				next_views.push($bD(owner2, ($bE) => {
-					return render(item, $bE);
-				}));
-				next_owners.push(owner2);
-				$bR = undefined;
+				$cX = undefined;
 			}
-			$bR;
+			$cX;
 			position = position + 1;
-		}
-		for (const row of next_views) {
-			element.appendChild(row[0]);
 		}
 		let next_keys = [  ];
 		for (const item2 of list) {
 			next_keys.push(key(item2));
 		}
-		row_keys.v = next_keys;
-		row_items.v = list;
-		row_views.v = next_views;
-		row_owners.v = next_owners;
+		let $do = null;
+		if (whole) {
+			hold_rows(region, next_rows);
+			row_keys.v = next_keys;
+			row_items.v = __clone(list);
+			row_cells.v = next_cells;
+			row_owners.v = next_owners;
+		} else {
+			let taken = 0;
+			while (taken < count) {
+				__remove_at(row_rows.v, at);
+				__remove_at(row_owners.v, at);
+				__remove_at(row_cells.v, at);
+				__remove_at(row_keys.v, at);
+				__remove_at(row_items.v, at);
+				taken = taken + 1;
+			}
+			let offset = 0;
+			while (offset < next_rows.length) {
+				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset)));
+				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset)));
+				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset)));
+				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset)));
+				__insert_at(row_items.v, at + offset, __clone(__at(list, offset)));
+				offset = offset + 1;
+			}
+			$do = undefined;
+		}
+		return $do;
+	};
+	const reconcile_pass = (list) => {
+		return reconcile_span(0, row_rows.v.length, list);
+	};
+	const splice_rows = (at, removed, inserted) => {
+		let taken = 0;
+		while (taken < removed) {
+			let $dp = null;
+			if (at + 1 < row_rows.v.length) {
+				$dp = __at(row_rows.v, at + 1)[0];
+			} else {
+				$dp = region[0];
+			}
+			const end = $dp;
+			const going = __clone(__at(row_rows.v, at));
+			cut_row(region, going, end);
+			dispose2(__at(row_owners.v, at));
+			drop_row(region, going);
+			__remove_at(row_rows.v, at);
+			__remove_at(row_owners.v, at);
+			__remove_at(row_cells.v, at);
+			__remove_at(row_keys.v, at);
+			__remove_at(row_items.v, at);
+			taken = taken + 1;
+		}
+		let $dq = null;
+		if (at < row_rows.v.length) {
+			$dq = __at(row_rows.v, at)[0];
+		} else {
+			$dq = region[0];
+		}
+		const reference = $dq;
+		let offset = 0;
+		for (const item of inserted) {
+			const cell = $b(item);
+			const owner = new3();
+			const row = $dn(owner, ($dr) => {
+				return $dk(region, render(cell, $dr), reference, $cg, $dr);
+			});
+			__insert_at(row_rows.v, at + offset, row);
+			__insert_at(row_owners.v, at + offset, owner);
+			__insert_at(row_cells.v, at + offset, __clone(cell));
+			__insert_at(row_keys.v, at + offset, key(item));
+			__insert_at(row_items.v, at + offset, __clone(item));
+			offset = offset + 1;
+		}
 		return;
-	}, $bv, $bw);
+	};
+	const $dt = $ds(source);
+	let $du = null;
+	if ($dt[0] === 1) {
+		$du = $dv(source, reconcile_pass, $cg, $ch);
+	} else {
+		const cursor = $dt[1];
+		defer(get_owner($ch), () => {
+			return $dB(source, cursor);
+		});
+		$dw(source, (_published) => {
+			for (const op of $dD($dC(source, cursor))) {
+				const $dI = op;
+				let $dJ = null;
+				if ($dI[0] === 0) {
+					const at = $dI[1];
+					const removed = $dI[2];
+					const inserted = $dI[3];
+					if (removed.length === 0 || inserted.length === 0) {
+						splice_rows(at, removed.length, inserted);
+					} else {
+						reconcile_span(at, removed.length, inserted);
+					}
+					$dJ = undefined;
+				} else if ($dI[0] === 1) {
+					const at2 = $dI[1];
+					const _was = $dI[2];
+					const value = $dI[3];
+					const $dK = __list_get(row_keys.v, at2);
+					let $dL = null;
+					if ($dK[0] === 0) {
+						const held = $dK[1];
+						$dL = key(value) === held;
+					} else {
+						$dL = false;
+					}
+					const same_key = $dL;
+					let $dO = null;
+					if (same_key) {
+						const $dM = __list_get(row_cells.v, at2);
+						let $dN = null;
+						if ($dM[0] === 0) {
+							const cell = $dM[1];
+							__at_put(row_items.v, at2, __clone(value));
+							$I(cell, value, $cg);
+							$dN = undefined;
+						} else {
+							$dN = undefined;
+						}
+						$dO = $dN;
+					} else {
+						splice_rows(at2, 1, [ __clone(value) ]);
+					}
+					$dJ = $dO;
+				} else if ($dI[0] === 2) {
+					const items = $dI[1];
+					$dJ = reconcile_pass(items);
+				} else {
+					const from = $dI[1];
+					const count = $dI[2];
+					const to = $dI[3];
+					let moved = __clone(row_items.v);
+					let lifted = [  ];
+					let taken = 0;
+					while (taken < count) {
+						lifted.push(__remove_at(moved, from));
+						taken = taken + 1;
+					}
+					let offset = 0;
+					for (const item of lifted) {
+						__insert_at(moved, to + offset, __clone(item));
+						offset = offset + 1;
+					}
+					reconcile_pass(moved);
+					$dJ = undefined;
+				}
+				$dJ;
+			}
+			return;
+		}, $cg, $ch);
+		reconcile_pass($B(source));
+		$du = undefined;
+	}
+	return $du;
+}
+function $cc(self, parent, $cd, $ce) {
+	$cf(parent, self[0], self[1], self[2], $cd, $ce);
+}
+function $cb(self, content, $ak, $al) {
+	$cc(content, self, $ak, $al);
 	return __clone(self);
 }
-function $bV(body) {
+function $dY(self, subscriber) {
+	return $bP(self[0], subscriber);
+}
+function $dU(source, observer) {
+	const subscriber = $bA(source, observer);
+	return $dY(source, subscriber);
+}
+function $dT(self, observer) {
+	return $dU(self, observer);
+}
+function $dS(self, observer, $aw, $ax) {
+	$aG(get_owner($ax), $dT(self, observer), $aw);
+}
+function $dR(self, observer, $at, $au) {
+	$dS(self, observer, $at, $au);
+	observer($aC(self));
+}
+function $dQ(self, condition, $aV, $aW) {
+	const element = __clone(self[0]);
+	const restored = element.style.getPropertyValue("display");
+	$dR(condition, (visible) => {
+		element.hidden = !(visible);
+		if (visible) {
+			element.style.setProperty("display", restored);
+		} else {
+			element.style.setProperty("display", "none");
+		}
+		return;
+	}, $aV, $aW);
+	return __clone(self);
+}
+function $eT(self, observer, $at, $au) {
+	$dw(self, observer, $at, $au);
+	observer($B(self));
+}
+function $ei(parent, source, key, render, $cg, $ch) {
+	const region = open(parent);
+	const row_keys = __shared_new([  ]);
+	const row_items = __shared_new([  ]);
+	const row_cells = __shared_new([  ]);
+	const row_rows = region[2];
+	const row_owners = __shared_new([  ]);
+	defer(get_owner($ch), () => {
+		for (const owner of row_owners.v) {
+			dispose2(owner);
+		}
+		close(region);
+		return;
+	});
+	const reconcile_span = (at, count, list) => {
+		const whole = at === 0 && count === row_rows.v.length;
+		const previous_cells = $cq(row_cells, at, count);
+		const previous_rows = $cq(row_rows, at, count);
+		const previous_owners = $cq(row_owners, at, count);
+		let $ek = null;
+		if (at + count < row_rows.v.length) {
+			$ek = __at(row_rows.v, at + count)[0];
+		} else {
+			$ek = region[0];
+		}
+		const boundary = $ek;
+		const same = (_before, _after) => {
+			return true;
+		};
+		let $eu = null;
+		if (whole) {
+			$eu = $cu(row_keys.v, row_items.v, list, key, same);
+		} else {
+			$eu = $cu($cq(row_keys, at, count), $cq(row_items, at, count), list, key, same);
+		}
+		const plan = $eu;
+		const settled = settled_steps(plan[0]);
+		const references = row_references(plan[0], previous_rows, settled, boundary);
+		let staying = [  ];
+		let fill = 0;
+		while (fill < previous_rows.length) {
+			staying.push(false);
+			fill = fill + 1;
+		}
+		let settled_at = 0;
+		for (const step of plan[0]) {
+			let $ey = null;
+			if (__at(settled, settled_at)) {
+				const $ew = step;
+				let $ex = null;
+				if ($ew[0] === 0) {
+					const index = $ew[1];
+					__at_put(staying, index, true);
+					$ex = undefined;
+				} else {
+					$ex = undefined;
+				}
+				$ey = $ex;
+			}
+			$ey;
+			settled_at = settled_at + 1;
+		}
+		let cut = [  ];
+		let index2 = 0;
+		for (const row of previous_rows) {
+			if (__at(staying, index2)) {
+				cut.push([ 1 ]);
+			} else {
+				let $ez = null;
+				if (index2 + 1 < previous_rows.length) {
+					$ez = __at(previous_rows, index2 + 1)[0];
+				} else {
+					$ez = boundary;
+				}
+				const end = $ez;
+				cut.push([ 0, cut_row(region, row, end) ]);
+			}
+			index2 = index2 + 1;
+		}
+		for (const gone of plan[1]) {
+			dispose2(__at(previous_owners, gone));
+			drop_row(region, __at(previous_rows, gone));
+		}
+		let next_cells = [  ];
+		let next_rows = [  ];
+		let next_owners = [  ];
+		let position = 0;
+		for (const step2 of plan[0]) {
+			const item = __clone(__at(list, position));
+			const reference = __clone(__at(references, position));
+			const $eA = step2;
+			let $eB = null;
+			if ($eA[0] === 0) {
+				const kept = $eA[1];
+				const cell = __clone(__at(previous_cells, kept));
+				$I(cell, item, $cg);
+				next_cells.push(cell);
+				const $eI = __at(cut, kept);
+				let $eJ = null;
+				if ($eI[0] === 0) {
+					const content = __clone($eI[1]);
+					insert_row(region, __at(previous_rows, kept), content, reference);
+					$eJ = undefined;
+				} else {
+					$eJ = undefined;
+				}
+				$eJ;
+				next_rows.push(__clone(__at(previous_rows, kept)));
+				next_owners.push(__clone(__at(previous_owners, kept)));
+				$eB = undefined;
+			} else if ($eA[0] === 1) {
+				const kept2 = $eA[1];
+				const cell2 = __clone(__at(previous_cells, kept2));
+				$I(cell2, item, $cg);
+				next_cells.push(cell2);
+				const $eK = __at(cut, kept2);
+				let $eL = null;
+				if ($eK[0] === 0) {
+					const content2 = __clone($eK[1]);
+					insert_row(region, __at(previous_rows, kept2), content2, reference);
+					$eL = undefined;
+				} else {
+					$eL = undefined;
+				}
+				$eL;
+				next_rows.push(__clone(__at(previous_rows, kept2)));
+				next_owners.push(__clone(__at(previous_owners, kept2)));
+				$eB = undefined;
+			} else {
+				const cell3 = $b(item);
+				const owner = new3();
+				next_cells.push(__clone(cell3));
+				next_rows.push($dn(owner, ($dj) => {
+					return $dk(region, render(cell3, $dj), reference, $cg, $dj);
+				}));
+				next_owners.push(owner);
+				$eB = undefined;
+			}
+			$eB;
+			position = position + 1;
+		}
+		let next_keys = [  ];
+		for (const item2 of list) {
+			next_keys.push(key(item2));
+		}
+		let $eN = null;
+		if (whole) {
+			hold_rows(region, next_rows);
+			row_keys.v = next_keys;
+			row_items.v = __clone(list);
+			row_cells.v = next_cells;
+			row_owners.v = next_owners;
+		} else {
+			let taken = 0;
+			while (taken < count) {
+				__remove_at(row_rows.v, at);
+				__remove_at(row_owners.v, at);
+				__remove_at(row_cells.v, at);
+				__remove_at(row_keys.v, at);
+				__remove_at(row_items.v, at);
+				taken = taken + 1;
+			}
+			let offset = 0;
+			while (offset < next_rows.length) {
+				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset)));
+				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset)));
+				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset)));
+				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset)));
+				__insert_at(row_items.v, at + offset, __clone(__at(list, offset)));
+				offset = offset + 1;
+			}
+			$eN = undefined;
+		}
+		return $eN;
+	};
+	const reconcile_pass = (list) => {
+		return reconcile_span(0, row_rows.v.length, list);
+	};
+	const splice_rows = (at, removed, inserted) => {
+		let taken = 0;
+		while (taken < removed) {
+			let $eO = null;
+			if (at + 1 < row_rows.v.length) {
+				$eO = __at(row_rows.v, at + 1)[0];
+			} else {
+				$eO = region[0];
+			}
+			const end = $eO;
+			const going = __clone(__at(row_rows.v, at));
+			cut_row(region, going, end);
+			dispose2(__at(row_owners.v, at));
+			drop_row(region, going);
+			__remove_at(row_rows.v, at);
+			__remove_at(row_owners.v, at);
+			__remove_at(row_cells.v, at);
+			__remove_at(row_keys.v, at);
+			__remove_at(row_items.v, at);
+			taken = taken + 1;
+		}
+		let $eP = null;
+		if (at < row_rows.v.length) {
+			$eP = __at(row_rows.v, at)[0];
+		} else {
+			$eP = region[0];
+		}
+		const reference = $eP;
+		let offset = 0;
+		for (const item of inserted) {
+			const cell = $b(item);
+			const owner = new3();
+			const row = $dn(owner, ($dr) => {
+				return $dk(region, render(cell, $dr), reference, $cg, $dr);
+			});
+			__insert_at(row_rows.v, at + offset, row);
+			__insert_at(row_owners.v, at + offset, owner);
+			__insert_at(row_cells.v, at + offset, __clone(cell));
+			__insert_at(row_keys.v, at + offset, key(item));
+			__insert_at(row_items.v, at + offset, __clone(item));
+			offset = offset + 1;
+		}
+		return;
+	};
+	const $eR = $ds(source);
+	let $eS = null;
+	if ($eR[0] === 1) {
+		$eS = $eT(source, reconcile_pass, $cg, $ch);
+	} else {
+		const cursor = $eR[1];
+		defer(get_owner($ch), () => {
+			return $dB(source, cursor);
+		});
+		$dw(source, (_published) => {
+			for (const op of $dD($dC(source, cursor))) {
+				const $fg = op;
+				let $fh = null;
+				if ($fg[0] === 0) {
+					const at = $fg[1];
+					const removed = $fg[2];
+					const inserted = $fg[3];
+					if (removed.length === 0 || inserted.length === 0) {
+						splice_rows(at, removed.length, inserted);
+					} else {
+						reconcile_span(at, removed.length, inserted);
+					}
+					$fh = undefined;
+				} else if ($fg[0] === 1) {
+					const at2 = $fg[1];
+					const _was = $fg[2];
+					const value = $fg[3];
+					const $fi = __list_get(row_keys.v, at2);
+					let $fj = null;
+					if ($fi[0] === 0) {
+						const held = $fi[1];
+						$fj = key(value) === held;
+					} else {
+						$fj = false;
+					}
+					const same_key = $fj;
+					let $fm = null;
+					if (same_key) {
+						const $fk = __list_get(row_cells.v, at2);
+						let $fl = null;
+						if ($fk[0] === 0) {
+							const cell = $fk[1];
+							__at_put(row_items.v, at2, __clone(value));
+							$I(cell, value, $cg);
+							$fl = undefined;
+						} else {
+							$fl = undefined;
+						}
+						$fm = $fl;
+					} else {
+						splice_rows(at2, 1, [ __clone(value) ]);
+					}
+					$fh = $fm;
+				} else if ($fg[0] === 2) {
+					const items = $fg[1];
+					$fh = reconcile_pass(items);
+				} else {
+					const from = $fg[1];
+					const count = $fg[2];
+					const to = $fg[3];
+					let moved = __clone(row_items.v);
+					let lifted = [  ];
+					let taken = 0;
+					while (taken < count) {
+						lifted.push(__remove_at(moved, from));
+						taken = taken + 1;
+					}
+					let offset = 0;
+					for (const item of lifted) {
+						__insert_at(moved, to + offset, __clone(item));
+						offset = offset + 1;
+					}
+					reconcile_pass(moved);
+					$fh = undefined;
+				}
+				$fh;
+			}
+			return;
+		}, $cg, $ch);
+		reconcile_pass($B(source));
+		$eS = undefined;
+	}
+	return $eS;
+}
+function $eh(self, parent, $cd, $ce) {
+	$ei(parent, self[0], self[1], self[2], $cd, $ce);
+}
+function $eg(self, content, $ak, $al) {
+	$eh(content, self, $ak, $al);
+	return __clone(self);
+}
+function $fo(body) {
 	const scope = new3();
 	const result = body(scope);
 	return [ result, scope ];
 }
-function $cb(self, transform, $cc) {
-	$s(self, transform($y(self)), $cc);
+function $fA(self, transform, $fB) {
+	$v(self, transform($B(self)), $fB);
 }
+const minting_derivation = __shared_new(false);
 const next_subscriber_id = __shared_new(0);
 const draining_turns = __shared_new([  ]);
-const app_fill = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::height", [ "::height", [ "s22x0wn", "height:100%" ] ] ] ]) ] ];
-const quad_grid = [ [ new Map([ [ "::display", [ "::display", [ "sbipssh", "display:grid" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::gap", [ "::gap", [ "s1x5z460", "gap:1px" ] ] ], [ "::min-height", [ "::min-height", [ "sivwxlf", "min-height:0" ] ] ], [ "::background-color", [ "::background-color", [ "s1h4num7", "background-color:var(--stroke-hard)" ] ] ], [ "::grid-template-columns", [ "::grid-template-columns", [ "send2h", "grid-template-columns:minmax(0, 1fr)" ] ] ], [ "::grid-template-rows", [ "::grid-template-rows", [ "s11r85rj", "grid-template-rows:minmax(0, 8fr) minmax(0, 6fr) minmax(0, 4fr) minmax(0, 4fr)" ] ] ], [ "1024px::grid-template-columns", [ "1024px::grid-template-columns", [ "s1ox8bcr", "grid-template-columns:minmax(0, 3fr) minmax(0, 2fr)" ] ] ], [ "1024px::grid-template-rows", [ "1024px::grid-template-rows", [ "s1th8vpw", "grid-template-rows:minmax(0, 7fr) minmax(0, 3fr)" ] ] ] ]) ] ];
-const panel = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex-direction", [ "::flex-direction", [ "s1atdsbb", "flex-direction:column" ] ] ], [ "::min-width", [ "::min-width", [ "sitgfdt", "min-width:0" ] ] ], [ "::min-height", [ "::min-height", [ "sivwxlf", "min-height:0" ] ] ], [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ] ]) ] ];
-const panel_head = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ "szotvx1", "flex-wrap:wrap" ] ] ], [ "::flex-shrink", [ "::flex-shrink", [ "s1lr51x", "flex-shrink:0" ] ] ], [ "::gap", [ "::gap", [ "s8myyot", "gap:var(--space-1)" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5tg9", "padding-top:4px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzv99", "padding-bottom:4px" ] ] ], [ "::min-height", [ "::min-height", [ "sonfe9c", "min-height:32px" ] ] ], [ "::background-color", [ "::background-color", [ "ssxqr8g", "background-color:var(--down-bright)" ] ] ], [ "::box-sizing", [ "::box-sizing", [ "s9fgd5j", "box-sizing:border-box" ] ] ], [ "::justify-content", [ "::justify-content", [ "s1yv3ji6", "justify-content:space-between" ] ] ], [ "::border-bottom", [ "::border-bottom", [ "sepksxk", "border-bottom:1px solid var(--stroke-soft)" ] ] ] ]) ] ];
-const app_bar = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ "szotvx1", "flex-wrap:wrap" ] ] ], [ "::flex-shrink", [ "::flex-shrink", [ "s1lr51x", "flex-shrink:0" ] ] ], [ "::gap", [ "::gap", [ "s8myyot", "gap:var(--space-1)" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5tg9", "padding-top:4px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzv99", "padding-bottom:4px" ] ] ], [ "::min-height", [ "::min-height", [ "sonfe9c", "min-height:32px" ] ] ], [ "::background-color", [ "::background-color", [ "ssxqr8g", "background-color:var(--down-bright)" ] ] ], [ "::box-sizing", [ "::box-sizing", [ "s9fgd5j", "box-sizing:border-box" ] ] ], [ "::border-bottom", [ "::border-bottom", [ "sehiopn", "border-bottom:1px solid var(--stroke-hard)" ] ] ] ]) ] ];
-const rail_divider = [ [ new Map([ [ "::width", [ "::width", [ "sgdl0ko", "width:1px" ] ] ], [ "::align-self", [ "::align-self", [ "s1h12z4", "align-self:stretch" ] ] ], [ "::margin-left", [ "::margin-left", [ "szjswwl", "margin-left:2px" ] ] ], [ "::margin-right", [ "::margin-right", [ "suw81y3", "margin-right:2px" ] ] ], [ "::background-color", [ "::background-color", [ "s1h4num7", "background-color:var(--stroke-hard)" ] ] ] ]) ] ];
-const page_title = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ], [ "::line-height", [ "::line-height", [ "snq8awq", "line-height:16px" ] ] ], [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::color", [ "::color", [ "s1miqier", "color:var(--up-bright)" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
-const panel_title = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ], [ "::line-height", [ "::line-height", [ "snq8awq", "line-height:16px" ] ] ], [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzfp8", "font-weight:500" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ] ]) ] ];
-const editor_host = [ [ new Map([ [ "::overflow", [ "::overflow", [ "syp1ckj", "overflow:hidden" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sivwxlf", "min-height:0" ] ] ] ]) ] ];
-const runner_host = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::min-height", [ "::min-height", [ "sivwxlf", "min-height:0" ] ] ], [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ] ]) ] ];
-const ghost_button = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ], [ "::line-height", [ "::line-height", [ "snq8awq", "line-height:16px" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5tg9", "padding-top:4px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzv99", "padding-bottom:4px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::border-radius", [ "::border-radius", [ "s94jh8x", "border-radius:4px" ] ] ], [ "::transition", [ "::transition", [ "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::background-color", [ "::background-color", [ "s1wmjjx5", "background-color:transparent" ] ] ], [ "::border", [ "::border", [ "s1mnphwb", "border:none" ] ] ], [ ":hover:color", [ ":hover:color", [ "s1ytnaev", "color:var(--up-bright)" ] ] ], [ ":hover:background-color", [ ":hover:background-color", [ "s1s7tv0o", "background-color:var(--down-hover)" ] ] ], [ ":active:background-color", [ ":active:background-color", [ "skghblk", "background-color:var(--down-active)" ] ] ] ]) ] ];
-const primary_button = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ], [ "::line-height", [ "::line-height", [ "snq8awq", "line-height:16px" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5tg9", "padding-top:4px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzv99", "padding-bottom:4px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vfx", "padding-left:var(--space-3)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdpv", "padding-right:var(--space-3)" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::border-radius", [ "::border-radius", [ "s94jh8x", "border-radius:4px" ] ] ], [ "::transition", [ "::transition", [ "sj84onl", "transition:filter 80ms ease" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::color", [ "::color", [ "s30khfz", "color:var(--primary-on)" ] ] ], [ "::background-color", [ "::background-color", [ "s19dy6kf", "background-color:var(--primary)" ] ] ], [ "::border", [ "::border", [ "s1mnphwb", "border:none" ] ] ], [ ":hover:filter", [ ":hover:filter", [ "s15eo8y8", "filter:brightness(1.08)" ] ] ], [ ":active:filter", [ ":active:filter", [ "sdue9po", "filter:brightness(0.94)" ] ] ] ]) ] ];
-const select_box = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ], [ "::line-height", [ "::line-height", [ "snq8awq", "line-height:16px" ] ] ], [ "::padding-top", [ "::padding-top", [ "s1foenn1", "padding-top:0" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s1hggi4x", "padding-bottom:0" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t3pvj", "padding-right:22px" ] ] ], [ "::font-family", [ "::font-family", [ "s19qv9u6", "font-family:inherit" ] ] ], [ "::border-radius", [ "::border-radius", [ "s94jh8x", "border-radius:4px" ] ] ], [ "::transition", [ "::transition", [ "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ "::appearance", [ "::appearance", [ "sxfhabj", "appearance:none" ] ] ], [ "::height", [ "::height", [ "s22xxov", "height:24px" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ], [ "::border", [ "::border", [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ], [ "::background-image", [ "::background-image", [ "sg7ln4b", "background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)" ] ] ], [ "::background-position", [ "::background-position", [ "s1cysvk2", "background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)" ] ] ], [ "::background-size", [ "::background-size", [ "s1fnd457", "background-size:4px 4px, 4px 4px" ] ] ], [ "::background-repeat", [ "::background-repeat", [ "s1q9mjsm", "background-repeat:no-repeat" ] ] ], [ "::box-sizing", [ "::box-sizing", [ "s9fgd5j", "box-sizing:border-box" ] ] ], [ ":hover:color", [ ":hover:color", [ "s1ytnaev", "color:var(--up-bright)" ] ] ], [ ":hover:border-color", [ ":hover:border-color", [ "s1of7ou7", "border-color:var(--stroke-hard)" ] ] ] ]) ] ];
-const version_select = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk1zs", "font-size:12px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ], [ "::line-height", [ "::line-height", [ "snq8awq", "line-height:16px" ] ] ], [ "::padding-top", [ "::padding-top", [ "s1foenn1", "padding-top:0" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s1hggi4x", "padding-bottom:0" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s16t3pvj", "padding-right:22px" ] ] ], [ "::font-family", [ "::font-family", [ "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ], [ "::border-radius", [ "::border-radius", [ "s94jh8x", "border-radius:4px" ] ] ], [ "::transition", [ "::transition", [ "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ] ], [ "::cursor", [ "::cursor", [ "s1onu0uk", "cursor:pointer" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ "::appearance", [ "::appearance", [ "sxfhabj", "appearance:none" ] ] ], [ "::height", [ "::height", [ "s22xxov", "height:24px" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::background-color", [ "::background-color", [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ], [ "::border", [ "::border", [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ], [ "::background-image", [ "::background-image", [ "sg7ln4b", "background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)" ] ] ], [ "::background-position", [ "::background-position", [ "s1cysvk2", "background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)" ] ] ], [ "::background-size", [ "::background-size", [ "s1fnd457", "background-size:4px 4px, 4px 4px" ] ] ], [ "::background-repeat", [ "::background-repeat", [ "s1q9mjsm", "background-repeat:no-repeat" ] ] ], [ "::box-sizing", [ "::box-sizing", [ "s9fgd5j", "box-sizing:border-box" ] ] ], [ ":hover:color", [ ":hover:color", [ "s1ytnaev", "color:var(--up-bright)" ] ] ], [ ":hover:border-color", [ ":hover:border-color", [ "s1of7ou7", "border-color:var(--stroke-hard)" ] ] ], [ "::font-feature-settings", [ "::font-feature-settings", [ "s1r74r55", "font-feature-settings:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ] ] ]) ] ];
-const status_line = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ], [ "::line-height", [ "::line-height", [ "snq8awq", "line-height:16px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7ve3", "padding-left:var(--space-1)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdo1", "padding-right:var(--space-1)" ] ] ], [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::margin-left", [ "::margin-left", [ "s10oplpw", "margin-left:auto" ] ] ], [ "::color", [ "::color", [ "shpfnhp", "color:var(--up-dim)" ] ] ] ]) ] ];
-const confirm_bar = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ "szotvx1", "flex-wrap:wrap" ] ] ], [ "::flex-shrink", [ "::flex-shrink", [ "s1lr51x", "flex-shrink:0" ] ] ], [ "::gap", [ "::gap", [ "s8myypq", "gap:var(--space-2)" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5tg9", "padding-top:4px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzv99", "padding-bottom:4px" ] ] ], [ "::min-height", [ "::min-height", [ "sonfe9c", "min-height:32px" ] ] ], [ "::background-color", [ "::background-color", [ "ssxqr8g", "background-color:var(--down-bright)" ] ] ], [ "::box-sizing", [ "::box-sizing", [ "s9fgd5j", "box-sizing:border-box" ] ] ], [ "::border-bottom", [ "::border-bottom", [ "sepksxk", "border-bottom:1px solid var(--stroke-soft)" ] ] ] ]) ] ];
-const confirm_question = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ], [ "::line-height", [ "::line-height", [ "snq8awq", "line-height:16px" ] ] ], [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::margin-right", [ "::margin-right", [ "sp4tc1m", "margin-right:auto" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ]) ] ];
-const report_well = [ [ new Map([ [ "::font-family", [ "::font-family", [ "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ], [ "::font-feature-settings", [ "::font-feature-settings", [ "s1r74r55", "font-feature-settings:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ] ], [ "::overflow", [ "::overflow", [ "s19aluk0", "overflow:auto" ] ] ], [ "::flex", [ "::flex", [ "smaui08", "flex:1 1 auto" ] ] ], [ "::padding-top", [ "::padding-top", [ "sku5tg9", "padding-top:4px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzv99", "padding-bottom:4px" ] ] ], [ "::margin", [ "::margin", [ "s1tlfgp4", "margin:var(--space-0)" ] ] ], [ "::min-height", [ "::min-height", [ "sivwxlf", "min-height:0" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::line-height", [ "::line-height", [ "snq8cl8", "line-height:18px" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::white-space", [ "::white-space", [ "s41qynl", "white-space:pre-wrap" ] ] ] ]) ] ];
-const diag_row_error = [ [ new Map([ [ "::padding-top", [ "::padding-top", [ "sku5sm0", "padding-top:3px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzuf0", "padding-bottom:3px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ], [ "::border-top", [ "::border-top", [ "szweawk", "border-top:1px solid var(--stroke-soft)" ] ] ], [ "::border-left", [ "::border-left", [ "s1v5t6xm", "border-left:2px solid var(--down-danger)" ] ] ], [ ":first-child:border-top", [ ":first-child:border-top", [ "sq2xqkq", "border-top:1px solid transparent" ] ] ], [ "::background-color", [ "::background-color", [ "s1er9mcg", "background-color:rgb(from var(--down-danger) r g b / 0.07)" ] ] ] ]) ] ];
-const diag_row_warning = [ [ new Map([ [ "::padding-top", [ "::padding-top", [ "sku5sm0", "padding-top:3px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzuf0", "padding-bottom:3px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ], [ "::border-top", [ "::border-top", [ "szweawk", "border-top:1px solid var(--stroke-soft)" ] ] ], [ "::border-left", [ "::border-left", [ "somu7p8", "border-left:2px solid var(--down-caution)" ] ] ], [ ":first-child:border-top", [ ":first-child:border-top", [ "sq2xqkq", "border-top:1px solid transparent" ] ] ], [ "::background-color", [ "::background-color", [ "s6ng1wh", "background-color:rgb(from var(--down-caution) r g b / 0.06)" ] ] ] ]) ] ];
-const diag_error = [ [ new Map([ [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::color", [ "::color", [ "sxurvz1", "color:var(--up-error)" ] ] ] ]) ] ];
-const diag_warning = [ [ new Map([ [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::color", [ "::color", [ "s7y076u", "color:var(--up-caution)" ] ] ] ]) ] ];
-const diag_site = [ [ new Map([ [ "::color", [ "::color", [ "shpfnhp", "color:var(--up-dim)" ] ] ] ]) ] ];
-const diag_note = [ [ new Map([ [ "::color", [ "::color", [ "shpfnhp", "color:var(--up-dim)" ] ] ] ]) ] ];
-const diag_trace = [ [ new Map([ [ "::color", [ "::color", [ "shpfnhp", "color:var(--up-dim)" ] ] ] ]) ] ];
-const console_line = [ [ new Map([ [ "::padding-top", [ "::padding-top", [ "sku5qxi", "padding-top:1px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzsqi", "padding-bottom:1px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ]) ] ];
-const console_error = [ [ new Map([ [ "::padding-top", [ "::padding-top", [ "sku5qxi", "padding-top:1px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzsqi", "padding-bottom:1px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ], [ "::color", [ "::color", [ "sxurvz1", "color:var(--up-error)" ] ] ] ]) ] ];
-const quiet_row = [ [ new Map([ [ "::padding-top", [ "::padding-top", [ "sku5sm0", "padding-top:3px" ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ "s14jzuf0", "padding-bottom:3px" ] ] ], [ "::padding-left", [ "::padding-left", [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ], [ "::padding-right", [ "::padding-right", [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ], [ "::color", [ "::color", [ "shpfnhp", "color:var(--up-dim)" ] ] ] ]) ] ];
-const code_palette = [ [ new Map([ [ "::--code-face", [ "::--code-face", [ "sepvury", "--code-face:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ], [ "::--code-features", [ "::--code-features", [ "s1xx7ixb", "--code-features:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ] ], [ "::--code-size", [ "::--code-size", [ "s17tflw5", "--code-size:13px" ] ] ], [ "::--code-bg", [ "::--code-bg", [ "sr79rlz", "--code-bg:var(--down-normal)" ] ] ], [ "::--code-fg", [ "::--code-fg", [ "s19c5xn7", "--code-fg:var(--up-bright)" ] ] ], [ "::--code-dim", [ "::--code-dim", [ "s1u3ovjb", "--code-dim:var(--up-dim)" ] ] ], [ "::--code-gutter-edge", [ "::--code-gutter-edge", [ "s19k3kma", "--code-gutter-edge:var(--stroke-soft)" ] ] ], [ "::--code-active-line", [ "::--code-active-line", [ "s1fhczbb", "--code-active-line:rgb(from var(--up-bright) r g b / 0.04)" ] ] ], [ "::--code-active-gutter", [ "::--code-active-gutter", [ "s1t1pcq8", "--code-active-gutter:rgb(from var(--up-bright) r g b / 0.07)" ] ] ], [ "::--code-selection", [ "::--code-selection", [ "snky57a", "--code-selection:rgb(from var(--up-bright) r g b / 0.18)" ] ] ], [ "::--code-keyword", [ "::--code-keyword", [ "sbb9pzp", "--code-keyword:var(--primary)" ] ] ], [ "::--code-string", [ "::--code-string", [ "s18b2uzn", "--code-string:var(--accent)" ] ] ], [ "::--code-plain", [ "::--code-plain", [ "s8onzey", "--code-plain:var(--up-normal)" ] ] ], [ "::--code-callable", [ "::--code-callable", [ "s16k06qr", "--code-callable:var(--tint-callable)" ] ] ], [ "::--code-type", [ "::--code-type", [ "s1n2n3b1", "--code-type:var(--up-bright)" ] ] ], [ "::--code-comment", [ "::--code-comment", [ "s5j3euk", "--code-comment:var(--tint-comment)" ] ] ], [ "::--code-attr", [ "::--code-attr", [ "s14j98t0", "--code-attr:rgb(from var(--primary) r g b / 0.65)" ] ] ], [ "::--code-path", [ "::--code-path", [ "s7em04x", "--code-path:rgb(from var(--up-bright) r g b / 0.6)" ] ] ], [ "::--code-operator", [ "::--code-operator", [ "s8nt3s2", "--code-operator:rgb(from var(--up-bright) r g b / 0.72)" ] ] ], [ "::--code-error", [ "::--code-error", [ "s1dxptvb", "--code-error:var(--up-error)" ] ] ], [ "::--code-caution", [ "::--code-caution", [ "s1yauy2a", "--code-caution:var(--up-caution)" ] ] ] ]) ] ];
-const shell = [ [ new Map([ [ "::min-height", [ "::min-height", [ "sondrfd", "min-height:100%" ] ] ], [ "::font-family", [ "::font-family", [ "s1om2gx7", "font-family:\'Inter\', system-ui, -apple-system, sans-serif" ] ] ], [ "::font-size", [ "::font-size", [ "sayk3oa", "font-size:14px" ] ] ], [ "::line-height", [ "::line-height", [ "snq8cl8", "line-height:18px" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::background-color", [ "::background-color", [ "s4e3ofu", "background-color:var(--down-dim)" ] ] ] ]) ] ];
-const no_drag = [ [ new Map([ [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ "::-webkit-user-drag", [ "::-webkit-user-drag", [ "svfmjlf", "-webkit-user-drag:none" ] ] ] ]) ] ];
-const nav_brand = [ [ new Map([ [ "::display", [ "::display", [ "sbiovxm", "display:flex" ] ] ], [ "::gap", [ "::gap", [ "s8myyqn", "gap:var(--space-3)" ] ] ], [ "::align-items", [ "::align-items", [ "s1rpzmas", "align-items:center" ] ] ], [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::font-weight", [ "::font-weight", [ "skjzgjh", "font-weight:600" ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ "s1odkmbv", "letter-spacing:0.35em" ] ] ] ]) ] ];
-const nav_mark = [ [ new Map([ [ "::display", [ "::display", [ "sowfjmu", "display:block" ] ] ], [ "::width", [ "::width", [ "s178hbq8", "width:36px" ] ] ], [ "::height", [ "::height", [ "s22x9bm", "height:18px" ] ] ], [ "::background-color", [ "::background-color", [ "syz58y5", "background-color:var(--up-bright)" ] ] ], [ "::-webkit-mask", [ "::-webkit-mask", [ "scqkrg6", "-webkit-mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ] ], [ "::mask", [ "::mask", [ "s11mtiwm", "mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ] ] ]) ] ];
-const nav_link = [ [ new Map([ [ "::font-size", [ "::font-size", [ "sayk2u1", "font-size:13px" ] ] ], [ "::color", [ "::color", [ "ssxqrx8", "color:var(--up-normal)" ] ] ], [ "::text-decoration", [ "::text-decoration", [ "svrgm1f", "text-decoration:none" ] ] ], [ "::transition", [ "::transition", [ "sbcnc8a", "transition:color 80ms ease" ] ] ], [ "::user-select", [ "::user-select", [ "s1iy45h3", "user-select:none" ] ] ], [ ":hover:color", [ ":hover:color", [ "s1ytnaev", "color:var(--up-bright)" ] ] ] ]) ] ];
+const releasing_turns = __shared_new([  ]);
+const app_fill = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::overflow", [ "::overflow", "syp1ckj", "overflow:hidden" ] ], [ "::flex-direction", [ "::flex-direction", "s1atdsbb", "flex-direction:column" ] ], [ "::height", [ "::height", "s22x0wn", "height:100%" ] ] ]) ] ];
+const quad_grid = [ [ new Map([ [ "::display", [ "::display", "sbipssh", "display:grid" ] ], [ "::flex", [ "::flex", "smaui08", "flex:1 1 auto" ] ], [ "::gap", [ "::gap", "s1x5z460", "gap:1px" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ], [ "::background-color", [ "::background-color", "s1h4num7", "background-color:var(--stroke-hard)" ] ], [ "::grid-template-columns", [ "::grid-template-columns", "send2h", "grid-template-columns:minmax(0, 1fr)" ] ], [ "::grid-template-rows", [ "::grid-template-rows", "s11r85rj", "grid-template-rows:minmax(0, 8fr) minmax(0, 6fr) minmax(0, 4fr) minmax(0, 4fr)" ] ], [ "1024px::grid-template-columns", [ "1024px::grid-template-columns", "s1ox8bcr", "grid-template-columns:minmax(0, 3fr) minmax(0, 2fr)" ] ], [ "1024px::grid-template-rows", [ "1024px::grid-template-rows", "s1th8vpw", "grid-template-rows:minmax(0, 7fr) minmax(0, 3fr)" ] ] ]) ] ];
+const panel = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::overflow", [ "::overflow", "syp1ckj", "overflow:hidden" ] ], [ "::flex-direction", [ "::flex-direction", "s1atdsbb", "flex-direction:column" ] ], [ "::min-width", [ "::min-width", "sitgfdt", "min-width:0" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ], [ "::background-color", [ "::background-color", "s1ydv2q1", "background-color:var(--down-normal)" ] ] ]) ] ];
+const panel_head = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::align-items", [ "::align-items", "s1rpzmas", "align-items:center" ] ], [ "::flex-wrap", [ "::flex-wrap", "szotvx1", "flex-wrap:wrap" ] ], [ "::flex-shrink", [ "::flex-shrink", "s1lr51x", "flex-shrink:0" ] ], [ "::gap", [ "::gap", "s8myyot", "gap:var(--space-1)" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::min-height", [ "::min-height", "sonfe9c", "min-height:32px" ] ], [ "::background-color", [ "::background-color", "ssxqr8g", "background-color:var(--down-bright)" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ "::justify-content", [ "::justify-content", "s1yv3ji6", "justify-content:space-between" ] ], [ "::border-bottom", [ "::border-bottom", "sepksxk", "border-bottom:1px solid var(--stroke-soft)" ] ] ]) ] ];
+const app_bar = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::align-items", [ "::align-items", "s1rpzmas", "align-items:center" ] ], [ "::flex-wrap", [ "::flex-wrap", "szotvx1", "flex-wrap:wrap" ] ], [ "::flex-shrink", [ "::flex-shrink", "s1lr51x", "flex-shrink:0" ] ], [ "::gap", [ "::gap", "s8myyot", "gap:var(--space-1)" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::min-height", [ "::min-height", "sonfe9c", "min-height:32px" ] ], [ "::background-color", [ "::background-color", "ssxqr8g", "background-color:var(--down-bright)" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ "::border-bottom", [ "::border-bottom", "sehiopn", "border-bottom:1px solid var(--stroke-hard)" ] ] ]) ] ];
+const rail_divider = [ [ new Map([ [ "::width", [ "::width", "sgdl0ko", "width:1px" ] ], [ "::align-self", [ "::align-self", "s1h12z4", "align-self:stretch" ] ], [ "::margin-left", [ "::margin-left", "szjswwl", "margin-left:2px" ] ], [ "::margin-right", [ "::margin-right", "suw81y3", "margin-right:2px" ] ], [ "::background-color", [ "::background-color", "s1h4num7", "background-color:var(--stroke-hard)" ] ] ]) ] ];
+const page_title = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::color", [ "::color", "s1miqier", "color:var(--up-bright)" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ] ]) ] ];
+const panel_title = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::font-weight", [ "::font-weight", "skjzfp8", "font-weight:500" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ] ]) ] ];
+const editor_host = [ [ new Map([ [ "::overflow", [ "::overflow", "syp1ckj", "overflow:hidden" ] ], [ "::flex", [ "::flex", "smaui08", "flex:1 1 auto" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ] ]) ] ];
+const runner_host = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::flex", [ "::flex", "smaui08", "flex:1 1 auto" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ], [ "::background-color", [ "::background-color", "s1ydv2q1", "background-color:var(--down-normal)" ] ] ]) ] ];
+const ghost_button = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::font-family", [ "::font-family", "s19qv9u6", "font-family:inherit" ] ], [ "::border-radius", [ "::border-radius", "s94jh8x", "border-radius:4px" ] ], [ "::transition", [ "::transition", "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ], [ "::cursor", [ "::cursor", "s1onu0uk", "cursor:pointer" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::background-color", [ "::background-color", "s1wmjjx5", "background-color:transparent" ] ], [ "::border", [ "::border", "s1mnphwb", "border:none" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ], [ ":hover:background-color", [ ":hover:background-color", "s1s7tv0o", "background-color:var(--down-hover)" ] ], [ ":active:background-color", [ ":active:background-color", "skghblk", "background-color:var(--down-active)" ] ] ]) ] ];
+const primary_button = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vfx", "padding-left:var(--space-3)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdpv", "padding-right:var(--space-3)" ] ], [ "::font-family", [ "::font-family", "s19qv9u6", "font-family:inherit" ] ], [ "::border-radius", [ "::border-radius", "s94jh8x", "border-radius:4px" ] ], [ "::transition", [ "::transition", "sj84onl", "transition:filter 80ms ease" ] ], [ "::cursor", [ "::cursor", "s1onu0uk", "cursor:pointer" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::color", [ "::color", "s30khfz", "color:var(--primary-on)" ] ], [ "::background-color", [ "::background-color", "s19dy6kf", "background-color:var(--primary)" ] ], [ "::border", [ "::border", "s1mnphwb", "border:none" ] ], [ ":hover:filter", [ ":hover:filter", "s15eo8y8", "filter:brightness(1.08)" ] ], [ ":active:filter", [ ":active:filter", "sdue9po", "filter:brightness(0.94)" ] ] ]) ] ];
+const select_box = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-top", [ "::padding-top", "s1foenn1", "padding-top:0" ] ], [ "::padding-bottom", [ "::padding-bottom", "s1hggi4x", "padding-bottom:0" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s16t3pvj", "padding-right:22px" ] ], [ "::font-family", [ "::font-family", "s19qv9u6", "font-family:inherit" ] ], [ "::border-radius", [ "::border-radius", "s94jh8x", "border-radius:4px" ] ], [ "::transition", [ "::transition", "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ], [ "::cursor", [ "::cursor", "s1onu0uk", "cursor:pointer" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::appearance", [ "::appearance", "sxfhabj", "appearance:none" ] ], [ "::height", [ "::height", "s22xxov", "height:24px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::background-color", [ "::background-color", "s1ydv2q1", "background-color:var(--down-normal)" ] ], [ "::border", [ "::border", "s8ckzec", "border:1px solid var(--stroke-soft)" ] ], [ "::background-image", [ "::background-image", "sg7ln4b", "background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)" ] ], [ "::background-position", [ "::background-position", "s1cysvk2", "background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)" ] ], [ "::background-size", [ "::background-size", "s1fnd457", "background-size:4px 4px, 4px 4px" ] ], [ "::background-repeat", [ "::background-repeat", "s1q9mjsm", "background-repeat:no-repeat" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ], [ ":hover:border-color", [ ":hover:border-color", "s1of7ou7", "border-color:var(--stroke-hard)" ] ] ]) ] ];
+const version_select = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk1zs", "font-size:12px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-top", [ "::padding-top", "s1foenn1", "padding-top:0" ] ], [ "::padding-bottom", [ "::padding-bottom", "s1hggi4x", "padding-bottom:0" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s16t3pvj", "padding-right:22px" ] ], [ "::font-family", [ "::font-family", "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ], [ "::border-radius", [ "::border-radius", "s94jh8x", "border-radius:4px" ] ], [ "::transition", [ "::transition", "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ], [ "::cursor", [ "::cursor", "s1onu0uk", "cursor:pointer" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::appearance", [ "::appearance", "sxfhabj", "appearance:none" ] ], [ "::height", [ "::height", "s22xxov", "height:24px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::background-color", [ "::background-color", "s1ydv2q1", "background-color:var(--down-normal)" ] ], [ "::border", [ "::border", "s8ckzec", "border:1px solid var(--stroke-soft)" ] ], [ "::background-image", [ "::background-image", "sg7ln4b", "background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)" ] ], [ "::background-position", [ "::background-position", "s1cysvk2", "background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)" ] ], [ "::background-size", [ "::background-size", "s1fnd457", "background-size:4px 4px, 4px 4px" ] ], [ "::background-repeat", [ "::background-repeat", "s1q9mjsm", "background-repeat:no-repeat" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ], [ ":hover:border-color", [ ":hover:border-color", "s1of7ou7", "border-color:var(--stroke-hard)" ] ], [ "::font-feature-settings", [ "::font-feature-settings", "s1r74r55", "font-feature-settings:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ] ]) ] ];
+const status_line = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-left", [ "::padding-left", "s13w7ve3", "padding-left:var(--space-1)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdo1", "padding-right:var(--space-1)" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::margin-left", [ "::margin-left", "s10oplpw", "margin-left:auto" ] ], [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
+const confirm_bar = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::align-items", [ "::align-items", "s1rpzmas", "align-items:center" ] ], [ "::flex-wrap", [ "::flex-wrap", "szotvx1", "flex-wrap:wrap" ] ], [ "::flex-shrink", [ "::flex-shrink", "s1lr51x", "flex-shrink:0" ] ], [ "::gap", [ "::gap", "s8myypq", "gap:var(--space-2)" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::min-height", [ "::min-height", "sonfe9c", "min-height:32px" ] ], [ "::background-color", [ "::background-color", "ssxqr8g", "background-color:var(--down-bright)" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ "::border-bottom", [ "::border-bottom", "sepksxk", "border-bottom:1px solid var(--stroke-soft)" ] ] ]) ] ];
+const confirm_question = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::margin-right", [ "::margin-right", "sp4tc1m", "margin-right:auto" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ] ]) ] ];
+const report_well = [ [ new Map([ [ "::font-family", [ "::font-family", "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ], [ "::font-feature-settings", [ "::font-feature-settings", "s1r74r55", "font-feature-settings:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ], [ "::overflow", [ "::overflow", "s19aluk0", "overflow:auto" ] ], [ "::flex", [ "::flex", "smaui08", "flex:1 1 auto" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ], [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::line-height", [ "::line-height", "snq8cl8", "line-height:18px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::white-space", [ "::white-space", "s41qynl", "white-space:pre-wrap" ] ] ]) ] ];
+const diag_row_error = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5sm0", "padding-top:3px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzuf0", "padding-bottom:3px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::border-top", [ "::border-top", "szweawk", "border-top:1px solid var(--stroke-soft)" ] ], [ "::border-left", [ "::border-left", "s1v5t6xm", "border-left:2px solid var(--down-danger)" ] ], [ ":first-child:border-top", [ ":first-child:border-top", "sq2xqkq", "border-top:1px solid transparent" ] ], [ "::background-color", [ "::background-color", "s1er9mcg", "background-color:rgb(from var(--down-danger) r g b / 0.07)" ] ] ]) ] ];
+const diag_row_warning = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5sm0", "padding-top:3px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzuf0", "padding-bottom:3px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::border-top", [ "::border-top", "szweawk", "border-top:1px solid var(--stroke-soft)" ] ], [ "::border-left", [ "::border-left", "somu7p8", "border-left:2px solid var(--down-caution)" ] ], [ ":first-child:border-top", [ ":first-child:border-top", "sq2xqkq", "border-top:1px solid transparent" ] ], [ "::background-color", [ "::background-color", "s6ng1wh", "background-color:rgb(from var(--down-caution) r g b / 0.06)" ] ] ]) ] ];
+const diag_error = [ [ new Map([ [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::color", [ "::color", "sxurvz1", "color:var(--up-error)" ] ] ]) ] ];
+const diag_warning = [ [ new Map([ [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::color", [ "::color", "s7y076u", "color:var(--up-caution)" ] ] ]) ] ];
+const diag_site = [ [ new Map([ [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
+const diag_note = [ [ new Map([ [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
+const diag_trace = [ [ new Map([ [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
+const console_line = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5qxi", "padding-top:1px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzsqi", "padding-bottom:1px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ] ]) ] ];
+const console_error = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5qxi", "padding-top:1px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzsqi", "padding-bottom:1px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::color", [ "::color", "sxurvz1", "color:var(--up-error)" ] ] ]) ] ];
+const quiet_row = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5sm0", "padding-top:3px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzuf0", "padding-bottom:3px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
+const code_palette = [ [ new Map([ [ "::--code-face", [ "::--code-face", "sepvury", "--code-face:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ], [ "::--code-features", [ "::--code-features", "s1xx7ixb", "--code-features:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ], [ "::--code-size", [ "::--code-size", "s17tflw5", "--code-size:13px" ] ], [ "::--code-bg", [ "::--code-bg", "sr79rlz", "--code-bg:var(--down-normal)" ] ], [ "::--code-fg", [ "::--code-fg", "s19c5xn7", "--code-fg:var(--up-bright)" ] ], [ "::--code-dim", [ "::--code-dim", "s1u3ovjb", "--code-dim:var(--up-dim)" ] ], [ "::--code-gutter-edge", [ "::--code-gutter-edge", "s19k3kma", "--code-gutter-edge:var(--stroke-soft)" ] ], [ "::--code-active-line", [ "::--code-active-line", "s1fhczbb", "--code-active-line:rgb(from var(--up-bright) r g b / 0.04)" ] ], [ "::--code-active-gutter", [ "::--code-active-gutter", "s1t1pcq8", "--code-active-gutter:rgb(from var(--up-bright) r g b / 0.07)" ] ], [ "::--code-selection", [ "::--code-selection", "snky57a", "--code-selection:rgb(from var(--up-bright) r g b / 0.18)" ] ], [ "::--code-keyword", [ "::--code-keyword", "sbb9pzp", "--code-keyword:var(--primary)" ] ], [ "::--code-string", [ "::--code-string", "s18b2uzn", "--code-string:var(--accent)" ] ], [ "::--code-plain", [ "::--code-plain", "s8onzey", "--code-plain:var(--up-normal)" ] ], [ "::--code-callable", [ "::--code-callable", "s16k06qr", "--code-callable:var(--tint-callable)" ] ], [ "::--code-type", [ "::--code-type", "s1n2n3b1", "--code-type:var(--up-bright)" ] ], [ "::--code-comment", [ "::--code-comment", "s5j3euk", "--code-comment:var(--tint-comment)" ] ], [ "::--code-attr", [ "::--code-attr", "s14j98t0", "--code-attr:rgb(from var(--primary) r g b / 0.65)" ] ], [ "::--code-path", [ "::--code-path", "s7em04x", "--code-path:rgb(from var(--up-bright) r g b / 0.6)" ] ], [ "::--code-operator", [ "::--code-operator", "s8nt3s2", "--code-operator:rgb(from var(--up-bright) r g b / 0.72)" ] ], [ "::--code-error", [ "::--code-error", "s1dxptvb", "--code-error:var(--up-error)" ] ], [ "::--code-caution", [ "::--code-caution", "s1yauy2a", "--code-caution:var(--up-caution)" ] ] ]) ] ];
+const shell = [ [ new Map([ [ "::min-height", [ "::min-height", "sondrfd", "min-height:100%" ] ], [ "::font-family", [ "::font-family", "s1om2gx7", "font-family:\'Inter\', system-ui, -apple-system, sans-serif" ] ], [ "::font-size", [ "::font-size", "sayk3oa", "font-size:14px" ] ], [ "::line-height", [ "::line-height", "snq8cl8", "line-height:18px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::background-color", [ "::background-color", "s4e3ofu", "background-color:var(--down-dim)" ] ] ]) ] ];
+const no_drag = [ [ new Map([ [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::-webkit-user-drag", [ "::-webkit-user-drag", "svfmjlf", "-webkit-user-drag:none" ] ] ]) ] ];
+const nav_brand = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::gap", [ "::gap", "s8myyqn", "gap:var(--space-3)" ] ], [ "::align-items", [ "::align-items", "s1rpzmas", "align-items:center" ] ], [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::letter-spacing", [ "::letter-spacing", "s1odkmbv", "letter-spacing:0.35em" ] ] ]) ] ];
+const nav_mark = [ [ new Map([ [ "::display", [ "::display", "sowfjmu", "display:block" ] ], [ "::width", [ "::width", "s178hbq8", "width:36px" ] ], [ "::height", [ "::height", "s22x9bm", "height:18px" ] ], [ "::background-color", [ "::background-color", "syz58y5", "background-color:var(--up-bright)" ] ], [ "::-webkit-mask", [ "::-webkit-mask", "scqkrg6", "-webkit-mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ], [ "::mask", [ "::mask", "s11mtiwm", "mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ] ]) ] ];
+const nav_link = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::text-decoration", [ "::text-decoration", "svrgm1f", "text-decoration:none" ] ], [ "::transition", [ "::transition", "sbcnc8a", "transition:color 80ms ease" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ] ]) ] ];
 const console_cap = 300;
 const status = $a("Loading the compiler\u{2026}");
 const diagnostics = $c([  ]);
@@ -1118,18 +2073,18 @@ const share = () => {
 	return VilanPlayground.share();
 };
 const load_example = (name) => {
-	const $q = name;
-	let $r = null;
-	if ($q === "server") {
-		$r = "node";
+	const $t = name;
+	let $u = null;
+	if ($t === "server") {
+		$u = "node";
 	} else {
-		$r = "browser";
+		$u = "browser";
 	}
-	const platform = $r;
+	const platform = $u;
 	VilanPlayground.setMode(platform);
 	VilanPlayground.setDoc(VilanPlayground.example(name));
-	$s(diagnostics, [  ], [ 1 ]);
-	$s(console_lines, [  ], [ 1 ]);
+	$v(diagnostics, [  ], [ 1 ]);
+	$v(console_lines, [  ], [ 1 ]);
 	run();
 	return;
 };
@@ -1142,7 +2097,7 @@ const pick = (name) => {
 	return;
 };
 const confirm_replace = () => {
-	const name = $y(confirm_target);
+	const name = $B(confirm_target);
 	$g(confirm_target, "", [ 1 ]);
 	if (name !== "") {
 		load_example(name);
@@ -1165,15 +2120,15 @@ const run_on_arrival = () => {
 const share_revert = __shared_new([ 1 ]);
 const flash_share = (label) => {
 	$g(share_label, label, [ 1 ]);
-	const $z = share_revert.v;
-	let $A = null;
-	if ($z[0] === 0) {
-		const timer = $z[1];
-		$A = cancel(timer);
+	const $C = share_revert.v;
+	let $D = null;
+	if ($C[0] === 0) {
+		const timer = $C[1];
+		$D = cancel(timer);
 	} else {
-		$A = undefined;
+		$D = undefined;
 	}
-	$A;
+	$D;
 	const timer2 = after(1600);
 	share_revert.v = [ 0, __clone(timer2) ];
 	__task(async () => {
@@ -1196,19 +2151,19 @@ const apply_diagnostics = (event) => {
 		id = id + 1;
 	}
 	next_row_id.v = id;
-	$F(diagnostics, rows, [ 1 ]);
+	$I(diagnostics, rows, [ 1 ]);
 	return rows.length;
 };
-mount_root("app", ($L) => {
-	return playground_page(status, diagnostics, console_lines, can_format, can_platform, share_label, mode, modified_from, confirm_target, run, format, share, confirm_replace, cancel_replace, [ 1 ], $L);
+mount_root("app", ($O) => {
+	return playground_page(status, diagnostics, console_lines, can_format, can_platform, share_label, mode, modified_from, confirm_target, run, format, share, confirm_replace, cancel_replace, [ 1 ], $O);
 });
 VilanPlayground.init("#editor", VilanPlayground.example("counter"));
 VilanPlayground.startCompiler((event) => {
 	const kind = event.kind;
-	let $bY = null;
+	let $fx = null;
 	if (kind === "ready") {
-		$bb(can_format, event.canFormat, [ 1 ]);
-		$bb(can_platform, event.canPlatform, [ 1 ]);
+		$I(can_format, event.canFormat, [ 1 ]);
+		$I(can_platform, event.canPlatform, [ 1 ]);
 		if (!(event.canPlatform)) {
 			VilanPlayground.setMode("browser");
 		}
@@ -1224,7 +2179,7 @@ VilanPlayground.startCompiler((event) => {
 		if (!(event.changed)) {
 			$g(confirm_target, "", [ 1 ]);
 		}
-		$bY = undefined;
+		$fx = undefined;
 	} else if (kind === "command") {
 		const command = event.command;
 		if (command === "run") {
@@ -1236,14 +2191,14 @@ VilanPlayground.startCompiler((event) => {
 		} else if (command === "mode") {
 			$g(mode, event.name, [ 1 ]);
 		}
-		$bY = undefined;
+		$fx = undefined;
 	} else if (kind === "formatted") {
 		if (event.changed) {
 			$g(status, "Formatted.", [ 1 ]);
 		} else {
 			$g(status, "Format made no changes.", [ 1 ]);
 		}
-		$bY = undefined;
+		$fx = undefined;
 	} else if (kind === "shared") {
 		if (event.copied) {
 			$g(status, "Link copied to the clipboard.", [ 1 ]);
@@ -1252,35 +2207,35 @@ VilanPlayground.startCompiler((event) => {
 			$g(status, "Link ready in the address bar.", [ 1 ]);
 			flash_share("Link ready");
 		}
-		$bY = undefined;
+		$fx = undefined;
 	} else if (kind === "checked") {
 		const count = apply_diagnostics(event);
-		let $bZ = null;
+		let $fy = null;
 		if (event.ok) {
 			if (event.platform === "node") {
 				$g(status, "No problems (server check, vilan " + event.version + ").", [ 1 ]);
 			} else {
 				$g(status, "No problems (vilan " + event.version + ").", [ 1 ]);
 			}
-			$bZ = undefined;
+			$fy = undefined;
 		} else if (count === 1) {
 			$g(status, "1 problem; see the diagnostics.", [ 1 ]);
 		} else {
 			$g(status, "" + count + " problems; see the diagnostics.", [ 1 ]);
 		}
-		$bY = $bZ;
+		$fx = $fy;
 	} else if (kind === "result") {
 		apply_diagnostics(event);
-		let $ca = null;
+		let $fz = null;
 		if (event.platform === "node") {
 			if (event.ok) {
 				$g(status, "Server program checks clean (vilan " + event.version + ").", [ 1 ]);
 			} else {
 				$g(status, "Build failed; see the diagnostics.", [ 1 ]);
 			}
-			$ca = undefined;
+			$fz = undefined;
 		} else {
-			$s(console_lines, [  ], [ 1 ]);
+			$v(console_lines, [  ], [ 1 ]);
 			if (event.ok) {
 				$g(status, "Compiled (vilan " + event.version + ")", [ 1 ]);
 				const token = crypto.randomUUID();
@@ -1291,20 +2246,20 @@ VilanPlayground.startCompiler((event) => {
 				run_token.v = "";
 				VilanPlayground.clearProgram();
 			}
-			$ca = undefined;
+			$fz = undefined;
 		}
-		$bY = $ca;
+		$fx = $fz;
 	} else if (kind === "crash") {
 		$g(status, "The compiler crashed on this input; it has been restarted. Please report the program that did it.", [ 1 ]);
 	}
-	return $bY;
+	return $fx;
 });
 window.addEventListener("message", (host_event) => {
 	const message = host_event.data;
 	const expected = run_token.v;
 	const kind = message.kind;
 	if (expected !== "" && message.token === expected && (kind === "log" || kind === "error")) {
-		$cb(console_lines, (lines) => {
+		$fA(console_lines, (lines) => {
 			let next = __clone(lines);
 			if (next.length < console_cap) {
 				const id = next_row_id.v;
