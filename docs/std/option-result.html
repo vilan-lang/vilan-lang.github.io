@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -177,7 +177,7 @@
 <code>Result&lt;T, E&gt;</code> is how it says “this can fail” (there are no exceptions).
 Both are plain enums with a large helper-method surface, listed here. For
 how they replace <code>null</code> checks and <code>try</code>/<code>catch</code> in practice (including
-the <code>!</code> and <code>?.</code> operators), read <a href="../tour/control-flow.html">Control flow</a>
+the <code>!</code>, <code>?.</code> and <code>?</code> operators), read <a href="../tour/control-flow.html">Control flow</a>
 first.</p>
 <pre><code class="language-vilan fragment">import std::option::Option::{ self, Some, None };
 import std::result::Result::{ self, Ok, Err };
@@ -196,7 +196,8 @@ impl Option&lt;type T&gt; {
 
 	// extraction
 	fun unwrap(own self): T                  // panics on None
-	fun unwrap_or(own self, fallback: T): T
+	fun expect(own self, lazy message: str): T    // panic with your message
+	fun unwrap_or(own self, lazy fallback: T): T
 	fun unwrap_or_else(own self, fn: || T): T
 
 	// in-place partial move — read/replace the slot through `&amp;mut self`,
@@ -229,9 +230,29 @@ impl Option&lt;Result&lt;type T, type E&gt;&gt; { fun transpose(own self): Resul
 impl Option&lt;type T: Default&gt; { fun unwrap_or_default(own self): T }
 impl Option&lt;(type T, type U)&gt; { fun unzip(own self): (Option&lt;T&gt;, Option&lt;U&gt;) }
 </code></pre>
-<p><code>str.parse_i32(): Option&lt;i32&gt;</code> and <code>str.parse_f64(): Option&lt;f64&gt;</code> (both
-declared here) are the string→number path, and <code>bool.then_some(value)</code> is the
-condition→<code>Option</code> one.</p>
+<p><code>str.parse_i32(): Option&lt;i32&gt;</code>, <code>str.parse_f64(): Option&lt;f64&gt;</code> and
+<code>str.parse_bool(): Option&lt;bool&gt;</code> (all declared here) are the string→value
+path, and <code>bool.then_some(value)</code> is the condition→<code>Option</code> one. All three
+trim surrounding whitespace and are otherwise <strong>strict</strong>: the whole remaining
+text must be the value. <code>parse_bool</code> accepts <code>"true"</code> and <code>"false"</code> only —
+the exact inverse of <code>Display::to_string</code> on a <code>bool</code>, and the set
+<code>std::json</code>’s bool reader accepts. <code>"1"</code>, <code>"0"</code>, <code>"True"</code> and <code>"yes"</code> are
+<code>None</code>, because a parse whose accepted set is wider than its writer’s output
+silently adopts some other producer’s convention; an app with a legacy store
+says so in one line at its own decoder.</p>
+<p>That is the whole conversion idiom, and none of it needs hand-writing: out
+through <code>Display::to_string</code>, back through <code>str.parse_*</code>, and anything
+structured through <code>std::json</code>’s <code>Json</code> / <code>FromJson</code>.</p>
+<pre><code class="language-vilan">import std::display::Display;
+import std::io::print;
+import std::option::Option;
+
+fun main() {
+	let stored = true.to_string();
+	print(stored.parse_bool().unwrap_or(false));
+	print("1".parse_bool().is_some());
+}
+</code></pre>
 <p>The combinators that hand the payload onward take <strong><code>own self</code></strong>: they move
 the value out of the <code>Option</code>, so they must own it (<code>docs/spec/memory.md</code> R3).
 For plain data that is invisible — <code>own</code> copies, and <code>opt.unwrap()</code> leaves
@@ -240,12 +261,14 @@ biting: <code>opt.unwrap()</code> <em>moves</em> <code>opt</code>, a later use o
 use-after-move error, and <code>opt</code> is not torn down at all (the payload
 you now hold is). The pure predicates — <code>is_some</code>, <code>is_none</code> — keep a
 borrowing <code>self</code> and never consume, so they stay free on a resource.</p>
-<p>Reaching a resource payload is a <code>match</code>, not a guarded <code>unwrap</code>: <code>match opt { Some(let value) =&gt; .., None =&gt; .. }</code> consumes <code>opt</code> on <em>every</em> path, which
+<p><code>expect</code> is <code>unwrap</code> with your own panic message, and its message is
+deferred: it costs nothing on the path that has a value. Reaching a
+resource payload is a <code>match</code>, not a guarded <code>unwrap</code>: <code>match opt { Some(let value) =&gt; .., None =&gt; .. }</code> consumes <code>opt</code> on <em>every</em> path, which
 is what R7 requires. <code>if (opt.is_some()) { opt.unwrap() }</code> moves <code>opt</code> on one
 path only and is rejected as a conditional move (before this was checked it
 compiled and destroyed the payload twice).</p>
-<p>The capture <em>owns</em> the payload it took, so it is torn down at the end of its
-leg unless you move it on — into <code>drop</code>, into a return, into an <code>own</code>
+<p>The capture <em>owns</em> the payload it took, so it is torn down at its last use
+inside the leg unless you move it on — into <code>drop</code>, into a return, into an <code>own</code>
 argument, into a struct field. Either way the payload is destroyed exactly
 once. A capture taken from a loan (<code>match &amp;opt</code>, or <code>opt is Some(let value)</code>)
 consumes nothing and owns nothing: <code>opt</code> stays the owner and tears the
@@ -278,10 +301,10 @@ impl Result&lt;type T, type E&gt; {
 	// extraction
 	fun unwrap(self): T                      // panics on Err
 	fun unwrap_err(self): E                  // panics on Ok
-	fun unwrap_or(self, fallback: T): T
+	fun unwrap_or(self, lazy fallback: T): T
 	fun unwrap_or_else(self, fn: |E| T): T
-	fun expect(self, message: str): T        // panic with your message
-	fun expect_err(self, message: str): E
+	fun expect(self, lazy message: str): T   // panic with your message
+	fun expect_err(self, lazy message: str): E
 
 	// transformation
 	fun map&lt;U&gt;(self, fn: |T| U): Result&lt;U, E&gt;
@@ -331,6 +354,18 @@ fun main() {
 <ul>
 <li>Prefer <code>!</code> (propagate) and <code>unwrap_or*</code> over <code>unwrap</code>: <code>unwrap</code> is for
 invariants, and it panics.</li>
+<li><code>unwrap_or</code>’s fallback and <code>expect</code>’s message are
+<a href="../tour/functions-and-closures.html#lazy-parameters"><strong><code>lazy</code></strong></a> on all
+five of <code>Option::expect</code>, <code>Option::unwrap_or</code>, <code>Result::expect</code>,
+<code>Result::unwrap_or</code> and <code>Result::expect_err</code>: the expression you write
+in that position is evaluated only on the path that needs it, at most
+once. So <code>opt.unwrap_or(expensive())</code> does not run <code>expensive()</code> when
+<code>opt</code> is <code>Some</code>, and <code>res.expect(i"no row for {key}")</code> builds no message
+when the row is there — nor does <code>res.expect_err(..)</code> on the <code>Err</code> path,
+which is the one it does not panic on. <code>unwrap_or_else</code> remains the explicit spelling — a
+closure, and on a <code>Result</code> the one that sees the error — and it is still
+the resource-clean one, because it PRODUCES the fallback instead of
+discarding it.</li>
 <li>Application errors belong in <code>Result</code>’s <code>E</code>; only unreachable
 states panic.</li>
 <li><code>match</code> with <code>Some(let x)</code> / <code>Ok(let x)</code> patterns is always available
@@ -388,7 +423,7 @@ when the method chain gets clever. Clarity beats cleverness.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

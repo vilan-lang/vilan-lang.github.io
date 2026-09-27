@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -298,6 +298,18 @@ async external fun sleep(ms: i32): void;
 </tbody>
 </table>
 </div>
+<p><strong>A global PROPERTY is not one of the forms.</strong> <code>[extern("global.path")]</code>
+binds a dotted global that is CALLABLE — <code>history.pushState</code>,
+<code>document.getElementById</code> — and it emits a call, so writing
+<code>[extern("document.activeElement")]</code> emits <code>document.activeElement()</code> and
+fails at the host. The compiler refuses the globals it knows are properties
+rather than letting the program ship. Two spellings work instead: bind the
+property on a RECEIVER with <code>[extern(get, "activeElement")]</code> when the
+program holds the object it hangs off, or — for a true global, which has no
+receiver — wrap it in a one-line host function of your own and bind that.
+std does the second for <code>window</code>, <code>location.pathname</code> and
+<code>document.activeElement</code>, which is why <code>std::dom::window()</code> and
+<code>std::dom::active_element()</code> exist.</p>
 <p>Any of them takes a trailing <code>retains</code> —
 <code>[extern(method, "addEventListener", retains)]</code> — and you need it whenever
 the host <em>keeps</em> what you hand it instead of reading it only until the
@@ -378,7 +390,7 @@ layered; most libraries never need this.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -233,18 +233,19 @@ for the explicit keywords when you <em>don’t</em> want to wait. The
 <tr><td>JSX: <code>&lt;div className="x"&gt;</code></td><td><code>&lt;div class("x")&gt;</code> — text children are quoted</td></tr>
 <tr><td>JSX: <code>onClick={handler}</code></td><td><code>on:click(handler)</code></td></tr>
 <tr><td>JSX: <code>&lt;TodoRow todo={t} /&gt;</code></td><td>a function call in a hole: <code>{todo_row(t)}</code></td></tr>
-<tr><td>CSS: <code>display: flex;</code></td><td>the same, inside <code>css { … }</code></td></tr>
-<tr><td>CSS: <code>color: #333;</code></td><td><code>color: {Color::hex("#333")};</code> — a hole</td></tr>
+<tr><td>CSS: <code>display: flex;</code></td><td><code>display("flex");</code> inside <code>css { … }</code> — a call</td></tr>
+<tr><td>CSS: <code>color: #333;</code></td><td><code>color(hex("#333"));</code> — a typed value</td></tr>
 <tr><td>CSS: <code>:hover { … }</code></td><td><code>.hover { … }</code> — a condition rule</td></tr>
 <tr><td>CSS: <code>@media (min-width: …)</code></td><td><code>.md { … }</code>, and <code>.sm</code> <code>.lg</code> <code>.xl</code></td></tr>
 <tr><td>CSS: <code>!important</code></td><td>nothing — a later declaration wins</td></tr>
-<tr><td>CSS: <code>gap: 1rem;</code> (hard-coded)</td><td><code>gap: {space(4)};</code> (a scale token)</td></tr>
+<tr><td>CSS: <code>gap: 1rem;</code> (hard-coded)</td><td><code>gap(space(4));</code> (a scale token)</td></tr>
 </tbody>
 </table>
 </div>
 <p>The CSS rows are a real block, not a template string: <code>css { … }</code> is
 core syntax that lowers to a <code>std::style</code> chain, so the property names
-are tokens the compiler sees and <code>vilan fmt</code> orders them for you. The
+are tokens the compiler sees, every value is an ordinary vilan
+expression the type system checks, and <code>vilan fmt</code> orders them for you. The
 <a href="../guide/styling.html#the-css-block">styling guide</a> has the whole shape.</p>
 <h2 id="things-that-look-the-same-and-mostly-are"><a class="header" href="#things-that-look-the-same-and-mostly-are">Things that look the same and mostly are</a></h2>
 <p>Closures (<code>|x| x * 2</code> instead of <code>x =&gt; x * 2</code>), string concatenation with
@@ -322,7 +323,7 @@ is written down there.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

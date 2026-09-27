@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -255,7 +255,7 @@ yours.</p>
 <tr><td><code>vilan init [name]</code></td><td>scaffold a project; <code>--template</code> picks <code>node</code>, <code>browser</code>, or <code>fullstack</code></td></tr>
 <tr><td><code>vilan build [path]</code></td><td>compile to <code>&lt;file&gt;.mjs</code> — <code>.js</code> for a browser entry (no path: use the nearest <code>vilan.toml</code>)</td></tr>
 <tr><td><code>vilan check [path]</code></td><td>type-check and report problems, write nothing</td></tr>
-<tr><td><code>vilan run [path] [args…]</code></td><td>build and run; extra args reach <code>process::args()</code></td></tr>
+<tr><td><code>vilan run [path] [args…]</code></td><td>build and run; extra args reach <code>process::args()</code>, under <code>import std::process;</code></td></tr>
 <tr><td><code>vilan fmt [paths…]</code></td><td>format source files in place (<code>--check</code> to verify only)</td></tr>
 <tr><td><code>vilan test [path]</code></td><td>run <code>*_test.vl</code> files (a failed <code>assert</code> panics = test fails)</td></tr>
 </tbody>
@@ -298,6 +298,7 @@ workspaces are covered in <a href="projects.html">Projects and dependencies</a>.
 import std::reactive::{ Signal, combine };  // several at once
 import std::option::Option::{ self, Some, None };  // a type plus its variants
 import pkg::routes::{ Route, parse };       // another file in YOUR package
+import pkg::lib::input_system::InputLayer;  // a file in a SUBDIRECTORY
 import common::{ Note, NotesClient };       // a dependency, by its name
 </code></pre>
 <p>There are three places an import can come from:</p>
@@ -309,6 +310,23 @@ module declaration.</li>
 <li>Anything else is a dependency, under the name you gave it in
 <code>vilan.toml</code>.</li>
 </ul>
+<h3 id="directories"><a class="header" href="#directories">Directories</a></h3>
+<p>Your modules can live in directories, and the path follows the layout:</p>
+<pre><code>src/
+  main.vl              the entry
+  routes.vl            pkg::routes
+  lib/
+    input_system.vl    pkg::lib::input_system
+    ui/
+      widget.vl        pkg::lib::ui::widget
+</code></pre>
+<p>Two rules cover the whole of it. A directory may have a <strong>body</strong> —
+<code>lib.vl</code> inside it (<code>src/lib/lib.vl</code> is <code>pkg::lib</code>) — or a file beside it
+(<code>src/lib.vl</code>, same thing); having both is an error, and having neither
+is fine, which makes the directory a pure grouping you reach only through
+the files inside it. And a module is imported by its <strong>own</strong> path:
+<code>import pkg::lib;</code> brings in what <code>lib.vl</code> declares, not what the
+directory holds, so <code>pkg::lib::input_system</code> is an import of its own.</p>
 <p>The <code>{ self, Some, None }</code> form imports the <code>Option</code> type <em>and</em> its
 variants, so you can write <code>Some(x)</code> without qualifying it. (That
 particular line is redundant in most packages — <code>Option</code> and its variants
@@ -323,9 +341,10 @@ name = "app"
 prelude = "std::web"    # omit the key for the default set
 </code></pre>
 <p>The default set is <code>print</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code>.
-The <strong>web</strong> set adds <code>Signal</code>, <code>view</code>, <code>View</code>, and the modules <code>style</code>
-and <code>ui</code> — so a UI file writes <code>view("div")</code> and <code>style::Display::Flex</code>
-with no import at all. <code>prelude = false</code> turns it off entirely.</p>
+The <strong>web</strong> set adds <code>Signal</code>, <code>SignalCell</code>, <code>view</code>, <code>View</code>, and the
+modules <code>style</code> and <code>ui</code> — so a UI file writes <code>view("div")</code> and
+<code>style::Display::Flex</code> with no import at all. <code>prelude = false</code> turns it
+off entirely.</p>
 <p>Two rules worth knowing:</p>
 <ul>
 <li><strong>It is the weakest scope.</strong> Declaring your own <code>print</code>, or importing a
@@ -422,7 +441,7 @@ Importing the module is fine; reaching it is what’s checked. The
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

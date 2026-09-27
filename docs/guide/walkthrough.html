@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -197,6 +197,7 @@ follows keystroke by keystroke.</p>
 <h2 id="the-shape"><a class="header" href="#the-shape">The shape</a></h2>
 <pre><code class="language-toml">[package]
 name = "notes"
+prelude = "std::web"
 
 [entry.client]
 target = "browser"
@@ -215,9 +216,16 @@ target = "browser"
     app.html      the shell the server serves
 </code></pre>
 <p>One package, two entries (<a href="../tour/platforms.html">Platforms</a> introduced
-this layout). There is no client/server directory split and no shared
-<code>common</code> package. Every file is visible to both entries, and the
-compiler sorts out what may run where by what each entry reaches.
+this layout). <code>prelude = "std::web"</code> is the other line worth reading: it
+puts <code>Signal</code>, <code>SignalCell</code>, <code>view</code>, <code>View</code> and the modules <code>style</code> and
+<code>ui</code> in scope in every file below with no <code>import</code>, which is why the
+snippets that follow have such short import blocks (see <a href="../tour/projects.html#the-prelude-key">the prelude
+key</a>). It is a <em>package</em> key, so
+both entries share it — every name in the set exists on node too, so the
+server leg loses nothing by it. There is no client/server directory
+split and no shared <code>common</code> package. Every file is visible to both
+entries, and the compiler sorts out what may run where by what each
+entry reaches.
 <code>store.vl</code> uses SQLite freely because only the server entry calls into
 it; if client code ever reached that far, the build would fail with the
 call chain.</p>
@@ -255,7 +263,7 @@ struct NotesStore {
 </code></pre>
 <p>Why module-level, and not a field on <code>NotesStore</code>? A <code>Database</code> is a
 <code>resource</code>: it has a single owner, it <em>moves</em> rather than copies, and it closes
-itself when its owner’s scope ends. A struct that owns a resource is itself a
+itself at its owner’s last use. A struct that owns a resource is itself a
 resource. <code>[service]</code> generates a dispatcher that captures the store into
 one closure per <code>[rpc]</code> method, which a resource can’t be (a closure capturing a
 resource is the double-owner bug the class exists to prevent). So the long-lived
@@ -407,12 +415,12 @@ has three layers, each one guide’s idea:</p>
 routed app <code>show</code>s once it isn’t. Signing in stores the token; signing
 out removes it and navigates home.</p>
 <p><strong>The list page.</strong> An add form bound to a local signal, and the list
-itself, one keyed <code>bind_each</code> over the mirror:</p>
-<pre><code class="language-vilan fragment">.child(view("ul").bind_each(notes, |note| note.id, |note| note_row(client, note, token)))
+itself, one keyed <code>each</code> over the mirror:</p>
+<pre><code class="language-vilan fragment">.child(view("ul").child(each(notes, |note| note.id, |note| note_row(client, note, token))))
 </code></pre>
 <p>That single line is the live sync. When any client adds or deletes a
 note, the mirror updates and the keyed rows reconcile
-(<a href="ui.html#lists-bind_each">Building UI</a>).</p>
+(<a href="ui.html#lists-each">Building UI</a>).</p>
 <p><strong>The editor.</strong> The note page finds its note in the mirror, waits for it
 under <code>when(present)</code> (so a deep link shows “loading…” until the first
 sync), and then the editor binds one draft per field:</p>
@@ -467,7 +475,7 @@ rebuild: the error names the whole chain from <code>main</code> down to the SQL.
 <tr><td>the package, its two entries</td><td><a href="../tour/hello-vilan.html">Hello Vilan</a>, <a href="../tour/platforms.html">Platforms</a></td></tr>
 <tr><td><code>Note</code>, derives, the enums</td><td><a href="../tour/data-and-traits.html">Data &amp; traits</a></td></tr>
 <tr><td>signals, effects, drafts</td><td><a href="reactive.html">Reactive state</a></td></tr>
-<tr><td>views, <code>bind_each</code>, <code>when</code>, <code>show</code></td><td><a href="ui.html">Building UI</a></td></tr>
+<tr><td>views, <code>each</code>, <code>when</code>, <code>show</code></td><td><a href="ui.html">Building UI</a></td></tr>
 <tr><td>the <code>const</code> styles</td><td><a href="styling.html">Styling</a></td></tr>
 <tr><td>the route enum, <code>swap</code>, <code>link</code></td><td><a href="routing.html">Routing</a></td></tr>
 <tr><td><code>[service]</code>, mirrors, reconnect</td><td><a href="services.html">Services &amp; RPC</a></td></tr>
@@ -531,7 +539,7 @@ is the one above.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

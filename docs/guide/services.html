@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,6 +186,12 @@ client gets a live copy that updates when the server writes it.</li>
 </ul>
 <p>There are no REST endpoints, fetch calls, or JSON shapes to keep in
 sync by hand. The compiler knows both sides.</p>
+<p>The attribute reads the <code>[rpc]</code> methods off this module’s inherent <code>impl</code>
+blocks, and <code>export impl</code> is one of them — <code>export</code> is visibility, not shape.
+A service that declares nothing at all — no <code>[rpc]</code> method, no <code>[expose]</code>d
+field, no <code>client = ..</code> handler — is refused: its client could call nothing,
+and because both generated sides would agree about that empty surface, even
+<code>verify()</code> would say they match.</p>
 <p>Here’s a complete little server:</p>
 <pre><code class="language-vilan norun">import std::reactive::{ Signal, SignalCell };
 import std::json::json_codec;
@@ -287,11 +293,13 @@ resources its bodies use, and the client entry imports the generated
 browser build may do that, and the <a href="walkthrough.html">walkthrough</a> for
 the full shape.</p>
 <h2 id="what-can-cross-the-wire-wire"><a class="header" href="#what-can-cross-the-wire-wire">What can cross the wire: <code>Wire</code></a></h2>
-<p>Everything that travels (rpc parameters, return types, mirrored
-payloads) must be serializable, which Vilan calls <strong>Wire</strong>. The scalars
-are Wire (<code>bool</code>, the integers including <code>i53</code>, floats, <code>str</code>). <code>List</code>
-and <code>Option</code> of Wire types are Wire. And your own types opt in with a
-derive:</p>
+<p>Everything that travels — an rpc’s parameters, the values a call answers
+with, mirrored payloads — must be serializable, which Vilan calls
+<strong>Wire</strong>. The scalars
+are Wire (<code>bool</code>, every integer width from <code>i8</code> to <code>u53</code>, <code>usize</code>, both
+floats, <code>str</code>). <code>List</code>, <code>Option</code>, <code>Result</code> and <code>Map</code> of Wire types are Wire — so a
+fallible reply, <code>Result&lt;Row, str&gt;</code>, is an ordinary return type. And your own
+types opt in with a derive:</p>
 <pre><code class="language-vilan fragment">[derive(Wire, PartialEq, Debug)]
 struct Note { id: i32, text: str }
 </code></pre>
@@ -301,6 +309,15 @@ struct Note { id: i32, text: str }
 <p><code>derive(Wire)</code> checks every field recursively. A closure or a <code>Signal</code>
 hiding inside a payload type is a compile error at the derive, which is
 exactly where you want to find out.</p>
+<p><code>Wire</code> is an ordinary trait, so the derive is a convenience and not the
+only door: a type with a hand-written <code>impl … with Wire</code> is Wire
+everywhere the compiler asks — in an <code>[rpc]</code> signature, in a payload
+type’s fields, and as an <code>[expose]</code>d source’s element. A <em>conditional</em>
+impl carries its own recursion: <code>impl Pair&lt;type A: Wire, type B: Wire&gt; with Wire</code> makes <code>Pair&lt;i53, str&gt;</code> sendable and <code>Pair&lt;Conn, str&gt;</code>
+refused, naming the argument, while an impl whose binder declares no
+bound — <code>impl Handle&lt;type T&gt; with Wire</code>, which is what the derive emits
+— leaves its argument unconstrained, because a phantom parameter never
+reaches the payload.</p>
 <p>A <code>resource</code> never travels, in either position: not as a field, and not as
 the derived type itself — <code>derive(Wire)</code> and <code>derive(Json)</code> are both refused
 for a <code>resource</code> struct or enum. A resource is an owned handle, and the
@@ -310,6 +327,36 @@ section is about.</p>
 <p>The codec is chosen at connect time: <code>json_codec()</code> for a readable wire,
 <code>binary_codec()</code> for a compact one. Client and server must use the same
 one.</p>
+<h3 id="a-method-with-nothing-to-say-void"><a class="header" href="#a-method-with-nothing-to-say-void">A method with nothing to say: <code>void</code></a></h3>
+<p>One return type is not Wire and does not have to be. An <code>[rpc]</code> method
+that returns <em>nothing</em> — write no return type, or write <code>: void</code>, they
+mean the same thing — has no reply payload to encode, so its reply is
+just the acknowledgement, and the generated stub <strong>waits for it</strong>:</p>
+<pre><code class="language-vilan fragment">[rpc]
+fun remove_row(self, id: i53) {
+	self.rows.update(|&amp;mut rows| { … });
+}
+</code></pre>
+<p>The stub answers <code>Result&lt;void, RpcError&gt;</code> — the shape every other stub
+has, with nothing in its <code>Ok</code>: <code>void</code> is Vilan’s unit value, so the ack
+is <code>Ok(void)</code> and a call that did not land is <code>Err(error)</code>.</p>
+<pre><code class="language-vilan fragment">// Wait and check.
+match client.remove_row(id) {
+	Ok(_) =&gt; {},
+	Err(let error) =&gt; print(i"remove failed: {error.debug()}"),
+}
+
+// Wait and don't check — still a round trip, the value discarded.
+let _ = client.remove_row(id);
+</code></pre>
+<p><strong>This is not a notification, and the difference is the wait.</strong> A
+notification (<code>[client_service]</code>, or the server’s
+<code>connection.client().…</code>) returns as soon as the request is sent: no
+wait, no failure, nothing that orders it against what comes next. An
+awaited <code>void</code> means <em>it happened</em> — the handler ran to completion on
+the server before the stub returned, so the next call sees its effect.
+Reach for <code>void</code> when you need the ordering and have nothing to report,
+and for a notification when you need neither.</p>
 <h2 id="naming-server-entities-handlet"><a class="header" href="#naming-server-entities-handlet">Naming server entities: <code>Handle&lt;T&gt;</code></a></h2>
 <p>Payloads carry <em>data</em>. When a client needs to talk about a thing the
 server owns (the node to update, the draft to commit, the route’s
@@ -350,11 +397,13 @@ check is still what decides who may act.</p>
 <ul>
 <li>On the client they return <code>Result&lt;T, RpcError&gt;</code> and are implicitly
 awaited, like any async call.</li>
-<li><code>RpcError</code> tells you what went wrong, in five variants:
+<li><code>RpcError</code> tells you what went wrong, in six variants:
 <code>Transport(str)</code> (couldn’t reach the server), <code>Decode(str)</code>,
 <code>Remote(str)</code> (the handler failed), <code>Contract(str)</code> (the connect-time
-check below refused a drifted server), and <code>Unauthorized</code>. Errors are
-values. Look at them and decide.</li>
+check below refused a drifted server), <code>Unauthorized</code> (the credential
+will not open this connection) and <code>Unavailable</code> (the server is up and
+refusing for now — retry later, and re-authenticating is beside the
+point). Errors are values. Look at them and decide.</li>
 <li>At connect time, both sides compare a hash of the service’s shape. If
 a stale client meets a redeployed server, the connect fails cleanly —
 as <code>Contract(reason)</code> — instead of calls corrupting halfway. This is
@@ -389,27 +438,42 @@ instant, remote edits fold in, and your own echoes are no-ops.</li>
 reason: before the first update lands it has <strong>no value</strong>, and nothing
 about the type pretends otherwise. You read it one of four ways:</p>
 <ul>
-<li><code>mirror.or(initial): SignalCell&lt;T&gt;</code> — the common one, for a view. A plain
-signal you hand to <code>bind_each</code>, <code>bind_text</code>, or a <code>{…}</code> hole: <code>initial</code>
-until the first sync, the mirrored value after. Write it inside the
-view (not in <code>main</code>), because it is a <strong>subscription</strong>: it opens the
-channel, and it is released when the view that created it is unmounted.</li>
-<li><code>mirror.map(|value| …): SignalCell&lt;U&gt;</code> — the same, with the <code>Option&lt;T&gt;</code>
-in your hands once, which is where a fallback of a <em>different</em> type
-belongs (<code>"loading…"</code> from a <code>RemoteSource&lt;i32&gt;</code>). <code>or</code> is <code>map</code> for
-the same-type case.</li>
+<li><code>mirror.or(initial)</code> — the common one, for a view. A source you hand
+to <code>each</code>, <code>bind_text</code>, or a <code>{…}</code> hole: <code>initial</code> until the first sync,
+the mirrored value after. It is a cold node — building it opens nothing —
+and the view that places it is what <strong>subscribes</strong>: that opens the
+channel, and it is released when the view is unmounted.</li>
+<li><code>mirror.map(|value| …)</code> — the same, with the <code>Option&lt;T&gt;</code> in your hands
+once, which is where a fallback of a <em>different</em> type belongs
+(<code>"loading…"</code> from a <code>RemoteSource&lt;i32&gt;</code>). <code>or</code> is <code>map</code> for the
+same-type case. Add <code>.cell()</code> where one value is read in several places.</li>
 <li><code>mirror.sub(|value| …): Subscription</code> — the manual form: an observer
 of present values, and a handle you dispose yourself. For code with no
 view and no owner (a probe, a script).</li>
 <li><code>mirror.get(): Option&lt;T&gt;</code> and <code>mirror.status(): SignalCell&lt;Status&gt;</code>
-(<code>Waiting</code> / <code>Ready</code>) — passive reads. They open nothing.</li>
+(<code>Waiting</code> / <code>Ready</code> / <code>Absent</code> / <code>Failed(RpcError)</code>) — passive reads.
+They open nothing. The last two arms are a <em>handle</em> mirror’s (below): a
+call that answered “no such source”, and a call that failed.</li>
 </ul>
+<p>A mirror is also a <strong><code>Source&lt;Option&lt;T&gt;&gt;</code></strong>, so everything the trait gives
+every other observable value is on it: <code>on_change</code> (the lazy attach — no
+immediate call, and the channel’s first frame is a change), <code>effect</code> /
+<code>effect_on_change</code>, and any generic <code>S: Source&lt;…&gt;</code> function, <code>selector</code>
+included. The trait argument is <code>Option&lt;T&gt;</code> because that is what a mirror
+holds; a <code>RemoteSource&lt;List&lt;Note&gt;&gt;</code> is therefore <em>not</em> a <code>Source&lt;List&lt;Note&gt;&gt;</code>,
+and <code>each</code> still takes <code>mirror.or([])</code> rather than the mirror. <code>sub</code> has
+one spelling per view of the value: <code>mirror.sub(|note| …)</code> is the inherent
+present-only one above, and the trait’s <code>sub</code> — reached through a generic
+receiver — hands you the <code>Option&lt;T&gt;</code>. <code>map</code> and <code>or</code> stay inherent, which is
+what keeps their stricter law (a mirror derivation <em>must</em> have an owner) on a
+concrete receiver; a generic <code>S: Source&lt;…&gt;</code> calling <code>.map</code> gets the trait’s
+owner-optional default.</p>
 <pre><code class="language-vilan browser">import std::json::json_codec;
 import std::reactive::{ Signal, SignalCell };
 import std::result::Result::{ self, Ok, Err };
 import std::rpc::SocketTransport;
 import std::shared::Shared;
-import std::ui::{ View, mount_root, view };
+import std::ui::{ View, each, mount_root, view };
 
 [derive(Wire, PartialEq, Debug)]
 struct Note {
@@ -428,7 +492,7 @@ fun notes_panel(client: NotesClient&lt;SocketTransport&gt;): View {
 	// open while — and only while — the panel is showing. `[]` until the
 	// first sync; the empty list takes its element type from the mirror.
 	let entries = client.entries.or([]);
-	view("ul").bind_each(entries, |note| note.id, |note| view("li").text(note.text))
+	view("ul").child(each(entries, |note| note.id, |note| view("li").text(note.text)))
 }
 
 async fun main() {
@@ -440,19 +504,389 @@ async fun main() {
 	}
 }
 </code></pre>
-<p><strong>Subscription follows demand.</strong> Every <code>or</code>, <code>map</code>, and <code>sub</code> takes a
-counted lease on the channel: the first one sends <code>Subscribe</code>, the last
-release sends <code>Unsubscribe</code> (deferred to the end of the turn, so a view
-that re-renders in place churns nothing). Ten bindings on one mirror
-cost one channel; unmounting the page closes it. Which is also why
-<code>or</code>/<code>map</code> must be called where an owner is ambient (inside a view, or
-under <code>run_with_owner</code>): a network subscription with nobody to release
-it is a compile error, not a slow leak.</p>
+<p><strong>Subscription follows demand.</strong> Every subscribing leaf — a binding, an
+<code>each</code>, an <code>effect</code>, a <code>.cell()</code>, a <code>sub</code> — takes a counted lease on the
+channel, whether it sits on the mirror or on an <code>or</code>/<code>map</code> over it: the
+first one sends <code>Subscribe</code>, the last release sends <code>Unsubscribe</code>
+(deferred to the end of the turn, so a view that re-renders in place
+churns nothing). Ten bindings on one mirror cost one channel; unmounting
+the page closes it. The owner is asked where the lease is taken: an
+<code>effect</code> on a mirror (or on its <code>or</code>) needs an ambient owner (inside a
+view, or under <code>run_with_owner</code>) — a network subscription with nobody to
+release it is a compile error, not a slow leak — and a <code>.cell()</code> ties its
+lease to the owner that is ambient.</p>
 <p>One sentence to keep in mind: <strong><code>status</code> reports; it does not ask.</strong> A
 <code>status()</code> observer alone never sees <code>Waiting → Ready</code>, because nothing
 opened the channel — the mirror stays <code>Waiting</code> until something that
-renders the value (<code>or</code>, <code>map</code>, <code>sub</code>) subscribes. That is the passive
+renders the value (a binding over <code>or</code>, an <code>effect</code>, a <code>sub</code>) subscribes. That is the passive
 read being honest, and the count is what makes the active ones cheap.</p>
+<h3 id="handles-a-method-that-returns-a-source"><a class="header" href="#handles-a-method-that-returns-a-source">Handles: a method that returns a source</a></h3>
+<p><code>[expose]</code> names its channels at compile time, one per field per
+connection, and that is right for state the whole client watches — a
+task list, a topic. It is wrong for state the client watches a
+<em>fraction</em> of. A chat with a hundred thousand messages cannot expose
+them all and cannot expose them one field at a time.</p>
+<p>An <code>[rpc]</code> method whose <strong>return type is a source</strong> is the other half.
+The server hands back a <code>SignalCell&lt;T&gt;</code>; what crosses the wire is a
+channel id, and what the client’s stub answers is a mirror:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>the server writes</th><th>the client’s stub returns</th></tr>
+</thead>
+<tbody>
+<tr><td><code>SignalCell&lt;T&gt;</code></td><td><code>RemoteSource&lt;T&gt;</code></td></tr>
+<tr><td><code>Option&lt;SignalCell&lt;T&gt;&gt;</code></td><td><code>RemoteSource&lt;T&gt;</code></td></tr>
+<tr><td><code>KeyedCell&lt;K, T&gt;</code></td><td><code>KeyedSource&lt;K, T&gt;</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>The stub is sync, and it makes no call.</strong> No <code>async</code>, no <code>!</code>, no
+<code>Result</code> — because there is nothing to await: the mirror is handed back
+<em>unleased</em>, and the <strong>first lease</strong> is what issues the call, mints the
+channel and seeds it. A handle nothing watches costs nothing at all —
+not a call, not a capability on the server, not a frame.</p>
+<p>Both written forms map to the same mirror. An <code>Option&lt;SignalCell&lt;T&gt;&gt;</code>
+does <strong>not</strong> become an <code>Option&lt;RemoteSource&lt;T&gt;&gt;</code>: a mirror already has a
+word for “the server has no such source” — <code>Status::Absent</code>, with <code>get()</code>
+answering <code>None</code> — and wrapping it would ask you to take apart an absence
+that was only true at the instant of the reply and then hold whichever
+half you got forever.</p>
+<pre><code class="language-vilan fragment">[service(ChatClient)]
+struct Chat {
+	[expose] topic: SignalCell&lt;str&gt;,
+	bodies: Shared&lt;List&lt;(str, SignalCell&lt;MessageBody&gt;)&gt;&gt;,
+}
+
+impl Chat {
+	// The index: cheap, plain, and a hundred of them is one reply.
+	[rpc]
+	fun get_messages(self, conversation: str, amount: i32): List&lt;str&gt; { … }
+
+	// The detail: a handle per message. The client subscribes to the ones
+	// on screen and to no others.
+	[rpc]
+	fun get_message(self, id: str): SignalCell&lt;MessageBody&gt; {
+		self.cell_for(id)
+	}
+}
+
+// At the client — no await, one mirror, read like any other:
+let ids = client.get_messages("general", 100)!;
+let body = client.get_message(ids[3]);
+view("p").bind_text(body.map(|value| match value {
+	Some(let message) =&gt; message.body,
+	None =&gt; "loading…",
+}))
+</code></pre>
+<p>Everything you already know about a mirror applies to this one: it is a
+<code>RemoteSource&lt;T&gt;</code>, you read it with <code>or</code> / <code>map</code> / <code>sub</code> / <code>get</code> /
+<code>status</code>, and <strong>subscription follows demand</strong>. That last rule is what
+makes the shape affordable — a hundred handles held and ten watched is
+<strong>ten calls and ten forwards</strong>, and the other ninety are free.</p>
+<p><strong>A failure is a status, not a return.</strong> A sync stub has no <code>Result</code> to
+put one in, so what the minting call was told is reported where every
+other fact about a mirror already lives:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>status()</code></th><th>what happened</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Waiting</code></td><td>nothing has arrived — including “nothing has been asked”, which is what an unwatched handle reads, forever</td></tr>
+<tr><td><code>Ready</code></td><td>the mirror holds a value</td></tr>
+<tr><td><code>Absent</code></td><td>the call answered <code>None</code> — this is a method written <code>Option&lt;SignalCell&lt;T&gt;&gt;</code> saying there is no such source</td></tr>
+<tr><td><code>Failed(error)</code></td><td>the call failed, and this is what it said</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>Absent</code> and <code>Failed</code> are both answers about <em>now</em>: the mirror keeps
+whatever it last held, and the <strong>next</strong> 0→1 lease asks again. So a row
+that re-renders after a failure retries by itself, and a view that shows
+a spinner or a retry button reads <code>status()</code> to decide which.</p>
+<p><strong>One handle per id.</strong> Two views calling <code>get_message(id)</code> get two
+mirrors, two calls and two leases of one row. The server collapses the
+<em>channel</em> — a reply carrying a source it has already exported answers
+the channel it already minted, and withdraws it only when the last
+mirror lets go — but the client-side fix is yours and it is one line: a
+<a href="../std/collections.html#memokv"><code>Memo</code></a> keyed by the id, whose maker is
+the call.</p>
+<pre><code class="language-vilan fragment">let bodies: Memo&lt;str, RemoteSource&lt;MessageBody&gt;&gt; = Memo::new();
+
+fun body_of(id: str): RemoteSource&lt;MessageBody&gt; {
+	bodies.get_or(id, || client().get_message(id))
+}
+</code></pre>
+<p>The stub does not memoize for you, deliberately: memoizing a handle is a
+decision about <em>identity</em> — which asks are the same ask — and generated
+code has no business making it.</p>
+<p><strong>The element must be Wire, not the source.</strong> The <code>SignalCell</code> never
+crosses; its values do, one <code>Update</code> frame at a time. So the Wire rule
+lands on <code>T</code>, and a handle over a non-Wire element is refused naming the
+element rather than the wrapper.</p>
+<p><strong>The contract hash covers the mapped type.</strong> <code>get_message</code>’s surface
+entry is written <code>get_message(str)-&gt;RemoteSource&lt;MessageBody&gt;;</code> — what
+the <em>client</em> will see, because the hash exists to protect the client. A
+server that changes a handle return to a plain value moves the hash and
+a stale client is refused at connect, instead of decoding a channel id
+as a message.</p>
+<p><strong>A handle method is WebSocket-only.</strong> Its reply is a channel id minted
+in <em>this connection’s</em> capability table, so the connectionless legs
+cannot serve one. Over <code>POST {mount}rpc</code> the call fails at its first
+lease and <code>status()</code> reads <code>Failed</code>, naming the
+method — the service’s plain methods keep answering beside it, and the
+same mount’s WebSocket leg serves the handle fine, so it is the route the
+client dialled that is wrong and not the mount. In process, a <code>local_rpc</code>
+transport over a protocol no <code>for_connection</code> stamped is refused where it
+is <em>wired</em>, before the first call: register the session and stamp it
+(<code>register_session(id, end, codec)</code>, then
+<code>into_protocol(codec).for_connection(id)</code>) and handles work in process
+too, which is how <code>vilan/examples/rpc</code> is written. Everything a generated
+<code>Client::connect</code> builds rides the socket, so reaching this at all means
+having assembled the client by hand.</p>
+<p><strong>A handle-returning method must be safe to re-run.</strong> Its return type is
+the declaration that it is a <em>getter</em>: the runtime issues the call at
+the first lease, again when a released mirror is watched afresh, and
+again after a reconnect. Write it as a lookup — <code>self.cell_for(id)</code> —
+not as something that counts, charges, or appends. (This is also why the
+method body does not run when you <em>call</em> the stub: nothing has been
+asked yet. If you need a server-side effect, that is a plain <code>[rpc]</code>
+method, not a handle.)</p>
+<p><strong>When the server frees it.</strong> Demand decides. A mirror’s last lease
+going away sends <code>Unsubscribe</code>, and for a channel a reply minted that
+withdraws the capability whole: the forward stops, the starter is
+dropped, and the source it captured is released. Nothing accumulates
+over a long session. The mirror remembers the call it came from, so the
+next lease re-issues it, rebinds to the fresh channel, and paints its
+last known value until the first update lands. (An <code>[expose]</code>d field
+channel does <em>not</em> work this way: its <code>Unsubscribe</code> is demand-only and
+its capability survives, because it is minted once per connection and a
+remount must find it on the same id.)</p>
+<p>“Last lease” means the last one on the <strong>channel</strong>, not on your mirror:
+where two mirrors ended up sharing a channel because they named the same
+source, the first to let go withdraws nothing.</p>
+<p>Two consequences worth having in mind. A dispose and a remount anywhere
+inside one macrotask — two event handlers, a route change, an <code>each</code>
+rebuilding rows — send <strong>nothing</strong>: a handle’s close waits for the
+turn’s settle and then one microtask, and a lease returning in that
+window cancels it. (A <code>[expose]</code>d field mirror keeps the prompter
+cadence: its close is due at the settle and goes then, because its
+channel survives it and there is nothing to buy by waiting.) And a
+handle held inside a view — anywhere an owner is ambient — that nothing
+ever leases is released when that owner is disposed; held with no
+ambient owner (at the top of <code>main</code>, say) it lives with the connection,
+which frees every channel it ever minted when the socket closes. A
+handle that never reached a lease has nothing to free either way: it
+never asked.</p>
+<h3 id="keyed-mirrors-exposekeyed"><a class="header" href="#keyed-mirrors-exposekeyed">Keyed mirrors: <code>[expose(keyed)]</code></a></h3>
+<p>A plain <code>[expose]</code> sends the <strong>whole value</strong> on every change. That is the
+right trade for a settings record or a counter, and the wrong one for a
+collection that grows: exposing a message platform’s five thousand
+messages means every edit, every post and every delete resends all five
+thousand, to every connected client.</p>
+<p><code>[expose(keyed)]</code> makes the collection <strong>keyed</strong>, and then only what moved
+crosses. Two things are required of it:</p>
+<ul>
+<li>the <strong>key type is written somewhere the expansion can read it</strong>, before
+any type resolves — a <code>Map&lt;K, V&gt;</code> element names it in the collection and
+takes the bare <code>[expose(keyed)]</code>; every other collection names it in the
+attribute, as <code>[expose(keyed = K)]</code>;</li>
+<li>the value implements <strong><code>Keyed&lt;K&gt;</code></strong> (its own identity) and
+<strong><code>PartialEq</code></strong> (what “changed” means).</li>
+</ul>
+<p>The two spellings are <strong>one contract</strong>: same frames, same
+<code>KeyedSource&lt;K, T&gt;</code> on the client, same surface entry, same contract hash.
+What differs is only what the server stores.</p>
+<pre><code class="language-vilan fragment">import std::reactive::SignalCell;
+
+[service(TaskClient)]
+struct Tasks {
+	// A list needs the key in the attribute: `List&lt;Task&gt;` names only the
+	// element, and a keyed mirror is a `KeyedSource&lt;K, T&gt;`.
+	[expose(keyed = str)] items: SignalCell&lt;List&lt;Task&gt;&gt;,
+}
+</code></pre>
+<pre><code class="language-vilan fragment">import std::map::Map;
+import std::reactive::SignalCell;
+import std::wire::{ Keyed, Wire };
+
+[derive(Wire, PartialEq, Debug)]
+struct Message {
+	id: str,
+	channel: i32,
+	body: str,
+}
+
+impl Message with Keyed&lt;str&gt; {
+	fun key(self): str {
+		self.id
+	}
+}
+
+[service(ChatClient)]
+struct Chat {
+	[expose] topic: SignalCell&lt;str&gt;,
+	[expose(keyed)] messages: SignalCell&lt;Map&lt;str, Message&gt;&gt;,
+}
+</code></pre>
+<p>The server writes <code>self.messages</code> exactly as before — <code>insert</code>, <code>remove</code>,
+whatever it likes. What changed is the wire: the channel diffs successive
+snapshots by key and sends a <strong><code>Patch</code></strong> of <code>Delta</code> ops (<code>Reset</code>,
+<code>Insert</code>, <code>Update</code>, <code>Remove</code>) instead of an <code>Update</code> carrying the whole
+map.</p>
+<h3 id="a-third-spelling-that-skips-the-diff-keyedcellk-t"><a class="header" href="#a-third-spelling-that-skips-the-diff-keyedcellk-t">A third spelling that skips the diff: <code>KeyedCell&lt;K, T&gt;</code></a></h3>
+<p>Diffing is what a <code>SignalCell</code> forces: the channel is handed two snapshots
+and has to work out what moved, which re-keys the whole collection on every
+change — and pays for it once per subscribed connection. Only the <em>mutation</em>
+knows what changed, so <code>KeyedCell&lt;K, T&gt;</code> is the field type that says it:</p>
+<pre><code class="language-vilan fragment">import std::rpc::KeyedCell;
+
+[service(ChatClient2)]
+struct Chat2 {
+	[expose] messages: KeyedCell&lt;str, Message&gt;,
+}
+</code></pre>
+<pre><code class="language-vilan fragment">fun edit(messages: KeyedCell&lt;str, Message&gt;) {
+	messages.insert(Message { id = "m9", channel = 1, body = "hello" });
+	messages.update("m9", |&amp;mut message| {
+		message.body = "hello again";
+	});
+	messages.remove("m9");
+}
+</code></pre>
+<p>Each write appends the <code>Delta</code> op it <em>is</em>, and a subscriber’s forward sends
+the ops since it last looked. The cell names both its key and its element in
+its own type, so <code>keyed</code> is redundant on it and there is nothing for
+<code>keyed = K</code> to add; and <code>PartialEq</code> is no longer required of the element,
+because nothing is compared.</p>
+<p><strong>Nothing on the wire changes</strong> — the same <code>Patch</code> frames, the same
+<code>KeyedSource&lt;K, T&gt;</code> on the client, the same contract hash as the
+<code>[expose(keyed = str)] SignalCell&lt;List&lt;Message&gt;&gt;</code> spelling, so a service may
+swap one field for the other without breaking a deployed client. What changes
+is the cost per change per connection: 0.0078 ms at 1,000 rows and 0.0103 at
+10,000, where diffing the same edits costs 0.315 and 3.814 (children CPU).
+Bind it locally with <code>each(messages, …)</code> — it is a <code>Source&lt;List&lt;T&gt;&gt;</code> with
+no <code>Option</code> in it, because a cell always holds a collection.</p>
+<h3 id="a-keyed-handle-a-method-that-returns-a-keyedcell"><a class="header" href="#a-keyed-handle-a-method-that-returns-a-keyedcell">A keyed handle: a method that returns a <code>KeyedCell</code></a></h3>
+<p><code>[expose(keyed)]</code> names one collection per field per connection, which is
+the same limit the plain form has — and the same answer applies. An <code>[rpc]</code>
+method whose return type is a <code>KeyedCell&lt;K, T&gt;</code> hands the client a
+<code>KeyedSource&lt;K, T&gt;</code>, minted per <strong>call</strong>:</p>
+<pre><code class="language-vilan fragment">impl Board {
+	// One board per workspace — not a set the compiler can name as fields.
+	[rpc]
+	fun tasks_in(self, workspace: str): KeyedCell&lt;i32, Task&gt; {
+		self.board_for(workspace)
+	}
+}
+
+// At the client — sync and unleased, exactly like a plain handle:
+let tasks: KeyedSource&lt;i32, Task&gt; = client.tasks_in("alpha");
+view("ul").child(each(tasks.or([]), |task| task.id, |task| view("li").text(task.title)))
+</code></pre>
+<p>Everything a plain handle does, this one does at the keyed type: no call
+until the first lease, <code>status()</code> for what that call was told, and demand
+deciding the channel’s life. The one difference is what <em>counts</em> as demand
+— a <strong>per-key</strong> lease is a first demand too, and mints the channel exactly
+as a whole-collection one does — and what the channel is finished with: a
+keyed channel carries one forward per demand, so it is withdrawn when the
+last of them goes, not when the first does.</p>
+<p>An <code>Option&lt;KeyedCell&lt;K, T&gt;&gt;</code> is <strong>not</strong> a handle return in v1; it is refused
+as a non-Wire return like any other unrecognized type.</p>
+<h3 id="reading-a-keyed-mirror"><a class="header" href="#reading-a-keyed-mirror">Reading a keyed mirror</a></h3>
+<p>The mirror is a <code>KeyedSource&lt;K, T&gt;</code>, and it holds <strong>exactly what this
+client subscribed to</strong>, in the server’s order. It reads two ways.</p>
+<p><strong>The whole collection</strong> — the same four calls a <code>RemoteSource</code> has, with
+<code>List&lt;T&gt;</code> in place of <code>T</code>:</p>
+<pre><code class="language-vilan fragment">fun feed(client: ChatClient&lt;SocketTransport&gt;): View {
+	let messages = client.messages.or([]);
+	view("ul").child(each(messages, |message| message.id, |message| view("li").text(message.body)))
+}
+</code></pre>
+<p><strong>One key</strong> — the part a plain mirror has no spelling for:</p>
+<pre><code class="language-vilan fragment">fun message_row(client: ChatClient&lt;SocketTransport&gt;, id: str): View {
+	// Counted per KEY: this opens a subscription for `id` alone, and the
+	// server forwards that message's changes and nothing else. Released
+	// when the row unmounts, like any other lease.
+	let message = client.messages.of(id);
+	view("li").bind_text(message.map(|held| match held {
+		Some(let found) =&gt; found.body,
+		None =&gt; "…",
+	}))
+}
+</code></pre>
+<p><code>of(key)</code> is the view seam (owner-released, like <code>or</code>/<code>map</code>);
+<code>sub_key(key, |value| …)</code> is its manual form, for code with no owner.
+<code>get()</code>, <code>status()</code> and <code>fault()</code> are passive.</p>
+<p><strong>Whole-collection demand subsumes per-key demand.</strong> Holding both leases
+on one channel does not double anything: while the whole collection is
+held, a key asks for nothing, and when the whole lease is released the
+keys still held take the wire back. You never have to reason about which
+of two forwards a message arrived through.</p>
+<p><strong><code>fault()</code></strong> is the keyed mirror’s one extra read: <code>Some(reason)</code> if a
+patch ever named a key the mirror does not hold. That is a server bug or a
+lost frame — never something application code can cause — so the op is
+refused rather than applied, and the first fault is the one kept.</p>
+<h3 id="what-it-costs"><a class="header" href="#what-it-costs">What it costs</a></h3>
+<p>Measured over twenty channels of fifty messages (<code>reactive_channels.rs</code>),
+server → client bytes for one event:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>event</th><th><code>[expose]</code>, whole platform</th><th><code>[expose]</code>, one channel</th><th><code>[expose(keyed)]</code></th><th>one key leased</th></tr>
+</thead>
+<tbody>
+<tr><td>open the channel</td><td>123,816</td><td>6,156</td><td>123,827</td><td>160</td></tr>
+<tr><td>edit one message</td><td>123,753</td><td>6,093</td><td><strong>95</strong></td><td><strong>95</strong></td></tr>
+<tr><td>edit another message</td><td>123,693</td><td>6,033</td><td>98</td><td><strong>0</strong></td></tr>
+<tr><td>post a message</td><td>123,813</td><td>6,033</td><td><strong>163</strong></td><td><strong>0</strong></td></tr>
+<tr><td>delete a message</td><td>123,691</td><td>5,911</td><td><strong>34</strong></td><td><strong>0</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>Three things that table says out loud:</p>
+<ul>
+<li>a keyed channel is <strong>not cheaper to open</strong> — it sends the collection
+once, as a <code>Reset</code>. Leasing one key is what makes a seed small;</li>
+<li>an edit costs the message, not the platform;</li>
+<li>a per-key subscriber is told <strong>nothing</strong> about keys it did not ask for,
+which is the column no amount of client-side filtering can produce.</li>
+</ul>
+<h3 id="the-rules-worth-knowing"><a class="header" href="#the-rules-worth-knowing">The rules worth knowing</a></h3>
+<ul>
+<li><strong>A reorder falls back to <code>Reset</code>.</strong> There is no move op: when the
+elements retained across a change are not in the same relative order on
+both sides, the whole collection goes again. Appending, editing and
+deleting never reorder, so the fallback is rare — and correct where a
+cleverer diff would be subtly wrong.</li>
+<li><strong>A reconnect clears the mirror first.</strong> A plain mirror may keep its
+last value across a reconnect because the fresh subscription resends
+the whole value; a keyed forward reseeds only what it is asked for, so
+a keeping mirror could hold an element deleted while the connection was
+down and no later op would ever name it. The keys you still hold are
+re-subscribed and re-seeded.</li>
+<li><strong>A key written twice has to agree.</strong> A <code>Map&lt;K, V&gt;</code> element names the key
+and takes the bare <code>[expose(keyed)]</code>; writing the argument beside it as
+well is redundant but fine — <em>while the two spellings agree</em>. A
+<code>[expose(keyed = i32)]</code> over a <code>SignalCell&lt;Map&lt;str, Message&gt;&gt;</code> is
+<strong>refused at the attribute</strong>, naming both spellings. Neither is knowably
+the intended one, and the expansion reads <code>K</code> off the annotation before
+any type resolves, so it has nothing to pick between them with: drop the
+argument, or write the map with the key the argument names.</li>
+<li><strong>The contract hash moves — and only for services that use the form.</strong>
+A keyed exposure is its own surface entry, so a client built against
+<code>[expose]</code> will not connect to a server that has since made the field
+keyed. That is the point: the frames differ.</li>
+<li><strong>Hand-wired exposures have the same three shapes.</strong>
+<code>ReactiveServer::expose_keyed(source, key_of)</code> for a <code>List&lt;T&gt;</code>,
+<code>expose_keyed_map(source, key_of)</code> for a <code>Map&lt;K, V&gt;</code> and
+<code>expose_keyed_cell(cell)</code> for a <code>KeyedCell&lt;K, T&gt;</code> (no <code>key_of</code> — the cell
+names its key), with <code>ReactiveClient::attached_keyed_source</code> /
+<code>keyed_source</code> on the other end. <code>[expose(keyed = K)]</code> generates the first,
+<code>[expose(keyed)]</code> over a map the second and <code>[expose]</code> over a cell the
+third, frame for frame — the hand-wired form is the escape for a source
+none of the three attributes can name, not for the <code>List</code>.</li>
+</ul>
 <h2 id="connection-state-and-reconnection"><a class="header" href="#connection-state-and-reconnection">Connection state and reconnection</a></h2>
 <p>Connections drop. The transport handles it: it reconnects with backoff,
 re-verifies the contract, and re-attaches every mirror, so state resyncs
@@ -491,18 +925,164 @@ redial that is merely slow does not. The full state machine is in the
 <a href="../std/rpc.html">rpc reference</a>.</p>
 </blockquote>
 <h2 id="authentication"><a class="header" href="#authentication">Authentication</a></h2>
-<p>The straightforward shape, and the one the walkthrough app uses: a
-<code>login</code> rpc returns a token, later rpcs take the token as their first
-parameter, and the server validates it per call.</p>
+<p>The straightforward shape, and the one a first draft usually reaches
+for: a <code>login</code> rpc returns a token, later rpcs take the token as their
+first parameter, and the server validates it per call.</p>
 <pre><code class="language-vilan fragment">[rpc]
 fun login(self, username: str, password: str): AuthOutcome { … }
 
 [rpc]
 fun create_task(self, token: str, workspace_id: i32, name: str): i32 { … }
 </code></pre>
-<p>When token-per-call gets noisy, the recorded refinement is
-connection-scoped identity via <code>std::context</code>. It isn’t built into the
-generated dispatch yet.</p>
+<p>It works, and it has two costs: every method carries a parameter that is
+not about what the method does, and <strong>the socket itself is open to
+anyone</strong> — a client that never logs in still connects, still holds a
+connection, and still receives whatever the service exposes.</p>
+<h3 id="authorizing-the-connection"><a class="header" href="#authorizing-the-connection">Authorizing the connection</a></h3>
+<p>The refinement is to decide once, at the handshake, before a socket
+exists: <code>Service::authorize</code>.</p>
+<pre><code class="language-vilan fragment">Service::factory(|connection: Connection| Store {
+	user = connection.session.identity,
+	notes = Signal::new([]),
+}, json_codec())
+	.authorize(|handshake: Handshake| match handshake.token() {
+		Some(let token) =&gt; match verify(token) {
+			Some(let subject) =&gt; Result::Ok(Session::of(subject)),
+			None =&gt; Result::Err(Reject::Forbidden),
+		},
+		None =&gt; Result::Err(Reject::Unauthorized),
+	})
+</code></pre>
+<p><code>Err</code> answers the socket a status and destroys it: no connection id, no
+reactive session, no service instance — nothing of the service is built
+for a client it refused. <code>Ok(session)</code> becomes <code>Connection.session</code>, which
+the <a href="#one-instance-per-connected-client">factory</a> reads to build that
+client’s instance. So identity arrives <strong>on the handshake</strong>, and the
+methods lose their token parameter.</p>
+<p>Four arms, and the line they are drawn on is <strong>who decided</strong>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th><code>Reject</code></th><th>Status</th><th>The refusal it makes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Unauthorized</code></td><td><code>401</code></td><td>no credential, or one that did not verify</td></tr>
+<tr><td><code>Forbidden</code></td><td><code>403</code></td><td>a good credential for someone who may not have this</td></tr>
+<tr><td><code>TooMany</code></td><td><code>429</code></td><td>a <strong>limit</strong>, not a judgement — <code>max_connections</code>, the handshake rate, <code>authorize_timeout</code>, or your own</td></tr>
+<tr><td><code>Unavailable</code></td><td><code>503</code></td><td>the app’s own “not now”: the token may be perfect and the client the only one asking, and the database is down or the node is draining</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>503</code> is the one arm that reports a judgement <strong>the app made</strong>, which is
+why std never answers it on your behalf: a verifier <code>authorize_timeout</code>
+cut off said nothing at all, so reporting its silence as the app’s
+judgement would be a claim std cannot make. That refusal is a <code>429</code> —
+<a href="#cheap-limits-with-or-without-a-gate">below</a>.</p>
+<p>The mechanism is yours. Vilan verifies nothing and knows no token
+format — <code>authorize</code> may await, so signing checks (<code>std::jwt</code>, WebCrypto)
+belong right there.</p>
+<p><strong>How the credential gets there.</strong> A browser cannot put a header on a
+WebSocket handshake. The one field it can fill is the subprotocol list,
+so that is the convention: <code>["vilan-rpc", "token." + credential]</code>, which
+<code>std::rpc::rpc_protocols(credential)</code> writes for you.</p>
+<pre><code class="language-vilan fragment">let client = TodoClient::connect_with(url, json_codec(), rpc_protocols(token))!;
+</code></pre>
+<p>The server selects <code>vilan-rpc</code>, echoes it in the 101 (required — a
+browser closes a connection whose subprotocol offer went unanswered), and
+hands the whole offer list to <code>authorize</code> as <code>Handshake.protocols</code>;
+<code>handshake.token()</code> picks the <code>"token."</code> one out. A subprotocol is a
+token, not a header value: no commas, no spaces — every JWT already
+qualifies. The same list is re-presented on each reconnect, so an
+authorized connection re-authorizes itself automatically.</p>
+<p><code>Client::connect(url, codec)</code> carries no credential and offers only
+<code>vilan-rpc</code>, which is right for a service with no gate — and enough for
+one with a gate to tell it apart from a stranger, which is what the next
+section is about.</p>
+<p>An authorized service answers <strong>only</strong> the WebSocket upgrade: the
+connectionless SSE and POST legs carry no handshake to authorize, so they
+answer <code>401</code> rather than standing open as the way around the gate — the
+rpc leg with a typed <code>RpcError::Unauthorized</code> envelope. The POST leg can be
+gated in its own vocabulary instead, with a second hook:
+<a href="#gating-the-post-leg-authorize_request"><code>authorize_request</code></a>.</p>
+<h3 id="a-refused-client-is-told-and-stops"><a class="header" href="#a-refused-client-is-told-and-stops">A refused client is told, and stops</a></h3>
+<p><code>connect</code>/<code>connect_with</code> against a credential the server refuses returns
+<code>RpcError::Unauthorized</code>, on the first attempt.</p>
+<p>That reads like a triviality and is not one. <strong>No host WebSocket shows a
+client the HTTP status of a failed handshake.</strong> Measured on node 24
+(undici’s global <code>WebSocket</code>, which is what <code>std::rpc</code> binds): a <code>401</code>, a
+<code>403</code>, a <code>429</code>, a socket destroyed mid-handshake, a refused TCP
+connection and a server with no upgrade handler all raise the identical
+error and the identical close code. The browser API exposes less still,
+deliberately. So a refused client could not tell “my token is wrong” from
+“the server is down”, and did the only safe thing — ten redials over
+about 24 seconds of backoff, then <code>Transport("could not reach …")</code>, which
+is a false sentence about a server that answered immediately.</p>
+<p>The fix is that the refusal is <strong>sent, not inferred</strong>. A client that
+offered <code>vilan-rpc</code> — every vilan client — is upgraded and handed one
+frame naming the status before the socket closes. Everything else still
+gets the plain HTTP status line: a browser opening the URL, <code>curl</code>, a
+probe, a health check, a scanner. The HTTP semantics of a refused
+handshake are unchanged for everything that speaks HTTP and not this
+protocol.</p>
+<p>The cost is one 101 and one small frame per refused vilan client, on a
+socket destroyed in the same turn either way. It is bounded by which
+refusals are eligible: <strong><code>Reject::TooMany</code> is never one</strong>, and <code>TooMany</code>
+is exactly what <code>max_connections</code>, <code>handshake_rate</code> and
+<code>authorize_timeout</code> produce — so the refusals a flood produces are the
+ones that never upgrade, and nobody can reach the upgrading path more
+often than the rate limiter admits.</p>
+<p><code>401</code> and <code>403</code> both arrive as <code>RpcError::Unauthorized</code>; the client’s
+answer to either is the same, and this credential will not open this
+connection. <code>503</code> arrives as its own arm, <code>RpcError::Unavailable</code>,
+because the answer to it is a different one: not “not with this
+credential” but “not now” — retry later, and re-authenticating is beside
+the point.</p>
+<h3 id="cheap-limits-with-or-without-a-gate"><a class="header" href="#cheap-limits-with-or-without-a-gate">Cheap limits, with or without a gate</a></h3>
+<p>Four knobs on the same seam, all refusing at the handshake, all working
+with no <code>authorize</code> at all:</p>
+<pre><code class="language-vilan fragment">Service::new(protocol)
+	.max_connections(500)          // 429 over the ceiling
+	.handshake_rate(20, 10000.0)   // 20 handshakes per client per 10s
+	.handshake_timeout(5000)       // a socket that never greets is destroyed
+	.authorize_timeout(2000)       // a verifier that never answers is refused
+</code></pre>
+<p><code>max_connections</code> counts <strong>upgraded sockets on this mount</strong>, and nothing
+else: not the SSE or POST legs, which hold no connection to count, and
+not a handshake still inside <code>authorize</code>. A service whose clients arrive
+over <code>{mount}events</code> is not limited by it at all.</p>
+<p><code>handshake_timeout</code> bounds the <strong>greeting</strong>, not idleness: the first
+inbound byte disarms it, so a client that connected and is only watching
+mirrors is never touched.</p>
+<p><code>authorize_timeout</code> is its twin on the other side of the upgrade. The
+hook is awaited <strong>inside</strong> the upgrade handler, so a verifier that hangs
+— a token endpoint that stopped answering, a database that is gone —
+holds an unanswered socket for as long as it hangs, one per client trying
+to connect. That is a denial of service the server inflicts on itself,
+reached without a single malformed byte from anyone. <code>handshake_rate</code>
+caps how fast the pile grows; only this caps how big it gets. A hook that
+answers late is not raced back in — the socket is already gone.</p>
+<p>Its refusal is <code>429</code>, <strong>not</strong> <code>503</code>, and the reason is the line the
+<a href="#authorizing-the-connection">table above</a> draws. <code>503</code> is the app’s own
+judgement, given from its own <code>authorize</code> as <code>Reject::Unavailable</code>; a
+verifier that ran out of time gave no judgement at all, and std answering
+<code>503</code> on its behalf would report a decision the app never made. A timeout
+is std’s limit — which is also the reading the client wants: it says
+nothing about the credential, and it is the one refusal to retry.</p>
+<p><strong>Behind a proxy</strong>, every client shares the proxy’s socket address, so a
+per-address <code>handshake_rate</code> becomes a global one that refuses everybody
+as soon as one client is noisy. <code>trust_forwarded_for(true)</code> reads the
+client’s address from the first entry of <code>X-Forwarded-For</code> instead — for
+<code>handshake_rate</code>, for <code>Handshake.remote_addr</code>, and for
+<code>Connection.remote_addr</code>, one switch for all three.</p>
+<pre><code class="language-vilan fragment">Service::new(protocol)
+	.trust_forwarded_for(true)
+	.handshake_rate(20, 10000.0)
+</code></pre>
+<p>It is <strong>off by default and must stay off</strong> unless a proxy you control is
+the only way to reach the server: the header is written by whoever spoke
+last, so a directly-exposed server that trusts it lets any client pick
+its own rate-limit bucket — and its own audit trail — by writing one
+line.</p>
 <h2 id="where-the-service-lives"><a class="header" href="#where-the-service-lives">Where the service lives</a></h2>
 <p>The service lives <strong>next to the resources its methods use</strong>: a
 database handle, the filesystem, other services. In a single-package
@@ -545,6 +1125,187 @@ and checked against the build, is in
 <a href="persistence.html#serving-http-stdhttp">Persistence</a>). For custom
 per-connection state, <code>Service::on_connect</code>/<code>on_disconnect</code> replace the
 default session lifecycle (see the <a href="../std/rpc.html">rpc reference</a>).</p>
+<h3 id="one-instance-per-connected-client"><a class="header" href="#one-instance-per-connected-client">One instance per connected client</a></h3>
+<p><code>Service::new</code> mounts <strong>one instance for the whole process</strong>: every client
+is answered by the same <code>self</code>, so a method cannot tell who called and an
+<code>[expose]</code>d field is one cell shared by everybody. When a method needs to
+know its caller — which is most apps the moment they have users — mount the
+service with a <strong>factory</strong> instead, and the struct instance becomes the
+connection’s session:</p>
+<pre><code class="language-vilan fragment">Server::builder()
+	.port(port)
+	.with_service(Service::factory(|connection: Connection| Store {
+		user = user_of(connection.session.identity),
+		notes = Signal::new([]),
+	}, json_codec()))
+	.build()
+	.start();
+</code></pre>
+<p><code>build</code> runs once per connection, with that connection’s <code>Connection</code>
+(<code>id</code>, the <code>session</code> an <a href="#authentication"><code>authorize</code></a> hook proved, and
+<code>remote_addr</code>), and every route of that connection’s dispatcher closes over
+the instance it returned. Three things follow:</p>
+<ul>
+<li>A method reads its caller off <code>self</code> — no token parameter, no per-call
+re-resolution.</li>
+<li><code>[expose]</code>d fields are <strong>per client</strong>: each instance has its own cells,
+so each connection’s mirrors carry that client’s own data.</li>
+<li>The instance dies with the connection, alongside the reactive session
+<code>on_disconnect</code> already releases.</li>
+</ul>
+<p><code>Service::new(protocol)</code> is the stateless shorthand for
+<code>Service::factory(|_connection| shared, codec)</code>, and stays exactly as
+useful for a service with nothing per-client to hold.</p>
+<p>One limitation, stated plainly: the connectionless <code>POST {mount}rpc</code> leg has
+no connection to build an instance for, so a factory service <strong>refuses it</strong>
+(<code>501</code>, with the reason in the body). A factory service is reached over the
+WebSocket transport — which is what every generated <code>Client::connect</code> uses.</p>
+<h3 id="mutable-session-state"><a class="header" href="#mutable-session-state">Mutable session state</a></h3>
+<p>That instance is the connection’s session, so its fields are ordinary
+mutable state — and the <strong>receiver</strong> you write on the method decides where
+the write goes.</p>
+<p><code>&amp;mut self</code> is the idiomatic one. The connection’s dispatcher is built once,
+around that connection’s instance, and a <code>&amp;mut self</code> method writes to it in
+place — so the write is still there on the next call over the same socket, and
+no other connection can see it:</p>
+<pre><code class="language-vilan fragment">[service(GateClient)]
+struct Gate {
+	is_authenticated: bool,
+}
+
+impl Gate {
+	[rpc]
+	fun login(&amp;mut self, password: str): bool {
+		if password == "hunter2" {
+			self.is_authenticated = true;
+		}
+		self.is_authenticated
+	}
+
+	[rpc]
+	fun secret(self): str {
+		if self.is_authenticated { "the answer is 42" } else { "sign in first" }
+	}
+}
+</code></pre>
+<p><code>mut self</code> is <strong>refused</strong> on an <code>[rpc]</code> method, naming the method. It reads
+like the same thing and is not: <code>mut self</code> is a copy the handler may write,
+so the reply carries the new value and the next call reads the old field —
+a write lost in silence. The compiler says so instead:</p>
+<pre><code class="language-text">`[rpc]` method `login` takes `mut self`, and an `[rpc]` method's `mut self`
+copy is discarded after the call: the handler mutates it, the reply carries
+the new value, and the next call on this connection reads the old one. Write
+`&amp;mut self` to mutate this connection's instance, or hold the state in a
+`Shared&lt;T&gt;` field
+</code></pre>
+<p><code>Shared&lt;T&gt;</code> is the third spelling, and it is not merely the older one: reach
+for it when something <em>other than a method body</em> must reach the state — a
+callback the service stored, a timer, a task that outlives the call. A
+<code>&amp;mut self</code> borrow lasts for the call; a <code>Shared&lt;T&gt;</code> handle is the instance’s
+own cell and can be captured. A <code>[expose]</code>d <code>SignalCell</code> is the same idea
+with a wire behind it.</p>
+<h2 id="the-other-direction-calling-the-client"><a class="header" href="#the-other-direction-calling-the-client">The other direction: calling the client</a></h2>
+<p>Sometimes the server is the one with news. A session was revoked, a
+background job finished, another user moved something on the screen you
+are looking at — facts the client cannot poll for without asking a
+hundred times to hear once.</p>
+<p>Declare the functions the server may call on a struct in the browser half
+and mark it <code>[client_service]</code>:</p>
+<pre><code class="language-vilan fragment">[client_service]
+struct KoltHandlers {
+	revoked: SignalCell&lt;str&gt;,
+}
+
+impl KoltHandlers {
+	[rpc]
+	fun session_revoked(self, reason: str) {
+		self.revoked.set(reason);
+	}
+}
+</code></pre>
+<p>Then name it on the service, and hold the generated proxy as a field:</p>
+<pre><code class="language-vilan fragment">[service(KoltClient, client = KoltHandlers)]
+struct KoltStore {
+	user: str,
+	client: KoltHandlersProxy,
+}
+
+impl KoltStore {
+	[rpc]
+	fun sign_out(self): bool {
+		self.client.session_revoked("signed out elsewhere");
+		true
+	}
+}
+
+Service::factory(|connection: Connection| KoltStore {
+	user = connection.session.identity,
+	client = connection.client(),
+}, json_codec())
+</code></pre>
+<p><code>connection.client()</code> needs no annotation: the FIELD’s declared type is
+what the attribute named, and that is what resolves it. The proxy is the
+connection’s id and nothing else, so it is cheap to copy into as many
+places as want it, and it goes quiet the moment the connection closes.</p>
+<p>On the browser side, mount the handler instance on the connected client:</p>
+<pre><code class="language-vilan fragment">let handlers = KoltHandlers { revoked = Signal::new("") };
+let client = KoltClient::connect(url, json_codec())!.with_handlers(handlers);
+</code></pre>
+<p><strong>Notifications only, in this version.</strong> A <code>[client_service]</code> method
+declares no return type and is refused if it does — <code>: void</code> included,
+which is the one place that spelling is not interchangeable with
+omission. A server→client
+notification has no reply lane to settle on and no pending table to
+correlate with, so there is nothing for a value to come back through,
+and nothing to <em>wait</em> for either: <code>self.client.session_revoked(reason)</code>
+is synchronous, returns nothing,
+and cannot fail visibly. That is why the awaited <code>void</code> above is a
+server-side shape only. If the client must answer, have its handler call
+back on the connection it already holds.</p>
+<p>Both attributes on one struct is peer-to-peer, and needs no new spelling:
+one dispatcher, a transport client, and a proxy, all from the same
+<code>[rpc]</code> method set.</p>
+<h3 id="what-the-turn-model-owes-you-here"><a class="header" href="#what-the-turn-model-owes-you-here">What the turn model owes you here</a></h3>
+<p>Three sentences, and they are the same three whichever direction a
+handler runs in.</p>
+<ol>
+<li><strong>The router never blocks on a handler.</strong> A chunk off the socket is
+parsed into its events and every handler’s turn is STARTED before any
+of them is awaited. Two frames that TCP coalesced into one read are
+two handlers in flight, not a queue.</li>
+<li><strong>A held turn is per handler, not per connection.</strong> Each dispatch
+establishes its own turn, so two handlers on one connection settle
+independently. Signal writes inside one handler coalesce into one
+wave, exactly as they do for a client→server call.</li>
+<li><strong>Reply order within a chunk is not promised.</strong> Replies carry their
+request id and arrive when their handler is done — a slow first frame
+does not hold a fast second one behind it. Nothing in the protocol
+ever depended on the order; this only makes it visible.</li>
+</ol>
+<p>One consequence of the first two, and it is now ENFORCED: two handlers in
+flight on one connection share that connection’s one instance. A <code>&amp;mut self</code> method that never awaits runs to completion before the next handler
+starts and is safe by construction; a <code>&amp;mut self</code> method that AWAITS can
+have its instance written by another handler underneath it. So an <code>[rpc]</code>
+method declared <code>async</code> may not take <code>&amp;mut self</code> — the attribute refuses
+it, naming the method — and the rule is read off the KEYWORD and the
+receiver rather than off the body, because a handler that grows its first
+await a week later would otherwise turn silent. Keep a <code>&amp;mut self</code>
+handler synchronous, or hold the state somewhere other than the receiver
+reaches (a <code>Shared&lt;T&gt;</code> field) when the handler must await.</p>
+<h3 id="what-happens-to-a-peer-that-has-not-heard-of-any-of-this"><a class="header" href="#what-happens-to-a-peer-that-has-not-heard-of-any-of-this">What happens to a peer that has not heard of any of this</a></h3>
+<p>The contract hash covers BOTH directions. A service that declares
+<code>client = KoltHandlers</code> appends the handler surface to its own, so its
+hash moves — and a client generated against that surface is refused at
+<code>__contract</code> by a server that declares no handler, before it has a client
+value to mount handlers on and therefore before any reverse frame could
+be dispatched. A service that declares no <code>client = …</code> hashes exactly as
+it always did.</p>
+<p>(The reverse lane is a <code>s:&lt;id&gt;:&lt;payload&gt;</code> text frame, or a <code>0x73</code> tag
+byte, beside the <code>r:</code>/<code>d:</code> lanes that were already there. Both routers
+ignore prefixes and tags they do not know, so a client too old to have a
+router arm for it drops the frame instead of failing — but the hash check
+above is what is meant to catch that case, and the silent drop is only
+the floor under it.)</p>
 <h2 id="growing-past-one-service"><a class="header" href="#growing-past-one-service">Growing past one service</a></h2>
 <p>That chain is the whole layer — <code>Service::new(protocol)</code>, installed with
 <code>ServerBuilder::with_service</code>. A
@@ -589,8 +1350,107 @@ routes are untouched. Two constants either way: services always answer
 before <code>on_request</code> (so an app route can’t accidentally shadow a
 service route), and the connection lifecycle is the service’s own knob —
 <code>Service::on_connect</code>/<code>on_disconnect</code> swap the default session registry
-for the app’s per-connection state (an auth identity, an app-written
-attach) without changing anything else about the chain.</p>
+for the app’s per-connection state (an app-written attach), and
+<code>Service::factory</code> is the same knob for CONSTRUCTION — without changing
+anything else about the chain.</p>
+<h2 id="reaching-a-service-over-plain-http"><a class="header" href="#reaching-a-service-over-plain-http">Reaching a service over plain HTTP</a></h2>
+<p>A service you can hold without a connection — no <code>[expose]</code>d field, no
+handle-returning method, no <code>client = ..</code> — gets a second constructor, for the
+connectionless <code>POST {mount}rpc</code> route the server already installs beside every
+mount:</p>
+<pre><code class="language-vilan fragment">let auth = AuthClient::over_http("/auth/", json_codec());
+match auth.login(name.get(), password.get()) {
+	Ok(let outcome) =&gt; match outcome {
+		Ok(let token) =&gt; sign_in(token),
+		Err(let message) =&gt; show_error(message),
+	},
+	Err(let failure) =&gt; show_error(offline_text(failure)),
+}
+</code></pre>
+<p>This is the shape for a login door, and login is why it exists: the token a
+socket’s <code>authorize</code> reads back is what login RETURNS, so login has to happen
+before there is a socket to authorize. The nesting is the point — the outer arm
+is “did the call happen”, the inner is “what did the server decide”.</p>
+<p><code>over_http</code> takes the same <code>mount</code> string <code>connect</code> takes, and it makes no
+call: an HTTP client is unversioned unless you call <code>verify()</code>. There are no
+mirrors and no reverse direction over this leg, which is why the constructor
+exists only for a service that declares neither.</p>
+<p>A service that is MEANT to be an HTTP API can say so, and hear about a mistake
+where it made it:</p>
+<pre><code class="language-vilan fragment">[service(AuthClient, http)]
+struct Auth {}
+</code></pre>
+<p>The <code>http</code> marker generates nothing. It refuses, at the member that declared
+it, each thing the connectionless leg cannot carry — a method returning a
+<code>SignalCell</code>/<code>KeyedCell</code> handle, an <code>[expose]</code>d field, a <code>client = ..</code>
+handler — so a handle added to the login door a month later is an error on
+that method, not a puzzle at the page that can no longer build its client.
+Leave it off a service that wants both legs.</p>
+<h3 id="gating-the-post-leg-authorize_request"><a class="header" href="#gating-the-post-leg-authorize_request">Gating the POST leg: <code>authorize_request</code></a></h3>
+<p>A login door is open on purpose. The services after it are not, and a POST
+has no handshake for <code>authorize</code> to read — but it has headers, so it gets its
+own hook:</p>
+<pre><code class="language-vilan fragment">Service::new(Billing {}.dispatcher().into_protocol(json_codec()))
+	.at("/billing/")
+	.authorize_request(|request: Request| match request.header("authorization") {
+		Some(let bearer) =&gt; match verify(bearer) {
+			Some(let subject) =&gt; Result::Ok(Session::of(subject)),
+			None =&gt; Result::Err(Reject::Forbidden),
+		},
+		None =&gt; Result::Err(Reject::Unauthorized),
+	})
+</code></pre>
+<p>It runs on every POST, after the leg’s own method and content-type checks and
+before the frame is read. <code>Ok(session)</code> is stamped on that one request —
+<code>RpcRequest.session</code>, which a hand-written <code>Dispatcher</code> route reads — and
+<code>Err</code> answers the reject’s status: <code>401</code>/<code>403</code> as an <code>Unauthorized</code> envelope
+and <code>503</code> as <code>Unavailable</code>, the arms a refused socket already gives a vilan
+client, and <code>429</code> as a bare status, which a client reads as <code>Transport(..)</code>.</p>
+<p>A second hook rather than <code>authorize</code> reading a request, because the
+credential lives somewhere else — a socket’s in the <code>"token."</code> subprotocol, a
+POST’s in a header or a cookie — and a <code>handshake.token()</code> that answered <code>None</code>
+for a request carrying a perfectly good <code>Authorization</code> header would be a trap.
+The two compose, and neither opens the other’s leg:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>installed</th><th>the socket upgrade</th><th><code>POST {mount}rpc</code></th></tr>
+</thead>
+<tbody>
+<tr><td>neither</td><td>open</td><td>open</td></tr>
+<tr><td><code>authorize</code> only</td><td>gated</td><td><code>401</code> — no silent back door</td></tr>
+<tr><td><code>authorize_request</code> only</td><td>open</td><td>gated per request</td></tr>
+<tr><td>both</td><td>gated</td><td>gated per request</td></tr>
+</tbody>
+</table>
+</div>
+<p>The SSE pair is a connection, so it follows the upgrade’s column. A
+<code>Service::factory</code> service stays <code>501</code> on the POST leg whatever the hook says:
+the instance, not the identity, is what a POST cannot supply.</p>
+<p>The client end of a bearer is <code>over_http_with</code>, which sends its headers on
+every POST the client makes:</p>
+<pre><code class="language-vilan fragment">let billing = BillingClient::over_http_with("/billing/", json_codec(), [("Authorization", i"Bearer {token}")]);
+</code></pre>
+<p>A cookie rides a same-origin POST without being asked; a token the page keeps
+in storage does not, and <code>over_http</code> carries no header at all.</p>
+<h3 id="cors-and-the-credential"><a class="header" href="#cors-and-the-credential">CORS, and the credential</a></h3>
+<p>std does no CORS. The mechanism is already on the builder, a service’s mount is
+a string you wrote, and an allowed-origin list is a security decision std has
+no information for — so it is three lines of yours:</p>
+<pre><code class="language-vilan fragment">.on_request(|request| match request.method() {
+	"OPTIONS" =&gt; Response::builder()
+		.code(204)
+		.set_header("Access-Control-Allow-Origin", "https://app.example.com")
+		.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		.build(),
+	_ =&gt; page(request),
+})
+</code></pre>
+<p>Two sentences are the whole posture. A credential in a HEADER is CSRF-immune by
+construction: a cross-site page cannot set one without a preflight, and the rpc
+leg requires <code>Content-Type: application/json</code>, which a cross-site HTML form
+cannot produce. A credential in a COOKIE needs <code>SameSite=Lax</code> <em>and</em> that
+content-type check — and std will not read a cookie for you.</p>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
 <li>Mysterious contract-mismatch failures while developing usually mean an
@@ -603,6 +1463,19 @@ overwrites it.</li>
 <li>An rpc handler’s reply is its return value, so the handler runs to
 completion before the client hears back. Long work belongs in spawned
 tasks that write signals when done.</li>
+<li>Minting channels at runtime — an rpc that calls <code>session_of</code> +
+<code>ReactiveServer::expose</code>, with <code>ReactiveClient::source(channel)</code> on the
+other end, rather than <code>[expose]</code> — is hand-wiring, and what makes it
+hand-wiring is that the mirror has <strong>no origin</strong>: nothing on the client
+side records which call minted that channel, so nothing but your own
+code can decide when it is finished or bring it back. Two things follow,
+and <code>[expose]</code> gets both for free. Withdraw a channel you are done with,
+explicitly — <code>ReactiveServer::revoke(channel)</code> — rather than reading a
+client that stopped watching as a client that is done. And register
+<code>invalidate_on_reconnect(socket, client)</code> beside your <code>ReactiveClient</code>,
+because a reconnect mints a fresh session that has never heard of a
+channel your method minted: the mirror is invalidated (<code>status</code> back to
+<code>Waiting</code>), and re-running the rpc that minted it is your app’s job.</li>
 </ul>
 
                     </main>
@@ -656,7 +1529,7 @@ tasks that write signals when done.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -413,12 +413,13 @@ Different arguments are different implementations, so <code>impl DogBox with Hol
 <p>Traits are like interfaces, with two differences. They’re implemented
 explicitly (<code>impl Robot with Greet</code>), never structurally. And they
 appear as <em>bounds</em> on generics (<code>T: Greet</code>) rather than as standalone
-types: <code>fun f(v: Greet)</code>, <code>fun make(): Greet</code> and <code>struct H { item: Greet }</code> are all compile errors. When you want “one of several things at
-runtime”, use an enum.</p>
+types: <code>fun make(): Greet</code> and <code>struct H { item: Greet }</code> are compile
+errors. When you want “one of several things at runtime”, use an enum for
+a closed set and <code>dyn Greet</code> (below) for an open one.</p>
 <h2 id="a-trait-on-a-binding-is-a-constraint"><a class="header" href="#a-trait-on-a-binding-is-a-constraint">A trait on a binding is a constraint</a></h2>
-<p>The one place a trait’s name reads well in an annotation is a <code>let</code>, and
-there it means something narrower than it looks: a <strong>constraint</strong> on the
-value, not the value’s type.</p>
+<p>Two annotations take a trait’s name — a <code>let</code> and a parameter — and
+there it means something narrower than it looks. On a <code>let</code> it is a
+<strong>constraint</strong> on the value, not the value’s type.</p>
 <pre><code class="language-vilan">trait Greet {
 	fun greet(self): str;
 }
@@ -442,6 +443,88 @@ keep working with its real type. Because the type stays concrete, two
 implement the trait — there is no widening for them to meet in. And a
 trait nested inside the annotation (<code>List&lt;Greet&gt;</code>) is an ordinary value
 position, so it is still refused: there are no heterogeneous containers.</p>
+<h2 id="a-trait-on-a-parameter-is-a-generic"><a class="header" href="#a-trait-on-a-parameter-is-a-generic">A trait on a parameter is a generic</a></h2>
+<p>On a <strong>parameter</strong> the same spelling means a generic parameter you did
+not have to write. <code>fun f(x: Greet)</code> is <code>fun f&lt;T: Greet&gt;(x: T)</code>, and the
+function is compiled once per type it is called at, exactly as if you had
+written the <code>&lt;T: Greet&gt;</code> out:</p>
+<pre><code class="language-vilan">trait Greet {
+	fun greet(self): str;
+}
+
+struct Robot { id: i32 }
+struct Parrot { name: str }
+impl Robot with Greet { fun greet(self): str { "beep" } }
+impl Parrot with Greet { fun greet(self): str { "hello" } }
+
+fun announce(unit: Greet): str {
+	// `unit` is whatever type this call was made at, held to `Greet`, so
+	// the trait's members are what the body may reach — `unit.id` is not
+	// available here the way it was on the `let` above.
+	unit.greet()
+}
+
+fun main() {
+	print(announce(Robot { id = 1 }));
+	print(announce(Parrot { name = "kea" }));
+}
+</code></pre>
+<p>Two things follow, and both are worth knowing before you reach for it.
+Each parameter gets its <strong>own</strong> type parameter, so <code>fun pair(a: Greet, b: Greet)</code> accepts a <code>Robot</code> and a <code>Parrot</code> together; when both arguments
+must be the <em>same</em> type, write the generic yourself and use it twice
+(<code>fun pair&lt;T: Greet&gt;(a: T, b: T)</code>). And the function is genuinely
+generic, so a reader cannot see its arity from the signature — which is
+the trade the shorter spelling buys.</p>
+<p>Written and implicit generics mix freely, and the implicit ones come last
+in the list, so <code>f&lt;i32&gt;(..)</code> still binds the parameter you wrote.</p>
+<h2 id="trait-objects--dyn-trait"><a class="header" href="#trait-objects--dyn-trait">Trait objects — <code>dyn Trait</code></a></h2>
+<p>The two spellings above keep the value’s real type. <code>dyn Trait</code> is the
+one that gives it up: an object carrying the trait’s members in a table,
+whose concrete type the program can no longer see. That is what lets a
+struct field, or one list, hold values of <em>different</em> types that share a
+trait.</p>
+<pre><code class="language-vilan">trait Shape {
+	fun area(self): i32;
+}
+
+struct Square { side: i32 }
+struct Rect { w: i32, h: i32 }
+impl Square with Shape { fun area(self): i32 { self.side * self.side } }
+impl Rect with Shape { fun area(self): i32 { self.w * self.h } }
+
+struct Slot { shape: dyn Shape }
+
+fun main() {
+	// Two different types, one list — the field's type is the object,
+	// so each value is coerced where the literal is built.
+	let slots: List&lt;Slot&gt; = [
+		Slot { shape = Square { side = 3 } },
+		Slot { shape = Rect { w = 2, h = 5 } },
+	];
+	for slot in slots {
+		print(slot.shape.area());
+	}
+}
+</code></pre>
+<p>The keyword is never optional and never inferred. Coercion happens only
+where the position says <code>dyn</code> — a field, an annotated binding, a
+parameter, an element type — and never between two concrete types. That
+is deliberate: an object dispatches the <em>trait’s</em> member, and a type with
+an inherent member of the same name would otherwise change behaviour the
+moment an annotation appeared.</p>
+<p>Not every trait can be an object. Each member the trait <strong>requires</strong> has
+to fit a table slot, which means it takes <code>self</code>, names no <code>Self</code>, and is
+not generic. A trait that fails is refused at the <code>dyn</code> with the member
+that disqualified it named — and the fix is usually the generic
+(<code>&lt;T: Shape&gt;</code>), which keeps the type and needs no table. A trait’s
+<em>default</em> members are not slots and never disqualify it.</p>
+<p>A <code>resource</code> cannot become an object: its teardown would have to be
+dispatched, and vilan keeps teardown static.</p>
+<p>An object satisfies its own trait as a bound, so everything written over
+that bound applies to it: a generic <code>fun largest&lt;S: Shape&gt;(..)</code> takes a
+<code>List&lt;dyn Shape&gt;</code>, and a blanket <code>impl type S: Shape { .. }</code> adds its
+methods to the object as it does to every shape. What the erased value
+implements <em>besides</em> the trait is gone with its type.</p>
 <h2 id="associated-functions"><a class="header" href="#associated-functions">Associated functions</a></h2>
 <p>A trait <code>fun</code> with no <code>self</code> is an <strong>associated function</strong> — a name in
 the trait’s namespace rather than a method. Give it a default body and it
@@ -501,7 +584,8 @@ fun main() {
 }
 </code></pre>
 <p>The standard shape for a type that crosses the wire is
-<code>[derive(Wire, PartialEq, Debug)]</code>.</p>
+<code>[derive(Wire, PartialEq, Debug)]</code>. <code>Wire</code> is the wire codec alone —
+add <code>Json</code> to the list when the type also needs <code>to_json</code>/<code>from_json</code>.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> Derives are ordinary macros, and you can write your
 own; see <a href="macros-and-const.html">Macros &amp; const</a>. <code>Wire</code> and <code>Json</code>
@@ -560,7 +644,7 @@ at the derive site when one isn’t.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

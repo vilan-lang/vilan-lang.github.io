@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -331,27 +331,114 @@ binding to the call site:</p>
 	flavor.run(7, body)
 }
 </code></pre>
-<p>A parameter (or <code>let</code> binding) whose closure type carries
-<code>context &lt;name&gt;</code> declares an <strong>injected</strong> closure:</p>
+<p>A parameter, a <code>let</code> binding, a <strong>struct field</strong>, a <strong>generic argument</strong>
+or a <strong>return type</strong> whose closure type carries <code>context &lt;name&gt;</code>
+declares an <strong>injected</strong> closure:</p>
 <ul>
-<li>A closure <strong>literal</strong> supplied to that position does not capture at
-creation; it takes its own hidden parameter, bound anew at each call.</li>
+<li>A closure <strong>literal</strong> written where one is expected does not capture
+at creation; it takes its own hidden parameter, bound anew at each
+call.</li>
 <li>Each <strong>call through</strong> the injected value demands the context from the
 <em>caller</em> like a strict read, and supplies the caller’s value.</li>
 <li>An unannotated local binding holding a closure literal, passed into a
 clause position, <strong>adopts</strong> the clause (as if the literal were
 written inline).</li>
 </ul>
+<p>The clause is part of the closure <strong>type</strong>, not a property of the
+parameter that happened to write it, so it travels wherever the type
+does. A struct can hold an injected body:</p>
+<pre><code class="language-vilan fragment">struct Conditional {
+	body: (|| i32) context flavor,
+}
+
+fun hold(body: (|| i32) context flavor): Conditional {
+	Conditional { body }
+}
+
+fun value(held: Conditional): i32 {
+	flavor.run(2, held.body)
+}
+</code></pre>
+<p>Reading such a field yields an injected value carrying the same
+restrictions the parameter had, and a closure literal written where the
+field is initialised is born under the clause’s extent — which is what
+makes the value’s body run under the ambient value at the <strong>call</strong>, not
+at the value’s construction. A generic argument carries the clause the
+same way (<code>Conditional&lt;(|| i32) context flavor&gt;</code>, where the field is
+declared as the parameter), and so does a return type:</p>
+<pre><code class="language-vilan fragment">fun make(): (|| i32) context flavor {
+	|| flavor.get()
+}
+</code></pre>
+<p>A clause written after a <strong>non-closure</strong> return type is the function’s
+own declared requirement instead (§8.6): <code>fun f(): i32 context flavor</code>
+says what the body may read, while <code>fun f(): (|| i32) context flavor</code>
+says what the returned closure demands of its caller. The return type
+decides which reading applies, because only a closure type can carry a
+clause at all. The parentheses are required for the closure reading:
+<code>fun f(): || i32 context flavor</code> is refused, because the type grammar’s
+greed takes the clause onto the closure’s own return type — <code>i32</code>, which
+cannot carry one — and the declaration then means neither of the two
+things it could have meant.</p>
 <p>Because the binding is deferred, an injected value may only flow where
 the threading can follow it: it can be <strong>called</strong>, <strong>forwarded</strong> to a
-parameter with the same clause, or passed as <strong><code>run</code>’s body</strong>. Any
-other use (storing it in a field, returning it, putting it in a
-collection) is a compile error (“an injected (<code>context</code>-typed) closure
-can only be called, forwarded …, or passed to <code>run</code>”).</p>
+position with the same clause, or passed as <strong><code>run</code>’s body</strong>. Any other
+use (putting it in a collection, handing it to a position with no
+clause) is a compile error (“an injected (<code>context</code>-typed) closure can
+only be called, forwarded …, or passed to <code>run</code>”). Forwarding is
+clause-for-clause: a value carrying one clause landing in a position
+demanding another is refused naming both.</p>
 <p>A clause may name several contexts (<code>context (a, b)</code>); the clause must
 name context bindings, and it composes with the closure-type markers of
-§7.4 (<code>(sync || T) context turn_scope</code> is the reactive layer’s shape).</p>
-<h2 id="86-interactions"><a class="header" href="#86-interactions">8.6 Interactions</a></h2>
+§7.4 (<code>(sync || T) context turn_scope</code> is the reactive layer’s shape).
+The <code>sync</code> marker itself stays a <strong>parameter</strong> contract: it means “an
+async argument is refused here”, and a parameter is the only position
+that could otherwise accept one — a plain closure type already refuses
+an async store everywhere else.</p>
+<h2 id="86-declared-requirements-the-context-clause-on-a-fun"><a class="header" href="#86-declared-requirements-the-context-clause-on-a-fun">8.6 Declared requirements: the <code>context</code> clause on a <code>fun</code></a></h2>
+<p>A function’s requirement is <strong>inferred</strong> from its body by default (§8.3):
+it is whatever its body transitively reads, and it flows to every caller.
+A function may instead <strong>declare</strong> it, with the same clause spelling,
+after the return type:</p>
+<pre><code class="language-vilan fragment">fun render(row: Row): str context (app_ctx, turn_scope) {
+	app_ctx.get().theme + row.label()
+}
+</code></pre>
+<p>The clause closes the signature and names context bindings, in any order.
+Written after a return type it precedes a <code>borrows</code> clause; written
+without one it follows it (grammar §3.3). A function with no clause keeps
+inference; the two forms coexist in one program.</p>
+<p>A declaration changes three things, and all three follow from one idea:
+the requirement becomes a fact about the <strong>signature</strong> rather than about
+the body.</p>
+<ul>
+<li><strong>The body’s reads must be a subset of the clause.</strong> A strict read the
+clause does not declare is a compile error <em>at the declaration</em>
+(<code>…'s body reads context `b`, which this `context` clause does not declare</code>), naming the clause the body needs. Safe reads (§8.2) impose
+no requirement and are never part of the subset.</li>
+<li><strong>A clause may be wider than the body reads.</strong> Declaring a context the
+body does not (yet) read is a <strong>warning</strong>, not an error: the signature
+is the promise, and adding the read later must not break callers. The
+function takes the value and ignores it.</li>
+<li><strong>Callers are checked against the clause alone.</strong> A call from code that
+is neither inside a <code>run</code> of that context nor itself declaring it is a
+compile error <em>at the call</em>, naming the clause and the callee — one hop
+(<code>context `X` is required by `f`'s `context` clause, but this code can be reached without an enclosing `run` …</code>). The declaring function’s own
+body is never the site of a coverage refusal: its signature says the
+value arrives, and the check moves to where that promise is made or
+broken.</li>
+</ul>
+<p>This is what makes the clause a <strong>boundary</strong>. Nothing a caller is told
+depends on the callee’s body any more, so a diagnostic about a deep read
+cannot surface at an unrelated call, and a call the type solver could not
+resolve cannot cascade past the declaration.</p>
+<p>A clause on a <strong>trait or <code>impl</code> method</strong> is not supported: a dispatched
+call selects its callee at the call site, so there is no single
+declaration to check the requirement against. Declare a free <code>fun</code> and
+call it from the method.</p>
+<p>The editor shows the clause in a hovered signature, and offers
+<strong>Declare the inferred contexts</strong> on the subset refusal.</p>
+<h2 id="87-interactions"><a class="header" href="#87-interactions">8.7 Interactions</a></h2>
 <ul>
 <li><strong>Async</strong> (§7.5): captures are fixed at creation, so a context value
 is stable across every suspension of the extent by construction. An
@@ -364,7 +451,7 @@ and the spawn stays free-floating.</li>
 target; contexts work identically on process and browser platforms
 (no host storage is involved).</li>
 </ul>
-<h2 id="87-the-standard-librarys-ambient-values-informative"><a class="header" href="#87-the-standard-librarys-ambient-values-informative">8.7 The standard library’s ambient values (informative)</a></h2>
+<h2 id="88-the-standard-librarys-ambient-values-informative"><a class="header" href="#88-the-standard-librarys-ambient-values-informative">8.8 The standard library’s ambient values (informative)</a></h2>
 <p><code>std</code> builds its ambient machinery on this one mechanism: <code>owner_scope</code>
 (the reactive disposal owner: <code>run_with_owner</code>, <code>comp</code>),
 <code>turn_scope</code> (the current write-batching turn: <code>turn</code>, <code>batch</code>), and
@@ -423,7 +510,7 @@ language rules; they are specified by their reference pages.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

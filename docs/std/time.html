@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -176,7 +176,7 @@
 <p>Instants, durations, and timers. Both types are Wire: they ride rpc
 payloads (<code>created_at: Instant</code> in a mirrored record is the standard
 timestamp shape).</p>
-<pre><code class="language-vilan fragment">import std::time::{ now, Instant, Duration, sleep, sleep_for, Timer };
+<pre><code class="language-vilan fragment">import std::time::{ now, Instant, Duration, sleep, sleep_for, Timer, Debounce };
 </code></pre>
 <h2 id="instant"><a class="header" href="#instant">Instant</a></h2>
 <p>A moment in time: epoch milliseconds in an <code>i53</code> under the hood.</p>
@@ -272,6 +272,74 @@ structured path) and does <em>not</em> touch the timer. No verdict, no
 <code>clearTimeout</code>: the timer belongs to whoever holds the value, so its other
 holders can still wait on it, or call it off themselves.</li>
 </ul>
+<h2 id="debounce"><a class="header" href="#debounce">Debounce</a></h2>
+<p><code>Debounce</code> collapses a burst of calls into <strong>one</strong>, <code>delay</code> after the last of
+them — trailing edge. Each <code>run</code> pushes the deadline out <em>and</em> replaces the
+callback, and there is at most one timer in flight however many times <code>run</code> is
+called, so a burst costs one run of the <strong>last</strong> closure.</p>
+<p><code>flush()</code> is the explicit-save half: it fires the pending callback <strong>now</strong> and
+calls the window off, so a blur handler, a Save button or a form that unloads
+does not lose the coalesced work. Exactly one run results and nothing runs
+twice — the callback is taken out before it is called, so the parked loop finds
+nothing at the deadline it pre-empted — and a <code>flush</code> with nothing pending is a
+no-op. A <code>run</code> from inside the flushed callback opens a fresh window in the
+ordinary way.</p>
+<pre><code class="language-vilan fragment">struct Debounce { … }
+impl Debounce {
+	fun new(delay: Duration): Debounce
+	fun run(self, fn: || void)   // pushes the deadline out, replaces the callback
+	fun flush(self)              // fires the pending callback NOW, once
+	fun cancel(self)             // drops the pending callback, calls the timer off
+}
+</code></pre>
+<pre><code class="language-vilan">import std::io::print;
+import std::time::{ Debounce, Duration, sleep };
+
+async fun main() {
+	let save = Debounce::new(Duration::millis(300));
+	save.run(|| print("first"));
+	save.run(|| print("second"));
+	save.run(|| print("third"));
+	sleep(600);   // one line printed: "third"
+}
+</code></pre>
+<p><strong>Trailing, not leading.</strong> The first call of a burst does not fire; the last one
+does, 300 ms after it. That is what a search field wants (one query, for the
+text the user stopped typing) and what a resize handler wants (one layout pass,
+at the size the window settled at). A leading-edge <code>Throttle</code> is deliberately
+<strong>not</strong> shipped beside it: it is a different mechanism rather than a flag on
+this one — it fires immediately and then <em>suppresses</em>, so it holds no pending
+callback and its timer gates rather than schedules — and it lands when something
+asks for it.</p>
+<p><strong>A call that arrives during a wait cannot fire early.</strong> The driving loop
+re-reads the deadline after every wait, so the timer armed for an earlier call
+fires, finds the deadline moved, and takes another turn.</p>
+<p><code>cancel()</code> drops the pending callback and calls the in-flight timer off, so
+nothing fires and the host is released now rather than at the deadline. It is
+idempotent, safe with nothing pending, and a <code>run</code> after it starts a fresh
+window in the ordinary way.</p>
+<p>Like <code>Timer</code>, a <code>Debounce</code> is a value wrapping shared cells: copying it shares
+the one debounce, and <code>run</code> through any copy pushes the same deadline.</p>
+<p><strong>The driving loop runs under the ambient nursery</strong>, so cancelling that nursery
+stops the window — nothing fires, exactly as <code>cancel()</code> would. It does not
+retire the <code>Debounce</code>: the loop’s bookkeeping is cleared however it unwinds
+(cancellation, or a callback of yours that throws), so the next <code>run</code> opens a
+fresh window in the ordinary way.</p>
+<p><strong>It takes no owner and registers no cleanup.</strong> <code>std::time</code> is the base clock
+module and sits below <code>std::reactive</code>, so a <code>Debounce</code> is a plain value in the
+shape <code>Timer</code> established — <code>cancel()</code> is the teardown, and an app that wants
+one tied to a scope wraps it itself. A pending debounce keeps the host alive
+until it fires, exactly as the outstanding <code>Timer</code> inside it does.</p>
+<h3 id="why-the-shared-cells"><a class="header" href="#why-the-shared-cells">Why the <code>Shared</code> cells</a></h3>
+<p>They are load-bearing, in both directions of the memory model
+(<a href="../spec/memory.html">spec §6</a>). <code>run</code> takes <code>self</code> by loan and the <code>async</code> block
+it spawns <strong>outlives that loan</strong> — it reads the pending deadline on every timer
+tick, long after <code>run</code> returned. Rule 1 (§6.1) is why a plain field cannot
+serve: values are copied, so the block would hold a copy of the deadline made at
+spawn time and never see a later <code>run</code>’s push, and the copy it wrote would be
+discarded. <code>Shared</code> is the cell that makes the escape legal, and rule 3 (§6.3)
+is what lets the block <strong>write</strong> through what is only a loan — <code>write()</code> is a
+view projected from the cell, not from <code>self</code>’s stack slot.</p>
 <h2 id="notes"><a class="header" href="#notes">Notes</a></h2>
 <ul>
 <li>Duration constructors take <code>i53</code>; remember the suffix on computed
@@ -339,7 +407,7 @@ realistic date (i53 rides the wire as a float’s 53 bits, safe past year
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

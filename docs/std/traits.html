@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -213,9 +213,14 @@ rarely need it.</li>
 	fun default(): Self;
 }
 </code></pre>
-<p>Zero for numbers, <code>""</code> for <code>str</code>, <code>false</code> for <code>bool</code>.
-<code>[derive(Default)]</code> composes fields’ defaults. Used as a bound by helpers
-like <code>unwrap_or_default</code> and <code>List.sum</code>.</p>
+<p>Zero for numbers, <code>""</code> for <code>str</code>, <code>false</code> for <code>bool</code>, <code>None</code> for
+<code>Option&lt;T&gt;</code>, and the empty container for <code>List&lt;T&gt;</code>, <code>Map&lt;K, V&gt;</code> and
+<code>Set&lt;T&gt;</code>. <code>[derive(Default)]</code> composes fields’ defaults — so a struct
+holding a container derives one. Used as a bound by helpers like
+<code>unwrap_or_default</code> and <code>List.sum</code>.</p>
+<p>Each impl lives in its own type’s module (<code>Option</code>’s in <code>std::option</code>,
+<code>List</code>’s in <code>std::list</code>, and so on); <code>std::default</code> itself carries only
+the two scalars that have no module of their own.</p>
 <h2 id="stdoperators-the-operator-traits"><a class="header" href="#stdoperators-the-operator-traits">std::operators: the operator traits</a></h2>
 <p>Each operator dispatches through a trait; implement the trait, get the
 operator:</p>
@@ -256,7 +261,7 @@ fun main() {
 <p>Compound assignment (<code>+=</code>, <code>/=</code>, …) rides the same impls. The
 operator’s result type is <code>Self</code> (the left operand’s type).</p>
 <h2 id="stdoperators-try-and-lift"><a class="header" href="#stdoperators-try-and-lift">std::operators: <code>Try</code> and <code>Lift</code></a></h2>
-<p>The machinery behind <code>!</code> and <code>?.</code>
+<p>The machinery behind <code>!</code>, <code>?.</code> and <code>?</code>
 (<a href="../tour/control-flow.html">control flow</a>):</p>
 <pre><code class="language-vilan fragment">enum Verdict&lt;T, B&gt; { Good(T), Bad(B) }
 
@@ -307,6 +312,52 @@ fun main() {
 your <code>and_then</code> does with the closure it is handed. Every receiver in one
 expression must be the same container; a type with a <code>map</code> but no <code>Lift</code> is
 refused, and a missing <code>map</code>/<code>and_then</code> is named in the error.</p>
+<h2 id="stdoperators-callable"><a class="header" href="#stdoperators-callable">std::operators: <code>Callable</code></a></h2>
+<p><code>Callable</code> is the opt-in marker for the <strong>call operator</strong>: a value whose
+type implements it is called like a function, and <code>value(args)</code> resolves
+as the method <code>call</code> on it.</p>
+<pre><code class="language-vilan fragment">trait Callable {}                       // opt-in marker for value(args)
+</code></pre>
+<p>The marker declares no members. The <code>call</code> method the impl writes carries
+the arity and the types, so everything the call checks — argument count,
+argument types, generic binding, a <code>context</code> clause — is the ordinary
+method check, and <code>value(args)</code> and <code>value.call(args)</code> are the same call:</p>
+<pre><code class="language-vilan">import std::operators::Callable;
+
+struct Scale {
+	unit: f64,
+}
+
+impl Scale with Callable {
+	fun call(self, n: f64): f64 {
+		self.unit * n
+	}
+}
+
+fun main() {
+	let space = Scale { unit = 0.25 };
+	print(space(2f));             // 0.5
+	print(space.call(2f));        // 0.5 — the same call
+	let step: |f64| f64 = space;  // a Callable coerces into a closure slot
+	print(step(8f));              // 2
+}
+</code></pre>
+<p>Three rules complete it:</p>
+<ul>
+<li><strong><code>impl T with Callable</code> must give <code>T</code> a <code>call</code> method</strong> — here or in a
+separate <code>impl T</code> block. The marker alone calls nothing, and the refusal
+is at the impl rather than at every call site.</li>
+<li><strong>A <code>call</code> method without the marker stays an ordinary method.</strong> Calling
+such a value is refused, with the impl named as the fix.</li>
+<li><strong>A <code>Callable</code> in a FIELD is called through the field</strong> — <code>(a.b)(c)</code>,
+never <code>a.b(c)</code>, which is method lookup. This is the rule a closure-valued
+field already has, for the same reason.</li>
+</ul>
+<p>A <code>Callable</code> value also <strong>coerces wherever a function declaration does</strong>
+(<code>let f: |f64| f64 = space;</code>, <code>list.map(space)</code>): the slot takes it, and it
+is lowered as the wrapping closure <code>|n| space.call(n)</code>. A struct TYPE name
+is not a value, so <code>Scale(0.25)</code> is still the construction refusal it
+always was.</p>
 
                     </main>
 
@@ -359,7 +410,7 @@ refused, and a missing <code>map</code>/<code>and_then</code> is named in the er
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,29 +181,81 @@
 equal iff they name the same declaration and their arguments are
 equal. There is no structural typing of nominals.</li>
 <li><strong>Primitives</strong>: <code>bool</code>, <code>str</code>, <code>i8 i16 i32 i53 u8 u16 u32 u53</code>,
-<code>f32 f64</code>, <code>BigInt</code>. Declared in std as external structs; nominally
+<code>usize</code>, <code>f32 f64</code>, <code>BigInt</code>. Declared in std as external structs; nominally
 distinct (no implicit numeric conversions, §5.8).</li>
 <li><strong>Tuples</strong>: <code>(T, U, …)</code>; structural: equal iff element-wise equal.
 <code>()</code> and one-element tuples do not exist as distinct types (<code>(T)</code> is
 <code>T</code>; the unit is <code>void</code>).</li>
 <li><strong>Closure types</strong>: <code>|T, U| R</code>, <code>|| R</code>, <code>|| void</code>; structural in their
-parameter and return types. An <code>async</code> closure type (§7.4) and a
-<code>context</code>-claused type (§8.5) are distinct from their plain
-counterparts.</li>
+parameter and return types. An <code>async</code> closure type (§7.4) is distinct
+from its plain counterpart. A <code>context</code> clause (§8.5) is carried by the
+type too, but is not part of what makes two closure types compatible: a
+closure LITERAL is born clause-less and takes the clause of the position
+it lands in, and the restriction on where an injected value may then flow
+is what keeps it honest.</li>
 <li><strong>View types</strong>: <code>&amp;T</code>, <code>&amp;mut T</code> (§6). Views are second-class: these
 types appear in parameter and return positions and in short-lived
 locals only.</li>
 <li><strong><code>void</code></strong>: the unit; one value, also written <code>void</code>.</li>
 <li><strong><code>any</code></strong>: the dynamic top type, produced at host boundaries; it
 unifies with every type (absorbing).</li>
-<li><strong><code>Never</code></strong>: the type of diverging expressions (<code>panic(..)</code>, <code>ret ..</code>,
-<code>jump break</code>/<code>continue</code>). Never unifies by <em>yielding</em>: a diverging
-match leg or if branch doesn’t constrain the construct’s type, and a
-<code>Never</code> value satisfies any expected type. Internal; not written in
-source.</li>
+<li><strong><code>Never</code></strong>: the type of expressions that never produce a value —
+<code>panic(..)</code>, <code>ret ..</code>, <code>jump break</code>/<code>continue</code>, a <code>for { … }</code> nothing
+breaks out of, and any block, <code>if</code> or <code>match</code> whose every path is one
+of those. <code>Never</code> unifies by <strong>erasure</strong>: it <em>yields</em> to whatever it
+meets, so a diverging expression drops out of every join it takes part
+in — <code>if</code>/<code>else</code> arms, <code>match</code> arms, a block’s tail against the type
+expected of it, an operator’s operands (<code>never + i32</code> is <code>i32</code>), a
+<code>?</code>-chain, a call’s argument against its parameter — and a <code>Never</code>
+value satisfies any expected type, a declared return type included
+(<code>fun f(): i32 { panic("x"); }</code> checks). Erasure removes the diverging
+expression from the join and nothing else: whatever remains must still
+agree, so <code>let v: str = if c { 1 } else { panic("no") }</code> is a mismatch
+at the <code>1</code>, not at the <code>panic</code>. No <code>Never</code> value exists at run time —
+the expression that had the type leaves before anything can read it.
+Internal; not written in source.</li>
 <li><strong>Generics</strong>: a bound type parameter in scope (<code>T</code>) is a type; it is
 abstract within its binder’s body.</li>
 </ul>
+<h3 id="naming-a-type-through-a-module"><a class="header" href="#naming-a-type-through-a-module">Naming a type through a module</a></h3>
+<p>A nominal type is written as a <strong>path</strong> (grammar §3.9’s <code>type-path</code>):
+either a bare name, or the name qualified by the modules that declare it.
+<code>Style</code>, <code>style::Style</code> and <code>std::style::Style</code> name the same type; the
+segments before the last select namespaces and are resolved exactly as an
+expression path’s are (names §4.2), so a module in scope reaches its
+types the way it reaches its values. This holds in <strong>every</strong> type
+position — return type, <code>let</code> annotation, parameter, struct field, <code>impl</code>
+subject, trait bound, generic argument, and nested inside another type
+form:</p>
+<pre><code class="language-vilan">import std::reactive;
+import std::style;
+
+struct Card {
+    style: style::Style,
+    hits: reactive::SignalCell&lt;i32&gt;,
+}
+
+fun render(card: &amp;Card): style::Style {
+    card.style
+}
+
+fun main() {
+    let card = Card {
+        style = style::style(),
+        hits = reactive::Signal::new(0),
+    };
+    print(render(&amp;card).class_list());
+}
+</code></pre>
+<p>Generic arguments attach to the last segment, the only one that names a
+type (<code>reactive::SignalCell&lt;i32&gt;</code>); earlier segments are modules and take
+none.</p>
+<p>A path addresses exactly what its namespace declares, so a segment
+naming a member that is not a type — a <code>fun</code>, a <code>let</code> — is refused where
+it stands rather than resolving to that member’s own type. The
+unqualified form differs here: a bare name in type position may skip a
+value binding and keep looking outward (names §4.5), which a qualified
+one has nowhere to do.</p>
 <h2 id="52-null"><a class="header" href="#52-null">5.2 <code>null</code></a></h2>
 <p><code>null</code> is not a member of ordinary types. It exists for host
 interoperability (an extern that may return JS null); std APIs flatten it
@@ -370,7 +422,6 @@ safety:</p>
 external fun get_align(): Align;              // out of set is a BUG — trap
 
 [extern("getAlign")]
-[doc(hidden)]
 external fun get_align_raw(): str;            // out of set is an INPUT
 fun read_align(): Option&lt;Align&gt; { Align::parse(get_align_raw()) }
 </code></pre>
@@ -400,6 +451,26 @@ clause, and every member signature:</p>
 per receiver: a <code>Words: Source&lt;str&gt;</code> instantiates the impl at <code>T = str</code>, a
 <code>Counts: Source&lt;i32&gt;</code> at <code>T = i32</code>. A name in a bound that no binder
 declares is still unresolved, and is reported where it is written.</p>
+<p>A <strong>bare trait in subject position means the same thing with the binder
+left implicit</strong>: <code>impl Source&lt;type T&gt; { … }</code> is <code>impl type S: Source&lt;type T&gt; { … }</code> — the universal reading every other bare-trait position has —
+so <code>self</code> inside the body is the implementing type, not a value of the
+trait, and calls on it dispatch through the bound like any other bounded
+parameter. The implicit binder has no name; a body that needs to say it
+writes <code>Self</code>, and a body that spells a name out is told which head would
+declare it.</p>
+<p>A binder the head never mentions again needs no name, and is written <code>_</code> —
+the wildcard of <code>Some(_)</code> and <code>let _</code>, in the impl-subject position, with
+the same optional bound:</p>
+<pre><code class="language-vilan fragment">impl Source&lt;Option&lt;_: Source&lt;type U&gt;&gt;&gt; { … }    // a signal of an optional signal
+impl Pair&lt;_, _&gt; { … }                           // for every Pair, whatever it holds
+</code></pre>
+<p>Each <code>_</code> is a parameter of its OWN: two of them in one head are two
+parameters, never one written twice, so nothing about the head says the two
+positions agree. Write a name where they must. <code>type _</code> means the same
+thing and stays accepted; <code>vilan fmt</code> prints it as <code>_</code>. Outside an impl
+subject there is no head to introduce a parameter into, so <code>_</code> in an
+annotation (<code>let x: List&lt;_&gt;</code>) is refused — it is a binder, not an
+inference placeholder.</p>
 <p>A trait has <strong>one implementation per subject</strong>: writing
 <code>impl Bag with Show</code> twice is a compile error at the second one, since
 nothing would rank them and the second would never run. Two impls are the
@@ -459,6 +530,38 @@ impl SignalCell&lt;type T&gt; with MaybeSignal&lt;T&gt; {      // signals, react
 
 fun badge&lt;V: MaybeSignal&lt;str&gt;&gt;(label: V) { … }  // takes both, no ceremony
 </code></pre>
+<p>A blanket implementation satisfies a bound for a <strong>concrete</strong> type this
+way, and never for an <strong>abstract</strong> one. Whether a generic parameter
+satisfies a bound is answered from that parameter’s own <strong>declared bounds
+alone</strong> — no impl is consulted, blanket or otherwise:</p>
+<pre><code class="language-vilan fragment">trait Wrap&lt;T&gt; { fun unwrap(self): T; }
+impl type T with Wrap&lt;T&gt; { fun unwrap(self): T { self } }
+
+fun consume&lt;T: Tag, W: Wrap&lt;T&gt;&gt;(wrapped: W): str { wrapped.unwrap().tag() }
+
+fun main() { consume(3); }                             // fine: `i32` is concrete
+fun wrapper&lt;T: Tag&gt;(value: T): str { consume(value) }  // error: `T` lacks `: Wrap&lt;T&gt;`
+fun ok&lt;T: Tag + Wrap&lt;T&gt;&gt;(value: T): str { consume(value) }   // declare it, and it holds
+</code></pre>
+<p>The blanket covers <code>T</code> at every instantiation, so reading it as satisfied
+in the abstract body would be sound only until a <em>more specific</em> impl
+appears — and the specificity order above ranks the blanket last, so the
+body would have been checked against an implementation the call does not
+reach. Monomorphization is where the question has a real answer, so the
+concrete check is the one that counts and a declared bound is what an
+abstract call may lean on. The refusal names the parameter and the bound
+it lacks, which is the edit that fixes it.</p>
+<p>A blanket’s <strong>methods</strong> are the other direction, and they are reachable
+from an abstract parameter. A member that a blanket written over the
+parameter’s declared bounds provides answers a call on it — <code>impl type S: Src&lt;type T&gt; { fun twice(self): (T, T) { … } }</code> answers <code>s.twice()</code> inside
+<code>fun f&lt;S: Src&lt;i32&gt;&gt;(s: S)</code> — because every instantiation satisfies those
+bounds and so reaches the blanket. The bounds must entail the blanket’s,
+arguments included: a blanket over <code>Src&lt;str&gt;</code> is not reached through
+<code>S: Src&lt;i32&gt;</code>. Through the bound the parameter stays opaque. An inherent
+blanket member is called as written, and the concrete type’s own
+same-named inherent member is out of scope there; a trait member the
+blanket provides dispatches at monomorphization to the most specific impl
+of that trait, as every call through a bound does.</p>
 <p>Because the instantiation is decided first, a <code>SignalCell&lt;str&gt;</code> reaches the
 <code>Signal</code> impl under a <code>MaybeSignal&lt;str&gt;</code> bound and the blanket under a
 <code>MaybeSignal&lt;SignalCell&lt;str&gt;&gt;</code> bound, where it is a static value of that
@@ -473,10 +576,15 @@ verify field trees syntactically rather than through trait bounds.</em></p>
 <h2 id="55-traits"><a class="header" href="#55-traits">5.5 Traits</a></h2>
 <p>A trait declares required methods (signature-only) and defaults (with
 bodies). <code>trait X with Y</code> makes <code>Y</code> a supertrait: implementing <code>X</code>
-requires <code>Y</code>. A supertrait’s members are reachable through the
-sub-trait — a <code>T: Ord</code> value may call <code>eq</code> — and they are typed at the
-arguments the sub-trait passes the supertrait, not at the supertrait’s
-own parameters: under <code>trait Sig&lt;T&gt; with Src&lt;T&gt;</code>, a <code>S: Sig&lt;u32&gt;</code> bound
+requires <code>Y</code> — from the same impl, a separate impl on the same subject,
+or, for a blanket, the subject’s own bound (<code>impl type S: Y with X</code>
+reaches only types that are already <code>Y</code>, at the ARGUMENTS the bound
+writes: <code>impl type S: Y&lt;List&lt;type T&gt;&gt; with X&lt;T&gt;</code> does not reach a type
+that is a <code>Y&lt;i32&gt;</code>, so a <code>Y</code> default called on that type is answered by
+its own impl). A supertrait’s members are
+reachable through the sub-trait — a <code>T: Ord</code> value may call <code>eq</code> — and
+they are typed at the arguments the sub-trait passes the supertrait,
+not at the supertrait’s own parameters: under <code>trait Sig&lt;T&gt; with Src&lt;T&gt;</code>, a <code>S: Sig&lt;u32&gt;</code> bound
 sees <code>Src</code>’s <code>get(): T</code> as <code>get(): u32</code>. A trait’s generic parameters
 may carry defaults
 (<code>trait PartialEq&lt;B = Self&gt;</code>) and <strong>bounds</strong> (<code>trait Holder&lt;T: Bound&gt;</code>);
@@ -484,8 +592,8 @@ may carry defaults
 <strong>bounds</strong>; a trait is not a type, and there are no trait objects: no
 value ever has a trait as its type.</p>
 <p>That rule is enforced <strong>at the annotation</strong>, in every value position — a
-parameter, a return type, a field, a generic argument (<code>List&lt;Display&gt;</code>)
-— and reported where the trait’s name is written, whether or not the
+return type, a generic argument (<code>List&lt;Display&gt;</code>) — and reported
+where the trait’s name is written, whether or not the
 declaration is ever used. A trait’s name stays legal in the positions
 that name a bound or a namespace rather than a value’s type: a generic
 parameter’s bound (<code>&lt;T: Display&gt;</code>), a supertrait, an <code>impl</code> subject
@@ -495,15 +603,16 @@ write <code>Self</code> for “the implementing type”; a generic parameter def
 to it (<code>trait PartialEq&lt;B = Self&gt;</code>) is a parameter, not the trait, and is
 unaffected.</p>
 <h3 id="a-trait-annotation-on-a-binding"><a class="header" href="#a-trait-annotation-on-a-binding">A trait annotation on a binding</a></h3>
-<p>A <code>let</code> binding’s annotation is the one exception, and it is not an
-exception to the rule above but an application of it: a trait written
-there is a <strong>checked constraint</strong>, not the binding’s type.</p>
-<pre><code>let count: SignalCell&lt;i32&gt; = SignalCell::new(1);
+<p>A <code>let</code> binding’s annotation is one of three exceptions — the others are a
+parameter’s and a struct field’s, below — and none is an exception to the
+rule above but an application of it: a trait written here is a <strong>checked
+constraint</strong>, not the binding’s type.</p>
+<pre><code>let count: Signal&lt;i32&gt; = SignalCell::new(1);
 </code></pre>
 <p><code>count</code>’s type is <code>SignalCell&lt;i32&gt;</code> — the type its initializer infers,
 exactly as if nothing had been written. The annotation neither widens it
 nor boxes it; it asserts that whatever type the initializer produces
-implements <code>SignalCell&lt;i32&gt;</code>, and is a compile error when it does not. This
+implements <code>Signal&lt;i32&gt;</code>, and is a compile error when it does not. This
 is the bounded-generic rule (§5.6) in binding position: <strong>checked wide,
 kept narrow</strong>, one concrete type per binding. Reading <code>count</code>’s members
 therefore reaches <code>SignalCell</code>’s own — its fields included — and a
@@ -516,11 +625,60 @@ impossible.</p>
 <p>An <code>if</code> needs no rule of its own. Its arms unify first (§5.11), and the
 constraint meets the one type that unification produced:</p>
 <pre><code>// legal — both arms are SignalCell&lt;i32&gt;
-let cell: SignalCell&lt;i32&gt; = if c { SignalCell::new(1) } else { SignalCell::new(2) };
+let cell: Signal&lt;i32&gt; = if c { SignalCell::new(1) } else { SignalCell::new(2) };
 // refused at the ARMS, as an ordinary mismatch: two concrete types,
-// each implementing SignalCell&lt;i32&gt;, still do not unify
-let cell: SignalCell&lt;i32&gt; = if c { SignalCell::new(1) } else { OtherSignal::new(2) };
+// each implementing Signal&lt;i32&gt;, still do not unify
+let cell: Signal&lt;i32&gt; = if c { SignalCell::new(1) } else { OtherSignal::new(2) };
 </code></pre>
+<h3 id="a-trait-annotation-on-a-parameter"><a class="header" href="#a-trait-annotation-on-a-parameter">A trait annotation on a parameter</a></h3>
+<p>A parameter’s annotation is the second position that takes a trait name,
+and it means something different from a binding’s: an <strong>implicit generic
+parameter</strong>.</p>
+<pre><code>fun render(cell: Signal&lt;i32&gt;): str { ... }   // == fun render&lt;T: Signal&lt;i32&gt;&gt;(cell: T)
+</code></pre>
+<p>The two readings differ because their quantification does. A binding has
+one initializer and so one concrete type, which it keeps. A parameter has
+one type per call site, so the function is checked <strong>once, against the
+bound</strong>, and monomorphized per call like any generic — which means the
+body reaches the trait’s members and not the argument’s own. Everything
+else follows from the desugaring, and nothing about it is new:</p>
+<ul>
+<li>Each annotation is its <strong>own</strong> generic. <code>fun f(a: Show, b: Show)</code> has
+two type parameters and its two arguments may be different types; a
+function that needs them equal writes one generic and uses it twice.</li>
+<li>The trait’s arguments are the bound’s: <code>x: Signal&lt;i32&gt;</code> bounds the
+parameter by <code>Signal&lt;i32&gt;</code>, not by <code>Signal&lt;T&gt;</code> for a free <code>T</code>.</li>
+<li>The implicit parameter is <strong>appended</strong> after every generic the
+declaration writes, so explicit generic arguments keep their meaning.</li>
+<li>Written and implicit generics mix freely in one signature.</li>
+<li>A <strong>closure</strong> parameter takes no trait: a closure has no generic
+parameters, so the annotation is refused there like any other value
+position.</li>
+</ul>
+<p>The reading is the binding’s in one respect: it applies to the
+parameter’s OWN annotation, never to a trait nested inside one
+(<code>List&lt;Display&gt;</code>), which stays refused. A <code>&amp;</code> is not such a nesting — it
+is a call convention, erased before the annotation is read — so
+<code>&amp;Display</code> is “a view of something implementing <code>Display</code>” at a parameter
+and at a binding alike.</p>
+<h3 id="a-trait-annotation-on-a-struct-field"><a class="header" href="#a-trait-annotation-on-a-struct-field">A trait annotation on a struct field</a></h3>
+<p>A struct field’s annotation is the third position a trait name can reach,
+and there it is <strong>refused</strong>, with a steer to the trait object:</p>
+<pre><code>struct Store { count: Signal&lt;i32&gt; }       // error: a field holds a value
+struct Store { count: dyn Signal&lt;i32&gt; }   // one type, whatever it holds (§5.12)
+struct Store&lt;S: Signal&lt;i32&gt;&gt; { count: S } // or the parameter, written
+</code></pre>
+<p>A field is part of a type every value of the struct shares, so the two
+readings the other positions give do not fit it: a binding’s constraint
+has no initializer to keep, and a parameter’s implicit generic would be a
+parameter of the STRUCT that no one wrote — grounded per literal, so a
+struct over one implementation and the same struct over another would be
+two types that no one list could hold, and viral through every struct that
+embeds one. <code>dyn Trait</code> is the value the field wants when what varies is
+the implementation; a written parameter is the answer when one instance
+should keep its concrete type. The refusal is the same on an attributed
+(<code>[derive(..)]</code>, <code>[service(..)]</code>) declaration, where <code>dyn Trait</code> is a
+spelling a generator can read.</p>
 <h3 id="associated-functions"><a class="header" href="#associated-functions">Associated functions</a></h3>
 <p>A trait may declare <strong>associated functions</strong>: <code>fun</code>s with no <code>self</code>
 receiver, with or without a default body. They are a namespace, not a
@@ -557,6 +715,17 @@ the name; a trait default is inherited by impls that don’t override it.</p>
 against an expected type (possibly unknown), and expectations flow inward
 (a <code>let</code> annotation to its initializer, a parameter type to its argument,
 a field’s declared type to its initializer value).</p>
+<p>A written <strong>type application supplies exactly the arity its declaration
+declares</strong>, in every position an annotation can occupy — a parameter, a
+return type, a <code>let</code> annotation, a field, a generic argument, an <code>impl</code>
+head subject, a trait bound’s argument. Naming <code>Holder</code> for a
+<code>struct Holder&lt;S&gt;</code> is an error, not a request to infer <code>S</code>: annotations
+are checked, never inferred, so a missing argument has nothing to come
+from. A parameter with a <strong>default</strong> (<code>&lt;B = Self&gt;</code>, §5.5) supplies
+itself, so an application may omit exactly the trailing arguments whose
+parameters default. Supplying too many is the same error. The head of a
+qualified path (<code>Option::None</code>, <code>List::new()</code>) names a namespace rather
+than a type and carries no arity of its own.</p>
 <p>For a call <code>f(a₁ … aₙ)</code> where <code>f</code> has generic parameters:</p>
 <ol>
 <li>Each parameter type is unified with its argument’s type; unification
@@ -586,6 +755,20 @@ bound is an error naming the parameter and bound.</li>
 <li>A call whose generics cannot all be grounded (no argument or
 expectation determines them) is an error at the call.</li>
 </ol>
+<p>A generic parameter is <strong>rigid inside its own body</strong>. The caller chose it,
+once, for this instantiation; nothing in the body may choose again. So a
+parameter’s type unifies with itself and with nothing else: assigning a
+value of one parameter’s type to a binding of another’s is a mismatch,
+and passing it where a concrete type is declared is a mismatch, exactly
+as <code>str</code> and <code>i32</code> are. The parameters a site may bind are the ones it is
+<em>inferring</em> — a callee’s at a call, a struct’s at a literal, an enum’s at
+a constructor, a declaration’s own at an <code>impl</code> head — never one an
+enclosing <code>fun</code>, <code>impl</code> or <code>trait</code> declares. A parameter that carries a
+bound still <strong>satisfies</strong> a position declared as that trait (the bound is
+what it promises); satisfying is not binding.</p>
+<p>A bound names a <strong>trait</strong>. A struct or an enum written in bound position
+(<code>fun f&lt;T: S&gt;</code>) is an error naming the sort, not a silent parameter with
+an unusable constraint.</p>
 <p>Bounds cut both ways. At a call they are an <strong>obligation</strong> (4 above); at
 a declaration they are an <strong>assumption</strong>: inside the body of whatever
 declares the parameter — a function, an impl, or a trait — the bound
@@ -604,24 +787,33 @@ static. A program that would require an unbounded set of specializations
 <p><strong>Return-type inference.</strong> A function with no declared return type takes
 its type from its body’s return positions — the tail, when the body can
 reach it, and every <code>ret</code> — and they must agree. A tail the body cannot
-reach (every path before it leaves by <code>ret</code>) is not a return position, so
-<code>fun f(x: bool) { ret 1; }</code> is <code>i32</code>; a tail it can reach is one, so a
-<code>ret 1</code> beside an <code>if</code> with no <code>else</code> disagrees with the void that path
-produces. A bare <code>ret</code> is a void return; it agrees only with a void body.
-A disagreeing <code>ret</code> is an error at that <code>ret</code>, naming both types and
-where the inferred one came from — the function then has no type, so
-the error is not repeated at its calls. A call the function makes to
-itself contributes nothing (its type is the one being inferred); a
-function whose only return positions are such calls is <code>Never</code>. Declaring
-the return type replaces inference with checking (every position against
-the declaration). A closure (and an <code>async</code> block) infers the same way:
-its return type is the unification of its reachable tail and every
-<code>ret</code>, so <code>|x| { ret x * 2; }</code> is <code>|i32| i32</code>, and a <code>ret</code> that
-disagrees — with the tail, an earlier <code>ret</code>, or a body path that ends
-without a value — is an error at that <code>ret</code>. When the closure’s return
-type is known ahead of the body (its own annotation, or the call site’s
-expectation), the <code>ret</code>s check against that type instead, exactly as a
-declared function’s do.</p>
+reach is not a return position: the paths before it all leave, by <code>ret</code>,
+by <code>jump</code>, by a <code>panic(..)</code>, or into a <code>for { … }</code> nothing breaks out of
+(§5.1). So <code>fun f(x: bool) { ret 1; }</code> is <code>i32</code>; a tail it <em>can</em> reach
+is a return position, so a <code>ret 1</code> beside an <code>if</code> with no <code>else</code>
+disagrees with the void that path produces. A bare <code>ret</code> is a void
+return; it agrees only with a void body. A disagreeing <code>ret</code> is an error
+at that <code>ret</code>, naming both types and where the inferred one came from —
+the function then has no type, so the error is not repeated at its
+calls. A call the function makes to itself contributes nothing (its type
+is the one being inferred) — a
+binding in between changes nothing, so <code>let x = g(n - 1); x + 1</code> reads
+exactly as <code>g(n - 1) + 1</code> does; a function whose only return positions are
+such calls is <code>Never</code>. Declaring the return type replaces inference with
+checking (every position against the declaration) — and an unreachable
+tail owes no value there either, so <code>fun f(): i32 { panic("x"); }</code> and
+<code>fun serve(): i32 { for { tick(); } }</code> both check without one. A tail is
+unreachable as soon as ANY statement before it leaves, not only the last
+one: <code>fun g(): i32 { ret 1; log("dead"); }</code> owes nothing, because
+nothing after the <code>ret</code> runs. A closure
+(and an <code>async</code> block) infers the same way: its return type is the
+unification of its reachable tail and every <code>ret</code>, so
+<code>|x| { ret x * 2; }</code> is <code>|i32| i32</code>, and a <code>ret</code> that disagrees — with
+the tail, an earlier <code>ret</code>, or a body path that ends without a value —
+is an error at that <code>ret</code>. When the closure’s return type is known ahead
+of the body (its own annotation, or the call site’s expectation), the
+<code>ret</code>s check against that type instead, exactly as a declared function’s
+do.</p>
 <pre><code class="language-vilan">fun sign(x: i32) {
 	if x &gt; 0 {
 		ret 1;
@@ -654,6 +846,15 @@ is an impl subject like any other (<code>impl (i32, i32) with PartialEq</code>),
 and one without the impl is the same error a struct without it is — the
 operators are never the host’s. <code>void</code> is refused outright: an
 expression that produces no value has no operand to be.</p>
+<p>A <strong>method</strong> dispatches on the receiver’s type by the same rule, and the
+receiver’s shape does not enter into it either: a member an impl declares
+on a tuple subject is callable by name on a tuple receiver, and a trait
+default inherited by that impl is reached the same way. So one impl serves
+both spellings — <code>impl (i32, i32) with Add</code> gives <code>(1, 2) + (3, 4)</code> and
+<code>(1, 2).add((3, 4))</code> alike. A tuple’s <strong>arity is part of its type</strong>, so an
+impl answers only for the arity its subject names, and a tuple has no
+members of its own: with no impl declaring one, a method call on it is the
+same “no method” error any other type gets.</p>
 <p>The primitives do not dispatch — native machine operators <em>are</em> their
 semantics — so their admitted operand pairs are stated rather than read
 off an impl. For <code>+</code> those pairs are exactly two:</p>
@@ -695,9 +896,50 @@ right operand of a native operator over a number: not of <code>+</code>, and not
 any sibling (<code>-</code>, <code>*</code>, the bit and shift operators, <code>==</code>, <code>&lt;</code>), whatever
 it is bounded to. The same holds for <code>str</code>’s own comparisons, which want
 a <code>str</code> and have no trait naming that either. Convert where the type is
-known and declare the operand concretely. A parameter on the LEFT is a
-different question: there the bound selects an impl and the operator
-dispatches through it, which is what <code>T: Add</code> is for.</p>
+known and declare the operand concretely.</p>
+<p>A parameter on the LEFT is a different question, and there the bound is
+<strong>required</strong>. The operator dispatches through its left operand, so the
+bound is what selects the implementation to run; a parameter without one
+has no implementation to dispatch to, and the operator is refused. What
+admits it is a bound that <strong>provides the operator’s method</strong> — the
+parameter’s own bound, or one reached through a supertrait: <code>+</code> needs
+<code>T: Add</code>, <code>-</code> needs <code>T: Sub</code>, <code>==</code> and <code>!=</code> need <code>T: PartialEq</code>, the
+four orderings need <code>T: PartialOrd</code>, and so on for every operator that
+models a trait. Merely being bounded is not enough, for the same reason
+it is not enough on the right: <code>T: Display</code> promises <code>to_string</code>, not
+<code>add</code>.</p>
+<p>The bound then decides the <strong>right</strong> operand too, the way a dispatching
+impl does below: the operand must be admitted by the <code>B</code> <em>that bound
+declares</em>. A bare <code>T: Add</code> is <code>Add&lt;B = Self&gt;</code>, so the admitted operand
+is a <code>T</code>, and only a <code>T</code> — a second parameter is not one, whatever it is
+bounded to, because a bound promises a trait’s methods and never that
+the parameter <em>is</em> the declared <code>B</code>. A parameterized bound says
+otherwise outright: <code>T: Add&lt;U&gt;</code> declares that a <code>T</code> takes a <code>U</code> there,
+and is the spelling that makes a two-parameter shape legal.</p>
+<pre><code class="language-vilan fragment">fun sum&lt;P: Add, Q&gt;(a: P, b: Q): P { a + b }      // error: `P`'s `add` accepts `P`
+fun sum&lt;P: Add, Q: Add&gt;(a: P, b: Q): P { a + b } // error: same — a bound is not membership
+fun sum&lt;P: Add&gt;(a: P, b: P): P { a + b }         // one parameter twice: the same type
+fun sum&lt;Q, P: Add&lt;Q&gt;&gt;(a: P, b: Q): P { a + b }   // the bound declares the operand
+</code></pre>
+<p>Inside a trait’s own default body the rule is unchanged, and the
+parameter is then the <strong>trait’s</strong>. The bound goes on the trait, so the
+refusal names it: adding it there moves every <code>impl</code> of the trait and
+every bound that mentions it, which is not a local edit the way a
+function’s own parameter is.</p>
+<p><code>&amp;&amp;</code> and <code>||</code> are the one family with no spelling that works. They admit
+<code>bool</code>, they model no operator trait at all, and no trait names that set
+— so a parameter is refused on <strong>either</strong> side, whatever it is bounded
+to, and the fix is to change the type rather than to add a bound.</p>
+<p>An <code>if</code> or <code>for</code> <strong>condition</strong> is that same set with no operator at all.
+It takes a <code>bool</code>, nothing names <code>bool</code>’s set, and there is no
+truthiness: a parameter the enclosing declaration owns is refused there
+too, bounded or not, because the body is checked once for every
+instantiation and the caller is what fixed the type. Test the value and
+branch on the <code>bool</code> the test produces.</p>
+<pre><code class="language-vilan fragment">fun check&lt;T&gt;(x: T) { if x { … } }             // error: a condition takes a `bool`
+fun check&lt;T: Display&gt;(x: T) { for x { … } }   // error: no bound can prove `bool`
+fun check&lt;T: PartialEq&gt;(x: T, y: T) { if x == y { … } }  // the test produces one
+</code></pre>
 <pre><code class="language-vilan fragment">"n=" + count                 // str + i32 — concatenation
 "p=" + point                 // error: `Point` has no string form
 "p=" + point.to_string()     // the fix the error names
@@ -713,9 +955,137 @@ fun show&lt;T: Display&gt;(value: T): str { i"v={value}" }  // the hole is the s
 fun bump&lt;T: Add&gt;(total: i32, value: T): bool { total &lt; value } // error: same, for `&lt;`
 fun sum&lt;T: Add&gt;(first: T, second: T): T { first + second }     // the parameter is on the LEFT
 </code></pre>
+<pre><code class="language-vilan fragment">fun sum&lt;T&gt;(a: T, b: T): T { a + b }                 // error: `+` on `T` needs `T: Add`
+fun sum&lt;T: Display&gt;(a: T, b: T): T { a + b }        // error: `Display` does not declare `add`
+fun sum&lt;T: Add&gt;(a: T, b: T): T { a + b }            // the bound provides `add`
+fun same&lt;T: PartialEq&gt;(a: T, b: T): bool { a == b } // one bound per operator
+fun smaller&lt;T: Ord&gt;(a: T, b: T): bool { a &lt;= b }    // a supertrait's `le` counts
+fun both&lt;T&gt;(a: T, b: bool): bool { a &amp;&amp; b }         // error: no bound can prove `bool`
+
+trait Doubler&lt;T&gt; {                                  // error: the bound goes on the TRAIT
+	fun once(self): T;
+	fun twice(self): T { self.once() + self.once() }
+}
+trait Doubler&lt;T: Add&gt; { … }                         // the spelling that works
+</code></pre>
+<p>Where the left operand <em>does</em> dispatch, the same membership question is
+answered by the impl instead of by this section: the right operand must
+be admitted by the <code>B</code> <strong>that impl declares</strong>, checked against the
+signature the dispatch will actually run. That <code>B</code> is whatever the impl
+wrote — a type of its own (<code>impl Meters with Add&lt;Feet&gt;</code> admits a <code>Feet</code>
+and nothing else, <code>Meters</code> included), one of the impl’s own parameters
+(<code>impl Bag&lt;type T&gt; with Add&lt;T&gt;</code>, whose admitted operand is whatever the
+subject bound <code>T</code> to), or <code>Self</code>, spelled or reached through the
+trait’s <code>B = Self</code> default. A generic right operand refuses here for the
+reason it refuses over a number, one level along: a bound promises a
+trait’s methods, never that the parameter <em>is</em> the declared <code>B</code>. The
+spelling that works is the one where the impl’s <code>B</code> <strong>is</strong> that same
+parameter, which is what a generic subject’s own impl gives.</p>
+<pre><code class="language-vilan fragment">counter + point                  // error: `Counter`'s `add` accepts `Counter`
+metres + feet                    // ok:    `impl Meters with Add&lt;Feet&gt;`
+metres + metres                  // error: that impl's `B` is `Feet`
+bag_of_i32 + "x"                 // error: `Bag&lt;i32&gt;`'s `add` accepts `i32`
+
+fun bump&lt;T: Add&gt;(counter: Counter, value: T): Counter { counter + value }
+// error: `Counter`'s `add` accepts `Counter`, and a bound cannot prove `T` is one
+fun bump&lt;T: Add&gt;(bag: Bag&lt;T&gt;, value: T): Bag&lt;T&gt; { bag + value }
+// ok: `impl Bag&lt;type T&gt; with Add&lt;T&gt;` declares the very parameter as its `B`
+</code></pre>
 <p><code>is</code> (§3.7 level 10) tests a value against a match pattern and yields
-<code>bool</code>; bindings inside an <code>is</code> pattern are scoped to nothing (use
-<code>match</code> to bind).</p>
+<code>bool</code>, and a <code>let</code> binding inside the pattern <strong>captures</strong>. Its scope is
+everywhere the test is known to have passed, and nowhere else: the
+<strong>then-branch</strong>, and the rest of the condition <strong>to the right of an
+<code>&amp;&amp;</code></strong>. Not the <code>else</code> branch, where the test failed; not after the <code>if</code>,
+where nothing is known (except the guard clause below); and not the other
+arm of a <code>||</code>, which runs exactly when the test failed — nor, for a
+capture under a <code>||</code>, the then-branch, since reaching it proves only that
+<em>some</em> arm was true. Outside its scope the name is simply unbound, and
+reading it is the ordinary “cannot find” error.</p>
+<p>The rule follows the condition’s <strong>boolean spine</strong> — <code>!</code>, <code>&amp;&amp;</code>, <code>||</code> and
+the <code>is</code> test itself — and stops there. A capture reached through
+anything else (a call argument, a nested <code>if</code>) is bound by an evaluation
+the condition’s truth says nothing about: <code>always(x is P(let n))</code> is true
+whether or not <code>P</code> matched, so <code>n</code> reaches <strong>neither</strong> branch. Only the
+<code>&amp;&amp;</code> rule survives the step off the spine, and only <em>inside</em> the subtree
+it stepped into, because <code>&amp;&amp;</code> short-circuits wherever it is written.</p>
+<p>That short-circuit is also a promise about <strong>evaluation</strong>, not only about
+names. <code>&amp;&amp;</code> and <code>||</code> evaluate their right operand <strong>only when the left
+operand did not already settle the test</strong>, and that covers everything the
+operand needs to run — the subject of an <code>is</code>, the copy a capture takes,
+a call, a nested <code>if</code> — not merely the comparison it ends in. So <code>a is Some(let x) &amp;&amp; x.on_end is Some(let y)</code> never reads <code>x.on_end</code> when <code>a</code>
+is <code>None</code>, and <code>flag || probe() is Some(let n)</code> never calls <code>probe</code> when
+<code>flag</code> is true. It holds wherever the operator is written — a condition,
+an initializer, an operand of another operator — and the same “only once
+it is reached” applies to an <code>else if</code>’s condition, which runs only after
+every earlier branch of its chain has missed.</p>
+<p>A <strong>negation swaps the two branches</strong>, and nothing else: <code>!(x is P)</code> is
+true exactly where <code>P</code> failed, so the capture is <em>not</em> in that <code>if</code>’s
+then-branch — it is in the <strong><code>else</code></strong> branch (and on down an <code>else if</code>
+chain), which is reached precisely when the pattern matched. Two
+negations cancel. The <code>&amp;&amp;</code> rule is unchanged <em>inside</em> the negation —
+<code>!(x is P &amp;&amp; …)</code> still binds the right operand, which the short-circuit
+reached by matching — but a negated capture does not cross an <code>&amp;&amp;</code> it
+sits to the left of, because <code>&amp;&amp;</code> carries only its left operand’s true
+side. A capture under a <code>||</code> stays unbound in both branches.</p>
+<p>The <strong>guard clause</strong> is the one place a capture outlives its <code>if</code>. When a
+condition binds captures on its FALSE path — the negated shapes above —
+the <code>if</code> has <strong>no <code>else</code></strong>, and its then-branch <strong>diverges</strong> (every path
+out of it leaves — the <code>Never</code> rule of §5.1), then the only way past the
+<code>if</code> is that false path, where the pattern matched. Those captures are
+therefore in scope for <strong>the rest of the enclosing block</strong>, as ordinary
+declarations
+there: a later <code>let</code> of the name shadows them, and the block they belong
+to is the one the <code>if</code> was written in, not the function.</p>
+<p>All three conditions are load-bearing. An unnegated <code>if x is P(let n) { ret; }</code> reaches its continuation exactly when the pattern <em>didn’t</em>
+match. A then-branch that can fall through reaches it on a miss. And an
+<code>if</code> with an <code>else</code> reaches it through whichever arm did not diverge,
+which is a different question and is not part of this rule.</p>
+<p>“Diverges” is the whole of §5.1’s rule, every leaf included: a guard
+ending in <code>ret</code>, in a <code>jump</code>, in a <code>panic(..)</code> or in a <code>for { .. }</code>
+nothing breaks out of publishes its captures the same way, because the
+language has one answer to “does this leave?” and this is it.</p>
+<p><strong>Everything above is about a CONDITION</strong> — an <code>if</code>’s, a <code>while</code>-shaped
+<code>for</code>’s, a <code>match</code> guard’s — because a condition is the only thing that
+selects on a test’s answer, and all three read the same way: a plain
+capture reaches the body the test selects, a negated one does not. An
+<code>is</code> written anywhere else is an ordinary expression yielding an ordinary
+<code>bool</code>, and <strong>its captures reach the rest of that expression and nothing
+after it</strong>: <code>let ok = x is Some(let n);</code>
+binds <code>n</code> for nowhere, and a later read of it is refused. There is no
+narrowing that could make one work — the language has no flow typing, so
+“<code>n</code> where <code>ok</code> is true” is not a thing it can say — and admitting the
+read would emit a payload load the test never proved. The <code>&amp;&amp;</code> rule holds
+here as everywhere, wherever the operator is written: <code>let ok = x is Some(let n) &amp;&amp; n &gt; 1;</code> binds <code>n</code> for its own right operand. To use a
+capture past the test, put the test where a branch depends on it.</p>
+<pre><code class="language-vilan fragment">if slot is Some(let n) { use(n); }                // yes: the test passed
+if slot is Some(let n) &amp;&amp; n &gt; 0 { use(n); }       // yes: `&amp;&amp;` short-circuits
+if slot is Some(let n) { … } else { use(n); }     // error: unbound here
+if slot is Some(let n) || n &gt; 0 { … }             // error: unbound here
+if slot is Some(let n) { … } use(n);              // error: the `if` ended
+if always(slot is Some(let n)) { use(n); }        // error: off the spine
+if always(slot is Some(let n) &amp;&amp; n &gt; 0) { … }     // yes for `n &gt; 0`: `&amp;&amp;` still holds
+
+if !(slot is Some(let n)) { use(n); }             // error: the test failed
+if !(slot is Some(let n)) { … } else { use(n); }  // yes: it matched
+if !(!(slot is Some(let n))) { use(n); }          // yes: the negations cancel
+if !(slot is Some(let n) &amp;&amp; n &gt; 0) { … }          // yes for `n &gt; 0`, no for the branch
+if !(slot is Some(let n)) &amp;&amp; n &gt; 0 { … }          // error: unbound here
+
+if !(slot is Some(let n)) { ret; } use(n);        // yes: the guard clause
+if !(slot is Some(let n)) { … } use(n);           // error: it can fall through
+if slot is Some(let n) { ret; } use(n);           // error: the test failed here
+if !(slot is Some(let n)) { ret; } else { … } use(n);  // error: it has an `else`
+
+let ok = slot is Some(let n); use(n);             // error: not a condition
+let ok = slot is Some(let n) &amp;&amp; n &gt; 0;            // yes: `&amp;&amp;`, wherever written
+f(slot is Some(let n)); use(n);                   // error: not a condition
+
+for slot is Some(let n) { use(n); }               // yes: the test passed
+for !(slot is Some(let n)) { use(n); }            // error: the test failed
+match x { _ if slot is Some(let n) =&gt; use(n) }    // yes: the guard held
+match x { _ if !(slot is Some(let n)) =&gt; use(n) } // error: the test failed
+if f(|| slot is Some(let n)) { use(n); }          // error: a closure body is not the condition
+</code></pre>
 <p>A pattern is checked against the type of the value it matches, so an
 enum-variant pattern requires that type to be that enum. A <strong>generic
 parameter of an enclosing declaration</strong> is not: <code>T</code> is whatever each
@@ -810,9 +1180,12 @@ type-level spread <code>(..T, U)</code> are recorded future work.</em></p>
 <p><strong>Positional access</strong> <code>t.0</code>, <code>t.1</code> (chaining as <code>t.0.1</code>) types as that
 element and, through a <code>mut</code> binding, assigns it. Tuples store flat: a
 tuple-typed element occupies its elements’ slots, so accessing one
-yields its region as a value (destructuring reads the same layout).</p>
-<h2 id="510--and-"><a class="header" href="#510--and-">5.10 <code>!</code> and <code>?.</code></a></h2>
-<p>Both dispatch through lang-item traits and desugar per expression:</p>
+yields its region as a value (destructuring reads the same layout).
+Positional access and destructuring are the element-wise spellings a
+tuple has: a tuple is <strong>not iterable</strong>, and <code>for x in t</code> is refused
+because the binder would have no single type to take (§3.5).</p>
+<h2 id="510---and-"><a class="header" href="#510---and-">5.10 <code>!</code>, <code>?.</code> and <code>?</code></a></h2>
+<p>All three dispatch through lang-item traits and desugar per expression:</p>
 <ul>
 <li><code>e!</code>: <strong>try-assert</strong>. With <code>v = e</code> of a type implementing
 <code>Try&lt;T, B&gt;</code>: if <code>v.verdict()</code> is <code>Good(t)</code>, the value is <code>t</code>;
@@ -826,6 +1199,16 @@ implement <code>Try&lt;_, B&gt;</code> compatibly). <code>Option</code> and <cod
 result re-wraps in the container, unless the continuation itself
 yields the container type, in which case it is returned as-is
 (flattening). If <code>v</code> is bad, the container passes through unchanged.</li>
+<li><code>e?</code> with no <code>.</code> after it: <strong>expression lift</strong>. The lifted expression
+is the whole enclosing <strong>slot</strong> — a <code>let</code>/<code>mut</code> initializer, a call
+argument, a field value in a struct literal, a list or tuple element,
+an index, a <code>ret</code> value, a condition, a match subject, or a block tail
+— with every bare <code>?</code> under that slot joining one region. <strong>The slot
+therefore receives the CONTAINER, not the element</strong>: <code>let v = probe()? &gt; 0</code> binds a <code>Result&lt;bool, E&gt;</code>, not a <code>bool</code>, and the
+position of the <code>?</code> inside the slot changes nothing about where the
+lift lands. Parentheses delimit a slot of their own. <code>!</code>, not <code>?</code>, is
+the operator that yields the element and returns the bad half from the
+enclosing function; a <code>?</code> region does not early-return past its slot.</li>
 </ul>
 <pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
 
@@ -850,8 +1233,21 @@ impl). Reported at the annotation (§5.5).</li>
 <li><code>Trait::func(..)</code> for an associated function the trait declares without
 a default body, and <code>Type::func(..)</code> for one the type’s impl does not
 declare (§5.5).</li>
+<li>A type application whose argument count is not the arity its
+declaration declares — too few (<code>fun read(h: Holder)</code> for
+<code>struct Holder&lt;S&gt;</code>) or too many — in any annotation position.
+Reported at the annotation, naming the arity and the spelling that
+fixes it (§5.6). Trailing arguments whose parameters have defaults may
+be omitted.</li>
 <li>An enum-variant pattern matched against a generic parameter of an
 enclosing declaration (§5.7).</li>
+<li>A generic enum variant constructed with a payload that does not match
+the instantiation the position expects (<code>let x: Result&lt;i32, str&gt; = Ok(true)</code>, and the same call as an argument, a field value, or a
+return). The expected type may <em>guide</em> how the payload is typed —
+<code>Ok(decode())</code> types <code>decode()</code> against the expected element — but it
+never overrides what the payload turned out to be, so the constructor
+is the enum at the arguments its payload binds and the mismatch is
+reported where the value lands.</li>
 <li>An unsatisfied bound at a call (<code>generic parameter 'T' is missing the bound …</code>).</li>
 <li>A <code>match</code> whose VALUE legs’ types don’t unify, and — by the same rule
 — a value <code>if</code> (one with a final <code>else</code>, §5.1) whose arms’ don’t. An
@@ -877,6 +1273,56 @@ parameter still abstract, so a pattern inside it was not checked at all.
 Both call paths now bind from the non-closure arguments and defer before
 typing any closure, so the substitution has landed by the time the body
 is read.)</em></p>
+<h2 id="512-trait-objects-dyn-trait"><a class="header" href="#512-trait-objects-dyn-trait">5.12 Trait objects (<code>dyn Trait</code>)</a></h2>
+<p><code>dyn Trait</code> is a <strong>trait object</strong>: a value whose concrete type has been
+erased, carrying its trait’s members in a table beside it. It is a type in
+its own right and may stand wherever a type stands — a <code>let</code> annotation, a
+parameter, a struct field, an element type, a generic argument.</p>
+<p>The keyword is <strong>required</strong>. A bare trait name in a value position is an
+error (§5.11); a trait object is written out, because coercing a value into
+one changes which member a call runs: a vtable holds the trait’s tier, and
+an inherent member of the same name outranks the trait’s on a concrete
+receiver (§5.7).</p>
+<p><strong>Object safety.</strong> <code>dyn Trait</code> is legal only when every member the trait
+<em>requires</em> — one with no default body — can occupy a table slot:</p>
+<ul>
+<li>it takes a receiver (<code>self</code>). A static has nothing to select an
+implementation with;</li>
+<li>it names no <code>Self</code> in its signature. Neither side can be supplied or
+received once the type is gone;</li>
+<li>it is not generic. One slot cannot hold an unbounded family of
+specializations.</li>
+</ul>
+<p>A trait’s <strong>default</strong> members are not slots: a default body is the
+trait’s own code and reaches the object through the same two rules a
+blanket over <code>T: Trait</code> does. A trait whose supertrait is not
+object-safe is not object-safe either.</p>
+<p>A member that is generic, or that names <code>Self</code>, is unreachable <em>through</em>
+an object even when the trait is object-safe; the call is refused by
+name, and the fix is a generic parameter, where the type is known.</p>
+<p><strong>Coercion is explicit and positional.</strong> A value becomes an object only
+where the position’s type is a <code>dyn</code>: an annotated binding, a parameter,
+a field, an element of a list whose element type is a <code>dyn</code>. There is no
+implicit coercion between two concrete types, and no coercion out of an
+object: a <code>dyn Trait</code> never narrows back to the type it erased.</p>
+<p><strong>Resources.</strong> A <code>resource</code> value may not be coerced into a trait object.
+Teardown through a table would make the destructor dynamic where the rest
+of the language keeps it static (memory.md R7/R10), so the coercion is
+refused and the resource is held in a struct field of its own.</p>
+<p><strong>What reaches an object.</strong> The members its trait and that trait’s
+supertraits declare, through the table. Beyond those, only what is written
+over a <em>bound</em> the object satisfies: a blanket impl (<code>impl type S: Trait { .. }</code>, or <code>impl type S: Trait with Other</code>) and a generic function over
+<code>S: Trait</code>, each with <code>S</code> bound to the object. Nothing else the erased value
+implements is reachable — not an inherent member, not another trait’s
+member, and not another trait’s bound: <code>dyn Shape</code> does not satisfy <code>T: Named</code> because the value it holds happens to.</p>
+<p><strong>Copies.</strong> A trait object is a value, and copying one copies what it
+erased (§6.1, rule 1), exactly as the concrete value would be copied.</p>
+<p><strong>Asyncness.</strong> A call through an object is compiled once, against the
+member’s <em>declaration</em>, for every value the object may hold — so the
+declaration’s asyncness binds there, where through a generic bound an
+implementation may differ from it. A value whose implementation of a member is <code>async</code>
+cannot be coerced into an object whose trait declares that member sync; an
+<code>async</code> declaration admits both.</p>
 
                     </main>
 
@@ -929,7 +1375,7 @@ is read.)</em></p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

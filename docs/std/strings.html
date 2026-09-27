@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,7 +181,7 @@
 construct, so both take the same right-hand values: a <code>str</code>, a number,
 or a <code>bool</code>. Everything else needs <code>to_string()</code> first.</p>
 <pre><code class="language-vilan fragment">impl str {
-	fun len(self): i32
+	fun len(self): usize
 	fun is_empty(self): bool
 	fun trim(self): str
 	fun to_uppercase(self): str                      // full Unicode; see below
@@ -192,16 +192,17 @@ or a <code>bool</code>. Everything else needs <code>to_string()</code> first.</p
 	fun starts_with(self, prefix: str): bool
 	fun ends_with(self, suffix: str): bool
 	fun replace(self, from: str, to: str): str       // all occurrences
-	fun repeat(self, count: i32): str
+	fun repeat(self, count: usize): str
 	fun split(self, separator: str): List&lt;str&gt;
 	fun substring(self, start: i32, end: i32): str   // end-exclusive; see below
-	fun code_at(self, index: i32): u32               // UTF-16 code unit
-	fun index_of(self, needle: str): Option&lt;i32&gt;     // declared in std::option
-	fun last_index_of(self, needle: str): Option&lt;i32&gt; // likewise
+	fun code_at(self, index: usize): u32             // UTF-16 code unit
+	fun index_of(self, needle: str): Option&lt;usize&gt;   // declared in std::option
+	fun last_index_of(self, needle: str): Option&lt;usize&gt; // likewise
 	fun strip_prefix(self, prefix: str): Option&lt;str&gt; // likewise
 	fun strip_suffix(self, suffix: str): Option&lt;str&gt; // likewise
 	fun parse_i32(self): Option&lt;i32&gt;                 // likewise
 	fun parse_f64(self): Option&lt;f64&gt;                 // likewise
+	fun parse_bool(self): Option&lt;bool&gt;               // likewise
 }
 </code></pre>
 <h3 id="case-the-full-pair-and-the-ascii-pair"><a class="header" href="#case-the-full-pair-and-the-ascii-pair">Case: the full pair and the ASCII pair</a></h3>
@@ -249,7 +250,7 @@ fun main() {
 		}
 		None =&gt; print("no separator"),
 	}
-	print("a.b.c".last_index_of(".").unwrap_or(-1));      // 3 — the final one
+	print("a.b.c".last_index_of(".").is_some_and(|at| at == 3)); // true — the final one
 }
 </code></pre>
 <p><strong>Absence is <code>None</code>, never <code>-1</code>.</strong> That is the whole reason these are not
@@ -326,7 +327,11 @@ and <code>starts_with</code> compare text, and text is the wrong unit for a path
 fun format&lt;T: Display&gt;(value: T): str
 </code></pre>
 <p>Implement <code>Display</code> for values that have a natural user-facing rendering;
-<code>format(value)</code> (from <code>std::display</code>) is the generic entry point.
+<code>format(value)</code> (from <code>std::display</code>) is the generic entry point. std
+implements it for <code>str</code>, <code>bool</code>, <code>BigInt</code> and every numeric width — <code>i8</code>,
+<code>u8</code>, <code>i16</code>, <code>u16</code>, <code>i32</code>, <code>u32</code>, <code>i53</code>, <code>u53</code>, <code>f32</code> and <code>f64</code> — each
+rendering exactly what interpolation renders, so a <code>T: Display</code> bound admits
+any number.
 Concatenation and interpolation accept only what already has a string
 form — a <code>str</code>, a number, a <code>bool</code> — and refuse everything else by name,
 so <code>format</code>/<code>to_string</code> on a custom type is a call you write rather than
@@ -400,7 +405,7 @@ this: they’re the <code>as_*</code> methods on the numbers; see
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

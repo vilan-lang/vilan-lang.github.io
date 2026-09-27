@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -292,6 +292,94 @@ fun main() {
 <code>T: (3..)</code> would reject <code>how_many(..pair)</code> for having only two. A spread
 at a call to a function <em>without</em> a spread parameter builds no tuple and
 is an error — write the tuple yourself (<code>takes_a_tuple((..pair))</code>).</p>
+<h2 id="lazy-parameters"><a class="header" href="#lazy-parameters">Lazy parameters</a></h2>
+<p>Prefix a parameter with <code>lazy</code> and the call site stops evaluating its
+argument. It packages the expression instead, and the callee runs it the
+first time it <em>reads</em> the parameter — at most once, however many times it
+reads, and never at all if it never does:</p>
+<pre><code class="language-vilan">mut built = 0;
+
+fun describe(): str {
+	built += 1;
+	"seven"
+}
+
+fun expect_positive(value: i32, lazy complaint: str): i32 {
+	if value &gt; 0 {
+		ret value;
+	}
+	print(complaint);
+	print(complaint);
+	0
+}
+
+fun main() {
+	print(expect_positive(7, i"{describe()} is not positive"));
+	print(i"built {built}");                                     // 0
+	expect_positive(-1, i"{describe()} is not positive");
+	print(i"built {built}");                                     // 1
+}
+</code></pre>
+<p>The happy path never reads <code>complaint</code>, so the message is never built:
+that is what <code>lazy</code> is for. The failing path reads it twice and builds it
+once — a lazy argument is evaluated <strong>at most once, late</strong>, never twice.
+Inside the callee the parameter is an ordinary <code>str</code>; nothing about the
+body says which of its parameters are lazy.</p>
+<p><code>lazy</code> is part of the <strong>signature</strong>, not a private decision of the body,
+because it is the caller that builds the deferred expression. So an
+<code>impl</code> of a trait that declares a lazy parameter must declare it too, and
+hover shows it beside the type.</p>
+<p>Passing a lazy parameter on to another lazy position forwards the same
+deferred value rather than forcing it — one evaluation, however long the
+chain. Passing it anywhere else is a read, so it forces there:</p>
+<pre><code class="language-vilan">fun inner(lazy message: str, read: bool): i32 {
+	if read {
+		print(message);
+	}
+	0
+}
+
+fun outer(lazy message: str, read: bool): i32 {
+	inner(message, read)          // forwarded, not forced
+}
+
+fun eager(message: str): i32 {
+	print(message);
+	0
+}
+
+fun forces(lazy message: str): i32 {
+	eager(message)                // an eager position: forced here
+}
+
+fun main() {
+	outer("never printed", false);
+	outer("printed once", true);
+	forces("printed once too");
+}
+</code></pre>
+<p>Three things a lazy argument may not do, each because the expression runs
+inside the callee rather than where it is written:</p>
+<ul>
+<li><strong>own a resource.</strong> The package that carries the expression would own
+it, which is exactly what a closure may not do. Resources stay eager.</li>
+<li><strong>suspend.</strong> The forcing point is a plain read, and a read must not be
+a suspension point. Deferred async has its own spelling: write
+<code>async &lt;expr&gt;</code> and pass the <code>Task</code>.</li>
+<li><strong>read an ambient context.</strong> By the time it forces, the call site’s
+contexts may be gone — the same self-containment a <code>drop</code> body obeys.
+Pass a closure explicitly and call it where the context is threaded.</li>
+</ul>
+<p><code>lazy</code> belongs to a plain <code>fun</code>, an <code>impl</code> method and a <code>trait</code>
+signature. It combines with none of <code>own</code>, <code>&amp;</code>, <code>&amp;mut</code>, <code>mut</code> or <code>...</code>,
+and it is written first: <code>fun f(lazy message: str)</code>.</p>
+<p>Five std members take a lazy argument, and they are the ones whose
+argument is only ever needed on the unhappy path: <code>Option::expect(lazy message)</code>, <code>Option::unwrap_or(lazy fallback)</code>, <code>Result::expect(lazy message)</code>, <code>Result::unwrap_or(lazy fallback)</code> and
+<code>Result::expect_err(lazy message)</code>. So
+<code>opt.unwrap_or(expensive())</code> runs <code>expensive()</code> only when <code>opt</code> is <code>None</code>,
+and <code>res.expect(i"no row for {key}")</code> builds no message when the row is
+there. <code>unwrap_or_else</code> is still there for a fallback you would rather
+write as a closure — and on a <code>Result</code> it is the one that sees the error.</p>
 <h2 id="closures"><a class="header" href="#closures">Closures</a></h2>
 <p>A closure is an inline function value. Where JavaScript writes
 <code>x =&gt; x * 2</code>, Vilan writes <code>|x| x * 2</code>. Parameter types are usually
@@ -477,7 +565,7 @@ channel would be severed. Both produce clear errors when you hit them.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

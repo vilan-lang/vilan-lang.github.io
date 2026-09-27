@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -200,7 +200,7 @@ process layer (an HTML string tree) in the server leg. The same source, no
 annotation. Put it in a module beside the two entry files (one package, two
 entries: the <a href="../tour/platforms.html">full-stack shape</a>); in a workspace, put it
 in a <code>common</code> library both packages depend on instead.</p>
-<pre><code class="language-vilan">import std::ui::{ view, View, render };
+<pre><code class="language-vilan">import std::ui::{ each, view, View, render };
 import std::reactive::{ Signal, SignalCell };
 
 // The one component both legs build.
@@ -208,7 +208,7 @@ fun app(): View {
 	let tasks: SignalCell&lt;List&lt;str&gt;&gt; = Signal::new(["Render on the server", "Replace on boot"]);
 	view("main")
 		.child(view("h1").text("Tasks"))
-		.child(view("ul").bind_each(tasks, |task| task, |task| view("li").text(task)))
+		.child(view("ul").child(each(tasks, |task| task, |task| view("li").text(task))))
 }
 
 // On the server, `render` turns the view into markup.
@@ -265,14 +265,14 @@ one from the build — the same value, the same <code>render</code>:</p>
 <p>The client entry is the shared <code>app()</code> and one <code>mount_root</code>. There is no server
 mount: mounting is a client entry, not a renderable view, which is why
 the natural factoring is a shared <code>fun app(): View</code> with a per-leg <code>main</code>.</p>
-<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::ui::{ each, view, View, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 fun app(): View {
 	let tasks: SignalCell&lt;List&lt;str&gt;&gt; = Signal::new(["Render on the server", "Replace on boot"]);
 	view("main")
 		.child(view("h1").text("Tasks"))
-		.child(view("ul").bind_each(tasks, |task| task, |task| view("li").text(task)))
+		.child(view("ul").child(each(tasks, |task| task, |task| view("li").text(task))))
 }
 
 fun main() {
@@ -288,8 +288,11 @@ server nodes, addresses them, or reconciles against them.</p>
 <h2 id="build-pure-bind-reactive"><a class="header" href="#build-pure-bind-reactive">Build pure, bind reactive</a></h2>
 <p>The server render creates, serializes, and discards: no effects attach, no
 subscriptions survive the request. So the bindings <strong>read once</strong>: <code>bind_text</code>,
-<code>bind_attr</code>, <code>bind_each</code>, <code>when</code>, and <code>swap</code> embed the source’s value <em>at render
-time</em>. That is the value served, and it is the value the client re-derives.</p>
+<code>bind_attr</code>, <code>each</code> (with <code>each_values</code> and <code>each_by</code>), <code>when</code>,
+and <code>swap</code> embed the source’s value <em>at render time</em>. That is the value served,
+and it is the value the client re-derives. An <code>Option</code>-valued <code>bind_attr</code> reads
+once like the rest: a <code>Some</code> renders the attribute, a <code>None</code> omits it, and
+there is no <code>remove_attribute</code> to mirror because nothing was written.</p>
 <p>The rule this implies: <strong>build pure, bind reactive.</strong> A component that computes
 its structure from signals and binds them renders correctly on both legs. A
 component that leans on an effect side-channel at build time renders stale on the
@@ -377,7 +380,7 @@ the scaffold’s shell already carries the mount element the render lands in.</p
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

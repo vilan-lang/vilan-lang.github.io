@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -226,13 +226,13 @@ beside the chain, it becomes the chain.</p>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
 import std::style::{ style, space, Style, Color };
 
-let card = const css {
-	display: flex;
-	gap: {space(2)};
-	padding: {space(4)};
-	background-color: {Color::gray(100)};
+let card = css {
+	display("flex");
+	gap(space(2));
+	padding(space(4));
+	background-color(Color::gray(100));
 	.hover {
-		background-color: {Color::gray(200)};
+		background-color(Color::gray(200));
 	}
 };
 
@@ -250,39 +250,143 @@ fun main() {
 }
 </code></pre>
 <p><strong>One rule, and the whole feature falls out of it.</strong> An undotted
-<code>property: value;</code> is a declaration and becomes <code>.raw(property, value)</code>;
+<code>property(value);</code> is a declaration and becomes <code>.raw(property, value)</code>;
 a dotted <code>.name { … }</code> is a condition combinator and becomes
 <code>.name(style() … )</code>, with the block’s own chain as its last argument.
 The dot is the only thing the grammar looks at, so every condition
-method works inside a block — <code>.hover</code>, <code>.md</code>, <code>.within("data-theme", "dark")</code>, <code>.children</code>, <code>.attribute("data-open", "true")</code> — including
-ones added later, and nesting order is combinator order: media outside,
-then the relation, then the attribute, then the pseudo-class.</p>
-<pre><code class="language-vilan fragment">let panel = const css {
-	color: {Color::gray(900)};
+method works inside a block — <code>.hover</code>, <code>.md</code>, <code>.children</code> — including ones
+added later, and so does <code>.on(&lt;set&gt;)</code>, the head that takes a condition SET and
+has no nesting order to get wrong.</p>
+<pre><code class="language-vilan fragment">let panel = css {
+	color(Color::gray(900));
 
-	.within("data-theme", "dark") {
-		color: {Color::gray(50)};
+	.on(within(attribute("data-theme").eq("dark"))) {
+		color(Color::gray(50));
+	}
+
+	.on(hover() + active().not()) {
+		color(Color::blue(600));
 	}
 
 	.children {
-		margin-top: {space(2)};
+		margin-top(space(2));
 	}
 };
 </code></pre>
-<p>Values are text and <strong>holes</strong>. Anything you can write in CSS rides
-through verbatim — <code>repeat(3, 1fr)</code>, <code>url("tile.png")</code>, <code>50%</code>, <code>1.5rem</code>
-— and <code>{expression}</code> drops a typed vilan value in. A value that is
-<em>exactly</em> one hole keeps its type, which is what carries a token’s
-<code>:root</code> line onto the sheet, so write <code>gap: {space(4)};</code> rather than
-<code>gap: 1rem;</code> when you mean the scale.</p>
+<p>The condition constructors are ambient inside a block, like the token
+vocabulary below, so a head needs no import.</p>
+<p><strong>A declaration is a call, and its values are ordinary vilan
+expressions.</strong> That is the whole of the value rule: there is no CSS token
+soup to learn and no <code>{ }</code> hole to remember, because a value was never
+anything but an expression. A typed value keeps its type, which is what
+carries a token’s <code>:root</code> line onto the sheet, so write <code>gap(space(4));</code>
+rather than <code>gap("1rem");</code> when you mean the scale. Anything CSS can say
+and vilan cannot is a <strong>string</strong> — <code>grid-template-columns("repeat(3, 1fr)");</code>,
+<code>background-image("url(\"tile.png\")");</code> — and a string is a value like any
+other.</p>
+<p><strong>Several arguments are one value, joined by a single space</strong> — CSS’s own
+list separator. <code>margin(px(4), px(8));</code> is <code>margin:4px 8px</code>, and
+<code>border("1px solid", Color::gray(500));</code> writes
+<code>1px solid var(--gray-500)</code> and puts the <code>:root</code> line that declares
+<code>--gray-500</code> on the sheet beside it. Where the parts are glued rather
+than spaced, build the one value yourself with an i-string and <code>piece</code>,
+which renders a value and carries its token:
+<code>padding(i"calc({piece(space(4))} + 2px)");</code>.</p>
+<p><strong>A custom property is a call head too</strong>, and reading one is <code>var</code>:</p>
+<pre><code class="language-vilan fragment">let themed = css {
+	--brand-ink(gray(900));
+	color(var("--brand-ink"));
+};
+</code></pre>
+<p><strong>Inside a block, the token vocabulary is ambient.</strong> <code>rem</code>, <code>px</code>, <code>em</code>,
+<code>pct</code>, <code>vh</code>, <code>vw</code>, <code>auto</code> and <code>space</code>; <code>black</code>, <code>white</code>, <code>transparent</code>,
+<code>hex</code>, <code>gray</code>, <code>blue</code>, <code>red</code>, <code>green</code>, <code>rgba</code> and <code>oklch</code>; and the condition
+constructors a <code>.on(..)</code> head takes — <code>hover</code>, <code>focus</code>, <code>active</code>, <code>disabled</code>,
+<code>first</code>, <code>last</code>, <code>pseudo</code>, <code>element</code>, <code>attribute</code>, <code>within</code>, <code>children</code>,
+<code>divide</code>, <code>media</code>, <code>sm</code>, <code>md</code>, <code>lg</code>, <code>xl</code>; and <code>var</code> and <code>piece</code>. That is the
+<code>std::style::prelude</code> module, in scope inside a <code>css</code> block and nowhere else, so
+a value reads as the CSS it stands for:</p>
+<pre><code class="language-vilan fragment">let chip = css {
+	padding(space(2));
+	color(gray(700));
+	border("1px solid", gray(300));
+	border-radius(rem(0.25));
+};
+</code></pre>
+<p>Your own names always win: a <code>let rem = …</code> or an <code>import</code> in scope is
+what the name means, and the module is only asked when nothing else
+answers.</p>
+<p><strong>Outside a block, import the vocabulary once at the top of the file.</strong>
+<code>std::style::prelude</code> is an ordinary module there, so
+<code>import std::style::prelude::{ s, space, gray, hover, Cursor };</code> binds
+exactly what the file uses — bare, for the whole file — and
+<code>import std::style::prelude as tokens;</code> qualifies them through a name of
+your choosing instead. That is the form to reach for in a file whose
+<code>fun</code> bodies build chains, because a chain written outside a hole gets no
+ambient scope: one import list at the top beats an import block inside
+each function, which is what the shape without it turns into.</p>
+<p>The keyword-property TYPES are in that module too — <code>Length</code>, <code>Cursor</code>,
+<code>TextAlign</code> and <code>AlignItems</code> — so one import answers both halves of a
+chain, the tokens and the keywords:</p>
+<pre><code class="language-vilan fragment">import std::style::prelude::{ s, space, gray, px, hover, active, Cursor, TextAlign };
+
+fun button(): Style {
+	s()
+		.padding(space(2))
+		.color(gray(700))
+		.cursor(Cursor::Pointer)
+		.text_align(TextAlign::Center)
+		.width(px(120))
+		.on(hover() + active().not(), s().color(gray(900)))
+}
+</code></pre>
+<p>The other keyword enums — <code>Display</code>, <code>Position</code>, <code>FlexDirection</code>,
+<code>JustifyContent</code>, <code>Overflow</code>, <code>WhiteSpace</code>, <code>UserSelect</code> — stay in
+<code>std::style</code> and are imported from there when a file wants them. The
+prelude is a vocabulary, not a second spelling of the whole module.</p>
+<p>What the module publishes is exactly the names listed above — the 38
+functions and the 8 types, 46 in all. Its own machinery is not surface:
+each of these functions is one line over <code>std::style</code>’s constructor of
+the same name, and the alias it needs to call one (<code>hover</code> here is the
+condition, <code>style::hover</code> is what it calls) is imported inside that
+function’s own body rather than at the top of the file, so it never
+resolves as a second spelling of the token.</p>
+<p><strong>A dotted item ending in <code>;</code> is a chain link</strong> — a <code>Style</code> method call,
+spliced exactly where you wrote it. That is how your own helpers reach a
+block:</p>
+<pre><code class="language-vilan fragment">impl Style {
+	fun flex_row(self): Style {
+		self.display(Display::Flex).flex_direction(FlexDirection::Row)
+	}
+}
+
+let toolbar = css {
+	.flex_row();
+	gap(space(2));
+	padding(space(1));
+};
+</code></pre>
+<p>The dot is the whole rule, and what follows it decides: a <code>{ … }</code> body
+is a condition rule, a <code>;</code> is a link. <code>vilan fmt</code> treats a link as a
+<strong>barrier</strong> — an opaque method may write any property, so nothing sorts
+across it and its position is preserved.</p>
+<p><strong>A block is <code>const</code> on its own.</strong> A style is a compile-time asset — the
+chain records its rules as it is built, and the build writes the ones
+the program kept onto the stylesheet when evaluation ends — so the
+chain spelling needs <code>const</code> in front of it, and the block does not: it writes
+the word for you. <code>let card = css { … };</code> is the whole declaration. What
+that does <em>not</em> buy you is reading a runtime value: an argument that
+reads a function parameter or a signal is refused at the argument,
+because there is nothing compile-time to put on the sheet. Writing <code>const css { … }</code>
+yourself still compiles and means exactly the same thing.</p>
 <p>Four things the block does not do, each on purpose:</p>
 <ul>
 <li><strong>The <code>;</code> is required</strong>, including after the last declaration.</li>
-<li><strong><code>#</code> and <code>@</code> are not vilan characters.</strong> A colour is
-<code>{Color::hex("#663399")}</code> — which routes it through <code>Color</code>, so its
-<code>:root</code> line travels with it — and a media query is <code>.md { … }</code>.
-There are no at-rules; a declaration block under a selector of your
-own is <a href="../std/style.html#declaration-blocks"><code>declare</code></a>.</li>
+<li><strong><code>#</code> and <code>@</code> begin no expression.</strong> A colour is
+<code>hex("#663399")</code> — which routes it through <code>Color</code>, so its <code>:root</code>
+line travels with it — and a media query is <code>.md { … }</code>. There are no
+at-rules; a declaration block under a selector of your own is
+<a href="../std/style.html#declaration-blocks"><code>declare</code></a>.</li>
 <li><strong><code>!important</code> is refused.</strong> Merging a style is a record update, so a
 later declaration on the same property already wins.</li>
 <li><strong>A block is brace-initial</strong>, like a struct literal, so a condition,
@@ -290,8 +394,8 @@ a <code>for … in</code> iterable and a <code>match</code> subject take one onl
 parentheses: <code>if (css { … }).class_list() != "" { … }</code>.</li>
 </ul>
 <p><strong><code>vilan fmt</code> orders a block, and orders it exactly as it orders the
-chain.</strong> One item per line, nested rules one level in, holes tidied like
-any other vilan expression — and the items sorted into the canonical
+chain.</strong> One item per line, nested rules one level in, arguments tidied
+like any other vilan expression — and the items sorted into the canonical
 order: properties in Tailwind’s category sequence, then the condition
 rules in the order the selector nests them (media, relation, attribute,
 pseudo-class). So the two spellings of one style format alike, and
@@ -304,13 +408,22 @@ cannot know what it is entangled with. And a block containing a
 the items stay where you wrote them, so a comment can never end up
 explaining the wrong declaration.</p>
 <pre><code class="language-vilan fragment">// formats as: display, padding, then `.md` before `.hover`
-let button = const css {
-	.hover { background-color: {Color::gray(200)}; }
-	padding: {space(2)};
-	.md { padding: {space(4)}; }
-	display: flex;
+let button = css {
+	.hover { background-color(Color::gray(200)); }
+	padding(space(2));
+	.md { padding(space(4)); }
+	display("flex");
 };
 </code></pre>
+<h2 id="what-reaches-the-stylesheet"><a class="header" href="#what-reaches-the-stylesheet">What reaches the stylesheet</a></h2>
+<p>The sheet holds the rules your program <strong>kept</strong>, not every rule it ever
+built. A condition combinator re-mints its inner style’s rules under the
+composed condition and drops the inner — <code>attribute("data-open", Some("true"), hover(inner))</code> mints three classes and can only ever put
+the third on an element — and a shorthand set after a longhand it covers
+drops that longhand’s slot. Rules are recorded as they are built and the
+build writes the surviving ones when const evaluation ends, so the
+scaffolding never ships: only classes the program can still name reach
+the file.</p>
 <h2 id="getting-the-stylesheet-onto-the-page"><a class="header" href="#getting-the-stylesheet-onto-the-page">Getting the stylesheet onto the page</a></h2>
 <p>The build writes every emitted rule into a sidecar beside the bundle —
 <code>app.js</code> gets <code>app.css</code>, <code>dist/client.js</code> gets <code>dist/client.css</code> — and
@@ -369,8 +482,10 @@ writing <em>arithmetic</em> and want the wrapper supplied; use <code>raw</code> 
 value is already whole, which is also what lets one named expression be
 reused across several properties. An empty value stops the build.</li>
 <li><strong><code>Color</code></strong> has <code>Color::white()</code>, <code>Color::black()</code>,
-<code>Color::transparent()</code>, <code>Color::hex("#663399")</code>, and stepped ramps
-like <code>Color::gray(300)</code>, <code>Color::blue(600)</code>, <code>Color::red(500)</code>,
+<code>Color::transparent()</code>, <code>Color::current()</code> (CSS’s <code>currentColor</code> — the
+element’s own text colour, for a border or an SVG fill that follows
+it), <code>Color::hex("#663399")</code>, and stepped ramps like
+<code>Color::gray(300)</code>, <code>Color::blue(600)</code>, <code>Color::red(500)</code>,
 <code>Color::green(500)</code>.</li>
 <li><strong>Alpha</strong> comes two ways. <code>Color::rgba(27, 6, 13, 0.9)</code> is a literal
 translucent colour — <code>hex</code>’s twin, for a palette outside the ramps.
@@ -492,72 +607,109 @@ let panel = const style().padding(space(4)).padding_top(space(0));
 let lit = const card + style().border_color(Color::blue(600));
 </code></pre>
 <h2 id="states-and-breakpoints"><a class="header" href="#states-and-breakpoints">States and breakpoints</a></h2>
-<p>Hover, focus, and friends take an <strong>inner</strong> style. Everything in the
-inner style applies under that condition:</p>
+<p>A <strong>condition</strong> is a value. <code>hover()</code> is one, <code>active().not()</code> is one, and
+<code>+</code> intersects them into a SET — “both of these at once”. <code>on(conditions, inner)</code> puts a style under a set:</p>
 <pre><code class="language-vilan fragment">let button = const style()
 	.background(Color::blue(600))
-	.hover(style().background(Color::blue(500)))
-	.focus(style().raw("outline", "2px solid"))
-	.disabled(style().opacity(0.5));
+	.on(hover(), style().background(Color::blue(500)))
+	.on(focus(), style().raw("outline", "2px solid"))
+	.on(disabled(), style().opacity(0.5));
 </code></pre>
-<p>Available: <code>.hover</code>, <code>.focus</code>, <code>.active</code>, <code>.disabled</code>, <code>.first</code>,
-<code>.last</code>, and <code>.pseudo(name, inner)</code> for anything else.
-Breakpoints work the same way: <code>.sm(inner)</code> (640px), <code>.md(inner)</code>
-(768px), <code>.lg(inner)</code> (1024px), <code>.xl(inner)</code> (1280px), or
-<code>.media(min_width, inner)</code>. All are <code>min-width</code> conditions, so chains are
-mobile-first: in <code>.sm(grid_cols(2)).lg(grid_cols(3))</code> the widest matching
+<p>The constructors: <code>hover()</code>, <code>focus()</code>, <code>active()</code>, <code>disabled()</code>, <code>first()</code>,
+<code>last()</code>, and <code>pseudo(name)</code> for any other pseudo-class. A pseudo-ELEMENT is
+its own value, <code>element("selection")</code> for <code>::selection</code> — CSS puts one at the
+end of a compound and lets nothing follow it, which is a rule about the value
+and not about where you wrote it.</p>
+<p><code>attribute(name)</code> conditions on an attribute of the element <strong>itself</strong>:
+<code>attribute("data-selected")</code> is <strong>presence</strong> — <code>[data-selected]</code>,
+<code>[disabled]</code>, the shape a boolean attribute actually has in markup — and
+<code>attribute("data-open").eq("true")</code> is the exact match <code>[data-open="true"]</code>.
+<code>.not()</code> negates the condition it is written on, which is the whole reason a
+condition is a value:</p>
+<pre><code class="language-vilan fragment">let row = const style()
+	.on(attribute("data-selected"), style().background(Color::blue(100)))
+	.on(attribute("disabled").not() + hover(), style().background(Color::gray(50)))
+	.on(hover().not(), style().opacity(0.6));
+</code></pre>
+<p>That is <code>.sX[data-selected]</code>, <code>.sX:not([disabled]):hover</code> — hovered <em>and</em> not
+disabled — and <code>.sX:not(:hover)</code>. Nothing has to be read inside-out: the
+negation is where the negated thing is.</p>
+<p>A set has no ORDER. <code>hover() + md()</code> and <code>md() + hover()</code> are the same set,
+canonicalise to the same key and mint the same class — so two people who mean
+one rule get one rule. Two conditions that contradict (<code>hover() + hover().not()</code>) are refused, as are two breakpoints in one set, two ancestor
+guards, two child relations and two pseudo-elements.</p>
+<p><strong>The named combinators stay</strong>, as sugar for exactly one condition:
+<code>.hover(inner)</code> is <code>.on(hover(), inner)</code>, and the same for <code>.focus</code>,
+<code>.active</code>, <code>.disabled</code>, <code>.first</code>, <code>.last</code>, <code>.pseudo(name, inner)</code>,
+<code>.children(inner)</code>, <code>.divide(inner)</code>, <code>.sm</code>/<code>.md</code>/<code>.lg</code>/<code>.xl</code> and
+<code>.media(min_width, inner)</code>. Most rules have one condition, and for those the
+sugar is the shorter spelling. Reach for <code>.on(..)</code> when a rule has two.</p>
+<p>Breakpoints: <code>sm()</code> (640px), <code>md()</code> (768px), <code>lg()</code> (1024px), <code>xl()</code>
+(1280px), or <code>media(min_width)</code>. All are <code>min-width</code> conditions, so chains
+are mobile-first: in <code>.sm(grid_cols(2)).lg(grid_cols(3))</code> the widest matching
 breakpoint wins (the stylesheet emits media rules in ascending min-width
-order, which is what makes that true).</p>
+order, which is what makes that true). A set holds at most one.</p>
 <h2 id="theming-and-stacking-conditions"><a class="header" href="#theming-and-stacking-conditions">Theming, and stacking conditions</a></h2>
-<p><code>.within(name, value, inner)</code> applies under an <strong>ancestor</strong> carrying the
-attribute — <code>within("data-theme", "dark", ..)</code> is the theme condition,
-under a <code>[data-theme="dark"]</code> switch you set on the document, not
-<code>prefers-color-scheme</code>. That is deliberate: a server can decide the theme
-and write the attribute before a byte of JavaScript runs, and a user’s
-toggle is one attribute write. Nothing is special about the theme: any
-ancestor state rides — an n-ary theme id (<code>within("data-theme", "iron-dark", ..)</code>), a density mode, a <code>[data-collapsed]</code> sidebar.</p>
+<p><code>within(condition)</code> applies under an <strong>ancestor</strong> matching <code>condition</code>.
+<code>within(attribute("data-theme").eq("dark"))</code> is the theme condition, under a
+<code>[data-theme="dark"]</code> switch you set on the document, not
+<code>prefers-color-scheme</code>. That is deliberate: a server can decide the theme and
+write the attribute before a byte of JavaScript runs, and a user’s toggle is
+one attribute write. Nothing is special about the theme: any ancestor state
+rides — an n-ary theme id (<code>within(attribute("data-theme").eq("iron-dark"))</code>),
+a density mode, a <code>[data-collapsed]</code> sidebar, or a pseudo-class the ancestor
+is in (<code>within(hover())</code>).</p>
 <p>For colours, the stronger recipe is usually no condition at all: declare
 per-theme custom properties with a <a href="../std/style.html#declaration-blocks">declaration
 block</a> and read them with
 <code>Color::var(..)</code> — switching themes then re-paints every element through
 the variables, and <code>within</code> covers the <em>structural</em> changes a value swap
 cannot express.</p>
-<p>Conditions <strong>stack</strong>, nesting outside-in in the order the CSS nests them:
-a breakpoint outside the guard, the guard outside the pseudo-class.</p>
+<p>Conditions <strong>stack</strong> by being summed, in any order you like:</p>
 <pre><code class="language-vilan fragment">let button = const style()
 	.background(Color::gray(100))
-	.hover(style().background(Color::gray(200)))
-	.within("data-theme", "dark", style().background(Color::gray(800)))
-	.within("data-theme", "dark", style().hover(style().background(Color::gray(700))))
-	.md(style().within("data-theme", "dark", style().hover(style().background(Color::gray(600)))));
+	.on(hover(), style().background(Color::gray(200)))
+	.on(within(attribute("data-theme").eq("dark")), style().background(Color::gray(800)))
+	.on(within(attribute("data-theme").eq("dark")) + hover(), style().background(Color::gray(700)))
+	.on(md() + within(attribute("data-theme").eq("dark")) + hover(), style().background(Color::gray(600)));
 </code></pre>
-<p>Write them in any other order and the build stops and tells you which
-order it wanted — <code>hover(within(..))</code> says to write <code>within(.., hover(..))</code>. No axis may wrap itself, so one media, one guard and one
-pseudo-class is the whole lattice.</p>
-<p>Why the order matters beyond spelling: <code>within(.., hover(..))</code> produces a
-<em>more specific</em> selector than either <code>within(..)</code> or <code>hover(..)</code>, so it
-beats both. Between a plain <code>.within(.., x)</code> and a plain <code>.hover(y)</code> on
-the same property the guard wins — a theme shouldn’t be undone by a hover
-— so when a dark theme needs its own hover colour, say so with
-<code>within(.., hover(..))</code>.</p>
+<p>The emitted selector still nests the way CSS nests it — the breakpoint
+outermost, then the ancestor guard, then the element’s own attributes and
+pseudo-classes — and that is the canonicaliser’s job, not yours.</p>
+<p>Why it matters beyond spelling: <code>within(..) + hover()</code> produces a <em>more
+specific</em> selector than either part, so it beats both. Between a plain
+<code>within(..)</code> rule and a plain <code>hover()</code> rule on the same property the guard
+wins — a theme shouldn’t be undone by a hover — so when a dark theme needs its
+own hover colour, say so with the two conditions in one set.</p>
+<p>The NESTED spelling still works and still has exactly one legal order:
+<code>md(within(attribute(hover(..))))</code>. Write any other and the build stops and
+names both fixes — the nesting it wanted, and the set that has no order to get
+wrong.</p>
 <h2 id="styling-children-from-the-parent"><a class="header" href="#styling-children-from-the-parent">Styling children from the parent</a></h2>
-<p><code>.children(inner)</code> styles every direct child of the element, and
-<code>.divide(inner)</code> every direct child but the first — the parent-owned
-spacing idioms (Tailwind’s <code>space-*</code> and <code>divide-*</code>):</p>
+<p><code>children()</code> conditions on every direct child of the element, and <code>divide()</code>
+on every direct child but the first — the parent-owned spacing idioms
+(Tailwind’s <code>space-*</code> and <code>divide-*</code>):</p>
 <pre><code class="language-vilan fragment">let list = const style()
-	.children(style().padding_y(space(2)))
-	.divide(style().border_top(Length::px(1), Color::gray(200)));
+	.on(children(), style().padding_y(space(2)))
+	.on(divide(), style().border_top(Length::px(1), Color::gray(200)));
 </code></pre>
 <p>Two rules make this safe to use anywhere. First, <strong>a child’s own style
-always wins</strong>: a <code>children</code>/<code>divide</code> rule is emitted in a lower cascade
+always wins</strong>: a rule carrying a child relation is emitted in a lower cascade
 layer, so anything the child says about itself — through its own
 <code>style()</code> — overrides what its parent reaches in with, whatever the
 selectors’ specificity. They set defaults the child may refuse; they are
 not a way to force a child’s hand. Second, where <code>children</code> and <code>divide</code>
 touch the <em>same</em> property, <code>divide</code> wins on every child but the first —
 the narrower relation outranks the blanket, whichever you wrote first.</p>
-<p>Both take an unconditioned inner style: to give the children a hover
-colour, put the <code>hover(..)</code> on the child’s own style.</p>
+<p>A guard and a child relation are not the same slot, so they compose:
+<code>.on(within(attribute("data-theme").eq("dark")) + children(), ..)</code> is
+<code>[data-theme="dark"] .sX &gt; *</code>, a selector the nested form could never spell.
+A rule carrying a child relation is layered whatever else conditions it,
+because it reaches in.</p>
+<p>The <code>.children(inner)</code> and <code>.divide(inner)</code> sugar takes an UNCONDITIONED
+inner style: a pseudo-class under it would bind to the child’s compound,
+which is not what it looks like it says. Put a state on the child’s own
+style, or write the set.</p>
 <h2 id="dynamic-values"><a class="header" href="#dynamic-values">Dynamic values</a></h2>
 <p>Styles are static, so how does a progress bar grow? Through CSS custom
 properties. The style declares a variable, and the element binds the
@@ -581,6 +733,35 @@ fun main() {
 <p>The rule is compiled once. Only the variable’s value changes at runtime.
 This one channel covers most “dynamic styling” needs — a value that
 changes inside a rule.</p>
+<h2 id="conditional-merges-when"><a class="header" href="#conditional-merges-when">Conditional merges: <code>when</code></a></h2>
+<p>When the style depends on a handful of independent flags, <code>+</code> and <code>if</code>
+turn into a small pile of rebinding. <code>when(condition, delta)</code> is that
+pile as a chain — <code>self + delta</code> when the condition holds, <code>self</code>
+untouched when it doesn’t:</p>
+<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+import std::style::{ style, space, Style, Color };
+
+let base = const style().padding(space(2)).color(Color::gray(900));
+let chosen = const style().background(Color::blue(100)).color(Color::blue(900));
+let muted = const style().color(Color::gray(400));
+
+fun row(is_chosen: bool, is_muted: bool): View {
+	view("li").styled(base.when(is_chosen, chosen).when(is_muted, muted))
+}
+
+fun main() {
+	let _root = mount_root("app", || view("ul").child(row(true, false)));
+}
+</code></pre>
+<p><code>when</code> selects; it never builds. Both sides were constructed in <code>const</code>,
+so the construct-in-const rule holds with a runtime flag in the middle,
+exactly as it does for <code>bind_styled</code> below.</p>
+<p>Chain order is <strong>precedence</strong>: when two <code>when</code>s both fire, the later
+delta wins whatever properties they share — the same rule <code>+</code> follows.</p>
+<p>The chain reads best when each condition mentions its <strong>own</strong> flag. If
+one condition has to mention another link’s flag (<code>!selected &amp;&amp; !disabled</code>), the states aren’t independent, and a <code>match</code> says that
+structurally where a chain only implies it. The compound condition is
+the tell.</p>
 <h2 id="swapping-whole-styles"><a class="header" href="#swapping-whole-styles">Swapping whole styles</a></h2>
 <p>When what changes is <em>which</em> style applies, not a value inside one, put
 the style in a signal and bind it. <code>bind_styled</code> is to <code>styled</code> what
@@ -690,7 +871,7 @@ shorthand replaces the whole family. This holds per condition, so a
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

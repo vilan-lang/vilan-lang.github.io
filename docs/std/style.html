@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -203,6 +203,7 @@ impl Color {
 	fun white(): Color
 	fun black(): Color
 	fun transparent(): Color
+	fun current(): Color           // currentColor — the element's own text colour
 	fun hex(value: str): Color     // "#663399"
 	fun var(name: str): Color      // a custom-property reference ("--accent"); the app declares it
 	fun gray(step: i32): Color     // ramps: 50…900
@@ -238,7 +239,11 @@ colour.</p>
 <p><code>Color::var</code> is <code>Length::var</code>’s counterpart — the typed end of the
 dynamic-value channel. It renders <code>var(--name)</code> and <strong>declares nothing</strong>:
 the app owns the custom property’s declaration (its emitted theme block,
-or <code>view.style_var</code> writing it at runtime). <code>.alpha()</code> composes over it
+or <code>view.style_var</code> writing it at runtime). Both spell the name with its
+<strong>two leading dashes</strong>, and both refuse one without them at const time:
+<code>var(button-color)</code> is not a broken reference, it is not a reference —
+<code>button-color</code> parses as a keyword, the browser drops the declaration, and
+nothing says so until the page is wrong. <code>.alpha()</code> composes over it
 through the same relative-colour form, so a variable-backed colour
 translucifies exactly like a ramp token.</p>
 <p><code>calc</code> wraps and <code>raw</code> does not: <code>Length::calc(e)</code> is
@@ -283,6 +288,7 @@ one atomic rule, deduplicated build-wide.</p>
 <tr><td><code>align_items</code></td><td><code>AlignItems</code></td></tr>
 <tr><td><code>justify_content</code></td><td><code>JustifyContent</code></td></tr>
 <tr><td><code>flex</code></td><td><code>str</code> — the shorthand, <code>"1 1 auto"</code></td></tr>
+<tr><td><code>flex_grow</code></td><td><code>f64</code></td></tr>
 <tr><td><code>flex_shrink</code></td><td><code>f64</code></td></tr>
 <tr><td><code>grid_template_columns</code></td><td><code>str</code> — <code>"repeat(3, 1fr)"</code></td></tr>
 <tr><td><code>gap</code>, <code>padding</code>, <code>padding_x</code>, <code>padding_y</code>, <code>margin</code>, <code>margin_x</code>, <code>margin_y</code></td><td><code>Length</code></td></tr>
@@ -358,77 +364,168 @@ types, kept for the spelling the surface has always had.</p>
 <p>Pass the value, not its text: <code>space(4).text</code> is the string
 <code>var(--space-4)</code> with the declaration left behind, and a <code>str</code> carries no
 token.</p>
+<p>Two free functions sit beside <code>raw</code>, both ambient inside a <code>css</code> block:</p>
+<pre><code class="language-vilan fragment">fun var(name: str): str             // a custom property READ: var("--brand-ink")
+fun piece&lt;V: CssPiece&gt;(value: V): str   // one part of a value built by hand
+</code></pre>
+<p><code>var</code> is how a declaration reads a custom property — <code>--brand-ink</code> is not
+an expression, so CSS’s <code>var(--x)</code> is spelled with the name as a string,
+and the dashes are checked (a name without them is not a reference at
+all). <code>Length::var</code> and <code>Color::var</code> are the same thing at those two
+types, for a position that wants the type.</p>
+<p><code>piece</code> renders one part of a value and puts its <code>:root</code> line on the
+sheet on the way past — <code>CssPiece</code> is <code>CssValue</code>’s twin over <code>str</code>,
+<code>Length</code>, <code>Color</code> and the numbers, because a part sits inside text that
+supplies the unit while a whole value must carry its own. A declaration
+with SEVERAL arguments joins them with a space through <code>piece</code>
+automatically; write it yourself only where the parts are glued:
+<code>padding(i"calc({piece(space(4))} + 2px)");</code>.</p>
 <h2 id="conditions"><a class="header" href="#conditions">Conditions</a></h2>
-<p>Each takes an inner <code>Style</code> and conditions all of its slots:</p>
+<p>A condition is a <strong>value</strong>, and a set of them is the same value. <code>on</code> puts a
+style under a set; every named combinator below is one condition’s worth of
+sugar over it.</p>
+<pre><code class="language-vilan fragment">fun on&lt;C: IntoConditions&gt;(self, conditions: C, inner: Style): Style
+</code></pre>
+<h3 id="the-condition-values"><a class="header" href="#the-condition-values">The condition values</a></h3>
+<p>Free functions in <code>std::style</code> (and in <code>std::style::prelude</code>, which is ambient
+inside a <code>css</code> block, along with <code>var</code>, <code>piece</code>, the <code>Length</code>/<code>Color</code>
+constructors, <code>s()</code>, and the keyword-property types <code>Length</code>, <code>Cursor</code>,
+<code>TextAlign</code> and <code>AlignItems</code> — so one file-level
+<code>import std::style::prelude::{ … };</code> answers a whole chain built outside a
+hole):</p>
+<pre><code class="language-vilan fragment">fun hover(): Condition          // :hover
+fun focus(): Condition          // :focus
+fun active(): Condition         // :active
+fun disabled(): Condition       // :disabled
+fun first(): Condition          // :first-child
+fun last(): Condition           // :last-child
+fun pseudo(name: str): Condition        // any other pseudo-class; no ':' in the name
+fun element(name: str): Condition       // ::selection — a pseudo-ELEMENT, always last
+fun attribute(name: str): Condition     // [name] — PRESENCE on the element itself
+fun within(condition: Condition): Condition   // an ANCESTOR matching `condition`
+fun children(): Condition       // &gt; * — every direct child
+fun divide(): Condition         // &gt; :not(:first-child) — every child but the first
+fun media(min_width: str): Condition
+fun sm(): Condition             // 640px
+fun md(): Condition             // 768px
+fun lg(): Condition             // 1024px
+fun xl(): Condition             // 1280px
+</code></pre>
+<p>Two methods on a condition:</p>
+<pre><code class="language-vilan fragment">fun not(self): Condition             // the condition negated, where it is written
+fun eq(self, value: str): Condition  // an attribute condition's exact value
+</code></pre>
+<p><code>attribute("data-open")</code> is presence, <code>attribute("data-open").eq("true")</code> is
+<code>[data-open="true"]</code>. <code>.eq(..)</code> is deliberately not <code>PartialEq::eq</code>: a
+condition value is never compared by user code, and <code>PartialEq</code> is never
+derived on <code>Condition</code> so the two readings cannot collide.</p>
+<p><code>+</code> is the <strong>intersection</strong> — “both of these at once” — and a set is a value
+you can name:</p>
+<pre><code class="language-vilan fragment">let interactive = const hover() + active().not() + attribute("disabled").not();
+let panel = const style().on(interactive, style().opacity(1.0));
+</code></pre>
+<p>The binding is itself <code>const</code>: a <code>const</code> expression reads only
+compile-time-known bindings, so a named set has to be one.</p>
+<h3 id="the-sugar"><a class="header" href="#the-sugar">The sugar</a></h3>
+<p>Each of these is <code>.on(&lt;that one condition&gt;, inner)</code>:</p>
 <pre><code class="language-vilan fragment">fun hover(self, inner: Style): Style
 fun focus(self, inner: Style): Style
 fun active(self, inner: Style): Style
 fun disabled(self, inner: Style): Style
 fun first(self, inner: Style): Style      // :first-child
 fun last(self, inner: Style): Style       // :last-child
-fun within(self, name: str, value: str, inner: Style): Style     // [name="value"] .sX — an ancestor guard
-fun children(self, inner: Style): Style   // @layer vilan{.sX &gt; *} — every direct child
-fun divide(self, inner: Style): Style     // @layer vilan{.sX &gt; :not(:first-child)} — every child but the first
-fun attribute(self, name: str, value: str, inner: Style): Style  // .sX[name="value"] — the element itself
 fun pseudo(self, name: str, inner: Style): Style
-
+fun children(self, inner: Style): Style   // @layer vilan{.sX &gt; *}
+fun divide(self, inner: Style): Style     // @layer vilan{.sX &gt; :not(:first-child)}
+fun attribute(self, name: str, value: Option&lt;str&gt;, inner: Style): Style
+fun within(self, name: str, value: Option&lt;str&gt;, inner: Style): Style
 fun sm(self, inner: Style): Style          // breakpoints (min-width):
 fun md(self, inner: Style): Style          // 640px, 768px, 1024px, 1280px
 fun lg(self, inner: Style): Style
 fun xl(self, inner: Style): Style
 fun media(self, min_width: str, inner: Style): Style
 </code></pre>
+<p>The free constructor and the method of the same name coexist: <code>hover()</code> is the
+condition, <code>style().hover(inner)</code> is the sugar that puts a style under it.</p>
+<p><code>Style::attribute</code> and <code>Style::within</code> take the <code>Option&lt;str&gt;</code> A89 gave them —
+<code>Some(v)</code> the exact match, <code>None</code> presence — and both are <strong>deprecated</strong>: the
+<code>Option</code> folds into the condition value, so write
+<code>.on(attribute(name).eq(value), inner)</code> and
+<code>.on(within(attribute(name).eq(value)), inner)</code>. They stay for one release.</p>
 <h3 id="stacking"><a class="header" href="#stacking">Stacking</a></h3>
-<p>The four condition axes nest <strong>outside-in, in the order the selector
-nests them</strong> — media, then the relation (<code>within</code>, <code>children</code>, <code>divide</code>),
-then the attribute, then the pseudo-class:</p>
-<pre><code class="language-vilan fragment">style().md(style().within("data-theme", "dark", style().hover(style().opacity(0.8))))
+<p>A set has no order. <code>hover() + md()</code> and <code>md() + hover()</code> are the same set,
+mint the same class, and emit one rule — the canonicaliser sorts the tokens
+into the order a selector is written in (breakpoint, ancestor guard, child
+relation, attributes, pseudo-classes, pseudo-element) and hashes that:</p>
+<pre><code class="language-vilan fragment">style().on(md() + within(attribute("data-theme").eq("dark")) + hover(), style().opacity(0.8))
 // @media (min-width: 768px){[data-theme="dark"] .sX:hover{opacity:0.8}}
 
-style().md(style().within("data-theme", "dark", style().attribute("data-open", "true", style().hover(style().opacity(0.8)))))
-// @media (min-width: 768px){[data-theme="dark"] .sX[data-open="true"]:hover{opacity:0.8}}
+style().on(hover() + active().not(), style().opacity(0.8))
+// .sX:not(:active):hover{opacity:0.8}
+
+style().on(within(attribute("data-theme").eq("dark")) + children(), style().opacity(0.8))
+// @layer vilan{[data-theme="dark"] .sX &gt; *{opacity:0.8}}
 </code></pre>
-<p>Every other order is a compile-time-evaluation panic naming the fix
-(<code>hover(within(..))</code> says to write <code>within(.., hover(..))</code>), and no axis
-can wrap itself — one media, one relation, one attribute, one
-pseudo-class per slot. Media rules emit in ascending min-width order, so
-a chain like <code>.sm(x).lg(y)</code> is mobile-first: the widest matching
-breakpoint wins.</p>
-<p><code>attribute</code> conditions on the element <strong>itself</strong> — <code>.sX[data-open="true"]</code>
-— where <code>within</code> is the ancestor form. It is the general spelling of state
-carried in markup: <code>data-state</code>, <code>data-open</code>, <code>aria-expanded</code> — any
-attribute rides, <code>aria-*</code> included, and the value matches exactly. The
-app owns <em>setting</em> the attribute on the element; the style only selects
-on it. Name and value refuse quotes, spaces and <code>:</code> at const time (they
-delimit the machinery underneath), and a styling hook is a single token
-in practice — the same fences guard <code>within</code>’s name and value.</p>
-<p><code>within</code> prepends an ancestor selector, so a composed
-<code>within(.., hover(..))</code> rule is more specific than either <code>within(..)</code> or
-<code>hover(..)</code> alone and wins against both — and the same holds along the
-attribute axis: <code>attribute(.., hover(..))</code> outranks both of its parts.
-Between an <em>un</em>composed <code>within(.., x)</code> and <code>hover(y)</code> on the same
-property the guard wins — a theme shouldn’t be undone by a hover — so use
-<code>within(.., hover(..))</code> when a dark theme needs its own hover.</p>
+<p>Nesting <code>on</code> intersects: <code>a.on(X, b.on(Y, s))</code> gives <code>s</code> the set <code>X ∪ Y</code>.
+Media rules emit in ascending min-width order, so <code>.sm(x).lg(y)</code> is
+mobile-first — the widest matching breakpoint wins.</p>
+<p>Five sets are refused at const time, each because it can never match or is not
+a selector CSS admits: a condition <strong>and its negation</strong>; two <strong>breakpoints</strong>;
+two <strong>ancestor guards</strong>; two <strong>child relations</strong>; two <strong>pseudo-elements</strong>.
+Two different values of one attribute (<code>attribute("x").eq("a") + attribute("x").eq("b")</code>) is admitted in this version and recorded — it matches
+nothing, and catching it would need the canonicaliser to reason about value
+equality.</p>
+<p>The SUGAR keeps its own nesting order, and that order is still the only legal
+one: <code>md(within(attribute(hover(..))))</code>. Any other order is refused naming
+both fixes — the nesting it wanted, and the set that has none.</p>
+<h3 id="negation"><a class="header" href="#negation">Negation</a></h3>
+<p><code>.not()</code> is written on the condition it negates:</p>
+<pre><code class="language-vilan fragment">style().on(attribute("disabled").not() + hover(), style().opacity(0.8))
+// .sX:not([disabled]):hover{opacity:0.8}   — hovered AND not disabled
+
+style().on(hover().not(), style().opacity(0.8))
+// .sX:not(:hover){opacity:0.8}
+
+style().on(within(attribute("data-theme").eq("dark")).not(), style().opacity(0.8))
+// :not([data-theme="dark"]) .sX{opacity:0.8}
+</code></pre>
+<p><code>:not(x)</code> carries <code>x</code>’s own specificity, so nothing about the cascade story
+changes: <code>.sX:not([disabled]):hover</code> is (0,3,0) over both of its (0,2,0)
+parts, exactly as <code>.sX[disabled]:hover</code> is. A NEGATED ancestor guard is the
+one case that moves a rule’s cascade <em>band</em>: the line opens with <code>:</code> rather
+than <code>[</code>, so it sorts among the pseudo rules.</p>
+<p>Three refusals: a <strong>double</strong> negation (<code>x.not().not()</code>) is a spelling mistake
+rather than a cancellation; a <strong>breakpoint</strong> cannot be negated (<code>@media not (..)</code> is a grammar of its own and no ruling has reached it); and a
+<strong>pseudo-element</strong> cannot be negated (<code>:not(::selection)</code> is not a selector
+CSS admits). <code>.not()</code> on a SET refuses too, naming the per-condition form.</p>
 <h3 id="relations"><a class="header" href="#relations">Relations</a></h3>
-<p><code>within</code> guards the element’s own slots on an <strong>ancestor’s</strong> attribute —
-the theme condition (<code>within("data-theme", "dark", ..)</code>, or any theme id
-under kolt-style n-ary theming) and every other “when an ancestor says
-so” state. Its rule is unlayered and beats the element’s own base rule
-exactly when the guard matches. For colours, prefer declaring per-theme
+<p><code>within(condition)</code> guards the element’s own slots on an <strong>ancestor</strong> matching
+<code>condition</code> — the theme condition
+(<code>within(attribute("data-theme").eq("dark"))</code>, or any theme id under
+kolt-style n-ary theming), an ancestor’s presence flag
+(<code>within(attribute("data-collapsed"))</code>), or a pseudo-class the ancestor is in
+(<code>within(hover())</code>). Its rule is unlayered and beats the element’s own base
+rule exactly when the guard matches. For colours, prefer declaring per-theme
 custom properties with a <a href="#declaration-blocks">declaration block</a> and
 reading them with <code>Color::var(..)</code>; <code>within</code> covers the structural
 changes a value swap cannot.</p>
-<p><code>children</code> and <code>divide</code> style the element’s <strong>children</strong> — the
-parent-owned spacing idioms (Tailwind’s <code>space-*</code>/<code>divide-*</code>). Their
-rules emit inside <code>@layer vilan</code>, and that is the whole cascade story:
-<strong>a child’s own <code>Style</code> always wins against a rule reaching in from an
-ancestor</strong>, whatever the specificity — they set defaults the child may
-refuse, never force. (The cost is symmetric: a <code>children</code>/<code>divide</code> rule
-cannot override <em>any</em> unlayered CSS.) Where both touch one property,
+<p>A guard holds ONE condition, and it must be one that selects an element: a
+breakpoint, another guard, a child relation and a pseudo-element are each
+refused naming where they belong instead.</p>
+<p><code>children()</code> and <code>divide()</code> condition on the element’s <strong>children</strong> — the
+parent-owned spacing idioms (Tailwind’s <code>space-*</code>/<code>divide-*</code>). A rule carrying
+a child relation emits inside <code>@layer vilan</code> whatever else conditions it, and
+that is the whole cascade story: <strong>a child’s own <code>Style</code> always wins against a
+rule reaching in from an ancestor</strong>, whatever the specificity — they set
+defaults the child may refuse, never force. (The cost is symmetric: such a
+rule cannot override <em>any</em> unlayered CSS.) Where both touch one property,
 <code>divide</code> outranks <code>children</code> on every child but the first, whichever was
-written first. Both take an <strong>unconditioned</strong> inner style in this
-version — a hover or attribute condition belongs on the child’s own
-style — and a breakpoint wraps either (<code>md(children(..))</code>).</p>
+written first.</p>
+<p>A guard and a child relation are not the same slot, so one set may hold both:
+<code>within(attribute("data-theme").eq("dark")) + children()</code> is
+<code>[data-theme="dark"] .sX &gt; *</code>. The <code>.children(inner)</code>/<code>.divide(inner)</code> SUGAR
+still takes an unconditioned inner style — a pseudo-class under it would bind
+to the child’s compound — and a breakpoint wraps either (<code>md(children(..))</code>).</p>
 <h2 id="declaration-blocks"><a class="header" href="#declaration-blocks">Declaration blocks</a></h2>
 <p><code>Style</code> dresses an <em>element</em>. A <strong>declaration block</strong> puts a set of
 declarations under a selector <strong>you</strong> choose — a theme’s custom properties
@@ -537,11 +634,28 @@ value. A <code>;</code> inside a <em>value</em> stays legal, so a data URI rides
 text joined in authoring order, where a <code>style()</code> chain’s links each own a
 slot and may be sorted freely.</p>
 <h2 id="runtime-legal-operations"><a class="header" href="#runtime-legal-operations">Runtime-legal operations</a></h2>
-<p>Construction emits rules and therefore lives in <code>const</code>; these do not emit
-and work anywhere:</p>
+<p>Construction records rules and therefore lives in <code>const</code>; these record
+nothing and work anywhere:</p>
 <pre><code class="language-vilan fragment">style_a + style_b          // merge: per-property, right side wins (impl Add)
+style.when(condition: bool, delta: Style): Style   // `self + delta` when true, `self` when not
 style.class_list(): str    // the space-joined class attribute (what `styled` uses)
 </code></pre>
+<p><code>when</code> is the conditional merge, written as a chain instead of a stack of
+<code>if</code>s:</p>
+<pre><code class="language-vilan fragment">button_base
+	.when(is_selected, button_selected)
+	.when(is_disabled, button_disabled)
+</code></pre>
+<p>It never <em>constructs</em> a style — both sides were built, and emitted their rules,
+in their own <code>const</code> expressions — so the construct-in-const rule is untouched
+with a runtime flag in the middle. Chain order is <strong>precedence</strong>, exactly as
+with <code>+</code>: when two <code>when</code>s both fire, the later delta wins whatever properties
+they share.</p>
+<p>The chain reads best when each condition mentions its <strong>own</strong> flag —
+independent state axes, one link each. When one condition has to mention
+another link’s flag (<code>!selected &amp;&amp; !disabled</code>), the states are not independent,
+and a <code>match</code> states that exclusivity structurally where a chain only implies
+it. The compound condition is the tell; this is guidance, not a prohibition.</p>
 
                     </main>
 
@@ -594,7 +708,7 @@ style.class_list(): str    // the space-joined class attribute (what `styled` us
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

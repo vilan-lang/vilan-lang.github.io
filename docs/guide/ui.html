@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -207,7 +207,8 @@ you need the DOM event itself (<code>prevent_default</code>, <code>key()</code>,
 <code>pointer_x()</code>/<code>pointer_y()</code>). For window-level events, and for a listener
 you need to remove, drop to <code>std::dom</code> — <a href="#escaping-to-the-dom">Escaping to the DOM</a>.</li>
 <li><strong>Reactive bindings</strong>: <code>.bind_text(source)</code>, <code>.bind_class(source)</code>,
-<code>.bind_attr(name, source)</code>, <code>.style_var(name, source)</code>.</li>
+<code>.bind_attr(name, source)</code>, <code>.toggle_attr(name, flag)</code>,
+<code>.style_var(name, source)</code>.</li>
 </ul>
 <p>Every <code>bind_*</code> sets the property now and re-sets it whenever the source
 changes. There is no render loop to trigger.</p>
@@ -218,13 +219,36 @@ the bindings that write back (<code>bind_value</code>, <code>bind_draft</code>) 
 signal.</p>
 <h2 id="text-children-and-mixed-content"><a class="header" href="#text-children-and-mixed-content">Text children and mixed content</a></h2>
 <p><code>child</code> takes more than a <code>View</code>. Anything that can fill a child
-position works — the value’s type decides what lands in the DOM:</p>
+position works — the value’s type decides what lands in the DOM. Three
+static arms, and a reactive twin for each:</p>
 <ul>
-<li>a <code>View</code> appends as an element;</li>
-<li>a <code>str</code> appends as a <strong>text node</strong>;</li>
-<li>a <code>SignalCell&lt;str&gt;</code> appends as a text node kept in sync;</li>
-<li>a <code>List&lt;View&gt;</code> appends every view, in order.</li>
+<li>a <code>View</code> appends as an element; a <code>Source&lt;View&gt;</code> appends the view it
+holds and <strong>replaces</strong> it whenever the source changes;</li>
+<li>a <code>str</code> appends as a <strong>text node</strong>; a <code>Source&lt;str&gt;</code> appends a text
+node kept in sync;</li>
+<li>a <code>List&lt;View&gt;</code> appends every view, in order; a <code>Source&lt;List&lt;View&gt;&gt;</code>
+appends the run and replaces the whole run on every change. <code>&lt;&gt;…&lt;/&gt;</code>
+is the literal for one (see <a href="#fragments">Fragments</a>).</li>
 </ul>
+<p>That pairing is the whole contract: whatever may be a child statically
+may be a child reactively, and <code>{expr}</code> in element syntax means the same
+thing either way. The reactive arms register one subscription with the
+nearest boundary, so a <code>{signal}</code> child inside an <code>each</code> row stops
+replacing anything when the row is disposed — but the views themselves
+arrive already built, so each one’s own bindings belong to the scope
+that <em>constructed</em> it. Reach for <code>swap(source, |value| …)</code> when every
+subtree must be built and disposed per value; reach for a <code>Source&lt;View&gt;</code>
+child when the views are values the app already holds.</p>
+<p><strong>A reactive child keeps its place.</strong> The replacement lands where the
+<code>{expr}</code> is written, not at the end of the parent — and so do <code>when</code>’s
+body, <code>swap</code>’s subtree and <code>each</code>’s rows. Each plants an empty text
+node where it is called and inserts before it, so
+<code>&lt;nav&gt;{brand}{when(..)}{footer}&lt;/nav&gt;</code> puts the conditional between the
+two, and it is still between them after it toggles off and on. No
+wrapper element, and nothing to remember about ordering.</p>
+<p>A <code>Source&lt;List&lt;View&gt;&gt;</code> is not a reconciler: it replaces the run rather
+than moving surviving rows. <code>each</code> is the keyed form, and it is
+what a list of <em>data</em> wants.</p>
 <p>Text nodes make mixed content direct: prose around an inline element is
 a run of siblings, not a pile of wrapper spans.</p>
 <pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
@@ -245,9 +269,34 @@ re-sets whenever it changes — <code>attr("href", signal)</code> and
 <code>bind_attr("href", signal)</code> are the same binding, chosen by type or by
 name. (<code>text</code> is unchanged: it still replaces everything the element
 contains, text nodes included, like the DOM’s <code>textContent</code>.)</p>
-<p><code>attr</code> and <code>child</code> dispatch through traits rather than a bound, so their
-reactive arms are <code>SignalCell&lt;str&gt;</code> specifically — a custom <code>Source</code> goes
-through the named binding (<code>bind_attr</code>, <code>bind_text</code>) for now.</p>
+<p>An attribute that comes and goes is a third case, and both forms take it
+directly: over an <code>Option&lt;str&gt;</code> or a <code>Source&lt;Option&lt;str&gt;&gt;</code>, a <code>Some(text)</code>
+sets the attribute and a <code>None</code> leaves it off — removing it, where the value
+is reactive and the attribute was there a moment ago. <code>bind_attr</code> spells it by
+name and element syntax by type, so <code>&lt;div data-dragging(drag_status)&gt;</code> is the
+same binding as the chain below. Reach for it whenever a selector reads presence —
+<code>[data-dragging="row"] *</code> matches an element that <em>has</em> the attribute, so
+writing <code>""</code> between drags leaves the rule firing. <code>Some("")</code> is still a
+present, empty attribute, which is why the absence has to be its own value
+rather than a sentinel string.</p>
+<pre><code class="language-vilan fragment">// `None` while nothing is being dragged; `Some("row")`/`Some("col")` while
+// something is.
+view("div").bind_attr("data-dragging", drag_status.map(|status| match status {
+	DragStatus::Still =&gt; None,
+	DragStatus::Vertical =&gt; Some("row"),
+	DragStatus::Horizontal =&gt; Some("col"),
+}))
+</code></pre>
+<p>A BOOLEAN attribute is a different thing and has its own binding:
+<code>inert</code>, <code>disabled</code>, <code>hidden</code> and <code>open</code> mean <em>present</em>, so there is no
+string that turns one off — <code>attr("disabled", "false")</code> is a disabled
+control. <code>.toggle_attr(name, flag)</code> takes a <code>Source&lt;bool&gt;</code> and writes
+the attribute when it is true, removes it when it is false:
+<code>shell.toggle_attr("inert", modal_open)</code>.</p>
+<p><code>attr</code> and <code>child</code> dispatch through traits rather than a bound, and
+their reactive arms are blanket impls over <code>Source</code>, so a derived
+signal, a <code>RemoteSource</code> or a mirror of your own fills either position
+exactly as a cell does.</p>
 <h2 id="element-syntax"><a class="header" href="#element-syntax">Element syntax</a></h2>
 <p>The chain has a markup coat. An <strong>element expression</strong> is HTML-shaped
 sugar that lowers, before analysis, to exactly the chain you would have
@@ -278,7 +327,7 @@ hyphens are ordinary attribute-name characters, exactly as in HTML, so
 every <code>data-*</code>/<code>aria-*</code> attribute is written in the same undotted form
 and emitted verbatim.</li>
 <li>A <strong>leading dot</strong> is the chain, verbatim: <code>.styled(card)</code>,
-<code>.bind_value(draft)</code>, <code>.show(flag)</code>, <code>.bind_each(rows, |r| r.id, |r| row(r))</code>. Every <code>View</code> method works in head position — the dot is
+<code>.bind_value(draft)</code>, <code>.show(flag)</code>, <code>.child(each(rows, |r| r.id, |r| row(r)))</code>. Every <code>View</code> method works in head position — the dot is
 what keeps attributes and methods from ever colliding, so a new
 method can never change what existing markup means.</li>
 <li><code>on:click(handler)</code> is an event. A zero-parameter closure literal
@@ -296,12 +345,12 @@ that suggests the quoted form.</p>
 <p>An element is an ordinary expression: it nests in holes, sits in match
 arms, and takes postfix chains. The two forms mix freely —</p>
 <pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell };
-import std::ui::{ View, mount_root, view };
+import std::ui::{ View, each, mount_root, view };
 
 fun panel(items: SignalCell&lt;List&lt;str&gt;&gt;, flag: SignalCell&lt;bool&gt;): View {
 	&lt;section class("panel")&gt;
 		&lt;input placeholder("What needs doing?") /&gt;
-		&lt;ul .bind_each(items, |t| t, |t| &lt;li&gt;{t}&lt;/li&gt;) /&gt;
+		&lt;ul&gt;{each(items, |t| t, |t| &lt;li&gt;{t}&lt;/li&gt;)}&lt;/ul&gt;
 		&lt;p .show(flag)&gt;"empty"&lt;/p&gt;
 	&lt;/section&gt;
 }
@@ -310,14 +359,50 @@ fun main() {
 	let _root = mount_root("app", || panel(Signal::new(["alpha"]), Signal::new(false)));
 }
 </code></pre>
+<h3 id="fragments"><a class="header" href="#fragments">Fragments</a></h3>
+<p>A <strong>fragment</strong> groups several children under one hole, with no wrapper
+element. <code>&lt;&gt;…&lt;/&gt;</code> is the nameless head, and it lowers to a <strong>list
+literal</strong> of its children — so its type is <code>List&lt;View&gt;</code>, the arm <code>child</code>
+already places:</p>
+<pre><code class="language-vilan browser">import std::ui::{ View, mount_root, view };
+
+fun labelled(name: str, value: str): List&lt;View&gt; {
+	&lt;&gt;
+		&lt;dt&gt;{name}&lt;/dt&gt;
+		&lt;dd&gt;{value}&lt;/dd&gt;
+	&lt;/&gt;
+}
+
+fun main() {
+	let _root = mount_root("app", || {
+		&lt;dl&gt;
+			{labelled("host", "localhost")}
+			{labelled("port", "8080")}
+		&lt;/dl&gt;
+	});
+}
+</code></pre>
+<p><code>&lt;&gt;</code> and <code>&lt;/&gt;</code> are written tight, like <code>/&gt;</code> and <code>&lt;/</code>. A fragment takes
+no attributes and no chain links — there is no element to put them on —
+and it has no self-closing form; the empty fragment is <code>&lt;&gt;&lt;/&gt;</code>.</p>
+<p>Its type is where its uses are, and where its limits are. A fragment is
+a <code>List&lt;View&gt;</code>, so it fills a child position and every position a list
+fills, and a <code>Source&lt;List&lt;View&gt;&gt;</code> of fragments keeps its place like any
+other reactive child. It is <strong>not</strong> a <code>View</code>: a <code>fun …: View</code> return, a
+<code>when</code> body, a <code>swap</code> render and an <code>each</code> row all want one view,
+and a fragment there is a type error that says so. It also does not
+flatten — a fragment written directly inside another is a list inside a
+list, which the literal refuses; nest through a child position instead.</p>
 <p>Components stay what they are — functions returning <code>View</code> — and are
 called in holes: <code>{todo_row(items, todo)}</code>. Reactivity stays explicit:
 an <code>if</code> or <code>match</code> inside a hole runs once at build, exactly as it does
-in a chain; reactive structure is <code>.show</code>/<code>.when</code>/<code>.swap</code>/<code>.bind_each</code>
-in head position, and <code>Signal</code> values in slots. The sugar adds no
-semantics: <code>import std::ui::{ view, View }</code> is still required (the
-compiler points the way if it is missing), and everything this guide
-says about ownership, boundaries, and binding types applies unchanged.</p>
+in a chain; reactive structure is <code>.show</code> in head position and the
+<code>when</code>/<code>swap</code>/<code>each</code> values in holes, with <code>Signal</code> values in slots. The sugar adds no
+semantics: an element means <code>std::ui::view</code> whatever the file has
+imported, so element syntax needs no <code>view</code> import of its own (a <code>View</code>
+you write as a TYPE still needs one, and the editor offers it), and
+everything this guide says about ownership, boundaries, and binding
+types applies unchanged.</p>
 <h2 id="components-are-just-functions"><a class="header" href="#components-are-just-functions">Components are just functions</a></h2>
 <p>A “component” is a function that returns a <code>View</code>. There is no
 registration, special types, or props system; the parameters are the
@@ -342,7 +427,7 @@ why you never think about cleanup: every binding you create, at any
 depth of function calls, registers with the nearest owner automatically
 (the <a href="reactive.html">reactive guide</a> explains owners).</p>
 <p>If you create a reactive binding — a <code>bind_*</code>, a <code>Signal</code> in a slot, a
-<code>when</code>/<code>swap</code>/<code>bind_each</code> — outside any root, you’ll get a compile
+<code>when</code>/<code>swap</code>/<code>each</code> — outside any root, you’ll get a compile
 error mentioning <code>owner_scope</code>. It means “wrap this in <code>mount_root</code>”
 (or <code>run_with_owner</code> in a test). Purely static structure needs no
 boundary: <code>mount("app", view("div").child(view("p").text("hi")))</code> is
@@ -392,11 +477,12 @@ fun main() {
 	});
 }
 </code></pre>
-<h2 id="lists-bind_each"><a class="header" href="#lists-bind_each">Lists: <code>bind_each</code></a></h2>
-<p><code>bind_each(source, key, render)</code> renders one row per element of any
+<h2 id="lists-each"><a class="header" href="#lists-each">Lists: <code>each</code></a></h2>
+<p><code>each(source, key, render)</code> renders one row per element of any
 <code>Source&lt;List&lt;T&gt;&gt;</code> — a signal, a derived one, a mirror, a type of your own.
-Rows are <strong>keyed</strong>, like React’s <code>key</code> prop, and the key does real work
-here:</p>
+It is a <strong>value</strong>: write it in a child hole, or hand it to <code>child</code> to place
+the run at the parent’s current end. Rows are <strong>keyed</strong>, like React’s <code>key</code>
+prop, and the key does real work here:</p>
 <ul>
 <li>A row whose key survives a change is reused. Its element moves to
 the new position with its state and subscriptions intact.</li>
@@ -405,7 +491,7 @@ that row (that’s why <code>T: PartialEq</code>).</li>
 <li>Removed rows are disposed: each row is its own owner, so a
 row’s bindings die with the row.</li>
 </ul>
-<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::ui::{ each, view, View, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 [derive(PartialEq)]
@@ -419,19 +505,193 @@ fun main() {
 		Todo { id = 1, title = "write docs" },
 	]);
 	let _root = mount_root("app", || {
-		view("ul").bind_each(todos, |todo| todo.id, |todo| {
+		view("ul").child(each(todos, |todo| todo.id, |todo| {
 			view("li").text(todo.title)
-		})
+		}))
 	});
 }
 </code></pre>
-<pre><code class="language-vilan fragment">fun bind_each&lt;T: PartialEq, K: PartialEq, S: Source&lt;List&lt;T&gt;&gt;&gt;(
-	self,
+<pre><code class="language-vilan fragment">fun each&lt;T: PartialEq, K: PartialEq, S: Source&lt;List&lt;T&gt;&gt;, C: Slot&gt;(
 	source: S,
 	key: sync |T| K,
-	render: (sync |T| View) context owner_scope,
-): View
+	render: (sync |T| C) context owner_scope,
+): Each&lt;T, K, S, C&gt;
 </code></pre>
+<h3 id="three-forms-one-engine"><a class="header" href="#three-forms-one-engine">Three forms, one engine</a></h3>
+<p><code>each</code> asks two things of your items — a key <strong>and</strong> an equality —
+and most lists only have one of them to give. The other two forms each
+drop one bound:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th></th><th>Signature</th><th>Key</th><th>Unchanged row</th><th>Asks of <code>T</code></th></tr>
+</thead>
+<tbody>
+<tr><td><code>each(source, key, render)</code></td><td><code>render: |T| C</code></td><td><code>key(item)</code></td><td>reused; changed → rebuilt</td><td><code>PartialEq</code></td></tr>
+<tr><td><code>each_values(source, render)</code></td><td><code>render: |T| C</code></td><td>the item itself</td><td>reused; changed → rebuilt</td><td><code>PartialEq</code> + <code>Hashable</code></td></tr>
+<tr><td><code>each_by(source, key, render)</code></td><td><code>render: |SignalCell&lt;T&gt;| C</code></td><td><code>key(item)</code></td><td><strong>always</strong> reused; the row’s cell is rewritten</td><td>nothing</td></tr>
+</tbody>
+</table>
+</div>
+<p>The <strong>key</strong> is always <code>PartialEq</code> <strong>and</strong> <code>Hashable</code>, in all three forms:
+the reconciler finds a moved row through a hash index, so a key’s hash has
+to agree with its equality — <code>a == b</code> implies <code>a.hash() == b.hash()</code>. Ids
+and strings satisfy it for free. A struct key takes <code>[derive(Hashable)]</code>
+when it is equal by all of its fields, and a hand-written
+<code>impl Key with Hashable</code> hashing exactly the fields its <code>eq</code> reads when it
+is not. That agreement is what makes a reorder cost one comparison per
+row instead of N.</p>
+<ul>
+<li>
+<p><strong><code>each_values</code></strong> is <code>each(source, |x| x, render)</code> written
+once. Reach for it whenever the item <em>is</em> the identity — every
+<code>|x| x</code> key in the wild is this.</p>
+</li>
+<li>
+<p><strong><code>each_by</code></strong> is Solid’s <code>&lt;Index&gt;</code> beside <code>each</code>’s <code>&lt;For&gt;</code>.
+A row whose key survives keeps its element, its owner and its
+bindings, and std writes the new item into that row’s own
+<code>SignalCell&lt;T&gt;</code>, so the row updates <em>through</em> the bindings <code>render</code>
+already made. That’s what lets it take a <code>T</code> with no equality at all —
+a struct carrying a closure, a handle, anything you can’t derive
+<code>PartialEq</code> for.</p>
+<p>The trade: <code>set</code> never compares, so <strong>every</strong> kept row’s cell is
+written on every change of the list, and every binding in every row
+re-runs. Reach for <code>each</code> when <code>T</code> compares cheaply and rows are
+expensive to rebuild; reach for <code>each_by</code> when <code>T</code> can’t compare,
+or when the row’s own bindings are the natural update path.</p>
+</li>
+</ul>
+<pre><code class="language-vilan browser">import std::ui::{ each_by, each_values, view, View, mount_root };
+import std::reactive::{ Signal, SignalCell };
+
+struct Task {
+	id: i32,
+	title: str,
+}
+
+fun main() {
+	let tasks: SignalCell&lt;List&lt;Task&gt;&gt; = Signal::new([
+		Task { id = 1, title = "write docs" },
+	]);
+	let names: SignalCell&lt;List&lt;str&gt;&gt; = Signal::new(["ada", "grace"]);
+	let _root = mount_root("app", || {
+		view("div")
+			// the item is the key
+			.child(view("ul").child(each_values(names, |name| view("li").text(name))))
+			// `Task` needs no PartialEq: the row updates through its cell
+			.child(view("ol").child(each_by(tasks, |task: Task| task.id, |task: SignalCell&lt;Task&gt;| {
+				view("li").bind_text(task.map(|current| current.title))
+			})))
+	});
+}
+</code></pre>
+<h2 id="after-the-element-lands-on_mount-autofocus"><a class="header" href="#after-the-element-lands-on_mount-autofocus">After the element lands: <code>on_mount</code>, <code>autofocus</code></a></h2>
+<p><code>view(..)</code> builds an element; it is not in the document until whatever
+appends it does. <code>.on_mount(action)</code> runs <code>action</code> with the element once
+it <em>is</em> — at every attachment site, including a <code>when</code> body or an
+<code>each</code> row that appears in a later change.</p>
+<pre><code class="language-vilan fragment">view("input").attr("type", "text").on_mount(|element| element.focus())
+view("input").attr("type", "text").autofocus()          // and then some
+</code></pre>
+<p><code>autofocus</code> is the reason the hook exists. HTML’s <code>autofocus</code> attribute
+fires only on a document’s initial parse, so it does nothing for a modal
+mounted later — and the workaround it forces (mint a uuid, set it as the
+id, start a 1 ms timer, look the element back up) is three lines of
+ceremony around a value you already had. There is nothing to look up:
+the callback is handed the element.</p>
+<p><code>on_mount</code> promises the element is IN THE DOCUMENT, and that is all it
+promises. A microtask runs before the frame’s rendering step, so at that
+moment the element is connected but not yet <em>rendered</em>: no layout, no
+resolved style, and no <code>ResizeObserver</code> reaction to either. <code>focus()</code> has
+a precondition — connected, rendered, visible, not inert, all of them at
+the call — and the platform’s answer to a target that is not is to do
+nothing, silently. An overlay panel held at <code>visibility: hidden</code> until a
+<code>ResizeObserver</code> places it and flips it visible is exactly the shape that
+refuses.</p>
+<p>So <code>autofocus</code> is not <code>on_mount(|e| e.focus())</code>: it attempts in the
+microtask, and if the element did not take focus it attempts again on the
+next animation frame and once more on the frame after, then stops. Three
+attempts on the platform’s own clock — no timer, no millisecond to tune.
+Written out, with <code>std::dom::request_animation_frame</code> as the clock and
+<code>matches(":focus")</code> as the read-back (<code>focus()</code> returns nothing):</p>
+<pre><code class="language-vilan fragment">view("input").on_mount(|element| {
+	element.focus();
+	if !element.matches(":focus") {
+		request_animation_frame(|| element.focus());
+	}
+})
+</code></pre>
+<p>Two things no retry fixes. iOS Safari ignores a programmatic <code>focus()</code>
+outside a user gesture whatever frame it runs on; and the sound shape for
+an overlay is that focus is a consequence of the SHOW — a hook the driver
+runs when it flips visibility, or <code>&lt;dialog&gt;.showModal()</code>, whose focusing
+steps run once the dialog is rendered.</p>
+<p>The hook is a <strong>microtask</strong>, which is enough because the whole
+synchronous build — and the <code>mount</code> that finishes it — runs to
+completion before any microtask does. On the SSR twin both methods
+accept and drop, like the event binders: there is no document to be in.</p>
+<p><code>autofocus</code> also writes the <code>autofocus</code> <strong>attribute</strong>. The attribute is
+inert for an element inserted after the page parsed — that is <em>why</em> this
+method exists — so it costs nothing at runtime and makes the choice
+readable: to a focus scope, to devtools, and to a test that asserts
+markup. The SSR twin deliberately does not write it, because a <em>served</em>
+<code>autofocus</code> is honored by the browser’s own initial parse.</p>
+<h2 id="focus-scopes"><a class="header" href="#focus-scopes">Focus scopes</a></h2>
+<p>An overlay usually wants more than one focused input: it wants Tab to
+stay inside it while it is open, and it wants focus back where it was
+when it closes. That is a <strong>focus scope</strong>.</p>
+<pre><code class="language-vilan fragment">view("div")
+	.focus_scope(FocusContainment::Wrap)
+	.child(view("input").autofocus())
+	.child(view("button").text("Close"))
+</code></pre>
+<p><code>Wrap</code> is a menu: Tab cycles inside the subtree, and focus that leaves by
+any other route may leave. <code>Contain</code> is a modal: it also pulls focus back
+when it lands anywhere else. Neither writes anything outside the panel —
+the rest of the page stays clickable and stays in the accessibility tree,
+which is exactly what a menu needs and what <code>inert</code> would take away.
+<code>inert</code> is still yours for a true modal (<code>set_attribute("inert", "")</code> and
+<code>remove_attribute</code>), and it is a bigger hammer: it removes the subtree
+from the accessibility tree and blocks pointer events.</p>
+<p><code>focus_scope</code> on a view is the ordinary case. A driver that owns its own
+visibility flip — which is every overlay system that positions a panel
+before showing it — installs the scope and takes the focus as <strong>two
+acts</strong>, because focus has a precondition the mount cannot satisfy:</p>
+<pre><code class="language-vilan fragment">// at mount, or wherever the panel element is in hand:
+let scope = focus_scope(panel, FocusContainment::Contain);
+
+// …in the pass that flips it visible:
+let _took = scope.focus_initial();
+</code></pre>
+<p><code>focus_initial</code> focuses the first <code>[autofocus]</code> descendant, else the
+first tabbable one, else the panel itself at <code>tabindex="-1"</code> — and it
+answers whether the focus was taken, so a show that fired too early is
+simply asked again on the next pass. It is idempotent: once focus has
+been taken, a later call leaves alone whatever the user has since moved
+to.</p>
+<p>Scopes NEST as a stack, not by DOM ancestry, because an overlay is a
+portal: a submenu opened from inside a menu mounts beside its parent’s
+panel rather than inside it. The topmost <code>Contain</code> scope is the one that
+guards. A scope lives as long as the boundary it was installed in — when
+that boundary is disposed the scope pops, and focus goes back to whatever
+held it when the scope opened, unless the app moved focus deliberately in
+the meantime or the remembered element has since left the document.</p>
+<p>A scope can also tell you when focus <strong>leaves</strong> it, and for where:</p>
+<pre><code class="language-vilan fragment">scope.on_leave(|to| close_menu());
+</code></pre>
+<p>The handler runs when focus moves from inside the scope to an element
+outside it AND outside every scope above it — so opening a submenu is not
+leaving the menu, and leaving the submenu for the page leaves both. It is
+handed the element focus went to. Focus leaving the document altogether
+(for the browser’s chrome, another window) does nothing: there is no
+element to hand over, and the user has not gone anywhere on the page. A
+Tab never fires it under <code>Wrap</code>, which keeps Tab inside; under <code>Contain</code>
+a click outside fires it with the clicked element, and then the guard
+pulls focus back. The listener lives as long as the scope.</p>
+<p><code>Element::tabbable()</code> is the query underneath, and it is public: a router
+that moves focus to the new page’s heading, or a menu that implements
+arrow-key navigation, wants it too.</p>
 <h2 id="conditionals-show-when-swap"><a class="header" href="#conditionals-show-when-swap">Conditionals: <code>show</code>, <code>when</code>, <code>swap</code></a></h2>
 <p>Three primitives. Pick by what should happen to the content while it’s
 not visible:</p>
@@ -442,22 +702,86 @@ not visible:</p>
 </thead>
 <tbody>
 <tr><td><code>.show(condition)</code></td><td>mounted, hidden</td><td>preserved</td><td>tabs, collapsibles, anything that should keep its input text</td></tr>
-<tr><td><code>.when(condition, body)</code></td><td>unmounted, disposed</td><td>dropped</td><td>content that shouldn’t exist while off (an editor for a missing record)</td></tr>
-<tr><td><code>.swap(source, render)</code></td><td>previous subtree disposed on change</td><td>per-value</td><td>pages on a route signal, any value-driven subtree</td></tr>
 </tbody>
 </table>
 </div>
-<pre><code class="language-vilan fragment">.show(open)                             // any Source&lt;bool&gt;
-.when(present, || task_editor(…))       // any Source&lt;bool&gt; + (sync || View)
-.swap(route, |current| match current {  // any Source&lt;T&gt; + (sync |T| View)
+<p><code>show</code> makes two writes: the <code>hidden</code> attribute, which selectors and
+assistive technology read, and an inline <code>display: none</code>, which is what
+actually hides it. The attribute alone would not — the preflight’s
+<code>[hidden]{display:none}</code> sits in <code>@layer vilan.preflight</code> and a compiled
+<code>Style</code>’s rules are unlayered, so any <code>display</code> you set beats the reset
+outright. Showing again puts back the element’s own inline <code>display</code>,
+captured before the first toggle. If you write this element’s inline
+<code>display</code> yourself after binding <code>show</code>, the next toggle takes it: style
+through a <code>Style</code> and the two never meet.
+| <code>when(condition, body)</code> | unmounted, disposed | dropped | content that shouldn’t exist while off (an editor for a missing record) |
+| <code>when_some(source, render)</code> | unmounted, disposed | dropped | the same, when the content NEEDS the value — an editor for the selected record |
+| <code>swap(source, render)</code> | previous subtree disposed on change | per-value | pages on a route signal, any value-driven subtree |</p>
+<p><code>show</code> is a <code>View</code> method — it binds a property of the element it is written
+on. <code>when</code>, <code>when_some</code> and <code>swap</code> are <strong>values</strong>: each fills a child
+position, so it lands exactly where it is written.</p>
+<pre><code class="language-vilan fragment">.show(open)                            // any Source&lt;bool&gt;
+{when(present, || task_editor(…))}     // any Source&lt;bool&gt; + (sync || C: Slot)
+{when_some(selected, |record|          // any Source&lt;Option&lt;T&gt;&gt;
+	task_editor(record))}              //   + (sync |SignalCell&lt;T&gt;| C: Slot)
+{swap(route, |current| match current { // any Source&lt;T&gt; + (sync |T| C: Slot)
 	Route::Home =&gt; home_page(),
 	Route::NotFound =&gt; not_found(),
-})
+})}
 </code></pre>
-<p><code>when</code> and <code>swap</code> build their content under a fresh owner each time, so
-everything inside cleans up when the content goes away. <code>swap</code> re-renders
-only when the value <em>changes</em> (<code>T: PartialEq</code>), so navigating
-to the page you’re already on does nothing.</p>
+<p>All three build their content under a fresh owner each time, so everything
+inside cleans up when the content goes away. <code>swap</code> re-renders only when the
+value <em>changes</em> (<code>T: PartialEq</code>), so navigating to the page you’re already on
+does nothing.</p>
+<p><code>when_some</code> is the one that binds the value, and it is the reason to reach for
+it over <code>when(source.map(|value| value is Some(_)), ..)</code>: the body gets the
+payload, and it gets it as a <code>SignalCell&lt;T&gt;</code> rather than as a <code>T</code>. What decides
+structure is the PRESENCE — a <code>None</code> → <code>Some</code> builds, a <code>Some</code> → <code>None</code>
+disposes — so a changed payload writes to the cell and the row stands, with
+whatever bound to it updating in place. That is <code>each_by</code>’s row cell applied to
+a single row, and it is why <code>T</code> needs no <code>PartialEq</code>: nothing is compared.
+Read the cell inside a binding, exactly as an <code>each_by</code> row does:</p>
+<pre><code class="language-vilan fragment">{when_some(selected, |account| &lt;p&gt;{account.map(|current| current.name)}&lt;/p&gt;)}
+</code></pre>
+<h3 id="position-and-placing-one-at-the-end"><a class="header" href="#position-and-placing-one-at-the-end">Position, and placing one at the end</a></h3>
+<p>A value fills a child position, so the conditional or the run sits exactly
+among the siblings it is written between. <code>std::ui</code> exports six —
+<code>when</code>, <code>when_some</code>, <code>swap</code>, <code>each</code>, <code>each_values</code>, <code>each_by</code> — and each
+returns something that fills a child slot:</p>
+<pre><code class="language-vilan fragment">&lt;ul&gt;
+	{header_row()}
+	{each_values(items, |item: str| &lt;li&gt;{item}&lt;/li&gt;)}
+	{when(more, || &lt;li&gt;"and more"&lt;/li&gt;)}
+	{footer_row()}
+&lt;/ul&gt;
+</code></pre>
+<p>To place one at the parent’s current <em>end</em> — where the retired <code>View</code> methods
+put it — hand it to <code>child</code>: <code>view("ul").child(each(rows, key, render))</code>. That
+is the mechanical rewrite for old code, since <code>parent.swap(s, r)</code> was never
+anything but <code>parent.child(swap(s, r))</code>. The run is called <code>each</code> rather than
+<code>bind_each</code> because <code>bind_</code> means “one property kept in sync” everywhere else,
+and a value that <em>is</em> a child has no property to bind.</p>
+<p>A helper that returns one names its type, since vilan has no trait objects —
+the last argument is the shape the closure yields (below):</p>
+<pre><code class="language-vilan fragment">fun account_menu(signed_in: SignalCell&lt;bool&gt;): Conditional&lt;SignalCell&lt;bool&gt;, View&gt; {
+	when(signed_in, || &lt;nav&gt;"Account"&lt;/nav&gt;)
+}
+</code></pre>
+<h3 id="a-row-a-body-or-a-branch-can-be-anything-slot"><a class="header" href="#a-row-a-body-or-a-branch-can-be-anything-slot">A row, a body or a branch can be anything <code>Slot</code></a></h3>
+<p>The render closures are not limited to <code>View</code>. A row may be a fragment, a bare
+string, or another value form, and the run owns whatever it placed:</p>
+<pre><code class="language-vilan fragment">&lt;ul&gt;
+	{each_values(items, |item: str| &lt;&gt;&lt;li&gt;{item}&lt;/li&gt;&lt;li class("sep")/&gt;&lt;/&gt;)}
+&lt;/ul&gt;
+</code></pre>
+<p>That is what makes a wrapper element unnecessary in the last place one was
+still needed — a row that is several nodes. It costs one empty text marker per
+row: a row’s content can grow after it was placed (a <code>when</code> inside a row
+toggles later), so the reconciler moves and removes a row by the SPAN between
+its marker and the next one rather than by a list of nodes it remembered.</p>
+<p>Ownership is the same either way: the body, the subtree and every row run
+under a fresh owner established where the value is <em>placed</em>, and that owner is
+disposed with the instantiation.</p>
 <h2 id="the-ownership-picture"><a class="header" href="#the-ownership-picture">The ownership picture</a></h2>
 <p>Here is the whole cleanup model in one picture. Owners exist at the
 places marked <code>◆</code>: the boundaries where a subtree can die. Every
@@ -468,11 +792,11 @@ many plain function calls sit in between:</p>
 ├── view("header")                     static: no boundary of its own
 │     └─ .bind_text(title)             → registers with the ROOT
 │
-├── ◆ .swap(route, |page| …)           one owner PER PAGE shown
+├── ◆ {swap(route, |page| …)}         one owner PER PAGE shown
 │     └─ home_page()
 │           └─ .bind_text(…)           → registers with the PAGE
 │
-└── ◆ .bind_each(todos, key, |t| …)    one owner PER ROW
+└── ◆ {each(todos, key, |t| …)}        one owner PER ROW
       ├─ row(id = 1)
       │     └─ .bind_class(…)          → registers with ROW 1
       └─ row(id = 2)
@@ -483,6 +807,19 @@ created dies with it. Delete row 2, and only row 2’s bindings die. This
 is why there is no unsubscribe code anywhere in a Vilan app: the tree of
 boundaries <em>is</em> the cleanup logic, and the framework already placed
 them where subtrees end.</p>
+<p><strong>A boundary also removes what it placed.</strong> Disposing it takes the
+nodes out of the document: <code>when</code>’s body, <code>swap</code>’s subtree,
+<code>each</code>’s rows, a <code>{signal}</code> child’s view or run or text node, and
+the invisible marker each of them keeps its position with. That is
+usually invisible — the subtree was leaving with its parent anyway —
+and it is the whole story for a <strong>portal</strong>, a container that outlives
+the boundary filling it: an overlay, a tooltip layer, a modal host
+mounted once at the top of the page. Fill one from a component’s
+boundary, dispose the component, and the container is empty; there is
+nothing to remember to clean up by hand. The three <strong>static</strong> child
+arms are untouched, deliberately: a <code>str</code>, a <code>View</code> or a <code>List&lt;View&gt;</code>
+child belongs to the parent element it was appended to, not to a
+boundary.</p>
 <h2 id="server-side-rendering"><a class="header" href="#server-side-rendering">Server-side rendering</a></h2>
 <p>The same component code runs on the server. On a Node build <code>std::ui</code>
 builds an HTML string instead of live DOM, and <code>render(view)</code>
@@ -504,7 +841,7 @@ fun main() {
 </code></pre>
 <p>Two rules make one component serve both legs:</p>
 <ul>
-<li><strong>Bindings read once.</strong> <code>bind_text</code>, <code>bind_attr</code>, <code>bind_each</code>, <code>when</code>, and
+<li><strong>Bindings read once.</strong> <code>bind_text</code>, <code>bind_attr</code>, <code>each</code>, <code>when</code>, and
 <code>swap</code> embed the source’s value <em>at render time</em>: no subscription is created,
 and nothing survives the request (create, serialize, discard). Build pure, bind
 reactive: a component that leans on effect side-channels at build time renders
@@ -550,8 +887,9 @@ signals that should settle as one wave.</p>
 hidden content is expensive, use <code>when</code>.</li>
 <li>Inline SVG works: <code>view("svg").attr("viewBox", …).child(view("path")…)</code>
 creates real SVG-namespace elements, and the server render carries the
-<code>xmlns</code>. But <code>show</code> drives the HTML-only <code>hidden</code> property, which SVG
-ignores: toggle an SVG subtree with <code>when</code> (or a class) instead.</li>
+<code>xmlns</code>. <code>show</code> works on an SVG subtree too — it writes the inline
+<code>display</code>, which SVG honours, not only the HTML-only <code>hidden</code>
+attribute that SVG ignores.</li>
 <li><code>bind_value</code> fights remote updates (every keystroke overwrites). For
 server-backed fields, use <code>bind_draft</code>.</li>
 <li>The <code>owner_scope</code> compile error means you built UI outside every
@@ -612,7 +950,7 @@ framework already puts them there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

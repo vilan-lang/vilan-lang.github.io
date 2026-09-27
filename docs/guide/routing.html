@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,11 +181,11 @@ a page that exists. Every page receives exactly the parameters it declares.
 When you add a page, the compiler points at every <code>match</code> that now needs to
 handle it. A pattern-string router can’t promise any of that.</p>
 <p><code>std::router</code> supplies the primitives: the live path signal, <code>navigate</code>,
-the <code>link</code> helper, and <code>segments</code> for parsing.</p>
+the <code>link</code> helper, and <code>parse_path</code> / <code>FromPath</code> for reading a URL back.</p>
 <h2 id="the-route-model"><a class="header" href="#the-route-model">The route model</a></h2>
 <p>Here’s a small two-level app: a home page, and workspace pages that have
 their own sub-pages.</p>
-<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::ui::{ swap, view, View, mount_root };
 import std::router::{ current_path, navigate, segments, link, Routable };
 import std::reactive::{ Signal, SignalCell };
 import std::option::Option::{ self, Some, None };
@@ -249,11 +249,11 @@ impl Route with Routable {
 fun main() {
 	let route = current_path().map(parse);
 	let _root = mount_root("app", || {
-		view("div").swap(route, |current| match current {
+		view("div").child(swap(route, |current| match current {
 			Route::Home =&gt; view("h1").text("Home"),
 			Route::Workspace(let id, let _inner) =&gt; view("h1").text(i"Workspace {id}"),
 			Route::NotFound =&gt; view("h1").text("Nothing here"),
-		})
+		}))
 	});
 }
 </code></pre>
@@ -261,6 +261,80 @@ fun main() {
 string. In exchange it’s ordinary code: type-checked, debuggable, and
 free to do things pattern strings can’t (validation, aliases, redirects).
 Now the pieces one at a time.</p>
+<h2 id="reading-the-url-back"><a class="header" href="#reading-the-url-back">Reading the URL back</a></h2>
+<p><code>parse</code> above is one half of a pair the compiler cannot hold together, so
+<code>std::router</code> gives it a shape: <code>Routable</code> writes a route to a URL,
+<code>FromPath</code> reads one back, and a type implementing both states its wire
+format once in each direction.</p>
+<p><code>FromPath</code>’s member takes SEGMENTS, not a path — <code>parse_path</code> has already
+cut the URL, dropped the empty segments, and percent-decoded every piece,
+so what’s left is a <code>match</code> on <code>len()</code> and a few string comparisons. The
+free <code>from_path</code> is the call: it runs <code>parse_path</code> and hands the segments
+on. It’s a free function rather than a trait default because an associated
+function can’t be inherited through a receiver that doesn’t exist — the
+compiler says so if you try.</p>
+<pre><code class="language-vilan browser">import std::io::print;
+import std::router::{ FromPath, PathParts, Routable, from_path, parse_path };
+
+[derive(PartialEq)]
+enum Route {
+	Home,
+	Workspace(i32),
+	NotFound,
+}
+
+impl Route with FromPath {
+	fun from_segments(parts: List&lt;str&gt;): Route {
+		match parts.len() {
+			0 =&gt; Route::Home,
+			_ =&gt; {
+				if parts[0] == "w" &amp;&amp; parts.len() &gt; 1 {
+					match parts[1].parse_i32() {
+						Some(let id) =&gt; Route::Workspace(id),
+						None =&gt; Route::NotFound,
+					}
+				} else {
+					Route::NotFound
+				}
+			},
+		}
+	}
+}
+
+impl Route with Routable {
+	fun to_path(self): str {
+		match self {
+			Route::Home =&gt; "/",
+			Route::Workspace(let id) =&gt; i"/w/{id}",
+			Route::NotFound =&gt; "/404",
+		}
+	}
+}
+
+fun main() {
+	// The law the pair has: `from_path(route.to_path())` is `route`.
+	let route: Route = from_path("/w/12/");
+	print(route.to_path());
+
+	// The query and the fragment, which `segments` never saw.
+	let parts: PathParts = parse_path("/w/12?tab=due%20soon&amp;open#notes");
+	match parts.query.get("tab") {
+		Some(let tab) =&gt; print(tab),
+		None =&gt; print("no tab"),
+	}
+	// A key with no `=` is PRESENT with an empty value, so a flag is a
+	// `contains_key` question.
+	let flagged = parts.query.contains_key("open");
+	print(i"open={flagged}");
+	match parts.fragment {
+		Some(let anchor) =&gt; print(anchor),
+		None =&gt; print("no fragment"),
+	}
+}
+</code></pre>
+<p><code>from_path</code> is total — there is no <code>Option</code>. A URL your route space
+doesn’t recognize is a route (<code>NotFound</code>), and modelling it as one means
+you get to render it.</p>
 <h2 id="the-live-path-becomes-a-route-signal"><a class="header" href="#the-live-path-becomes-a-route-signal">The live path becomes a route signal</a></h2>
 <p><code>current_path()</code> is a <code>SignalCell&lt;str&gt;</code> of <code>location.pathname</code>. It stays
 current across <code>navigate</code> calls and the browser’s back/forward buttons.
@@ -270,7 +344,7 @@ Derive your typed route from it once:</p>
 <p>(Passing <code>parse</code> by name instead of <code>|p| parse(p)</code> is the named-function
 coercion from <a href="../tour/functions-and-closures.html">the tour</a>.)</p>
 <h2 id="pages-swap-on-the-route"><a class="header" href="#pages-swap-on-the-route">Pages swap on the route</a></h2>
-<p><code>View.swap(route, render)</code> is the page container. When the route
+<p><code>swap(route, render)</code> is the page container. When the route
 changes, it tears down the old page (disposing all its bindings) and
 builds the new one. When the route <em>doesn’t</em> change (say the user
 clicks a link to the page they’re on), nothing happens at all. That’s
@@ -278,6 +352,20 @@ why route enums derive <code>PartialEq</code>.</p>
 <p>Nesting works the way you’d hope: the workspace page can <code>swap</code> on its
 own <code>WorkspaceRoute</code> while the outer swap only rebuilds when the
 workspace id changes.</p>
+<p>When the page is one child among others — a header above it, a footer below —
+write it in a child hole (<a href="ui.html#position-and-placing-one-at-the-end">position</a>)
+and the page stays between them:</p>
+<pre><code class="language-vilan fragment">&lt;main&gt;
+	{site_header()}
+	{swap(route, |current| match current {
+		Route::Home =&gt; home_page(),
+		Route::NotFound =&gt; not_found(),
+	})}
+	{site_footer()}
+&lt;/main&gt;
+</code></pre>
+<p>Both forms split the same way: a <code>split = true</code> entry recognizes either
+spelling of the route match and gates it on the arm’s chunk.</p>
 <h2 id="links-and-navigation"><a class="header" href="#links-and-navigation">Links and navigation</a></h2>
 <p><code>link(label, route)</code> renders a real <code>&lt;a href=…&gt;</code>. Middle-click,
 ctrl-click, and copy-link-address all behave like a normal link. Only a
@@ -286,6 +374,13 @@ And because it takes your route enum rather than a string, a dead link
 is a compile error:</p>
 <pre><code class="language-vilan fragment">link("← All workspaces", Route::Home)
 link(task.name, Route::Workspace(workspace_id, WorkspaceRoute::Task(task.id)))
+</code></pre>
+<p>The anchor is built <code>draggable="false"</code>, because a link drag started while a
+quick click’s navigation is still settling wedges the whole tab in Chrome (the
+<a href="../appendix/gotchas.html">gotchas</a> page has the mechanism) — the <code>href</code> stays,
+so nothing native is lost. If you build and style your own anchor, put
+<code>link_to</code> on it and you get the same three things:</p>
+<pre><code class="language-vilan fragment">view("a").class("nav-item").link_to(Route::Home).text("Home")
 </code></pre>
 <p>For programmatic navigation (after a sign-out, after creating a thing):</p>
 <pre><code class="language-vilan fragment">navigate(href(Route::Home));
@@ -332,10 +427,16 @@ does (see <a href="services.html">Services &amp; RPC</a>).</p>
 Their agreement is the one thing the type system can’t check for you.
 A <code>parse</code> that drops a segment silently turns a working deep link into
 a NotFound.</li>
-<li><code>segments</code> already forgives trailing and duplicate slashes (they
-produce no segment). Don’t special-case them in <code>parse</code>.</li>
-<li>Query strings and hash fragments aren’t modelled yet (a deliberate
-deferral). <code>segments</code> sees only the pathname.</li>
+<li><code>parse_path</code> already forgives trailing and duplicate slashes (they
+produce no segment). Don’t special-case them in <code>from_segments</code>.</li>
+<li><code>segments</code> is the RAW splitter and <code>parse_path</code> is the decoding one:
+<code>segments("/a%20b")</code> is <code>["a%20b"]</code>, <code>parse_path("/a%20b").segments</code> is
+<code>["a b"]</code>. Route matching wants the decoded form.</li>
+<li><code>current_path()</code> is <code>location.pathname</code> — the query and the fragment are
+deliberately not in it, so a <code>#anchor</code> doesn’t re-render the page and a
+route’s <code>to_path()</code> still compares equal to where you are. Read the whole
+URL with <code>location_url()</code> when the query matters, on load and in a
+<code>popstate</code> handler.</li>
 </ul>
 
                     </main>
@@ -389,7 +490,7 @@ deferral). <code>segments</code> sees only the pathname.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

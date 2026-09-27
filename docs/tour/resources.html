@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,11 +181,11 @@
 A database handle that copied would close twice. A task owner that copied
 would cancel the wrong tasks. These are <strong>resources</strong>: values with a single
 owner, that <em>move</em> instead of copying, and that are torn down
-deterministically when their owner’s scope ends.</p>
-<p>You mark one with <code>resource</code> and, if it needs cleanup, give it a <code>Drop</code>:</p>
+deterministically at their owner’s <strong>last use</strong>.</p>
+<p>You mark one with <code>[resource]</code> and, if it needs cleanup, give it a <code>Drop</code>:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-resource struct Guard {
+[resource] struct Guard {
 	label: str,
 }
 
@@ -198,13 +198,14 @@ impl Guard with Drop {
 fun main() {
 	let first = Guard { label = "first" };
 	let second = Guard { label = "second" };
-	print("body");
+	print(i"holding {first.label} and {second.label}");
 }
 </code></pre>
-<p>That program prints <code>body</code>, then <code>dropped second</code>, then <code>dropped first</code>.
-Two things to notice: <code>drop</code> ran on its own at the end of <code>main</code>, with
-no call from you, and the two guards tore down in <strong>reverse</strong> order,
-the way a stack unwinds.</p>
+<p>That program prints <code>holding first and second</code>, then <code>dropped second</code>,
+then <code>dropped first</code>. Two things to notice: <code>drop</code> ran on its own, with no
+call from you, and — because that one <code>print</code> is the last statement to read
+<em>both</em> guards — they tore down in <strong>reverse</strong> declaration order, the way a
+stack unwinds.</p>
 <h2 id="moving-not-copying"><a class="header" href="#moving-not-copying">Moving, not copying</a></h2>
 <p>Binding a resource to a new name <em>moves</em> it. The old name is now empty, and
 using it is an error:</p>
@@ -222,7 +223,7 @@ and keep it. Lend a <strong>loan</strong> (a view, <code>&amp;</code> or <code>&
 values:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-resource struct Guard { label: str }
+[resource] struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -252,15 +253,30 @@ use-after-move error and <code>option</code> is not torn down at all. That
 symmetry is the whole rule: a body may only consume what it owns, so a
 function that moves its parameter out has to say <code>own</code>.</p>
 <h2 id="teardown-happens-at-the-last-use--and-on-every-exit"><a class="header" href="#teardown-happens-at-the-last-use--and-on-every-exit">Teardown happens at the last use — and on every exit</a></h2>
-<p>A resource is destroyed after the <strong>last statement that reads it</strong>, not at
-the end of its scope. A handle nothing reads again is released right where
-it was acquired; two resources last read in the same statement are
-destroyed in reverse declaration order, as they always were. A loan counts
-as a read of what it names, so an owner is never destroyed while a view
-into it is still in use.</p>
-<p>The point of tying it to the last use rather than the scope is a scope that
-does not end: a server’s <code>main</code> never returns, and under the older rule
-every handle it opened was released never.</p>
+<p>A resource is destroyed after the <strong>last statement that uses it</strong>, not at
+the end of its scope. <strong>Declaring it counts as a use</strong>, so a resource
+nothing reads again is destroyed right where it was created:</p>
+<pre><code class="language-vilan">import std::drop::Drop;
+
+[resource] struct Guard { label: str }
+impl Guard with Drop {
+	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
+}
+
+fun main() {
+	let unread = Guard { label = "unread" };
+	print("body");
+}
+</code></pre>
+<p>That prints <code>dropped unread</code>, then <code>body</code> — nothing ever names <code>unread</code>
+again, so the <code>let</code> is both its first use and its last. Binding a value is
+how you say <em>keep this</em>; reading it is how you say <em>still</em>.</p>
+<p>Two resources last read in the same statement are destroyed in reverse
+declaration order, as they always were. A loan counts as a read of what it
+names, so an owner is never destroyed while a view into it is still in use.</p>
+<p>The point of tying teardown to the last use rather than to the scope is a
+scope that does not end: a server’s <code>main</code> never returns, and under the
+older rule every handle it opened was released never.</p>
 <p>Teardown still runs however control leaves: falling off the bottom, an
 early <code>ret</code>, a <code>jump</code> out of a loop, even a panic unwinding through. There
 are no drop flags and nothing to remember — including at a branch, where a
@@ -275,11 +291,12 @@ destructor, then write. It has to be that order, because the destructor
 reads the very slot the write is about to overwrite.</p>
 <p>A <strong>pattern capture is a binding like any other</strong>. Matching by value
 consumes what you matched, so the capture becomes the payload’s owner —
-and it drops at the end of the arm that bound it:</p>
+and, like any binding, it drops after the arm’s last statement that reads
+it:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 import std::option::Option::{ self, Some, None };
 
-resource struct Guard { label: str }
+[resource] struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -294,18 +311,18 @@ fun main() {
 }
 </code></pre>
 <p>This prints <code>using held</code>, <code>dropped held</code>, <code>after match</code> — the payload dies
-at the end of the leg, not at the end of <code>main</code>, because that leg is where
-it was bound. Move it somewhere else inside the leg (return it, pass it by
+with the <code>print</code> that read it, not at the end of <code>main</code>, because that leg
+is where it was bound. Move it somewhere else inside the leg (return it, pass it by
 <code>own</code>, put it in a struct) and the destination owns it instead; it is
 destroyed exactly once either way. A capture from a <em>loan</em> — <code>match &amp;slot</code>,
 or <code>slot is Some(let g)</code> — owns nothing, because nothing was consumed:
 <code>slot</code> is still the owner and drops the payload itself.</p>
 <h2 id="tearing-down-early-dropx"><a class="header" href="#tearing-down-early-dropx">Tearing down early: <code>drop(x)</code></a></h2>
-<p>Sometimes you want a resource gone <em>before</em> its scope ends. Move it into
-<code>drop</code>:</p>
+<p>Sometimes you want to name the last use yourself rather than let the
+compiler find it. Move the resource into <code>drop</code>:</p>
 <pre><code class="language-vilan">import std::drop::{ Drop, drop };
 
-resource struct Guard { label: str }
+[resource] struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -314,12 +331,13 @@ fun main() {
 	let a = Guard { label = "a" };
 	let b = Guard { label = "b" };
 	drop(a);                 // a is torn down right here
-	print("after drop(a)");
+	print(i"still holding {b.label}");
 }
 </code></pre>
-<p>This prints <code>dropped a</code>, <code>after drop(a)</code>, <code>dropped b</code>. <code>drop</code> takes its
-argument by move, so <code>a</code> is spent at that line: there is no <code>close()</code>
-to call and no way to use <code>a</code> afterward by mistake. (On plain data,
+<p>This prints <code>dropped a</code>, <code>still holding b</code>, <code>dropped b</code>. Moving into <code>drop</code>
+<em>is</em> a use, so it becomes <code>a</code>’s last one and <code>a</code> is spent at that line:
+there is no <code>close()</code> to call and no way to use <code>a</code> afterward by mistake.
+<code>b</code> outlives it because the <code>print</code> still reads <code>b</code>. (On plain data,
 <code>drop(x)</code> means “I’m done with this”; it does nothing.)</p>
 <h2 id="conditional-teardown-optiontake"><a class="header" href="#conditional-teardown-optiontake">Conditional teardown: <code>Option.take</code></a></h2>
 <p>A resource can live in an <code>Option</code>, which is the one container that holds
@@ -328,7 +346,7 @@ what “tear it down only if it’s there” needs:</p>
 <pre><code class="language-vilan">import std::drop::{ Drop, drop };
 import std::option::Option::{ self, Some, None };
 
-resource struct Guard { label: str }
+[resource] struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -342,15 +360,15 @@ fun main() {
 	print("after take");
 }
 </code></pre>
-<p>After the <code>take</code>, <code>slot</code> is <code>None</code>, so nothing drops a second time at the
-end of <code>main</code>. <code>take</code> is also how a resource leaves a struct field: the
+<p>After the <code>take</code>, <code>slot</code> is <code>None</code>, so when <code>slot</code> reaches its own last use
+nothing drops a second time. <code>take</code> is also how a resource leaves a struct field: the
 one sanctioned way to move a resource out of something that is still
 alive.</p>
 <h2 id="a-real-resource-database"><a class="header" href="#a-real-resource-database">A real resource: <code>Database</code></a></h2>
 <p>The std <code>Database</code> is a resource: opening one gives you a handle that closes
-itself on drop. A short-lived database closes when its function returns; a
-server that runs forever wants the opposite, so it keeps the database at
-<strong>module level</strong>, where it lives for the whole process and never drops:</p>
+itself on drop. A database in a local closes at its last use; a server that
+runs forever wants the opposite, so it keeps the database at <strong>module
+level</strong>, where it lives for the whole process and never drops:</p>
 <pre><code class="language-vilan norun">import std::db::{ Database, Row };
 import std::option::Option::{ self, Some, None };
 
@@ -378,8 +396,8 @@ fun main() {
 moving it. A module-level resource is loan-only for this reason: moving
 or <code>drop</code>ing it would close the shared handle out from under the rest
 of the program, so the compiler rejects that. When you <em>do</em> want a
-database that closes at the end of a scope, open it in a local instead,
-or <code>drop(db)</code> to close it early.</p>
+database that closes on its own, open it in a local instead — it closes
+after the last statement that uses it, or wherever you write <code>drop(db)</code>.</p>
 <p>A <strong>closure</strong> may reach a module-level resource too. A closure that
 references <code>db</code> isn’t capturing an owner: it borrows the same
 process-lifetime storage, per call, as a function does. This is what
@@ -404,6 +422,56 @@ fun main() {
 </code></pre>
 <p>A <em>local</em> resource is different: a closure that captures one would become a
 second owner, so that stays rejected (below).</p>
+<h2 id="lazy-resources"><a class="header" href="#lazy-resources">Lazy resources</a></h2>
+<p>The module-level idiom above opens the database when the module loads —
+before <code>main</code> runs, and whether or not anything asks for it. That is
+usually what you want, and it stays the idiom. When it is not — a
+connection a CLI opens only on the subcommands that read, a file a test
+binary never touches — write <code>lazy</code> in front of the binding and the
+initializer waits for the first use:</p>
+<pre><code class="language-vilan norun">import std::db::{ Database, Row };
+import std::option::Option::{ self, Some, None };
+
+lazy let db: Database = Database::open("app.db");
+
+fun count_items(): i32 {
+	let statement = db.prepare("SELECT COUNT(*) AS n FROM items");
+	match statement.first([]) {
+		Some(let row) =&gt; row.integer("n"),
+		None =&gt; 0,
+	}
+}
+
+fun main() {
+	print("starting");          // the database is not open yet
+	print(i"items: {count_items()}");
+}
+</code></pre>
+<p>The first statement that reads <code>db</code> runs <code>Database::open</code> and remembers
+the handle; every later read is the same handle. A program that never
+reads it never opens anything.</p>
+<p><strong>Nothing else about the binding changes.</strong> It is still the module’s,
+still process-lifetime, still loan-only and never dropped, closures still
+reach it per call, and it still colors the program’s platform from its
+initializer — a <code>lazy</code> binding that reaches <code>std::db</code> still marks the
+entry as needing the process layer. <code>lazy</code> moves <em>when</em> one thing happens
+and nothing else.</p>
+<p>Two things follow from the initializer running later:</p>
+<ul>
+<li><strong>It must be self-contained</strong>: synchronous, and reading no ambient
+context. First use can be anywhere, so the deferred code cannot depend
+on where that turns out to be.</li>
+<li><strong>It runs at most once, even when it fails.</strong> An initializer that
+panics <em>poisons</em> the binding: the panic propagates at the site that
+touched it, and every later touch re-panics naming the poison, rather
+than re-running the failed work. An initializer that reads its own
+binding — directly or through something it calls — panics with <code>lazy initialization cycle: </code>db``, instead of hanging.</li>
+</ul>
+<p><code>lazy</code> is for module bindings, not locals: a local that might never have
+been initialized has no honest answer for what to destroy at the end of
+its scope. It also defers an <em>argument</em>, which is the same idea in the
+other position — see <a href="functions-and-closures.html#lazy-parameters">lazy
+parameters</a>.</p>
 <h2 id="owning-background-work-ownednursery"><a class="header" href="#owning-background-work-ownednursery">Owning background work: <code>OwnedNursery</code></a></h2>
 <p>A closure can’t capture a <em>local</em> resource (it would become a second owner),
 which is a problem for background tasks that need to outlive the function
@@ -421,13 +489,18 @@ fun main() {
 		};
 	});
 	print("enter returned without joining");
+	sleep(50);
+	owner.cancel();          // owner's last use — the tasks stop here
 }
 </code></pre>
-<p>Unlike a <code>nursery</code>, <code>enter</code> does not wait for the spawned work; it
-returns right away, and the tasks keep running under <code>owner</code>. When <code>owner</code> drops (at
-the end of <code>main</code>, or at an explicit <code>drop(owner)</code>), the tasks are cancelled.
-That is the whole point: the <em>owner’s</em> lifetime bounds the work, and the
-owner is an ordinary resource the scope rules already know how to tear down.</p>
+<p>Unlike a <code>nursery</code>, <code>enter</code> does not wait for the spawned work; it returns
+right away, and the tasks keep running under <code>owner</code>. They keep running
+only as long as <code>owner</code> does: the owner is destroyed after its <strong>last
+use</strong>, and its <code>drop</code> cancels them. That is why this example reads <code>owner</code>
+once more at the end — delete that line and <code>enter</code> becomes the last use,
+so the tasks are cancelled the moment <code>enter</code> returns and <code>background work</code>
+never prints. The <em>owner’s</em> lifetime bounds the work, and its lifetime ends
+at its last use.</p>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
 <li><strong>“Why can’t I use it again?”</strong> You moved it. Loan it (<code>&amp;x</code> / <code>&amp;mut x</code>, or
@@ -504,7 +577,7 @@ Cancel owned tasks through an <code>OwnedNursery</code> rather than awaiting the
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

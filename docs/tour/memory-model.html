@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -325,9 +325,16 @@ through the cell: <code>shared.write().push(x)</code>.</li>
 don’t: values are cheap, and the compiler already elides copies it can
 prove away. And you don’t need one merely to let a closure write to its
 creator’s binding — a closure captures the binding itself
-(<a href="functions-and-closures.html">Closures</a>). What the cell buys is state
-that outlives the frame the closure was made in, and state two closures
-reach that neither of them declared.</p>
+(<a href="functions-and-closures.html">Closures</a>), and so do two sibling closures
+written in the same frame. What the cell buys is state a <em>value</em> carries
+across a copy: a struct handed around by value cannot hold mutable state
+in a plain field, so a field that several holders must agree about is a
+cell. That is what the whole standard library uses it for.</p>
+<p>So the line between the two tiers is not “does this have an owner” —
+reach for <code>Shared</code> when ownership is <strong>diffuse</strong> (several independent
+holders of one mutable value, no single place deciding when it dies), and
+for an <code>Arena</code> when what you need is a <strong>graph</strong> or a <strong>stable identity</strong>,
+below.</p>
 <h2 id="arena--handle-graphs-and-cycles"><a class="header" href="#arena--handle-graphs-and-cycles"><code>Arena</code> + <code>Handle</code>: graphs and cycles</a></h2>
 <p>Values copy, and views can’t be stored. So how do you build a tree with
 parent pointers, or a graph where nodes reference each other? With an
@@ -335,8 +342,8 @@ parent pointers, or a graph where nodes reference each other? With an
 copyable <code>Handle</code> ids. Edges are handles, and a handle is a plain value
 you can store anywhere:</p>
 <pre><code class="language-vilan fragment">mut nodes: Arena&lt;Node&gt; = Arena::new();
-let a: Handle = nodes.insert(Node { … });
-let b: Handle = nodes.insert(Node { edges = [a] });
+let a: Handle&lt;Node&gt; = nodes.insert(Node { … });
+let b: Handle&lt;Node&gt; = nodes.insert(Node { edges = [a] });
 // `get` hands back a view; copy it out, add the edge, write it back.
 match nodes.get(a) {
 	Some(let node) =&gt; {
@@ -433,7 +440,7 @@ of the stored value — never by mutating a <code>get()</code> result.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

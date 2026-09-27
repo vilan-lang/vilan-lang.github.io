@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -183,7 +183,10 @@ signal fields, the macro generates:</p>
 <pre><code class="language-vilan fragment">// client side
 FooClient::connect(url: str, codec: Codec): Result&lt;FooClient&lt;SocketTransport&gt;, RpcError&gt;
 client.some_rpc(args…): Result&lt;T, RpcError&gt;     // per [rpc] method; implicitly awaited
+client.some_handle(args…): RemoteSource&lt;T&gt;      // per [rpc] method RETURNING a source; sync, unleased
+client.some_keyed(args…): KeyedSource&lt;K, V&gt;     // per [rpc] method returning a KeyedCell; same, keyed
 client.some_signal: RemoteSource&lt;T&gt;             // per [expose] field; a typed mirror (below)
+client.some_map: KeyedSource&lt;K, V&gt;              // per [expose(keyed)] field; a patched mirror (below)
 client.transport: SocketTransport               // connection state lives here
 
 // server side
@@ -197,52 +200,266 @@ host over WebSocket, waits for the server’s announcement, and verifies the
 <h2 id="mirrors-remotesourcet"><a class="header" href="#mirrors-remotesourcet">Mirrors: <code>RemoteSource&lt;T&gt;</code></a></h2>
 <pre><code class="language-vilan fragment">struct RemoteSource&lt;T&gt; { … }
 
-impl RemoteSource&lt;type T&gt; {
+impl RemoteSource&lt;type T&gt; with Source&lt;Option&lt;T&gt;&gt; {
 	fun get(self): Option&lt;T&gt;                              // passive: the cache, `None` before the first update
-	fun status(self): SignalCell&lt;Status&gt;                      // passive: `Waiting` until a value has arrived, then `Ready`
-	fun or(self, initial: T): SignalCell&lt;T&gt;                   // counted, owner-scoped: `initial` until the first update
-	fun map&lt;U&gt;(self, transform: sync |Option&lt;T&gt;| U): SignalCell&lt;U&gt;   // counted, owner-scoped: the `Option` confronted once
+	[must_use]
+	fun on_change(self, observer: |Option&lt;T&gt;| void): Subscription    // counted, lazy: no immediate call
+	[must_use]
+	fun sub(self, observer: |Option&lt;T&gt;| void): Subscription          // counted, eager: one immediate call
+	fun effect(self, observer: |Option&lt;T&gt;| void)                     // counted, eager, owner-scoped
+}
+
+impl RemoteSource&lt;type T&gt; {
+	fun status(self): SignalCell&lt;Status&gt;                      // passive: what the mirror was last told
+	fun or(self, initial: T): Map&lt;RemoteSource&lt;T&gt;, Option&lt;T&gt;, T&gt;   // a cold node: `initial` until the first update
 	[must_use]
 	fun sub(self, observer: |T| void): Subscription       // counted, manual: present values; dispose to release
 }
 
 [derive(PartialEq, Debug)]
-enum Status { Waiting, Ready }
+enum Status {
+	Waiting,             // nothing has arrived — including "nothing has been asked"
+	Ready,               // the cache holds a value
+	Absent,              // a handle's call answered `None`: no such source
+	Failed(RpcError),    // a handle's call failed, and this is what it said
+}
 </code></pre>
+<p><code>Absent</code> and <code>Failed</code> are a <strong>handle</strong> mirror’s arms (the stub of an <code>[rpc]</code>
+method that returns a source): they say what the minting call was told, and a
+field mirror never reads either. Both are answers about <em>now</em> — the mirror
+keeps whatever it last held, and the next 0→1 lease asks again — and both are
+cleared by the rebind that a successful ask produces.</p>
+<p>A mirror is a <strong><code>Source&lt;Option&lt;T&gt;&gt;</code></strong> (tracker A52), so <code>on_change</code>, <code>effect</code>,
+<code>effect_on_change</code> and every generic <code>S: Source&lt;…&gt;</code> consumer — <code>selector</code>
+among them — take one. The trait argument is <code>Option&lt;T&gt;</code> because that is what
+a mirror holds, so a <code>RemoteSource&lt;List&lt;Note&gt;&gt;</code> is <em>not</em> a <code>Source&lt;List&lt;Note&gt;&gt;</code>
+and <code>each</code> takes <code>mirror.or([])</code>. <code>sub</code> has one spelling per view of the
+value: the inherent one hands the observer a present <code>T</code>, the trait’s hands it
+the <code>Option&lt;T&gt;</code>, and the observer’s own parameter type picks between them.</p>
 <p>A mirror holds <code>Option&lt;T&gt;</code> — <code>None</code> until the first <code>Update</code> lands — and
-<strong>subscribes by demand</strong>: every <code>or</code>, <code>map</code>, and <code>sub</code> takes a counted lease
-on the channel. The 0→1 lease sends <code>Subscribe</code> (the server answers with
+<strong>subscribes by demand</strong>: every subscribing leaf — a <code>sub</code>, an <code>effect</code>, a
+<code>.cell()</code>, a binding or an <code>each</code> — takes a counted lease on the channel, on
+the mirror itself or on any node over it (<code>mirror.map(..)</code>, <code>mirror.or(..)</code>). The 0→1 lease sends <code>Subscribe</code> (the server answers with
 the current value at once); the 1→0 release sends <code>Unsubscribe</code>, deferred
 to the end of the ambient turn so a same-turn re-subscribe (a view
 re-rendering in place) sends nothing. A second watcher on an open channel
 sends no frame. On reconnect a watched mirror (count &gt; 0) re-subscribes on
 its fresh channel; an unwatched one does not.</p>
-<p><code>or</code> and <code>map</code> hand the lease to the ambient owner (the enclosing view, or
-a <code>run_with_owner</code>), so it is released at unmount; calling either where no
-owner is ambient is a compile error (context coverage), by design — a
-network subscription must have a releaser. <code>sub</code> is the manual form for
-code with no owner: you hold the <code>Subscription</code> and <code>dispose</code> it.</p>
+<p><code>map</code> (the blanket every source has) and <code>or</code> are <strong>cold nodes</strong>: building one
+opens nothing, anywhere — <code>map</code> is where the <code>Option</code> is confronted once, and
+<code>or</code> is <code>map</code> for the same-type fallback. The owner is asked at the
+<strong>subscribing leaf</strong>, where the lease is taken: <code>effect</code> and
+<code>effect_on_change</code> on the mirror or a node over it hand the lease to the
+ambient owner and are a compile error (context coverage) where none is — a
+network subscription must have a releaser; a <code>.cell()</code> of it takes one lease
+and ties it to the ambient owner (inside a view, the view’s); a binding or an
+<code>each</code> leases under the view that places it. <code>sub</code> and <code>on_change</code> are the
+manual form for code with no owner: you hold the <code>Subscription</code> and
+<code>dispose</code> it, which releases the lease.</p>
 <p><code>get</code> and <code>status</code> open nothing. <strong>A <code>status</code> observer alone never sees
 <code>Waiting → Ready</code></strong>: <code>status</code> reports, it does not ask; until something
 that renders the value subscribes, the mirror stays <code>Waiting</code>, and that is
 correct — the channel was never opened.</p>
-<p>The <code>SignalCell&lt;T&gt;</code> that <code>or</code>/<code>map</code> return is a local derivative: writing it
-writes nothing back (the server owns the source) and the next update
-overwrites it. An empty-list <code>initial</code> needs no annotation — the <code>[]</code>
-takes its element type from the mirror
-(<code>let notes = client.notes.or([]);</code> is a <code>SignalCell&lt;List&lt;Note&gt;&gt;</code>).</p>
+<p>A <strong>handle</strong> mirror takes that one step further: it is minted with no
+channel at all, and its first lease is what issues the call. So a handle
+nothing watches has not merely opened no channel — it has not asked, and
+costs nothing on either side. What the call answered is then <code>status()</code>:
+<code>Absent</code> for a <code>None</code> reply, <code>Failed(error)</code> for a call that failed, and
+the next 0→1 lease asks again in both cases.</p>
+<p>A <code>.cell()</code> of <code>or</code>/<code>map</code> is a local derivative: writing it writes nothing
+back (the server owns the source) and the next update overwrites it. An
+empty-list <code>initial</code> needs no annotation — the <code>[]</code> takes its element type from
+the mirror (<code>let notes = client.notes.or([]);</code> is a source of <code>List&lt;Note&gt;</code>).</p>
+<h2 id="keyed-mirrors-keyedsourcek-t"><a class="header" href="#keyed-mirrors-keyedsourcek-t">Keyed mirrors: <code>KeyedSource&lt;K, T&gt;</code></a></h2>
+<p>The mirror an <code>[expose(keyed)]</code> / <code>[expose(keyed = K)]</code> field produces — and
+what an <code>[rpc]</code> method returning a <code>KeyedCell&lt;K, T&gt;</code> hands back, minted per
+call and unleased, exactly like a plain handle. On a minted one a <strong>per-key</strong>
+lease is a first demand too, and the channel is withdrawn when the last demand
+on it goes rather than the first.
+Where a <code>RemoteSource&lt;T&gt;</code> receives the whole value on every change, this one
+receives a <code>Patch</code> of <code>Delta</code> ops and applies them in order — and it can lease
+<strong>one key</strong>.</p>
+<pre><code class="language-vilan fragment">struct KeyedSource&lt;K, T&gt; { … }
+
+impl KeyedSource&lt;type K: Wire + Hashable, type T: Wire + Keyed&lt;K&gt;&gt; with Source&lt;Option&lt;List&lt;T&gt;&gt;&gt; {
+	fun get(self): Option&lt;List&lt;T&gt;&gt;                            // passive: what this client subscribed to
+	[must_use]
+	fun on_change(self, observer: |Option&lt;List&lt;T&gt;&gt;| void): Subscription   // counted, lazy
+	[must_use]
+	fun sub(self, observer: |Option&lt;List&lt;T&gt;&gt;| void): Subscription         // counted, eager
+	fun effect(self, observer: |Option&lt;List&lt;T&gt;&gt;| void)                    // counted, eager, owner-scoped
+}
+
+impl KeyedSource&lt;type K: Wire + Hashable, type T: Wire + Keyed&lt;K&gt;&gt; {
+	fun status(self): SignalCell&lt;Status&gt;                      // passive: `Waiting` until the first patch
+	fun fault(self): Option&lt;str&gt;                              // passive: the first protocol fault, sticky
+	fun or(self, initial: List&lt;T&gt;): Map&lt;KeyedSource&lt;K, T&gt;, Option&lt;List&lt;T&gt;&gt;, List&lt;T&gt;&gt;   // a cold node: the whole collection
+	[must_use]
+	fun sub(self, observer: |List&lt;T&gt;| void): Subscription     // counted, manual: the whole collection
+	fun of(self, key: K): SignalCell&lt;Option&lt;T&gt;&gt;               // counted per KEY, owner-scoped
+	[must_use]
+	fun sub_key(self, key: K, observer: |Option&lt;T&gt;| void): Subscription   // counted per KEY, manual
+	fun rebind(self, channel: i32)                            // reconnect: re-subscribe every demand held
+}
+</code></pre>
+<p>A keyed mirror is a <strong><code>Source&lt;Option&lt;List&lt;T&gt;&gt;&gt;</code></strong> (tracker A55), on the same
+counted lease and with the same reading as <code>RemoteSource</code>’s: the trait argument
+is the <code>Option</code> because a mirror that has been told nothing is not an empty
+collection, so a <code>KeyedSource&lt;K, T&gt;</code> is <em>not</em> a <code>Source&lt;List&lt;T&gt;&gt;</code> and
+<code>each</code> takes <code>mirror.or([])</code>. <code>sub</code> has one spelling per view of the
+value — the inherent one hands the observer a present <code>List&lt;T&gt;</code>, the trait’s
+hands it the <code>Option&lt;List&lt;T&gt;&gt;</code>, and the observer’s own parameter type picks
+between them.</p>
+<p>The counted lease is <code>RemoteSource</code>’s, applied <strong>per demand</strong> rather than
+per channel: a per-key 0→1 sends <code>Subscribe(channel, Some(key))</code> and the
+server forwards that key’s changes and nothing else; the 1→0 releases that
+key alone. Whole-collection demand <strong>subsumes</strong> per-key demand — while the
+whole collection is held, a key asks for nothing, and when the whole lease
+is released the keys still held take the wire back — so holding both never
+doubles a delivery.</p>
+<p>The mirror holds exactly what this client asked for, which is why a
+per-key subscriber’s <code>get()</code> is a one-element list rather than the
+collection. <code>fault()</code> is <code>Some(reason)</code> if a patch ever named a key the
+mirror does not hold; that op is refused rather than applied.</p>
+<p>Hand-wired exposures use <code>ReactiveServer::expose_keyed(source, key_of)</code>
+(for a <code>Source&lt;List&lt;T&gt;&gt;</code>) or <code>expose_keyed_map(source, key_of)</code> (for a
+<code>Source&lt;Map&lt;K, V&gt;&gt;</code>), with <code>ReactiveClient::attached_keyed_source</code> /
+<code>keyed_source</code> on the other end. <code>key_of</code> is a value parameter rather than
+a <code>Keyed&lt;K&gt;</code> bound alone because <code>K</code> appears nowhere else in the
+signature, and vilan infers a type parameter from a call’s types, not from
+its bounds.</p>
+<p>The attribute generates whichever of the two the field’s collection calls for,
+and the key type comes from wherever it is written (tracker A51): a <code>Map&lt;K, V&gt;</code>
+element names it and takes the bare <code>[expose(keyed)]</code>, and every other
+collection names it in the attribute — <code>[expose(keyed = str)] items: SignalCell&lt;List&lt;Task&gt;&gt;</code>. Naming it in both places is redundant rather than
+wrong, but the two spellings must AGREE: an argument that disagrees with the
+<code>Map</code>’s own key is refused at the attribute (tracker A56), because the
+expansion reads <code>K</code> from the annotation before any type resolves and cannot
+pick between them. The generated wiring is the hand-written call, frame
+for frame, and the two spellings are one contract: same <code>Patch</code> frames, same
+<code>KeyedSource&lt;K, T&gt;</code>, same contract hash.</p>
+<h2 id="keyed-cells-keyedcellk-t"><a class="header" href="#keyed-cells-keyedcellk-t">Keyed cells: <code>KeyedCell&lt;K, T&gt;</code></a></h2>
+<p>The SERVER-side twin of <code>KeyedSource</code>, and the cheap way to hold a keyed
+collection (tracker A54). Exposing a <code>SignalCell&lt;List&lt;T&gt;&gt;</code> keyed makes the
+server DIFF two snapshots on every change — it re-keys both and compares every
+retained element — so a keyed channel costs O(N) per change <em>per subscribed
+connection</em>, however small the change is. That is irreducible while the source
+is <code>List</code>-valued, because only the mutation knows what changed. A <code>KeyedCell</code>
+is the mutation saying so: each write appends the <code>Delta&lt;K, T&gt;</code> it is, and a
+subscriber’s forward sends the ops since it last looked.</p>
+<pre><code class="language-vilan fragment">struct KeyedCell&lt;K, T&gt; { … }
+
+impl KeyedCell&lt;type K: Hashable, type T: Keyed&lt;K&gt;&gt; {
+	fun new(initial: List&lt;T&gt;): KeyedCell&lt;K, T&gt;
+	fun insert(self, value: T)                        // append, or replace what is held under its key
+	fun remove(self, key: K)                          // a key it does not hold is a no-op
+	fun update(self, key: K, mutate: sync |&amp;mut T| void)   // in place, and the `Update` op it is
+	fun set(self, value: List&lt;T&gt;)                     // the wholesale write: one `Reset`
+	fun locate(self, key: K): Option&lt;(usize, T)&gt;      // the element and where it sits, by lookup
+}
+
+impl KeyedCell&lt;type K: Hashable, type T: Keyed&lt;K&gt;&gt; with Source&lt;List&lt;T&gt;&gt; {
+	fun get(self): List&lt;T&gt;
+	[must_use]
+	fun on_change(self, observer: |List&lt;T&gt;| void): Subscription
+}
+</code></pre>
+<p>It is a <code>Source&lt;List&lt;T&gt;&gt;</code> with no <code>Option</code> in it — a cell always holds a
+collection, where a mirror may not have been told one yet — so
+<code>each(cell, …)</code> takes it directly and the <code>or([])</code> a <code>KeyedSource</code> needs
+has nothing to say here.</p>
+<p><code>[expose] items: KeyedCell&lt;str, Task&gt;</code> is a keyed channel. The cell names both
+its key and its element in its own type, so <code>keyed</code> is redundant on it (writing
+<code>[expose(keyed)]</code> is the same thing) and there is nothing for <code>keyed = K</code> to
+add. <strong>The wire does not change</strong>: the same <code>Reset</code> seed and the same
+element-grained <code>Patch</code> per change, the same <code>KeyedSource&lt;K, T&gt;</code> on the client,
+and the same contract hash as <code>[expose(keyed = str)] items: SignalCell&lt;List&lt;Task&gt;&gt;</code> — a service may swap one field for the other without
+moving its contract. What changes is the cost: measured per change on one
+connection, 0.0078 ms at 1,000 rows and 0.0103 at 10,000 where the diffing
+exposure is 0.315 and 3.814 (children CPU, <code>getrusage</code>).</p>
+<p>The hand-wired form is <code>ReactiveServer::expose_keyed_cell(cell)</code>, which takes
+no <code>key_of</code> — <code>KeyedCell&lt;K, T&gt;</code> names <code>K</code> in its own type, so <code>Keyed</code> is a real
+bound there. It is a distinct name rather than an overload of <code>expose_keyed</code>
+because a cell <em>is</em> a <code>Source&lt;List&lt;T&gt;&gt;</code> and would otherwise satisfy that
+bound and take the diffing path silently. <code>expose_keyed</code> over a cell is still
+correct, just O(N).</p>
+<p><code>T: PartialEq</code> is a bound of the diffing exposure and not of the cell: a diff
+can only learn that an element changed by comparing it, and a cell whose writes
+are the ops never compares anything.</p>
+<p>The op log itself is not the cell’s own any more: it is <code>DeltaLog&lt;O&gt;</code> in
+<code>std::reactive</code> (see <a href="reactive.html#delta-sources-the-change-structure">Reactive</a>),
+generic in the op rather than in the collection, and the cell records the
+POSITIONAL <code>SeqOp</code> every sequence cell records. So <code>KeyedCell</code> is a sequence
+cell plus a position index by key hash plus the wire translation, and it is a
+<code>DeltaSource&lt;List&lt;T&gt;, SeqOp&lt;T&gt;&gt;</code> as well as a <code>Source&lt;List&lt;T&gt;&gt;</code> — which is what
+lets a consumer that knows nothing about keys read what changed. <code>cursor</code>,
+<code>drop_cursor</code> and <code>since</code> are unchanged in name and in what they answer; the
+cursor type is <code>DeltaCursor</code> (it was <code>KeyedCursor</code>, which no longer exists).</p>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
-<pre><code class="language-vilan fragment">[derive(Wire, Debug)]
+<pre><code class="language-vilan fragment">[derive(Wire, Json, Debug, PartialEq)]
 enum RpcError {
 	Transport(str),   // couldn't reach / lost the server ("not connected", "connection lost")
 	Decode(str),      // reply didn't parse
 	Remote(str),      // the handler failed
 	Contract(str),    // connect-time shape mismatch (old client vs new server)
-	Unauthorized,
+	Unauthorized,     // 401/403 at the handshake: not with this credential
+	Unavailable,      // 503 at the handshake: not now — the app's own refusal
 }
 </code></pre>
 <p>Infrastructure failures only: an <em>application</em> “not found” belongs in the
 rpc’s own return type (<code>Option&lt;Task&gt;</code>), not here.</p>
+<h3 id="the-post-mountrpc-legs-statuses"><a class="header" href="#the-post-mountrpc-legs-statuses">The <code>POST {mount}rpc</code> leg’s statuses</a></h3>
+<p>A vilan client reads the ENVELOPE and has never read the status. The status is
+the contract for everything that is not a vilan client — curl, a <code>fetch</code> in a
+page, a proxy, a load balancer, a monitoring probe — and <strong>the two never
+disagree</strong>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>outcome</th><th>status</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Success(..)</code>, including an application <code>Err</code> arm</td><td><strong>200</strong></td></tr>
+<tr><td><code>Failure(Decode(..))</code></td><td><strong>400</strong></td></tr>
+<tr><td><code>Failure(Unauthorized)</code></td><td><strong>401</strong></td></tr>
+<tr><td><code>Failure(Remote("unknown method: …"))</code></td><td><strong>404</strong></td></tr>
+<tr><td><code>Failure(Contract(..))</code></td><td><strong>409</strong></td></tr>
+<tr><td><code>Failure(Remote(..))</code> — a handler failed</td><td><strong>500</strong></td></tr>
+<tr><td>a <code>Service::factory</code> service on this leg</td><td><strong>501</strong>, as an envelope</td></tr>
+<tr><td><code>Failure(Unavailable)</code></td><td><strong>503</strong></td></tr>
+<tr><td>a non-POST on <code>{mount}rpc</code></td><td><strong>405</strong>, <code>Allow: POST</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>An application error is a <strong>200</strong>: <code>Result&lt;Token, str&gt;</code>’s <code>Err</code> arm is a value
+that crossed successfully, and a server answering 401 for “wrong password”
+would be claiming the CALL was unauthorized — a different fact, and the one
+<code>authorize</code> reports. The cost is worth stating: a dashboard reading statuses
+alone cannot see application errors, because they are not errors of the
+transport.</p>
+<p>The leg <strong>requires</strong> <code>Content-Type: application/json</code> or
+<code>application/octet-stream</code>, and answers 400 otherwise. That one check is the
+CSRF posture: a cross-site HTML form can produce only <code>text/plain</code>,
+<code>application/x-www-form-urlencoded</code> and <code>multipart/form-data</code>, so it is
+structurally unable to reach any <code>[service]</code> — whether or not the service’s
+author thought about CSRF. <code>HttpTransport</code> sets the header; a hand-written
+caller must too. std does no CORS beyond this: <code>on_request</code> plus
+<code>Response::builder().set_header</code> is the whole mechanism, and an allowed-origin
+list is a decision std has no information for — the
+<a href="../guide/services.html">services guide</a> carries the recipe.</p>
+<p>Every envelope carries one of those two media types whatever its status, and
+that is what <code>HttpTransport</code> reads to tell a reply from a stranger’s document:
+an answer that is not an envelope is <code>Err(RpcError::Transport(..))</code> naming the
+status, not a <code>Decode</code> blaming the codec. A status cannot serve — the leg’s 404
+for an unknown method and an app’s 404 for an unclaimed path are the same
+number.</p>
+<p>A <code>Decode</code> on the SERVER’s side of a call is what the generated route answers
+for a request it cannot read: an argument count the method does not declare
+(<code>expects 2 argument(s), got 3</code> — extra arguments are a disagreement, not
+something to drop), or an argument of the wrong type. A vilan client cannot
+provoke either, since both sides are generated from one surface and the
+contract hash refuses a client that disagrees; an arbitrary HTTP caller can,
+which is what the check is for.</p>
 <h2 id="connection-state"><a class="header" href="#connection-state">Connection state</a></h2>
 <pre><code class="language-vilan fragment">enum ConnectionState { Connected, Reconnecting, Closed }
 
@@ -298,11 +515,52 @@ round-trip inside one holds the reconnect open behind it.</p>
 </thead>
 <tbody>
 <tr><td><code>SocketTransport</code></td><td>WebSocket (reconnecting)</td><td>what <code>connect</code> gives you, the production client transport</td></tr>
-<tr><td><code>HttpTransport</code></td><td>one POST per call</td><td>stateless calls, no mirrors</td></tr>
-<tr><td><code>LocalTransport</code></td><td>in-process</td><td>tests: client and service in one process</td></tr>
+<tr><td><code>HttpTransport</code></td><td>one POST per call</td><td>stateless calls, no mirrors, no handles</td></tr>
+<tr><td><code>HeaderedHttpTransport</code></td><td>one POST per call, with headers</td><td>the same, carrying a header credential</td></tr>
+<tr><td><code>LocalTransport</code></td><td>in-process</td><td>tests: client and service in one process; handles need a stamped connection</td></tr>
 </tbody>
 </table>
 </div>
+<p>A <code>[service]</code> an HTTP client can hold gets a constructor for this leg:</p>
+<pre><code class="language-vilan fragment">impl FooClient&lt;HttpTransport&gt; {
+	fun over_http(mount: str, codec: Codec): FooClient&lt;HttpTransport&gt;
+}
+impl FooClient&lt;HeaderedHttpTransport&gt; {
+	fun over_http_with(mount: str, codec: Codec, headers: List&lt;(str, str)&gt;): FooClient&lt;HeaderedHttpTransport&gt;
+}
+</code></pre>
+<p>It takes the same <code>mount</code> string <code>connect</code> takes (<code>"/"</code>, <code>"/auth/"</code>) — the
+route is <code>{mount}rpc</code> — and it is SYNC and makes <strong>no call</strong>: over HTTP there
+is no connection, so there is no round trip to amortize, and an HTTP client is
+unversioned unless you call <code>verify()</code> yourself. There are no mirrors, no
+handles and no reverse direction, so it is generated only for a service that
+declares none: a service with an <code>[expose]</code>d field or a handle-returning
+method, or one declaring <code>client = H</code>, has no <code>over_http</code> and the call is
+refused by name.</p>
+<p><code>over_http_with</code> is the same constructor for a client that has to CARRY
+something: its headers are sent on every POST the client makes, after the
+leg’s own media type. That is how a page that keeps its credential in storage
+rather than in a cookie reaches a service gated by <code>authorize_request</code> — a
+cookie rides a same-origin POST on its own, a header token has to be written:</p>
+<pre><code class="language-vilan fragment">let client = AuthClient::over_http_with("/auth/", json_codec(), [("Authorization", i"Bearer {token}")]);
+</code></pre>
+<p>It builds a <code>HeaderedHttpTransport { url, headers }</code> rather than widening
+<code>HttpTransport</code>, so every <code>HttpTransport { url }</code> written today still means
+what it meant. The media type is the transport’s to set; a <code>Content-Type</code> does
+not belong among the headers.</p>
+<p><code>[service(FooClient, http)]</code> says the same thing at the DECLARATION: the
+<code>http</code> marker generates nothing and moves no contract hash, and it refuses
+each of those three shapes at the field, the method or the attribute that
+declared it — in the attribute’s own words, rather than as a missing
+<code>over_http</code> at a call site far away. It is opt-in, because which transports
+reach a service is a property of its mount and its methods; a service that
+wants both legs simply does not write it.</p>
+<p>A transport FAILING is <code>Err(reason)</code>, which <code>call</code> maps to
+<code>RpcError::Transport(..)</code>: an unreachable host, a DNS failure, a connection
+dropped while the body was still arriving. <code>HttpTransport</code> answers that for
+every rejection of the host <code>fetch</code>, so a call to a server that is not there is
+an arm of your <code>match</code> and not the end of the process. It does not retry —
+dialling again is <code>SocketTransport</code>’s job.</p>
 <p>Below <code>SocketTransport</code> sits <code>SocketDuplex</code> (the reconnect-surviving socket:
 pending-call registry, inbound dispatch, <code>on_reconnect</code> hooks) and the
 <code>DuplexTransport</code> machinery (<code>duplex_pair</code>, <code>bridge</code>, <code>connect_split</code> for
@@ -313,17 +571,39 @@ its end’s inbound handler — <code>DuplexEnd::clear_on_frame</code>, the tear
 <code>on_frame</code>. Without it the wire kept the closure that captured the session, so
 a closed connection stayed reachable from its transport; the server half runs
 per disconnect, through <code>drop_session</code>.</p>
-<pre><code class="language-vilan fragment">fun connect_socket(url: str): Result&lt;SocketDuplex, str&gt;   // dial + announcement (backoff)
+<pre><code class="language-vilan fragment">fun connect_socket(url: str): Result&lt;SocketDuplex, str&gt;   // dial + announcement (backoff); offers `vilan-rpc`
+fun connect_socket_with(url: str, protocols: List&lt;str&gt;): Result&lt;SocketDuplex, str&gt;
+fun dial_socket(url: str, protocols: List&lt;str&gt;): Result&lt;SocketDuplex, DialFailure&gt;
+enum DialFailure { Unreachable(str), Refused(str) }   // Refused carries "401"/"403"/"503"
 impl SocketDuplex {
 	fun transport(self): SocketTransport
 }
 </code></pre>
+<p><code>dial_socket</code> is the typed dial the generated <code>Client::connect</code> reaches
+through: <code>Refused</code> is a server that upgraded this client and then declined it
+in one frame, which is the only way a refusal can be told from an unreachable
+server — no host WebSocket exposes a failed handshake’s HTTP status. A refusal
+ends the retry budget at the first attempt.  <code>connect_socket</code> and
+<code>connect_socket_with</code> are this with the failure flattened to its sentence.</p>
+<p><code>connect_socket</code> offers <code>vilan-rpc</code> (tracker A52), because the refusal frame is
+only sent to a client that named the protocol — a bare connect that offered
+nothing could not tell a 401 from an outage and paid the whole backoff to learn
+nothing. <code>connect_socket_with</code> offers exactly the list it is given, which is the
+seam for a peer that speaks something else.</p>
 <h2 id="server-plumbing-stdrpc_server-process-layer"><a class="header" href="#server-plumbing-stdrpc_server-process-layer">Server plumbing (<code>std::rpc_server</code>, process layer)</a></h2>
 <pre><code class="language-vilan fragment">impl Service {
 	fun new(protocol: RpcProtocol): Service   // mounted at "/"
 	fun at(own self, prefix: str): Service    // mount elsewhere, e.g. "/admin/"
 	fun on_connect(own self, handler: |i32, DuplexEnd| void): Service
 	fun on_disconnect(own self, handler: |i32| void): Service
+	// the handshake gate and its limits
+	fun authorize(own self, check: async |Handshake| Result&lt;Session, Reject&gt;): Service
+	fun authorize_timeout(own self, millis: i32): Service   // 429 if the hook does not answer — std's limit, never the app's 503
+	fun authorize_request(own self, check: async |Request| Result&lt;Session, Reject&gt;): Service   // gates each POST {mount}rpc (A120 S4)
+	fun max_connections(own self, limit: i32): Service      // upgraded sockets on this mount only
+	fun handshake_rate(own self, attempts: i32, window_millis: f64): Service
+	fun handshake_timeout(own self, millis: i32): Service   // bounds the greeting, not idleness
+	fun trust_forwarded_for(own self, trusted: bool): Service   // key on X-Forwarded-For
 }
 impl ServerBuilder {
 	fun with_service(own self, service: Service): ServerBuilder   // repeatable
@@ -410,7 +690,7 @@ transport or protocol bridge.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

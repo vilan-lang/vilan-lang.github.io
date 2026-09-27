@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -245,8 +245,8 @@ recognizes a directory it has already walked under another name, and
 stops at a link whose target leaves the project — saying so, since that
 is where the command’s scope ends and not a judgement about the link.</p>
 <p>A function that reaches any verb of the channel — <code>emit</code>, <code>emit_keyed</code>,
-<code>read</code>, <code>bundle</code>, <code>bundle_as</code>, <code>read_dir</code>, <code>read_dir_all</code>, <code>digest</code> — is
-<strong>compile-time-only</strong>,
+<code>schedule_at_end</code>, <code>stage</code>, <code>staged</code>, <code>read</code>, <code>bundle</code>, <code>bundle_as</code>,
+<code>read_dir</code>, <code>read_dir_all</code>, <code>digest</code> — is <strong>compile-time-only</strong>,
 transitively, and the compiler enforces that statically. A call from
 runtime code into compile-time-only territory is an error at the
 outermost crossing — the call that leaves ordinary code. A crossing
@@ -264,7 +264,42 @@ one as a value (passing it to a higher-order function, binding it, or
 writing a closure literal that reaches the channel) is an error at
 that reference, outside a <code>const</code>. Inside a <code>const</code> the restriction
 lifts entirely — the interpreter makes the call, so
-<code>const apply(styled)</code> is legal where <code>apply(styled)</code> is not.</p>
+<code>const apply(styled)</code> is legal where <code>apply(styled)</code> is not. The one
+other place it lifts is <code>schedule_at_end</code>’s own argument, below: the
+name is handed to the const pass and never becomes a runtime value.</p>
+<p>The channel has a fourth direction, and it is a direction in TIME
+rather than in data: <code>schedule_at_end(f)</code> asks the build to call <code>f</code>
+once, after every const evaluation of this compile has finished, in a
+const context of its own. A module can then accumulate while the
+program evaluates and process and emit the whole result in one go at
+the end, instead of emitting each piece the moment it is minted and
+being unable to take any of it back — which is how <code>std::style</code> writes
+a stylesheet holding the rules that survived rather than every rule
+ever built.</p>
+<p><code>f</code> must be a named function and its name is its identity: scheduling
+the same function three times schedules it once, so every contributor
+can ask without coordinating, and finalisers run in the order they were
+first asked for. A finaliser sees every contribution made <em>after</em> its
+scheduling, which is the point — it runs after the last const
+expression, not after the one that asked for it. It may schedule
+another finaliser (that one runs in the same pass); re-scheduling
+itself does nothing. A finaliser that panics fails the build, naming
+the function.</p>
+<p>“The end” is the end of one compile’s const pass — per leg, like every
+other const fact. Under <code>vilan run --watch</code> that is the end of the
+round: what the round re-evaluated re-schedules and re-emits, and what
+it did not touch keeps the asset the previous round wrote.</p>
+<p>The hook’s other half is the channel’s <strong>registry</strong>. <code>stage(kind, token, line)</code> records a contribution without writing it, against a
+<em>liveness token</em>; <code>staged(kind)</code> hands back the staged lines whose
+token the build still <strong>names</strong> — the token appears in a value some
+<code>const</code> expression evaluated to — in <code>(token, line)</code> order and
+deduplicated on that pair. <code>staged</code> answers only after evaluation has
+finished, so it is read from a finaliser and refuses anywhere else.
+That is how <code>std::style</code> puts the rules that survived on the sheet
+instead of every rule ever constructed: a condition combinator re-mints
+an inner style’s rules under the composed condition and drops the
+inner, so the inner’s class is in no surviving style and its rule never
+reaches the file.</p>
 <h2 id="93-failure-and-resource-limits"><a class="header" href="#93-failure-and-resource-limits">9.3 Failure and resource limits</a></h2>
 <p>Const evaluation is total by construction of the budget: each run is
 bounded by the interpreter’s <strong>fuel</strong> (steps; an <code>asset::read</code> charges
@@ -326,6 +361,52 @@ computation where a stack trace can show it; <code>release</code> does. Folding 
 deterministic — the same source folds identically on every build — and
 the language server never runs the pass, since it produces nothing to
 report.</p>
+<h2 id="96-const-let-and-const-fun"><a class="header" href="#96-const-let-and-const-fun">9.6 <code>const let</code> and <code>const fun</code></a></h2>
+<p>Two <strong>declarations</strong> carry the keyword. Both are statements — module
+level or inside a body — and both are ordinary declarations otherwise.</p>
+<p><code>const let NAME[: T] = EXPR;</code> binds a value the <strong>build</strong> computes. It
+is <code>let NAME = const EXPR;</code> with one addition: its result may be a
+<strong>closure over compile-time data</strong>, which §9.4’s plain-data rule
+refuses everywhere else. Later <code>const</code> expressions call through it, and
+runtime code gets the closure’s own body with the captured values baked
+in — one emitted arrow, no wrapper:</p>
+<pre><code class="language-vilan">const fun scale_step(rem: f64): |f64| f64 {
+	|n: f64| rem * n
+}
+
+const let space = scale_step(0.25);
+
+fun main() {
+	print(const space(2f));   // 0.5 — folded at build time
+	print(space(8f));         // 2   — `(n) =&gt; 0.25 * n`, emitted once
+}
+</code></pre>
+<p><code>const mut</code> is refused: a compile-time value has no runtime mutation.
+Write <code>const let</code> for the compile-time binding, or <code>mut name = const ..;</code> for a runtime binding seeded from one.</p>
+<p><code>const fun NAME(..) { .. }</code> declares a function whose body is
+<strong>const-evaluable, checked here</strong>. Reaching a host capability (§9.2) is
+an error at the declaration, naming the capability, instead of at
+whichever <code>const</code> expression first tried to fold a call to it. This is
+<strong>not</strong> a colouring requirement: a plain <code>fun</code> is still const-callable
+under §9.2’s transitive rule, and a <code>const fun</code> is still an ordinary
+function at runtime, called with runtime arguments.</p>
+<p>A <code>const</code> expression that reads a plain binding, and a <code>let x = const ..</code> whose result is a closure, are both refused — and both refusals
+name <code>const let</code> as the declaration that admits what was wanted. The
+editor offers the edit as a quick fix.</p>
+<p>Both forms take the <code>export</code> marker, which wraps the declaration under
+the keyword exactly as it wraps a plain <code>fun</code> or a module-level <code>let</code>
+(§4 of the visibility rules). A module publishes a compile-time helper
+and the binding it computes the same way it publishes anything else:</p>
+<pre><code class="language-vilan">export const fun scale_step(rem: f64): |f64| f64 {
+	|n: f64| rem * n
+}
+
+export const let space = scale_step(0.25);
+
+fun main() {
+	print(space(8f));
+}
+</code></pre>
 
                     </main>
 
@@ -378,7 +459,7 @@ report.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

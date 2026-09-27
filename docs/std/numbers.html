@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,9 +185,10 @@ and random values (<code>std::random</code>). Literal syntax and conversion sema
 <tbody>
 <tr><td><code>i8 i16 i32 i53</code></td><td>signed</td><td>bare = <code>i32</code>; others suffixed (<code>100i53</code>)</td></tr>
 <tr><td><code>u8 u16 u32 u53</code></td><td>unsigned</td><td>suffixed (<code>0xFFu8</code>)</td></tr>
+<tr><td><code>usize</code></td><td>unsigned — the <strong>index</strong> type (<a href="#usize-the-index-type">below</a>)</td><td>from context, or <code>42usize</code></td></tr>
 <tr><td><code>f64</code></td><td>float</td><td><code>2.5</code> or <code>10f</code></td></tr>
 <tr><td><code>f32</code></td><td>float</td><td><code>2.5f32</code></td></tr>
-<tr><td><code>BigInt</code></td><td>arbitrary</td><td><code>7n</code></td></tr>
+<tr><td><code>BigInt</code></td><td>arbitrary (<code>i128</code> on the native backend — see the <a href="../guide/native.html#numbers">native guide</a>)</td><td><code>7n</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -226,6 +227,7 @@ Every integer type carries its two bounds as niladic functions:</p>
 <tr><td><code>u32</code></td><td><code>0</code></td><td><code>4294967295</code></td></tr>
 <tr><td><code>i53</code></td><td><code>-9007199254740992</code></td><td><code>9007199254740992</code></td></tr>
 <tr><td><code>u53</code></td><td><code>0</code></td><td><code>9007199254740992</code></td></tr>
+<tr><td><code>usize</code></td><td><code>0</code></td><td><code>9007199254740992</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -284,8 +286,73 @@ stopgap should prejudge. <code>BigInt</code> has no bounds by construction.</p>
 	fun is_infinite(self): bool
 }
 </code></pre>
-<p>Every numeric type implements <code>Default</code> (zero), the operator traits, and
-comparison.</p>
+<p>Every numeric type implements <code>Default</code> (zero), the operator traits,
+comparison, and <code>Display</code> (the same text interpolation prints).</p>
+<h2 id="usize-the-index-type"><a class="header" href="#usize-the-index-type"><code>usize</code>: the index type</a></h2>
+<p>A position in a sequence, a length, a count, the answer of a search for a
+position — that is what <code>usize</code> is for. It is a <strong>distinct</strong> numeric type,
+not another name for <code>u53</code>: on the JS backend it is represented as <code>u53</code>
+is, and natively it is the platform word (Rust’s <code>usize</code>), which is exactly
+what a native <code>len()</code> already answers.</p>
+<pre><code class="language-vilan">fun main() {
+	let letters = ["a", "b", "c", "d"];
+	let at: usize = 2;                  // a literal takes `usize` from context
+	print(letters[at]);                 // c
+	let step = 3usize;                  // the suffix exists, and is rarely needed
+	print(i"{at + step}");              // 5
+	print(i"{usize::max_value()}");     // 9007199254740992, on every backend
+	print(at.checked_sub(step).is_none());  // true
+	print(i"{at.saturating_sub(step)}");    // 0
+	print(i"{step.as_i32()} {7.as_usize()}");
+}
+</code></pre>
+<p><strong>Its range is the JavaScript guarantee on every backend</strong>: [0, 2^53], the
+same window as <code>u53</code>, and <code>usize::max_value()</code> answers <code>9007199254740992</code>
+natively too — a program that printed the platform’s real ceiling would
+print different things on the two backends. A program that wants the
+native word’s ceiling is asking a native question.</p>
+<p><strong>Subtracting past zero is unspecified, never memory-unsafe.</strong> No check is
+emitted for <code>a - b</code> with <code>b &gt; a</code>. On the JS backend the value simply leaves
+the type’s range and goes negative (<code>0usize - 1usize</code> prints <code>-1</code>);
+natively Rust’s own rule applies — a panic in a debug build, a wrap in a
+release build. Neither can reach memory it should not: every subscript
+keeps its bounds check, and a negative index fails it
+(<code>index out of bounds: the length is 2 but the index is -1</code>). Because the
+two backends legitimately disagree, a program that underflows is outside
+what the <a href="../guide/native.html#numbers">native differential</a> compares. When
+you want a defined answer, ask for one: <code>checked_sub</code> answers <code>None</code> past
+zero, and <code>saturating_sub</code> stops at <code>0</code>. A downward loop is written so that
+it never reaches the edge — <code>for i &gt; 0 { i -= 1; … }</code>, not
+<code>for i &gt;= 0 { …; i -= 1 }</code>, whose guard an unsigned counter can never make
+false.</p>
+<p><strong>Converting</strong> goes through the family’s <code>as_*</code> methods in both directions:
+every numeric type has <code>as_usize()</code>, and <code>usize</code> has <code>as_i8()</code> … <code>as_f64()</code>.
+A mismatch names the conversion it wants, and names an index as one
+(<code>Expected usize (an index: a position, a length or a count), but got i32 instead. There are no implicit numeric conversions; convert with `.as_usize()` </code>); the editor offers to write it, or to declare a
+literal-bound counter <code>usize</code> instead, and <code>vilan check --fix</code> writes
+every one of them in a package (see the <a href="../appendix/cli.html">CLI</a>).</p>
+<p><strong>On the wire</strong> a <code>usize</code> travels at <code>i32</code>’s width, not <code>u53</code>’s — a length
+or a position that crosses rpc keeps the width it has always had, so frames
+do not grow when a position is respelled <code>usize</code> (see
+<a href="encoding.html">Encoding</a>). A <code>usize</code> past <code>i32::MAX</code> is not describable on
+the wire, and nothing std builds can produce one.</p>
+<p><strong>What is not an index.</strong> An identity (a channel, a connection, a row id)
+is not a position, nor is an element’s VALUE (a byte, a character code), a
+duration or a port. A file offset is not an index either: it is a position
+in a stream that is not in memory, its range is the filesystem’s, and
+<code>std::fs</code> keeps it <code>i53</code>.</p>
+<p><strong>std speaks it everywhere.</strong> Every length, count and position in std is a
+<code>usize</code>: <code>len()</code> on a list, a string, a map, a set and <code>Bytes</code>; the index
+<code>get(i)</code>, <code>insert(i, ..)</code>, <code>remove(i)</code>, <code>substring(from, to)</code> and
+<code>code_at(i)</code> take; <code>index_of</code>’s answer; <code>take(n)</code>/<code>skip(n)</code>/<code>repeat(n)</code>;
+<code>enumerate()</code>’s counter (<code>(usize, T)</code>); and <code>xs[i]</code>, whose index is a
+<code>usize</code> and nothing else. The values beside them keep their own types — a
+byte <code>Bytes::get</code> answers is still an <code>i32</code>, an id is still an id. A program
+written against the <code>i32</code> spellings migrates with <code>vilan check --fix</code> (see
+the <a href="../appendix/cli.html">CLI</a>); what it cannot decide is a <code>-1</code> “not found”
+(an <code>Option&lt;usize&gt;</code> or a real fallback), a <code>for i &gt;= 0</code> loop (count down
+from <code>len</code> with <code>for i &gt; 0 { i -= 1; … }</code>), and signed arithmetic that
+should stay signed and convert once.</p>
 <p><code>clamp</code> confines a value to a range. The integers inherit it from <code>Ord</code>; the
 floats are deliberately <em>not</em> <code>Ord</code> (NaN has no place in a total order), so
 <code>f64</code> and <code>f32</code> carry their own — same recipe, same result.</p>
@@ -308,23 +375,74 @@ target width:</p>
 	print((255u8).as_f64() / 2.0);
 }
 </code></pre>
+<p>The two unsigned widths that do not fold, <code>u53</code> and <code>usize</code>, <strong>saturate</strong>
+instead: a negative converts to <code>0</code> on every backend, as a native <code>f64 as u64</code> does, and a positive truncates as usual.</p>
+<pre><code class="language-vilan">fun main() {
+	print((-5).as_usize());   // 0 — saturated, not folded
+	print((-2.5).as_u53());   // 0
+	print((7.9).as_usize());  // 7
+}
+</code></pre>
 <p>Conversions on literals fold at compile time.</p>
 <h2 id="stdmath"><a class="header" href="#stdmath">std::math</a></h2>
 <pre><code class="language-vilan fragment">fun min&lt;T: Ord&gt;(a: T, b: T): T
 fun max&lt;T: Ord&gt;(a: T, b: T): T
 fun minmax&lt;T: Ord&gt;(a: T, b: T): (T, T)   // (smaller, larger)
+
+struct Vec2 { x: f64, y: f64 }           // a 2-D vector: point, offset, velocity, size
+impl Vec2 {
+	fun scale(self, factor: f64): Vec2   // both components times a scalar
+	fun length(self): f64                // sqrt(x² + y²)
+	fun length_squared(self): f64        // x² + y², for comparing without the root
+	fun distance(self, other: Vec2): f64 // the length of the vector between two points
+	fun dot(self, other: Vec2): f64      // x*x + y*y; v.dot(v) is v's length squared
+}
+// `Add`, `Sub` (component-wise, so `a + b` and `a - b`) and `PartialEq`.
 </code></pre>
+<p><code>Vec2</code> is a value, not a handle: it copies, compares and parks in a signal.
+The components carry <strong>no unit</strong> — CSS pixels at a UI call site, metres at a
+physics one — which is why there is no <code>Length</code> type in the signature.</p>
+<pre><code class="language-vilan">import std::math::Vec2;
+
+fun main() {
+	let start = Vec2 { x = 10.0, y = 10.0 };
+	let now = Vec2 { x = 13.0, y = 14.0 };
+	let travelled = now - start;
+	print(travelled.length());              // 5
+	print(now.distance(start) &gt; 3.0);       // a drag threshold
+}
+</code></pre>
+<p>A threshold does not need the square root: <code>travelled.length_squared()</code> is
+<code>x² + y²</code>, and <code>sqrt</code> is monotonic, so compare it against the <em>squared</em>
+threshold on a hot path — a pointer-move handler squares its threshold once
+instead of taking a root per event. Take the root when the number itself is
+the answer.
+<code>==</code> is exact <code>f64</code> equality, with everything that implies — a vector arrived
+at by arithmetic is rarely <code>==</code> one written down, so compare a <code>distance</code>
+against a tolerance where that matters.</p>
 <h2 id="stdrandom"><a class="header" href="#stdrandom">std::random</a></h2>
 <pre><code class="language-vilan fragment">fun range&lt;T: Random&gt;(low: T, high: T): T   // uniform in [low, high)
 // implemented for i32, u32, f64
 </code></pre>
-<pre><code class="language-vilan">import std::random;
+<p>The range is <strong>half-open</strong>: <code>low</code> is reachable, <code>high</code> is not, for the
+integer arms and the float one alike. That is what makes
+<code>range(0, items.len())</code> an index, and <code>range(4, 4)</code> answers <code>4</code> — the
+empty range has nothing else to answer.</p>
+<pre><code class="language-vilan">import std::io::panic;
+import std::random;
 
 fun main() {
-	let roll = random::range(1, 7);   // 1..=6
-	print(roll &gt;= 1 &amp;&amp; roll &lt;= 6);
+	let roll = random::range(1, 7);   // 1..=6, never 7
+	if roll &lt; 1 || roll &gt; 6 {
+		panic(i"a d6 rolled {roll}");
+	}
+	print("rolled");
 }
 </code></pre>
+<p>The fence panics rather than printing a bool, deliberately: a bool tells a
+reader what the range is and tells the gate nothing, and this one was
+printing <code>false</code> about one run in eight while the line above it said
+<code>1..=6</code> (A118).</p>
 <p>Not cryptographic: for tokens and ids use <code>std::crypto</code>
 (<code>random_uuid</code>, <code>random_bytes</code>; see <a href="misc.html">misc</a>).</p>
 
@@ -379,7 +497,7 @@ fun main() {
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

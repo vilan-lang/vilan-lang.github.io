@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,16 +182,17 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun new(): List&lt;T&gt;
 	fun push(&amp;mut self, own item: T)
 	fun pop(&amp;mut self): Option&lt;T&gt;
-	fun insert(&amp;mut self, index: i32, value: T)   // panics out of bounds
-	fun remove(&amp;mut self, index: i32): T          // panics out of bounds
-	fun len(self): i32
+	fun insert(&amp;mut self, index: usize, value: T) // panics out of bounds
+	fun remove(&amp;mut self, index: usize): T        // panics out of bounds
+	fun len(self): usize
 	fun is_empty(self): bool
 	fun iter(self): ListIterator&lt;T&gt;              // the lazy cursor; see Iterator
-	fun get(self, index: i32): Option&lt;T&gt;
+	fun get(self, index: usize): Option&lt;T&gt;
 	fun first(self): Option&lt;T&gt;
 	fun last(self): Option&lt;T&gt;
 	fun map&lt;U&gt;(self, fn: |T| U): List&lt;U&gt;
 	fun filter(self, predicate: |T| bool): List&lt;T&gt;
+	fun filter_map&lt;U&gt;(self, fn: |T| Option&lt;U&gt;): List&lt;U&gt;   // both, one pass
 	fun find(self, predicate: |T| bool): Option&lt;T&gt;
 	fun fold&lt;B&gt;(self, init: B, fn: |B, T| B): B
 	fun for_each(self, fn: |T| void)
@@ -203,12 +204,13 @@ impl List&lt;type T: Mul + Default&gt; { fun product(self): T }
 impl List&lt;type T: Ord&gt; { fun sort(self): List&lt;T&gt; }        // stable
 impl List&lt;type T: PartialEq&gt; {
 	fun contains(self, value: T): bool
-	fun index_of(self, value: T): Option&lt;i32&gt;
+	fun index_of(self, value: T): Option&lt;usize&gt;
 }
 impl List&lt;type T: PartialEq&gt; with PartialEq {
 	fun eq(self, b: List&lt;T&gt;): bool           // element-wise, length first
 }
 impl List&lt;type T: Display&gt; { fun join(self, separator: str): str }
+impl List&lt;type T&gt; with Default { fun default(): List&lt;T&gt; }       // []
 </code></pre>
 <p>Indexing is <code>list[i]</code>; iterate with <code>for item in list</code> (copies) or
 <code>for e in &amp;mut list</code> (in-place views; see the
@@ -240,8 +242,8 @@ a <em>place</em>, and a value with no other owner moves in.</p>
 <pre><code class="language-vilan">fun main() {
 	let words = ["alpha", "beta", "gamma"];
 	let lengths = words.map(|word| word.len());
-	print(lengths.fold(0, |total, n| total + n));
 	print(lengths.sum());
+	print(words.fold("", |joined, word| joined + word));
 }
 </code></pre>
 <h3 id="searching--equality"><a class="header" href="#searching--equality">Searching &amp; equality</a></h3>
@@ -255,7 +257,7 @@ length first. Because the impl is conditional, lists nest
 	let scores = [40, 91, 65];
 	print(scores.find(|n| n &gt; 50).unwrap_or(0));  // 91
 	print(scores.contains(65));                   // true
-	print(scores.index_of(65).unwrap_or(-1));     // 2
+	print(scores.index_of(65).unwrap_or(0));      // 2
 	print(scores.index_of(7).is_none());          // true
 	print(scores == [40, 91, 65]);                // true
 	print(scores == [40, 91]);                    // false — length first
@@ -306,7 +308,7 @@ fun main() {
 	fun get(self, key: K): Option&lt;V&gt;
 	fun contains_key(self, key: K): bool
 	fun remove(&amp;mut self, key: K)
-	fun len(self): i32
+	fun len(self): usize
 	fun is_empty(self): bool
 	fun keys(self): List&lt;K&gt;
 	fun values(self): List&lt;V&gt;
@@ -316,6 +318,9 @@ impl Map&lt;type K: Hashable, type V: PartialEq&gt; {
 	fun contains_value(self, value: V): bool
 }
 impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): Map&lt;K, V&gt; }
+impl Map&lt;type K: Hashable, type V&gt; with Default {
+	fun default(): Map&lt;K, V&gt;                 // the empty map
+}
 </code></pre>
 <p>Keys compare <strong>by value</strong>. Scalars work directly, and so does a <strong>backed enum</strong>
 — one with explicit backing values, which <em>is</em> that value at runtime, so the
@@ -381,7 +386,7 @@ fun main() {
 	fun insert(&amp;mut self, value: T)
 	fun contains(self, value: T): bool
 	fun remove(&amp;mut self, value: T)
-	fun len(self): i32
+	fun len(self): usize
 	fun is_empty(self): bool
 	fun values(self): List&lt;T&gt;
 	fun union(self, other: Set&lt;T&gt;): Set&lt;T&gt;
@@ -389,6 +394,7 @@ fun main() {
 	fun difference(self, other: Set&lt;T&gt;): Set&lt;T&gt;
 }
 impl List&lt;type T: Hashable&gt; { fun to_set(self): Set&lt;T&gt; }
+impl Set&lt;type T: Hashable&gt; with Default { fun default(): Set&lt;T&gt; }  // the empty set
 </code></pre>
 <p>Value-keyed like <code>Map</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
 iterates the elements in insertion order.</p>
@@ -410,6 +416,45 @@ fun main() {
 	print(a.difference(b).len());     // 1 -- {1}
 }
 </code></pre>
+<h2 id="memok-v"><a class="header" href="#memok-v"><code>Memo&lt;K, V&gt;</code></a></h2>
+<pre><code class="language-vilan fragment">impl Memo&lt;type K: Hashable, type V&gt; {
+	fun new(): Memo&lt;K, V&gt;
+	fun get_or(self, key: K, make: || V): V
+	fun get(self, key: K): Option&lt;V&gt;
+	fun forget(self, key: K)
+	fun clear(self)
+	fun len(self): usize
+}
+</code></pre>
+<p>A per-key cache of values <strong>made on first ask</strong>. <code>get_or</code> answers what is held
+for <code>key</code>, or runs <code>make</code>, keeps the result and answers that. <code>get</code> is the
+passive read — it makes nothing.</p>
+<pre><code class="language-vilan">import std::memo::Memo;
+
+fun main() {
+	let squares: Memo&lt;i32, i32&gt; = Memo::new();
+	print(squares.get_or(7, || 7 * 7));   // 49 -- made
+	print(squares.get_or(7, || 0));       // 49 -- held; the maker did not run
+	squares.forget(7);
+	print(squares.len());                 // 0
+}
+</code></pre>
+<p><code>make</code> runs <strong>at the call site</strong>, which is what makes a memo usable for values
+that read an ambient context — the one this exists for is a remote handle:</p>
+<pre><code class="language-vilan fragment">// One handle per id, shared by every call site (`guide/services.md`).
+let bodies: Memo&lt;str, RemoteSource&lt;MessageBody&gt;&gt; = Memo::new();
+
+fun body_of(id: str): RemoteSource&lt;MessageBody&gt; {
+	bodies.get_or(id, || client().get_message(id))
+}
+</code></pre>
+<p>Two views asking for the same row then lease the <em>same</em> mirror instead of
+minting a second one, so a row that re-renders finds the handle it had.
+Nothing is evicted by itself, and a remote handle needs no eviction to stay
+correct — demand decides its channel’s life, and a released mirror re-mints on
+the next lease. <code>forget</code> is yours, for a value that turned out wrong.</p>
+<p>It holds a <code>Shared</code> table inside, so a <code>Memo</code> bound with <code>let</code> at module level
+is written by every call site that reads it; no <code>mut</code> is needed.</p>
 <h2 id="hashable"><a class="header" href="#hashable"><code>Hashable</code></a></h2>
 <p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>. Three
 routes reach it:</p>
@@ -555,7 +600,7 @@ an <code>external struct</code> names.</li>
 <p>Anything else is a compile error. A struct or enum of your own that provides no
 <code>next</code> is <em>not</em> iterable — it has no meaning to fall back on, since a struct is
 its fields and an enum is its variant tag at runtime:</p>
-<pre><code class="language-vilan fragment">struct Cursor { items: List&lt;i32&gt;, index: i32 }
+<pre><code class="language-vilan fragment">struct Cursor { items: List&lt;i32&gt;, index: usize }
 
 fun main() {
 	mut walked = Cursor { items = [1, 2], index = 0 };
@@ -571,12 +616,17 @@ the <code>Map</code> section above does.</p>
 all of them:</p>
 <pre><code class="language-vilan fragment">fun map&lt;U&gt;(self, fn: |T| U): Mapped&lt;Self, T, U&gt;
 fun filter(self, predicate: |T| bool): Filtered&lt;Self, T&gt;
-fun take(self, count: i32): Taken&lt;Self, T&gt;
-fun skip(self, count: i32): Skipped&lt;Self, T&gt;
+fun filter_map&lt;U&gt;(self, fn: |T| Option&lt;U&gt;): FilterMapped&lt;Self, T, U&gt;   // both, one pass
+fun take(self, count: usize): Taken&lt;Self, T&gt;
+fun skip(self, count: usize): Skipped&lt;Self, T&gt;
 fun enumerate(self): Enumerated&lt;Self, T&gt;                       // (0, a), (1, b), …
 fun zip&lt;U, J: Iterator&lt;U&gt;&gt;(self, other: J): Zipped&lt;Self, J, T, U&gt;
 fun chain&lt;J: Iterator&lt;T&gt;&gt;(self, other: J): Chained&lt;Self, J, T&gt;
 </code></pre>
+<p><code>filter_map</code> is <code>map</code> and <code>filter</code> at once: the projection answers
+<code>Some(value)</code> to keep that value and <code>None</code> to drop the element, so a partial
+or fallible projection needs neither a two-stage chain nor an <code>Option</code> to
+unwrap afterwards. <code>List</code> carries the eager twin under the same name.</p>
 <p>They are <strong>lazy</strong>: each returns a small struct holding its upstream, and nothing
 runs until something pulls. So a chain makes one pass over the source and builds
 no intermediate lists.</p>
@@ -686,7 +736,7 @@ fun main() {
 	print(unique.len());   // 2
 
 	let lengths = ["alpha", "hi"].iter().map(|word| (word, word.len())).to_list().to_map();
-	print(lengths.get("hi").unwrap_or(-1));   // 2
+	print(lengths.get("hi").unwrap_or(0));    // 2
 }
 </code></pre>
 <p>These two live on <code>List</code> rather than on <code>Iterator</code>, and the reason is worth
@@ -702,7 +752,7 @@ makes with <code>Display</code>. A repeated key in <code>to_map</code> keeps the
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../guide/dev-loop.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../guide/native.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -716,7 +766,7 @@ makes with <code>Display</code>. A repeated key in <code>to_map</code> keeps the
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../guide/dev-loop.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../guide/native.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
@@ -749,7 +799,7 @@ makes with <code>Display</code>. A repeated key in <code>to_map</code> keeps the
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

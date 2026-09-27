@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -207,6 +207,17 @@ you to visit them.</p>
 included; a field’s <code>name: type</code> and a method’s full signature behind a
 <code>.</code>; your own doc comments; and documentation on the language’s own
 keywords, deep-linked into this book.</p>
+<p>A <code>///</code> above a struct FIELD reaches every position that field appears in:
+its declaration, a read of it, the field name inside a <code>Point { x = … }</code>
+literal, and both completion lists that offer it (where the popup shows
+the first paragraph, as it does for a function). Hovering a field answers
+about the field; the struct’s whole declaration block is what its own
+name answers.</p>
+<p>Hovering a call to a GENERIC function shows two signatures in one block:
+the declaration as it is written, then the same signature under the
+bindings this call solved — <code>fun get_or(self, key: K, make: || V): V</code>
+above <code>fun get_or(self, key: UserId, make: || SignalCell&lt;Option&lt;User&gt;&gt;): SignalCell&lt;Option&lt;User&gt;&gt;</code>. A call that substitutes nothing, and a hover on
+the declaration itself, show the one line they always did.</p>
 <p><strong>Inlay hints</strong> — the inferred type of a binding you left unannotated
 (<code>let</code>/<code>mut</code>, a <code>for</code> binder, a comprehension binder). A parameter is not
 hinted: its type is written in the signature already.</p>
@@ -218,9 +229,77 @@ both directions across your open files: asked in the file that <em>defines</em>
 a symbol, they also find the open files that import it.</p>
 <p><strong>Formatting</strong> — the same <code>vilan_core</code> formatter <code>vilan fmt</code> runs, so the
 editor and the CLI cannot disagree. Whole-document only; there is no range
-or on-type formatting.</p>
+formatting. When the printer <em>declines</em> a file — it does not
+parse, or it carries a construct the printer has no rule for — the server
+says so in a message naming the line and the construct, rather than
+leaving a save that did nothing looking like a save that had nothing to
+do. Once per file per cause, so format-on-save does not repeat it. It reads
+your package’s <code>[fmt] wrap_comments</code> from the nearest <code>vilan.toml</code> above the
+file, the same climb <code>vilan fmt</code> walks, so a save and a command-line format
+produce the same bytes.</p>
 <p><strong>Linked editing</strong> for markup tag pairs: rename <code>&lt;div&gt;</code> and <code>&lt;/div&gt;</code>
 follows.</p>
+<p><strong>Which platform, and why, before any error.</strong> The platform a file is
+analyzed under decides which <code>std</code> twin its types come from, so the status
+bar says it for the vilan file in front of you — <code>analyzed as: browser — declared</code>, <code>analyzed as: node — default-entry</code> — with the whole reason in
+its tooltip. A file can say it itself: <code>[platform("browser")] mod self;</code> as
+its first line — and at the top of a file, completion offers that line.</p>
+<p><strong>A generic <code>&lt;</code> closes itself.</strong> <code>List&lt;</code>, <code>Map&lt;</code>, <code>fun pair&lt;</code> and a
+generic call’s own argument list each get their <code>&gt;</code> as you type the <code>&lt;</code>.
+The editor’s static bracket pairs cannot do this — <code>&lt;</code> is also the
+comparison operator, and <code>a &lt; b</code> must not grow a <code>&gt;</code> — so the server
+decides, on what the name before the <code>&lt;</code> means: a struct, an enum, a
+trait or a generic function, or a declaration’s own name right after
+<code>fun</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>impl</code> or <code>type</code>. Everything else is
+left alone. In VS Code the placed <code>&gt;</code> is also typed over when you reach
+it, so <code>List&lt;i32&gt;</code> never becomes <code>List&lt;i32&gt;&gt;</code> — which takes over the
+editor’s <code>type</code> command, and only one extension can own that: turn
+<code>vilan.autoClosing.generics</code> off to coexist with Vim emulation, and the
+server places the <code>&gt;</code> without the type-over. Selecting text and typing
+<code>&lt;</code> wraps it either way, and so does a backtick, which pairs everywhere
+except inside a string.</p>
+<p><strong>Dead code, faded.</strong> Code nothing uses is dimmed rather than warned
+about: it does not enter the Problems count, does not badge the file, and
+gates nothing. Five things fade — an unused import, a <code>let</code> inside a
+function body that nothing reads, the statements after one that cannot
+return, a top-level item no entry of your package reaches, and every
+top-level item of a module no entry loads at all.</p>
+<p>The last two are the whole-package ones, and they are worth knowing
+precisely, because a fade means “you may delete this.”</p>
+<ul>
+<li><strong>What can fade:</strong> a top-level <code>fun</code> and a module-level <code>let</code>. A
+<code>struct</code>, an <code>enum</code>, a <code>trait</code> and an <code>impl</code> block never fade, used or
+unused — they compile to nothing either way, so “does the build keep
+it” is not a question that has an answer for them.</li>
+<li><strong>What “unused” means:</strong> no entry of the package reaches it. A package
+with several entries is a union — an item only your <code>probe</code> entry calls
+is used. An item behind a <code>[platform]</code> fence is used if the entry for
+that platform reaches it.</li>
+<li><strong>A <code>[library]</code> never fades a top-level item.</strong> A library has no
+entries, so there is nothing to compute the answer from, and every
+top-level item is surface a consumer may import — which is what keeps
+you from having to fork a library that forgot to export something. This
+holds for a library inside a workspace too, even when the only consumer
+today is a sibling package. To keep a name out of consumers’ completion
+without forbidding it, do not <code>export</code> it: a private item is offered by
+neither completion nor the add-import fix, and an importer who needs it
+anyway writes the reach (<code>import pkg::a::{ #helper };</code>). <code>[doc(hidden)]</code>
+used to be the spelling for this and is retired — it meant exactly what
+a private item means, and no tool ever read it.</li>
+<li><strong>A declared <code>generated</code> root never fades.</strong> <code>[package] generated = "src/icons"</code> already tells <code>vilan fmt</code> to leave a machine-written
+directory alone; it tells the fade the same thing.</li>
+<li><strong><code>_</code>-led names never fade</strong>, the way an unused local does not. It is
+the “I know” marker.</li>
+<li><strong>Trait impl members never fade in this version.</strong> Whether a trait
+method is reached depends on which types your program constructs, so
+the answer moves in blocks as you edit; inherent impl members do fade.</li>
+<li><strong>The fade goes off while you type</strong> and comes back a moment after you
+stop. The fact that would prove an item used lives in another file, so
+a fade held across an edit could say “dead” about code you have just
+started calling — and that is the one mistake a fade must not make.
+Being late is fine; being wrong is not. A syntax error anywhere in the
+package holds the whole package’s fades off for the same reason.</li>
+</ul>
 <h2 id="completion"><a class="header" href="#completion">Completion</a></h2>
 <p>Where the cursor is decides what is offered.</p>
 <ul>
@@ -238,8 +317,25 @@ defaults</strong> — <code>xs.iter().</code> offers the whole <code>Iterator</c
 method <code>ListIterator</code>’s own <code>impl</code> block writes out, and a type that
 implements <code>Ord</code> offers <code>min</code>/<code>max</code>/<code>clamp</code> with the comparisons its
 supertraits provide.</li>
+<li><strong>Inside a struct initializer</strong> — <code>Point { </code> — offers that struct’s
+<strong>fields</strong>, and nothing that is merely in scope: the one thing you are
+writing there is a field name. The fields you have already written drop out
+of the list, each candidate shows its declared type and its own doc, and
+accepting one writes <code>name = </code> — or just <code>name</code>, the shorthand, when a
+binding of that name is in scope and <code>Point { x }</code> already means
+<code>Point { x = x }</code>. Past the <code>=</code> you are writing an expression again, so the
+ordinary answers come back.</li>
 <li><strong>Inside a string or a comment</strong> nothing is offered. A caption is text, not
 code, and a <code>.</code> in one is not a member access.</li>
+<li><strong>Visibility filters the list, once the module has an opinion.</strong> A module
+that carries <code>export</code> anywhere is <em>curated</em>, and completion offers only
+what it exports — the same filter the add-import fix and the “import it
+first” steer use. A module with <strong>no marker anywhere</strong> is uncurated and
+offers everything, so a package that has never thought about visibility
+is unchanged. The filter is presentation only: nothing here blocks a
+name, and an importer who wants a private item writes the reach
+(<code>import pkg::a::{ #helper };</code>) and gets it. std is curated, which is why
+<code>std::rpc::</code> offers its surface rather than its dispatcher internals.</li>
 <li><strong>Inside a <code>css</code> block</strong> the vocabulary is CSS, and nothing in scope is
 offered at all. An undotted item completes <strong>property names</strong> — every slot
 a <code>Style</code> method writes, so the list is std’s own surface rather than an
@@ -264,7 +360,11 @@ its members — loaded on demand, so <code>import std::random::</code> completes
 file that has never mentioned <code>std::random</code>. A brace set completes at the
 same level as its module, so <code>import std::json::{ Json, </code> keeps going.
 (Imports are read as single-line items; a braced group’s later lines are
-not recognized.)</li>
+not recognized.) Inside an impl SELECTOR the answer is not a name the
+module offers but a block it writes: after <code>impl </code> the module’s impl
+subjects (<code>import std::style::{ (impl </code> offers <code>Length</code>, <code>Color</code>, …), and
+after <code>)::</code> that block’s members (<code>(impl Length)::</code> offers <code>rem</code>). Both
+come from the module’s parsed text, like every other answer here.</li>
 <li><strong>A name you have not imported</strong> is offered too, labeled with the module
 it comes from and carrying the <code>import</code> as part of accepting it — one
 action writes both. Your own package’s names rank ahead of <code>std</code>’s, so a
@@ -277,7 +377,7 @@ turns that down to parentheses only, or off.</p>
 of values — from the server rather than from a JSON schema, so every editor
 sees it.</p>
 <h2 id="quick-fixes"><a class="header" href="#quick-fixes">Quick fixes</a></h2>
-<p>Seven, each attached to the diagnostic that earns it:</p>
+<p>Eighteen, each attached to the diagnostic that earns it:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -286,11 +386,22 @@ sees it.</p>
 <tbody>
 <tr><td><code>Import `X` from std::json</code></td><td><code>cannot find 'X'</code> where <code>X</code> is importable. One action per module when more than one exports the name — never a guess between them</td></tr>
 <tr><td><code>Change to `entries` </code></td><td>a <code>did you mean …?</code> note on a misspelled struct-initializer field</td></tr>
+<tr><td><code>Analyze this file under its platform: add `[platform("browser")] mod self;` </code></td><td>a member the OTHER <code>std</code> twin declares (<code>struct 'Region' has no field 'anchor'</code> in a file analyzed under node, whose note names the <code>browser</code> twin that has it). The edit is the file’s first line — the one place a file’s platform may be written — and the attribute is the one the note spells</td></tr>
 <tr><td><code>Insert `;` </code></td><td><code>expected `;` to end this statement</code>, at the gap the diagnostic points at</td></tr>
 <tr><td><code>Remove `;` </code></td><td><code>the `;` discards this body's last value</code> — it finds the right <code>;</code> from the diagnostic’s own bookkeeping, and declines rather than guess when a comment sits in the gap</td></tr>
-<tr><td><code>Wrap as `{Color::hex("#333")}` </code></td><td>a <code>#</code> in a <code>css</code> block. The character cannot lex at all, so the diagnostic is one column wide; the fix reads the whole colour off the line and routes it through <code>Color</code>, which carries its own <code>:root</code> line. Offered only when the run really is a colour (3, 4, 6 or 8 hex digits)</td></tr>
+<tr><td><code>Import as `#hidden` </code></td><td>a plain import of an item its module does not export. A zero-width insertion of the reach marker at the leaf — the whole edit — which says the reach was deliberate and silences the warning</td></tr>
+<tr><td><code>Delete the `#` </code></td><td>a reach marker on an item that IS exported. The marker states a belief about the module that is not true, and the fix removes the one character</td></tr>
 <tr><td><code>Use `.md { … }` </code></td><td><code>@media (min-width: …)</code> in a <code>css</code> block. The breakpoint is chosen by the query’s own min-width, and an arbitrary one becomes <code>.media("900px")</code> rather than no fix. The other at-rules have no combinator spelling, so they get the explanation alone</td></tr>
+<tr><td><code>Declare the inferred contexts</code></td><td><code>…'s body reads context `b`, which this `context` clause does not declare</code> — a <code>fun</code>’s declared <code>context</code> clause narrower than what its body reads. The refusal spells the clause the body needs and the fix writes exactly that, over the clause’s own name list</td></tr>
+<tr><td><code>Declare it `const let` </code></td><td>either half of G24’s <code>const</code> steer — <code>a `const` expression reads only compile-time-known bindings</code> at a read, or <code>a `const` result must be plain data; this evaluates to a closure</code> at a <code>let x = const ..</code>. One edit either way: the declaration keyword. At a read it is a zero-width <code>const </code> in front of the binding the message names, ahead of the read and only where this file’s own text still opens it with <code>let</code>; at the closure result the <code>const</code> MOVES to the head of the declaration, which is entirely the text in front of the diagnostic’s span</td></tr>
+<tr><td><code>Write it as a call: `padding(px(4));` </code></td><td><code>a `css` declaration is a CALL</code> — the <code>property: value;</code> spelling A101 retired, which is what every CSS author types and what every migrating program hits. The rewrite is the codemod’s: one <code>{expr}</code> hole becomes the expression, a text value becomes the typed constructor where a unit names one (<code>4px</code> → <code>px(4)</code>) and a string literal otherwise, and a whitespace-separated value becomes several arguments, which the block joins with one space exactly as CSS’s own value lists do. A GLUED value (<code>calc({w} + 2px)</code>, <code>{150}ms</code>) and one carrying <code>!important</code> are declined rather than guessed: the first wants an i-string with a <code>piece(..)</code> per hole, which is a decision about the value, and the second has its own fix</td></tr>
+<tr><td><code>Write all 2 `css` declarations as calls</code></td><td>the same refusal, when the file carries more than one rewritable declaration — A101 reports per declaration, so a migrating block offers one fix per row and this one action for all of them. A declaration the rewrite declines travels through the edit exactly as you wrote it</td></tr>
 <tr><td><code>Remove `!important` </code></td><td><code>!important</code> in a <code>css</code> block — a <code>Style</code> merges by record update, so a later declaration on the same property already wins. Takes the space before the marker with it</td></tr>
+<tr><td><code>Parenthesize the closure type</code></td><td>a <code>fun</code> whose RETURN type is an un-parenthesized closure type carrying a <code>context</code> clause (B343) — the type grammar’s own <code>context</code> suffix is greedy, so the clause lands on the closure’s own return type, which cannot carry one. The edit covers the written return type and adds the parentheses that give the clause to the FUNCTION; the refusal also names the other reading (the clause on the closure that is RETURNED), which is a second pair of parentheses and yours to choose</td></tr>
+<tr><td><code>Rewrite as `child(each(…))` </code></td><td>one of the six <code>View</code> methods A99 retired — <code>when</code>, <code>swap</code>, <code>swap_split</code>, <code>bind_each</code>, <code>bind_each_values</code>, <code>bind_each_by</code>. The edit covers the call alone, so the receiver, the chain around it and the arguments are untouched text; the <code>{each(…)}</code> hole the diagnostic also names is left to you, since whether a hole is right is a question about the markup around the call</td></tr>
+<tr><td><code>Convert with `.as_u53()` </code></td><td><code>Expected u53, but got i32 instead. There are no implicit numeric conversions; convert with `.as_u53()` </code> — a value of one numeric width where another is declared (an argument, a <code>let</code> annotation, a reassignment, a return, a field, a subscript’s index). The edit writes the conversion the message names after the value, parenthesizing it first unless it is already a name, a field path or a call chain, so <code>xs.len() + 1</code> becomes <code>(xs.len() + 1).as_u53()</code> — the whole value, not its last operand. Where the message names an index (<code>Expected usize (an index: a position, a length or a count), but got i32 instead. …</code>) it is the same edit, and it is also offered on an operator between a <code>usize</code> and another integer width (<code>`&lt;` compares two values of the same type, but the operands are `i32` and `usize`</code>), where nothing is declared: the non-index operand converts to <code>usize</code></td></tr>
+<tr><td><code>Declare `at` a `usize` </code></td><td>the same index mismatch, when the value is a counter bound by a bare literal earlier in the same function (<code>mut at = 0;</code>). The edit writes <code>: usize</code> after the counter’s name, because the counter IS an index — converting at each of its uses would leave <code>.as_usize()</code> on a value that should never have been anything else. Offered ahead of the conversion</td></tr>
+<tr><td><code>Convert all 2 indexes in this file</code></td><td>any index mismatch, when the file carries more than one — a file migrating to <code>usize</code> meets one per index, and this action takes each one’s first fix (the declaration where there is one, else the conversion) in ONE edit. It is the edit <code>vilan check --fix</code> makes, file by file, until nothing is left to fix</td></tr>
 </tbody>
 </table>
 </div>
@@ -301,7 +412,7 @@ sees it.</p>
 <tr><th>Action</th><th>Does</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Organize Imports</strong></td><td>sorts each top-level import run into canonical order (the same key <code>vilan fmt</code> uses), prunes unused leaves (shrinking a brace set rather than deleting it), and strips imports the prelude already covers. Offered only when it would change something</td></tr>
+<tr><td><strong>Organize Imports</strong></td><td>sorts each top-level import run into canonical order (the same key <code>vilan fmt</code> uses), prunes unused leaves (shrinking a brace set rather than deleting it), and strips imports the prelude already covers. A statement whose every leaf is unused is <em>rewritten</em> rather than deleted when the module’s file is where an <code>impl</code> the code calls a method from lives — <code>impl</code>s travel with any import that reaches the module, so deleting the statement would break the build. The rewrite is the narrowest statement that keeps it: an impl SELECTOR (<code>import pkg::a::b;</code> becomes <code>import pkg::a::{ (impl Style) };</code>) when everything the file uses from that module is one subject’s blocks, and the bare module import (<code>import pkg::a;</code>) when it is not. A selector is a leaf like any other: one whose implementation the file never calls a method from fades and prunes, one it does use stays. Visibility spellings are preserved verbatim, never rewritten: a reach marker (<code>#helper</code>) stays on its leaf, a trailing <code>only</code> stays on its statement, and a selector keeps the type it was written with. The module-level <code>export *;</code> is not an import and does not move — a NEW leading import is inserted above it, so the marker keeps the slot <code>vilan fmt</code> gives it, just below the file’s import run. Offered only when it would change something</td></tr>
 <tr><td><strong>Add All Missing Imports</strong></td><td>applies every unambiguous import quickfix in the file at once, skipping the ambiguous ones</td></tr>
 </tbody>
 </table>
@@ -331,18 +442,19 @@ diagnostic or on the file:</p>
 </thead>
 <tbody>
 <tr><td><strong>Convert to a <code>style()</code> chain</strong></td><td>rewrites the <code>css { … }</code> block the cursor is in as the builder chain it lowers to — a declaration becomes a <code>.raw</code> link, a nested rule becomes a combinator link carrying the inner chain</td></tr>
-<tr><td><strong>Convert to a <code>css</code> block</strong></td><td>the inverse, on a <code>style()</code> chain. Only the two rows of that lowering have a block spelling, so a chain carrying a typed property method (<code>.padding(space(4))</code>, which writes its slot through <code>with_length</code>) is not offered the conversion at all</td></tr>
+<tr><td><strong>Reflow this comment</strong></td><td>re-prints the file with comment wrapping on, whatever <code>[fmt] wrap_comments</code> says — an explicit action is consent where a format-on-save is not. Offered with the cursor in a comment, and only where the wrap changes something: a run already filled, one no line of which is over the width, a trailing comment after code, and each of the ten never-reflow classes get no action. The edit is the whole buffer, because the fill is the formatter’s own and asking it is what keeps this and format-on-save in agreement</td></tr>
+<tr><td><strong>Convert to a <code>css</code> block</strong></td><td>the inverse, on a <code>style()</code> chain — seeded by any path ending in <code>style()</code>, so <code>style::style()</code> (what the web prelude publishes) reads as one. A typed property method is converted by <em>inlining its std body</em>: <code>.padding_x(space(4))</code> is <code>with_length("padding-left", value).with_length("padding-right", value)</code>, so it writes both declarations with the argument in each. A link with no block spelling — a user extension, a method whose body is not a chain (<code>.border(…)</code>), <code>.class_list()</code> — <em>splits</em> the chain instead of refusing it: everything before it becomes the block and the rest is written as a postfix chain on it (<code>css { … }.select_off()</code>). Not offered when no link converts</td></tr>
 </tbody>
 </table>
 </div>
 <p>Both directions decline rather than guess. A <strong>comment</strong> inside the
 construct stops the conversion, because its attachment is not recoverable
 across the reshape — the same refusal <code>vilan fmt</code> makes when it declines to
-reorder a commented block. So does a value carrying a <strong>backslash</strong>: a
-chain’s string literal has its escapes processed at emission and a block’s
-token run does not, so the two spellings would stop meaning the same thing.
-A quoted value is fine — escaping a <code>"</code> into the literal round-trips
-exactly — and the two directions are inverses on everything they accept.</p>
+reorder a commented block. So does a declaration with <strong>several
+arguments</strong> (<code>margin(px(4), px(8))</code>): its chain twin needs
+<code>std::style::piece</code>, which is ambient inside a block and nowhere else, so
+the chain written out would name something the file does not import. The
+two directions are inverses on everything they accept.</p>
 <h2 id="what-it-does-while-you-type"><a class="header" href="#what-it-does-while-you-type">What it does while you type</a></h2>
 <p>Half-typed code is what a compiler is asked about most of the time. Two
 behaviors follow from that, and both are worth knowing because they are the
@@ -389,6 +501,7 @@ plain go-to-definition, and no pull diagnostics — diagnostics are pushed.</p>
 <tr><td><code>vilan.inlayHints.enabled</code></td><td><code>true</code></td><td></td></tr>
 <tr><td><code>vilan.semanticTokens.enabled</code></td><td><code>true</code></td><td>off falls back to the TextMate grammar</td></tr>
 <tr><td><code>vilan.completion.functionCall</code></td><td><code>full</code></td><td><code>parensOnly</code>, or <code>none</code></td></tr>
+<tr><td><code>vilan.autoClosing.generics</code></td><td><code>true</code></td><td>pair a generic <code>&lt;</code> and type over its <code>&gt;</code>; off for Vim emulation</td></tr>
 <tr><td><code>vilan.organizeImports.onSave</code></td><td><code>false</code></td><td></td></tr>
 </tbody>
 </table>
@@ -396,6 +509,16 @@ plain go-to-definition, and no pull diagnostics — diagnostics are pushed.</p>
 <p>Everything but the two paths applies live. <strong>Vilan: Restart Language
 Server</strong> is in the command palette when you want the blunt instrument, and
 the <strong>Vilan Language Server</strong> output channel carries the server’s own log.</p>
+<p><strong>Vilan: Show Language Server Status</strong> writes this session’s profile to that
+same channel: the extension’s request tally first — session age, server
+starts, per-request count / mean / max, slowest total first — and then the
+server’s own page, which adds its retained-state cardinalities (open
+documents, how many still hold a program, caches, pending analyses), the
+analysis counts, its own per-request profile, and its memory reading:
+resident size with the heap split into in-use and retained-free. The server
+writes that page by itself every 500 requests; the command asks for it now,
+which is when a session has started feeling slow. A figure the host declines
+to report prints <code>?</code> rather than a zero.</p>
 
                     </main>
 
@@ -448,7 +571,7 @@ the <strong>Vilan Language Server</strong> output channel carries the server’s
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

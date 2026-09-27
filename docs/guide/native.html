@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Control flow - The Vilan documentation</title>
+        <title>Native binaries - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -172,343 +172,126 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="control-flow"><a class="header" href="#control-flow">Control flow</a></h1>
-<blockquote>
-<p>Normative rules: spec <a href="../spec/grammar.html">§3 Grammar</a> and <a href="../spec/types.html">§5.10 <code>!</code>, <code>?.</code> and <code>?</code></a>.</p>
-</blockquote>
-<h2 id="if--else"><a class="header" href="#if--else"><code>if</code> / <code>else</code></a></h2>
-<p><code>if</code> is an expression. Both branches produce a value, and the whole thing
-has that value:</p>
-<pre><code class="language-vilan">fun main() {
-	let n = 7;
-	let label = if n % 2 == 0 { "even" } else { "odd" };
-	print(label);
-}
+                        <h1 id="native-binaries"><a class="header" href="#native-binaries">Native binaries</a></h1>
+<p>Vilan has a second backend. <code>--backend rust</code> emits your program as Rust source,
+writes it into a cargo project under <code>dist/native/</code>, and builds it with the
+<code>cargo</code> already on your machine:</p>
+<pre><code class="language-sh">vilan build --backend rust hello.vl   # writes dist/native/hello/ and builds it
+vilan run   --backend rust hello.vl   # builds, then runs the binary
 </code></pre>
-<p>There is no ternary operator because <code>if</code> already is one.</p>
-<h2 id="match"><a class="header" href="#match"><code>match</code></a></h2>
-<p><code>match</code> is the workhorse, a <code>switch</code> that can take values apart and that
-the compiler checks for completeness. Arms are <code>pattern =&gt; expression</code>.
-Payloads bind with <code>let</code>, and <code>_</code> catches everything else:</p>
-<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
-
-fun describe(slot: Option&lt;i32&gt;): str {
-	match slot {
-		Some(let value) =&gt; i"got {value}",
-		None =&gt; "empty",
-	}
-}
-
-fun main() {
-	print(describe(Some(3)));
-	print(describe(None));
-}
-</code></pre>
-<p>If you forget a variant, the compiler tells you. That’s most of the
-reason enums plus <code>match</code> replace flag fields and <code>null</code> checks.</p>
-<p>A payload binds with <code>let</code> or with <code>mut</code>, the same two words that
-declare a variable — <code>let</code> immutably, <code>mut</code> mutably:</p>
-<pre><code class="language-vilan fragment">match slot {
-	Some(mut items) =&gt; {
-		items.push(9);         // `let items` here is "cannot mutate immutable"
-		slot = Some(items);    // the binder is a copy: write it back
-	}
-	None =&gt; void,
-}
-</code></pre>
-<p>A binder is a binding, so it holds a <strong>copy</strong> of what it matched, like
-every other binding (see <a href="memory-model.html">the memory model</a>). <code>mut</code>
-makes that copy writable; it does not reach the value you matched on.
-An arm that means to change the subject assigns back through it, as
-above. Writing both words (<code>Some(let mut items)</code>) is neither form, and
-the compiler says so.</p>
-<p>Completeness is judged over the whole pattern, not just its outermost
-name, so a payload you narrow has to be handled too:</p>
-<pre><code class="language-vilan fragment">match slot {
-	Some(0) =&gt; "zero",          // an i32 payload: no list of numbers covers it
-	Some(let value) =&gt; "some",  // this is what covers it
-	None =&gt; "empty",
-}
-</code></pre>
-<p>Drop the middle arm and the compiler says <em>“match is not exhaustive:
-missing <code>Option::Some(_)</code>”</em> — it names a value that has nowhere to go,
-spelled as the arm that would take it.</p>
-<p>An arm can carry a <strong>guard</strong>, an <code>if</code> that has to hold for the arm to
-run:</p>
-<pre><code class="language-vilan fragment">match state {
-	Status::Ready if budget &gt; 0 =&gt; start(),
-	Status::Ready =&gt; wait(),
-	Status::Done =&gt; finish(),
-}
-</code></pre>
-<p>A guarded arm proves nothing about completeness, and the compiler says
-so: a guard tests the <em>value</em> where the check reasons about the <em>type</em>,
-so writing <code>Status::Ready</code> only on a guarded arm still leaves <code>Ready</code>
-missing — reported with a note pointing at the guard. The rule that falls
-out is worth remembering: <strong>the last arm may not be guarded.</strong> Give it a
-<code>_ =&gt; …</code> afterwards, so the value the guard rejects has somewhere to go.</p>
-<p>One more edge belongs to <a href="data-and-traits.html">backed enums</a>, whose
-variants carry a host string or number. An exhaustive <code>match</code> over one is
-complete over the variant <em>set</em>, which is a proof about your side of the
-boundary and not about the value: a host that answers outside the set
-reaches a trap arm and panics naming it
-(<code>Align: "middle" is not one of its values</code>) rather than being filed
-under whichever variant came last. Add a <code>_</code> arm, or take the value
-through <code>Align::parse</code>, wherever an unrecognized value is an answer you
-expect.</p>
-<p>When you only need a yes/no answer instead of a full match, <code>is</code> tests a
-pattern as a boolean:</p>
-<pre><code class="language-vilan fragment">let present = entry.map(|current| current is Some(let _task));
-</code></pre>
-<p>A <code>let</code> inside the pattern <strong>captures</strong>, and the capture is in scope
-wherever the test is known to have passed: the then-branch, and the rest
-of the condition after an <code>&amp;&amp;</code>. It is not in scope in the <code>else</code>, after
-the <code>if</code>, or in the other arm of a <code>||</code> — each of those is reached
-exactly when the test <em>didn’t</em> pass, so there is no payload to name:</p>
-<pre><code class="language-vilan fragment">if slot is Some(let task) &amp;&amp; task.ready { start(task); }   // both fine
-if slot is Some(let task) { … } else { start(task); }      // error: unbound
-</code></pre>
-<p>The condition has to <em>say</em> the test passed, and it says that through
-<code>!</code>, <code>&amp;&amp;</code>, <code>||</code> and the <code>is</code> itself. Bury the test in a call argument
-and the condition’s answer no longer reports it — <code>ready(slot is Some(let task))</code> is whatever <code>ready</code> returns — so the capture is out of
-scope in both branches:</p>
-<pre><code class="language-vilan fragment">if ready(slot is Some(let task)) { start(task); }          // error: unbound
-</code></pre>
-<p>For the same reason, a test written outside a condition altogether binds
-nothing after itself. <code>let ready = slot is Some(let task);</code> gives you a
-<code>bool</code>, and a <code>bool</code> does not carry the payload — nothing later in the
-block proves the test passed, so reading <code>task</code> there is refused and the
-error points you at the shape that works:</p>
-<pre><code class="language-vilan fragment">let ready = slot is Some(let task); start(task);           // error: not a condition
-let ready = slot is Some(let task) &amp;&amp; task.ready;          // fine: `&amp;&amp;`, as always
-</code></pre>
-<p>Negating the test swaps the two branches: <code>!(slot is Some(let task))</code> is
-true where the pattern <em>didn’t</em> match, so the capture is unbound in that
-branch and in scope in the <code>else</code> — the branch reached only by a match.</p>
-<pre><code class="language-vilan fragment">if !(slot is Some(let task)) { start(task); }              // error: unbound
-if !(slot is Some(let task)) { … } else { start(task); }   // fine: it matched
-</code></pre>
-<p>That swap is what makes the <strong>guard clause</strong> work. Negate the test, leave
-the <code>if</code> through a <code>ret</code> or a <code>jump</code>, and the code after it is reachable
-only on the path where the pattern matched — so the capture is in scope
-there, for the rest of the block:</p>
-<pre><code class="language-vilan fragment">if !(slot is Some(let task)) { ret; }
-start(task);                                               // fine: it matched
-</code></pre>
-<p>It needs all three parts. The then-branch has to actually leave (a branch
-that can fall through reaches the continuation on a miss), the <code>if</code> has to
-have no <code>else</code>, and the test has to be negated — <code>if slot is Some(let task) { ret; }</code> continues exactly where the pattern <em>didn’t</em> match.</p>
-<p>One edge to know: a <code>match</code> can’t sit directly inside a larger operator
-expression. Bind it to a local first.</p>
-<p>Arms that never produce a value (a <code>ret</code>, a <code>panic</code>, a
-<code>jump break</code>/<code>continue</code>) don’t participate in the match’s type. The
-other arms decide it:</p>
-<pre><code class="language-vilan fragment">let value = match slot {
-	Some(let text) =&gt; text,     // the match is a str
-	None =&gt; panic("missing"),   // this arm diverges; no annotation needed
-};
-</code></pre>
-<h2 id="loops"><a class="header" href="#loops">Loops</a></h2>
-<p><code>for</code> covers every loop. It has three forms:</p>
-<pre><code class="language-vilan">import std::range::Range;
-
-fun main() {
-	for item in ["a", "b", "c"] {
-		print(item);
-	}
-
-	for i in Range::new(0, 3) {   // 0, 1, 2 — the end is exclusive
-		print(i);
-	}
-
-	mut count = 0;
-	for count &lt; 3 {               // a while loop: runs while the condition holds
-		count += 1;
-	}
-	print(count);
-}
-</code></pre>
-<p>There is also a bare <code>for { … }</code> for an infinite loop. Loop control is
-spelled <code>jump break</code> and <code>jump continue</code>. A bare <code>for</code> that nothing
-breaks out of never finishes, so the code after it is unreachable and a
-function that ends in one owes no return value. Iterating with <code>for _ in …</code>
-skips the binding.</p>
-<p>The header’s binder is the same one <code>let</code> takes, so an element that is a
-tuple can be destructured right there:</p>
-<pre><code class="language-vilan">fun main() {
-	for (index, item) in ["a", "b"].iter().enumerate() {
-		print(i"{index}: {item}");
-	}
-}
-</code></pre>
-<p>Any other pattern in the header — a variant, a literal — is refused by
-name: bind the element and destructure it in the body.</p>
-<p>One more form matters once you care about performance:
-<code>for e in &amp;mut list</code> iterates <em>views</em> of the elements so you can mutate
-them in place. That’s a <a href="memory-model.html">memory model</a> topic.</p>
-<h2 id="early-return-ret"><a class="header" href="#early-return-ret">Early return: <code>ret</code></a></h2>
-<pre><code class="language-vilan fragment">fun parse(path: str): Route {
-	if parts.len() == 0 {
-		ret Route::Home;      // early exit
-	}
-	Route::NotFound           // the final expression is the return value
-}
-</code></pre>
-<h2 id="option-and-result"><a class="header" href="#option-and-result">Option and Result</a></h2>
-<p>Vilan has no <code>null</code> and no exceptions. Instead:</p>
+<p>The program is the same program. The point of the backend is that its output is
+a binary with no runtime host — no Node, no browser, no garbage collector — and
+the way that is kept honest is a differential: every program the backend accepts
+must print <strong>byte-identical</strong> output under both backends, and a gate in the
+compiler’s own suite proves it over the test corpus.</p>
+<h2 id="what-it-reaches-and-what-it-refuses-by-name"><a class="header" href="#what-it-reaches-and-what-it-refuses-by-name">What it reaches, and what it refuses by name</a></h2>
+<p>What the backend reaches today:</p>
 <ul>
-<li>A value that might be absent is an <code>Option&lt;T&gt;</code>: either <code>Some(value)</code>
-or <code>None</code>.</li>
-<li>An operation that might fail is a <code>Result&lt;T, E&gt;</code>: either <code>Ok(value)</code>
-or <code>Err(error)</code>.</li>
+<li>structs, enums, <code>Option</code> and <code>Result</code>, generics (monomorphised per type
+argument), traits, trait objects (<code>dyn</code>), overloaded operators</li>
+<li><code>str</code>, <code>List</code>, <code>Map</code>, <code>Set</code>, closures, <code>impl</code> blocks, <code>match</code>, loops,
+recursion, module-level bindings, <code>lazy</code></li>
+<li><code>async</code>, <code>await</code>, <code>Task</code> and <code>Nursery</code>, on a single-threaded executor of the
+runtime’s own</li>
+<li><code>std::json</code>, <code>std::db</code> (SQLite, through a separate runtime crate that a
+program links only when it reaches <code>std::db</code>), <code>std::bytes</code>, <code>std::time</code>’s
+clock, and the plain <code>std::fs</code> reads and writes</li>
+<li><code>std::crypto</code>: SHA-256, SHA-384 and SHA-512, HMAC-SHA-512, PBKDF2,
+<code>random_bytes</code> and <code>random_uuid</code> from the operating system’s random source —
+and node:crypto’s <code>pbkdf2Sync</code> when a program binds it itself, with the
+<code>Buffer</code> it answers read back through <code>toString("hex")</code>. Everything past
+SHA-256 lives in a second runtime crate a program links only when it reaches
+one of them, since OS randomness is the one thing here that needs a
+dependency</li>
+<li><strong>servers</strong>: <code>std::http</code> — <code>Server::builder()</code> with <code>serve_build</code>,
+<code>cache_build</code> and its conditional GET, <code>on_request</code>, <code>on_start</code> — and
+<code>std::rpc_server</code>: a <code>[service]</code> mounted with <code>Service::new</code> or
+<code>Service::factory</code>, the WebSocket upgrade with its handshake gate
+(<code>authorize</code>), and <code>[expose]</code>/<code>[expose(keyed)]</code> mirrors a vilan client
+subscribes to, byte-for-byte on the wire with the node build</li>
 </ul>
-<p>Both are plain enums with a rich set of helper methods (<code>unwrap_or</code>,
-<code>map</code>, <code>is_some</code>, and friends; the
-<a href="../std/option-result.html">full list</a>). You can always <code>match</code> on them.
-Two operators make the common patterns short.</p>
-<p><strong><code>!</code> unwraps, or propagates the failure.</strong> Think of it as “give me the
-value, and if there isn’t one, return the failure from this function”:</p>
-<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
-import std::result::Result::{ self, Ok, Err };
-
-fun to_number(text: str): Result&lt;i32, str&gt; {
-	match text.parse_i32() {
-		Some(let value) =&gt; Ok(value),
-		None =&gt; Err(text),
-	}
-}
-
-fun sum(a: str, b: str): Result&lt;i32, str&gt; {
-	let left = to_number(a)!;    // an Err returns early, carrying the error
-	let right = to_number(b)!;
-	Ok(left + right)
-}
-
-fun main() {
-	match sum("2", "40") {
-		Ok(let total) =&gt; print(total),
-		Err(let bad) =&gt; print(i"not a number: {bad}"),
-	}
-}
+<p>What it does <strong>not</strong> reach yet — each refused by name, with the construct in the
+message, rather than silently mis-compiled: the browser platform (<code>std::dom</code>,
+<code>std::ui</code>, <code>std::web</code>, <code>std::router</code>), <code>resource</code> types (deterministic
+teardown natively is its own slice), a handful of host bindings (the <code>fs</code>
+calls that take an options object), and
+<code>--watch</code> (a native round is a full <code>cargo build</code>; the dev loop’s hot-swap
+belongs to the JS backend).</p>
+<p>If your program uses one of these, <code>--backend rust</code> tells you which and stops.
+Build it with <code>--backend js</code>, which is still the default.</p>
+<p><strong><code>Bytes</code> is shared.</strong> A <code>Bytes</code> is one buffer behind every holder, exactly as
+the <code>Uint8Array</code> it is on the JS backend: <code>let b = a</code> is an alias, and a
+<code>set</code>, <code>fill</code> or <code>copy_into</code> through either is seen through both. <code>slice</code> and
+<code>Bytes::concat</code> are the two that make a new buffer.</p>
+<p><strong>A server is compared on the wire, not by its bytes alone.</strong> The native HTTP
+server answers <code>Connection: close</code> on every response and sends no <code>Date</code>; node
+keeps connections alive and dates every answer. Everything a program sets — the
+status, its headers, its body — is the same on both.</p>
+<h2 id="debug-by-default"><a class="header" href="#debug-by-default">Debug by default</a></h2>
+<p><code>vilan run --backend rust</code> builds in <strong>debug</strong>, and so does <code>vilan build --backend rust</code>. rustc is the inner loop from here on: a release build of a
+seven-hundred-line program took over a second of CPU in the design probe, and a
+real program is orders larger. When you want the optimised binary, build the
+generated project yourself:</p>
+<pre><code class="language-sh">cargo build --release --manifest-path dist/native/hello/Cargo.toml
 </code></pre>
-<p>This is what <code>try</code>/<code>catch</code> becomes: failures travel up through return
-types, visibly, and the caller decides what to do.</p>
-<p><code>!</code> returns the failure <strong>as-is</strong>, so the value’s error type must
-already be the function’s: Vilan doesn’t convert it behind your back.
-When the
-types differ, convert at the value, before the <code>!</code>: <code>.map_err(…)</code> changes
-a <code>Result</code>’s error, and <code>.ok_or(err)</code> turns an <code>Option</code>’s <code>None</code> into an
-<code>Err</code> you supply.</p>
-<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
-import std::result::Result::{ self, Ok, Err };
-
-fun lookup(key: str): Option&lt;i32&gt; {
-	if key == "answer" { Some(42) } else { None }
-}
-
-fun read(key: str): Result&lt;i32, str&gt; {
-	let value = lookup(key).ok_or(i"no entry for {key}")!;  // None -&gt; Err
-	Ok(value)
-}
-
-fun main() {
-	match read("answer") {
-		Ok(let value) =&gt; print(value),          // 42
-		Err(let why) =&gt; print(why),
-	}
-	match read("missing") {
-		Ok(let value) =&gt; print(value),
-		Err(let why) =&gt; print(why),             // no entry for missing
-	}
-}
-</code></pre>
-<p><strong><code>?.</code> reaches inside the container.</strong> It looks like optional chaining
-from JS, and on <code>Option</code> it plays the same role, with the compiler
-checking it:</p>
-<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
-
-struct Book {
-	title: str,
-}
-
-fun find(key: str): Option&lt;Book&gt; {
-	if key == "hit" {
-		Some(Book { title = "dune" })
-	} else {
-		None
-	}
-}
-
-fun main() {
-	print((find("hit")?.title).unwrap_or("?"));   // dune
-	print((find("miss")?.title).unwrap_or("?"));  // ?
-}
-</code></pre>
-<p><code>find("hit")?.title</code> means: if the option holds a book, take its title
-and wrap it back up; if it’s <code>None</code>, stay <code>None</code>. It works on <code>Result</code>
-too, passing an <code>Err</code> through untouched.</p>
-<p><strong>A bare <code>?</code> lifts a whole expression.</strong> Where <code>?.</code> continues a member
-chain, a <code>?</code> on its own lifts the rest of the surrounding expression,
-operators included:</p>
-<pre><code class="language-vilan">import std::option::Option::{ self, Some, None };
-
-fun main() {
-	let price = Some(40);
-	let tax = Some(2);
-	print((price? * 2).unwrap_or(-1));     // 80 — lift, multiply, rewrap
-	print((price? + tax?).unwrap_or(-1));  // 42 — Some only if BOTH are
-	let missing: Option&lt;i32&gt; = None;
-	print((price? + missing?).unwrap_or(-1));   // -1
-}
-</code></pre>
-<p>With two <code>?</code>s the region is good only when every receiver is. It
-short-circuits left to right, so a receiver right of a <code>None</code>/<code>Err</code>
-never evaluates (like <code>&amp;&amp;</code>). On <code>Result</code>, the first <code>Err</code> wins and
-passes through unchanged, which also means every <code>Result</code> receiver in
-one expression must carry the same error type (convert first with
-<code>.map_err(…)</code>). The lift stops at natural boundaries (a call argument,
-a struct field, parentheses): <code>describe(status?)</code> is an error rather
-than something spooky, and <code>(a? + 1) * 2</code> seals the lift inside the
-parens. A <code>?</code> in an <code>if</code> condition is rejected too: the condition
-would become an <code>Option&lt;bool&gt;</code>, so <code>match</code> on the lifted value
-instead.</p>
-<blockquote>
-<p><strong>Going deeper.</strong> Both operators are trait-driven, not hard-coded to
-<code>Option</code> and <code>Result</code>. <code>!</code> dispatches through <code>Try</code>; both lift forms —
-<code>?.</code> and the bare <code>?</code> — go through the <code>Lift</code> marker
-(<code>std::operators</code>). Your own container can opt in and lift the same
-way, calling its own <code>map</code> and <code>and_then</code>
-(<a href="../std/traits.html">traits</a>). A continuation that itself produces the
-container flattens instead of nesting, so <code>find(key)?.shelf()</code> on an
-<code>Option</code>-returning method stays a single <code>Option</code>.</p>
-</blockquote>
-<h2 id="panics-and-asserts"><a class="header" href="#panics-and-asserts">Panics and asserts</a></h2>
-<p><code>panic(message)</code> stops the program with a message. Use it for states
-that should be impossible, not for expected failures; those are
-<code>Result</code>s. <code>assert(condition, message)</code> panics when the condition is
-false, and it’s how <code>vilan test</code> decides a test failed.</p>
-<p>A <code>panic</code> never returns, so it fits wherever a value is expected and owes
-nothing back: a function whose body ends in one needs no return value,
-and neither does one that ends in a <code>for { … }</code> nothing breaks out of.</p>
-<pre><code class="language-vilan fragment">fun parse_id(text: str): i32 {
-	match text.parse_i32() {
-		Some(let id) =&gt; id,
-		None =&gt; {
-			panic("not a number: " + text);   // no `0` after it
-		},
-	}
-}
-</code></pre>
+<p>One exception is made for you: a program that reaches PBKDF2 gets the crypto
+runtime crate optimised even in debug, because a password hash’s cost is its
+iteration count by design — 100,000 rounds of HMAC-SHA-512 takes seconds
+unoptimised and a tenth of one optimised. Your own code keeps the debug build.</p>
+<h2 id="numbers"><a class="header" href="#numbers">Numbers</a></h2>
+<p><code>i53</code> and <code>u53</code> are JavaScript-shaped types — the exact-integer range of a
+double. Natively they are <code>i64</code> and <code>u64</code>, which is wider, but <strong>the guarantee
+is still the JavaScript one</strong>: a value outside ±2^53 is outside what the
+language promises, and a program that round-trips through both backends behaves
+the same only inside that range. Every other numeric type is its own width on
+both backends.</p>
+<p><strong><code>usize</code> is Rust’s <code>usize</code> here</strong> — the platform word, which is what a native
+<code>len()</code> is — with the same JavaScript guarantee: <code>usize::max_value()</code> answers
+<code>9007199254740992</code> on both backends. Subtracting one past zero is unspecified,
+and the backends really do differ: JS prints the negative number, a native
+debug build panics with <code>attempt to subtract with overflow</code>, a release build
+wraps, and rustc refuses a subtraction it can see underflows at compile time. So
+a program that underflows is not one this backend promises to print the same
+bytes for, and the corpus’s <code>usize-underflow.vl</code> is named outside the
+differential for exactly that reason. <code>checked_sub</code> and <code>saturating_sub</code> answer
+the same on both.</p>
+<p><strong><code>BigInt</code> is an <code>i128</code> here, and that is a limit rather than a promise.</strong> On
+the JS backend a <code>BigInt</code> is arbitrary precision; natively it is a 128-bit
+signed integer — ±170,141,183,460,469,231,731,687,303,715,884,105,727 — because
+the runtime this backend links against takes no dependencies and so has no
+bignum to lower one to. The limit is enforced at both ends rather than papered
+over: a literal past it is <strong>refused at compile time</strong>, naming the value and the
+range, and an operation that leaves the range <strong>traps at run time</strong> with the
+same sentence instead of wrapping to a wrong number. Inside the range the two
+backends agree exactly, printing included — node writes a <code>BigInt</code> with its
+suffix, so <code>7n / 2n</code> is <code>3n</code> on both. If you need arbitrary precision as the
+SUBJECT of a program — RSA, a big factorial — that is the JS backend today.</p>
+<p><strong>Integer overflow is the program’s, on both backends.</strong> A conforming program
+does not overflow (spec §7.2a), and the two backends answer one that does
+differently: the JS backend runs on with an out-of-range value, and a native
+debug build panics. An overflow rustc can see at compile time — <code>a + 1</code> right
+after <code>let a: i32 = 2147483647;</code> — does not build at all, and <code>vilan</code> says so as
+the program’s overflow, naming the expression rustc underlined in the emitted
+Rust, rather than as a backend defect.</p>
+<h2 id="where-the-emitted-rust-goes"><a class="header" href="#where-the-emitted-rust-goes">Where the emitted Rust goes</a></h2>
+<p><code>dist/native/&lt;entry&gt;/</code>, with <code>src/main.rs</code> the emitted program and <code>Cargo.toml</code>
+pointing at the runtime crate. It is ordinary Rust and you can read it; that is
+the point of emitting a language rather than machine code. <code>vilan build --backend rust --stdout</code> prints it without building.</p>
+<p><code>rm -rf dist</code> means the same thing here as everywhere else.</p>
+<h2 id="not-here-yet"><a class="header" href="#not-here-yet">Not here yet</a></h2>
+<p>Native <strong>windows and UI</strong> are not in this backend and are not close: how UI code
+should be written once and run on both native and the web is a design question
+being settled first.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../tour/data-and-traits.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../guide/dev-loop.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../tour/memory-model.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/collections.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -518,11 +301,11 @@ and neither does one that ends in a <code>for { … }</code> nothing breaks out 
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../tour/data-and-traits.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../guide/dev-loop.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../tour/memory-model.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/collections.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

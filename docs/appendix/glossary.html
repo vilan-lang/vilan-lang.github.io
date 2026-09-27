@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -224,9 +224,9 @@ hasn’t confirmed yet. Dirty fields ignore adoption; the user’s text wins.
 <p><a id="draft"></a><strong>draft</strong>: a local-first cell for editing server state: typing updates
 locally at once, commits in the background, and keeps your text on
 failure. <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><a id="drop"></a><strong>drop</strong>: destruction. The <code>Drop</code> hook runs at an owner’s scope end;
-<code>drop(x)</code> moves a value in to destroy it early. Only <a href="#resource">resources</a>
-have one. <a href="../tour/resources.html">Resources</a>.</p>
+<p><a id="drop"></a><strong>drop</strong>: destruction. The <code>Drop</code> hook runs after an owner’s last use;
+<code>drop(x)</code> moves a value in to name that point yourself. Only
+<a href="#resource">resources</a> have one. <a href="../tour/resources.html">Resources</a>.</p>
 <p><a id="echo"></a><strong>echo</strong>: your own change arriving back through a <a href="#mirror">mirror</a>. A
 draft recognizes it and does nothing, so your caret never jumps.
 <a href="../guide/reactive.html">Reactive state</a>.</p>
@@ -254,8 +254,13 @@ server-only. <a href="../tour/platforms.html">Platforms</a>.</p>
 background, instead of waiting on the network. What <a href="#draft">drafts</a>
 implement. <a href="../guide/reactive.html">Reactive state</a>.</p>
 <p><a id="mirror"></a><strong>mirror</strong>: an <code>[expose]</code>d server signal that every connected client
-receives a live copy of. The server writes; every client updates.
+receives a live copy of. The server writes; every client updates. A
+<a href="#keyed-mirror">keyed mirror</a> sends only what changed.
 <a href="../guide/services.html">Services &amp; RPC</a>.</p>
+<p><a id="keyed-mirror"></a><strong>keyed mirror</strong>: an <code>[expose(keyed)]</code>d collection, where the wire
+carries the CHANGE (an insert, an update, a removal) rather than the whole
+collection — and a client may subscribe to one key rather than all of them.
+<a href="../guide/services.html#keyed-mirrors-exposekeyed">Services &amp; RPC</a>.</p>
 <p><a id="monomorphization"></a><strong>monomorphization</strong>: how generics compile: each concrete use gets its
 own specialized code, so generic dispatch has no runtime cost.
 <a href="../tour/data-and-traits.html">Data and traits</a>.</p>
@@ -288,7 +293,7 @@ and is destroyed deterministically after its last use (a <code>Database</code>, 
 <code>OwnedNursery</code>). <a href="../tour/resources.html">Resources</a>.</p>
 <p><a id="safe-integer"></a><strong>safe integer</strong>: an integer JavaScript’s 64-bit floats represent
 exactly: anything within ±2^53. Vilan’s <code>i53</code>/<code>u53</code> are named for this
-window. <a href="../tour/values-and-types.html">Values and types</a>.</p>
+window, and <code>usize</code> promises it too. <a href="../tour/values-and-types.html">Values and types</a>.</p>
 <p><a id="service"></a><strong>service</strong>: a server struct whose <code>[rpc]</code> methods clients call and
 whose <code>[expose]</code>d signals clients <a href="#mirror">mirror</a>.
 <a href="../guide/services.html">Services &amp; RPC</a>.</p>
@@ -326,8 +331,10 @@ held across a <a href="#suspension">suspension</a>.
 <a href="../tour/memory-model.html">The memory model</a>.</p>
 <p><a id="wave"></a><strong>wave</strong>: one settling of a <a href="#turn">turn</a>: every affected watcher runs
 once with the final values. <a href="../guide/reactive.html">Reactive state</a>.</p>
-<p><a id="wire"></a><strong>Wire</strong>: the “can travel over the network” capability: scalars, lists
-and options of Wire types, and anything with <code>[derive(Wire)]</code>.
+<p><a id="wire"></a><strong>Wire</strong>: the “can travel over the network” capability, and an
+ordinary trait: scalars, lists, options, results and maps of Wire types,
+anything with <code>[derive(Wire)]</code>, and any type you write an <code>impl … with Wire</code>
+for.
 <a href="../guide/services.html">Services &amp; RPC</a>.</p>
 
                     </main>
@@ -375,7 +382,7 @@ and options of Wire types, and anything with <code>[derive(Wire)]</code>.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

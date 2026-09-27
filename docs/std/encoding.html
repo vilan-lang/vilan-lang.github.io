@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -188,7 +188,15 @@ trait FromJson {                                           // decode
 }
 </code></pre>
 <p><code>[derive(Json)]</code> implements both from a struct/enum’s shape; scalars,
-<code>List</code>, and <code>Option</code> nest.</p>
+<code>List</code>, <code>Option</code> and <code>Result</code> nest.</p>
+<p><code>Result&lt;T, E&gt;</code> is Json when both arms are, and it is spelled the way the
+codecs spell it: externally tagged by variant NAME, <code>Ok(7)</code> as
+<code>{"Ok":7}</code> and <code>Err("nope")</code> as <code>{"Err":"nope"}</code>. That is the same text
+<code>[derive(Json)]</code> gives a one-payload variant and the same text the wire
+layer’s <code>Result</code> writes, so one value crosses <code>to_json</code>, <code>encode_json</code>
+and the binary codec under one encoding. Decoding checks the shape
+before the tag: a document that is not an object, and a tag the type
+does not declare, are both decode errors.</p>
 <p>Encoding (<code>to_json</code>) is total, but <strong>decoding is fallible</strong>: the input is
 untrusted, so a missing field, a wrong-shaped value, or text that isn’t
 JSON is a decode error rather than silent garbage or a crash. Both
@@ -199,6 +207,13 @@ handle it with <code>!</code>, <code>match</code>, or <code>is Ok(..)</code>.</p
 <code>from_json_value</code>, which validates an already-parsed value’s shape. That
 is the one to call when a value is nested inside another decode, and the
 one to write when implementing the trait by hand.</p>
+<p>The scalar lanes check the VALUE and not only the JSON kind, and it is the
+same rule the codec reader applies: an integer lane wants a whole number
+(<code>i32::from_json("1.5")</code> is <code>Err</code>), and an unsigned one wants a
+non-negative one (<code>u32::from_json("-1")</code> is <code>Err</code>). A derived type’s field
+decodes through its own type’s <code>from_json_value</code>, so a struct field gets
+the rule too. The magnitude is deliberately not checked: <code>i32</code>/<code>u32</code> are
+the runtime’s numeric lanes rather than hardware widths.</p>
 <pre><code class="language-vilan">import std::json::{ Json, FromJson, JsonValue, parse_json_value };
 import std::result::Result::{ self, Ok, Err };
 
@@ -326,9 +341,20 @@ fun main() {
 <p>The codec-agnostic serialization protocol under <code>derive(Wire)</code> and rpc:</p>
 <ul>
 <li><code>trait Serialize</code> / <code>trait Deserialize</code>: visitor-style value
-description (<code>begin_struct</code>/<code>field</code>/<code>str_value</code>/<code>i53_value</code>/…). The
-wire scalars: <code>str</code>, <code>bool</code>, <code>i32</code>, <code>u32</code>, <code>i53</code>, <code>f64</code> (+ lists,
-options, structs, enum variants).</li>
+description (<code>begin_struct</code>/<code>field</code>/<code>str_value</code>/<code>i53_value</code>/…), every
+method on <code>&amp;mut self</code> — a visitor is <em>written to</em> as a value narrates
+itself. The
+wire scalars are <code>str</code>, <code>bool</code> and the whole sized numeric family —
+<code>i8</code>, <code>u8</code>, <code>i16</code>, <code>u16</code>, <code>i32</code>, <code>u32</code>, <code>i53</code>, <code>u53</code>, <code>usize</code>, <code>f32</code>,
+<code>f64</code> — plus lists, options, results, maps, structs and enum variants.
+The visitor itself has six scalar lanes and the sized widths ride the
+one that holds them exactly (<code>i8</code>/<code>i16</code> on <code>i32</code>, <code>u8</code>/<code>u16</code> on <code>u32</code>,
+<code>u53</code> on <code>i53</code>, <code>f32</code> on <code>f64</code>), so every round trip is lossless and
+no codec grows a method per width. <code>usize</code> is the exception, and a
+deliberate one: it rides the <strong><code>i32</code></strong> lane, the width a length or a
+position has always had on the wire, so a frame does not grow by four
+bytes a position when a position is respelled <code>usize</code>. A <code>usize</code> past
+<code>i32::MAX</code> cannot be described.</li>
 <li><code>Frame</code>: one encoded message.</li>
 <li><code>Codec</code>: a matched writer/reader pair, <code>json_codec()</code> (<code>std::json</code>,
 readable) or <code>binary_codec()</code> (<code>std::binary</code>, compact). Client and
@@ -337,6 +363,104 @@ server must agree.</li>
 <p><code>[derive(Wire)]</code> requires every field to be Wire, recursively, checked at
 the derive site. You implement <code>Serialize</code>/<code>Deserialize</code> by hand only for
 types with a custom encoding.</p>
+<p><strong>A reader ENFORCES the type it is asked for.</strong> The frame is text a
+stranger chose, so a read whose value is of the wrong JSON kind poisons the
+reader with a reason naming what was expected and what was found —
+<code>expected a number, found a string</code> — and every later read answers its
+zero value. The integer lanes additionally want a WHOLE number, and the
+unsigned ones a non-negative one, because <code>1.5</code> typed <code>i32</code> is a value
+outside its own type. A list opened with <code>begin_list</code> and closed with
+<code>end_list</code> must have had all of its elements read; a list SHORTER than the
+reads is caught by the same gate, since the read runs into the enclosing
+value. <code>failed()</code> is where that shows up, and it is what the rpc route
+consults between decoding a call’s arguments and running the handler — so
+a malformed call answers a <code>Decode</code> failure rather than running an
+implementation on zero values.</p>
+<h3 id="writing-a-wire-impl-by-hand"><a class="header" href="#writing-a-wire-impl-by-hand">Writing a <code>Wire</code> impl by hand</a></h3>
+<p><code>Wire</code> is two methods, and the visitor is a <code>&amp;mut</code> view in both:</p>
+<pre><code class="language-vilan fragment">trait Wire {
+	fun describe&lt;S: Serialize&gt;(self, serializer: &amp;mut S);
+	fun rebuild&lt;D: Deserialize&gt;(deserializer: &amp;mut D): Self;
+}
+</code></pre>
+<p>The VALUE is by-value <code>self</code> — describing reads it. The VISITOR is
+<code>&amp;mut</code>, because narrating into it is what moves its cursor. Inside the
+body the parameter already <em>is</em> the view, so a nested <code>describe</code> or
+<code>rebuild</code> forwards it <strong>bare</strong>:</p>
+<pre><code class="language-vilan fragment">impl Pair with Wire {
+	fun describe&lt;S: Serialize&gt;(self, serializer: &amp;mut S) {
+		serializer.begin_struct(2);
+		serializer.field("left");
+		self.left.describe(serializer);     // bare: already a view
+		serializer.field("right");
+		self.right.describe(serializer);
+		serializer.end_struct();
+	}
+
+	fun rebuild&lt;D: Deserialize&gt;(deserializer: &amp;mut D): Pair {
+		deserializer.begin_struct();
+		deserializer.field("left");
+		let left = i32::rebuild(deserializer);
+		deserializer.field("right");
+		let right = str::rebuild(deserializer);
+		deserializer.end_struct();
+		Pair { left = left, right = right }
+	}
+}
+</code></pre>
+<p><code>&amp;mut serializer</code> appears only where you hold the visitor by VALUE — a
+<code>Serializer</code>/<code>Deserializer</code> record handed to you by a <code>Codec</code>, or one of
+rpc’s <code>|Serializer| void</code> describer closures. There the record is a bag
+of closures over the codec’s own writer, so a <code>mut</code> re-binding costs a
+copy of the bag and writes through to the same writer:</p>
+<pre><code class="language-vilan fragment">// An rpc describer closure: by value in, `&amp;mut` at the call.
+[|mut serializer: Serializer| id.describe(&amp;mut serializer)]
+</code></pre>
+<p><code>encode_json</code>/<code>decode_json</code>/<code>encode_binary</code>/<code>decode_binary</code> do this for
+you and are the paths to prefer.</p>
+<p>It gives you the wire codec and nothing else: a type that also needs
+<code>to_json</code>/<code>from_json</code> asks for both, <code>[derive(Json, Wire)]</code>. The two are
+separate trait families with separate field rules — <code>Map</code> and any
+hand-written <code>impl … with Wire</code> type are Wire and are not Json — so a
+<code>Wire</code> derive that quietly emitted a JSON codec as well would refuse
+fields the wire boundary admits, in <code>to_json</code>’s vocabulary rather than
+Wire’s.</p>
+<p><code>Wire</code> is a trait like any other, and what counts as Wire is what an
+<code>impl … with Wire</code> applies to — the derive is one way to get one, not the
+definition. A conditional impl’s own binder bounds are what recurse into
+the arguments, so <code>impl Pair&lt;type A: Wire, type B: Wire&gt; with Wire</code>
+demands both and <code>impl Handle&lt;type T&gt; with Wire</code> demands neither.</p>
+<p><code>Result&lt;T, E&gt;</code> is Wire when both arms are, and narrates in <code>Option</code>’s
+vocabulary: an externally-tagged <code>{"Ok": …}</code> / <code>{"Err": …}</code> over JSON, a
+tagged variant over the binary codec. That makes a fallible reply an
+ordinary payload — <code>[rpc] fun lookup(self, id: u53): Result&lt;Row, str&gt;</code>
+needs nothing hand-written. An unrecognized tag is a sticky decode
+failure, so <code>decode</code> answers <code>Err(reason)</code> rather than panicking on a
+malformed frame. <code>std::json</code>’s direct pair writes the same tags, so the
+two spellings of a <code>Result</code> are one encoding.</p>
+<p><code>Map&lt;K, V&gt;</code> is Wire when both its key and its value are (the key is
+already <code>Hashable</code> by the type’s own bound). It narrates as a list of
+<code>{key, value}</code> pairs — codec-neutral, readable in JSON, and
+insertion-ordered in both directions.</p>
+<h3 id="keyed-collections"><a class="header" href="#keyed-collections">Keyed collections</a></h3>
+<p>Two more names carry the <em>keyed</em> half of the reactive protocol
+(<code>[expose(keyed)]</code>, see the <a href="../guide/services.html#keyed-mirrors-exposekeyed">services guide</a>):</p>
+<pre><code class="language-vilan fragment">trait Keyed&lt;K&gt; {
+	fun key(self): K;
+}
+
+enum Delta&lt;K, T&gt; {
+	Reset(List&lt;T&gt;),      // the collection BECOMES this
+	Insert(K, T, usize), // a new element at an index (on the wire at i32's width); a key already held is replaced
+	Update(K, T),        // the element under this key takes a new value
+	Remove(K),           // the element under this key is gone
+}
+</code></pre>
+<p><code>Keyed</code> is what makes two snapshots of a collection comparable element by
+element: without it, the only thing a channel can say is “here is the
+whole value again”. <code>Delta</code> is what it says instead. <code>Update</code> and <code>Remove</code>
+name a key that must already be present — an absent one is a protocol
+error, not a silent no-op.</p>
 <h3 id="backed-enums-on-the-wire"><a class="header" href="#backed-enums-on-the-wire">Backed enums on the wire</a></h3>
 <p>A <strong>backed enum</strong> — one whose variants carry an explicit value, <code>enum Align { Start = "flex-start", … }</code> — encodes as that value rather than as
 its variant name, for both <code>Json</code> and <code>Wire</code>. <code>Align::Start</code> is
@@ -354,11 +478,11 @@ the two shapes are not interchangeable across a version.</p>
 the binary codec, crypto, and websockets:</p>
 <pre><code class="language-vilan fragment">impl Bytes {
 	fun alloc(size: i32): Bytes
-	fun len(self): i32
-	fun get(self, index: i32): i32
-	fun set(self, index: i32, value: i32)
-	fun slice(self, from: i32, to: i32): Bytes
-	fun fill(self, value: i32, from: i32, to: i32): Bytes
+	fun len(self): usize
+	fun get(self, index: usize): i32
+	fun set(self, index: usize, value: i32)
+	fun slice(self, from: usize, to: usize): Bytes
+	fun fill(self, value: i32, from: usize, to: usize): Bytes
 	fun copy_into(self, source: Bytes, offset: i32)
 	fun concat(a: Bytes, b: Bytes): Bytes     // static
 	fun to_hex(self): str
@@ -376,8 +500,18 @@ fun encode_binary&lt;T: Wire&gt;(value: T): Bytes
 fun decode_binary&lt;T: Wire&gt;(bytes: Bytes): Result&lt;T, str&gt;
 struct BinaryWriter { … }   // write_byte / write_i32 / write_str / finish(): Bytes
 </code></pre>
+<p>Its writers take <code>&amp;mut self</code> and keep their state in plain fields, like
+<code>std::json</code>’s.</p>
 <p>Same model as JSON, compact layout. <code>i53</code> values ride as f64 bit patterns,
 exact to 2^53.</p>
+<p><strong>The reader validates too</strong>, and the format is schema-ORDERED, so what it
+validates is the bytes rather than a kind: a read past the buffer, a length
+prefix claiming more than the frame holds, an <code>Option</code> marker or a <code>bool</code> byte
+that is neither <code>0</code> nor <code>1</code>, and a frame LONGER than the value it declares —
+bytes left over are bytes the two sides disagree about, and reading a prefix as
+the whole is how a caller gets a value that was never sent. Each is a sticky
+failure naming what was expected and what was found, exactly as the JSON
+reader’s are.</p>
 <h2 id="base64-stdbase64"><a class="header" href="#base64-stdbase64">Base64 (<code>std::base64</code>)</a></h2>
 <p>URL-safe alphabet, no padding (the JWT flavor):</p>
 <pre><code class="language-vilan fragment">fun encode_url(bytes: Bytes): str
@@ -435,7 +569,7 @@ fun decode_url(text: str): Option&lt;Bytes&gt;
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

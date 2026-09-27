@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -193,17 +193,34 @@ quoted here.</p>
 The name isn’t visible here. Usually a missing <code>import</code> — though the
 basics (<code>print</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code>) are in the
 prelude and need none. If you did import it, check for a typo or a
-shadowing local.
-→ <a href="../tour/hello-vilan.html">Hello Vilan</a>, <a href="../spec/names.html">spec §4.7</a></p>
+shadowing local. One case that reads as a compiler mistake and isn’t: an
+<code>is</code> capture is in scope only where its test is known to have <strong>passed</strong> —
+the then-branch and the rest of the condition after an <code>&amp;&amp;</code> — so naming
+it in the <code>else</code>, after the <code>if</code>, or in the other arm of a <code>||</code> is this
+error. Move the read inside the branch, or use <code>match</code>. A NEGATED test
+swaps which branch that is: <code>if !(x is Some(let n))</code> runs its then-branch
+when the pattern <em>didn’t</em> match, so <code>n</code> is this error there and is in
+scope in the <code>else</code> — read it there, or drop the <code>!</code> and swap the two
+branches. A negated test whose branch <strong>leaves</strong> (<code>{ ret; }</code>, no <code>else</code>)
+is the guard clause, and there the capture <em>is</em> in scope after the <code>if</code>;
+this error after one usually means the branch can fall through. An <code>is</code>
+written OUTSIDE a condition — <code>let ok = x is Some(let n);</code> — reads
+differently and gets a message of its own (“is bound only inside the <code>is</code>
+test that captured it”): a plain <code>bool</code> does not carry the payload, so
+the capture reaches the rest of that expression and nothing after it.
+→ <a href="../tour/hello-vilan.html">Hello Vilan</a>, <a href="../spec/names.html">spec §4.7</a>, <a href="../spec/types.html">spec §5.7</a></p>
 <p><strong>“… is in the prelude of the web set — set <code>prelude = \"std::web\"</code>”</strong>
-The name (<code>Signal</code>, <code>view</code>, <code>View</code>) is one std’s <strong>web</strong>
+The name (<code>Signal</code>, <code>SignalCell</code>, <code>view</code>, <code>View</code>) is one std’s <strong>web</strong>
 prelude makes ambient, and this package is on the base one. Either set
 <code>prelude = "std::web"</code> in <code>vilan.toml</code>, or import the name explicitly —
-both work — the steer fires only for names the web set carries as bare
-members, never for its module-carried names (<code>style</code>, <code>ui</code>), where
-switching preludes would leave a value-position miss unfixed — and it
-only means the manifest line is usually what
-you wanted.
+both work; the steer only means the manifest line is usually what you
+wanted. It fires only for names the web set carries as bare members,
+never for its module-carried names (<code>style</code>, <code>ui</code>): switching preludes
+would leave a <code>style::Display</code> miss exactly where it was. In the <strong>web
+playground</strong> the same miss reads “switch the playground’s prelude to the
+web set, or import it (<code>import std::reactive::Signal;</code>)” — a pasted
+buffer is not a package and has no <code>vilan.toml</code> to edit, so the repair
+there is the page’s prelude toggle.
 → <a href="../tour/projects.html">Projects</a>, <a href="../spec/names.html">spec §4.7</a></p>
 <p><strong>“<code>std</code> is a namespace, not a value; import the module first …”</strong>
 You wrote a qualified path like <code>std::math::min(1, 2)</code> inline. That
@@ -252,17 +269,70 @@ the import with a differently-cased file. Module names match byte for
 byte (§4.2), so this would fail to build on a case-sensitive
 filesystem. Rename the file or the import so the two agree.
 → <a href="../spec/names.html">Names, modules, and packages</a></p>
+<p><strong>“<code>main</code> takes no parameters: the shell owns what is passed to a program …”</strong>
+A parameter list declares what values a function accepts, and the entry
+accepts none — nothing in the language can call <code>main</code>, so a parameter
+there is a guess about what the shell will send rather than a promise
+about it. Delete the list and read the arguments in two lines: <code>import std::process;</code> at the top of the file, then <code>process::args()</code> in the
+body, a <code>List&lt;str&gt;</code> of everything after the script path, whose type is
+always right. Both lines are needed — <code>std::process::args()</code> written
+inline is a namespace path, not an expression (<code>std</code> is a namespace, not
+a value), and a bare <code>process::args()</code> with no import above it has no
+<code>process</code> to qualify through. (This shape used to compile: the entry’s
+body becomes the program’s top-level statements, so the parameter was a
+free name and the program died at its first use.)
+→ <a href="../std/process.html">Process modules</a></p>
+<p><strong>“<code>pkg::a::hidden</code> is not exported by <code>pkg::a</code> …”</strong> — a WARNING
+A plain import of an item the declaring module keeps to itself. It still
+compiles — visibility never blocks access — and the message names the
+spelling that says you meant it: <code>import pkg::a::{ #hidden };</code>, the
+<strong>reach</strong> marker. Two ways out, and neither is “work around it”: mark the
+reach, or export the item if it is yours to export. The same warning
+fires at a <em>qualified</em> reach — <code>a::hidden()</code> after <code>import pkg::a;</code> —
+where there is no leaf to mark, and there the fix is to import the item
+with the marker and call it bare. Reaching a <strong>dependency’s</strong> unexported
+item says nothing at all: whether an item should be exported is its
+author’s judgement, and your need is evidence against it. The mirror
+image is a warning too — a <code>#</code> on an item that IS exported says something
+untrue, and deleting the character is the whole fix.
+→ <a href="../spec/names.html">spec §4.8</a></p>
+<p><strong>“<code>my_fun</code> is exported, but <code>S</code> is not …”</strong> — a WARNING
+An exported item whose signature names a type the module keeps private: a
+consumer can call <code>my_fun</code> and cannot name what it hands back. The
+sentence ahead of that one names the position — “<code>S</code> is returned here”,
+“<code>S</code> is a field’s type here”, “<code>S</code> is a parameter type here”, “<code>S</code> is a
+declared bound here” — and the one after it says what the consumer loses.
+It is
+reported once at the declaration, whatever the number of positions, and
+only for signature positions — a <code>let</code>’s type, a parameter, a return
+type, an exported struct’s field types, an enum variant’s payloads, a
+declared bound, a generic argument in any of those. A private type used
+inside an exported function’s <strong>body</strong> is exactly the encapsulation the
+marker exists to permit and is never reported. The fix is to export the
+type; when <code>S</code> belongs to a dependency there is no fix and the message
+says so — the shape has to change, or the dependency has to export it.
+→ <a href="../spec/names.html">spec §4.8</a></p>
 <h2 id="types-and-generics"><a class="header" href="#types-and-generics">Types and generics</a></h2>
 <p><strong>“Expected …, but got … instead.”</strong>
 The general type mismatch. One special case surprises people: an <code>i53</code>
 mixed with a bare integer literal: the literal is <code>i32</code>, and there are
-no implicit conversions. Suffix it (<code>stamp + 1000i53</code>).
+no implicit conversions. Suffix it (<code>stamp + 1000i53</code>). When both sides
+are numeric widths the message goes on to name the conversion —
+<code>There are no implicit numeric conversions; convert with `.as_u53()` </code> —
+and the editor offers it as a quick fix. When one side is <code>usize</code> the
+message says what that is, <code>Expected usize (an index: a position, a length or a count), but got i32 instead</code>, so a program migrating its
+indexes to <code>usize</code> learns which of its values are indexes — and
+<code>vilan check --fix</code> converts every one of them in a package.
 → <a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“generic parameter ‘…’ is missing the bound ‘: …’ required by this call”</strong>
 You called something that needs a capability (say <code>PartialEq</code>) with a
 generic parameter that doesn’t declare it. Add the bound to <em>your</em>
-signature: <code>fun caller&lt;U: PartialEq&gt;(…)</code>.
-→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
+signature: <code>fun caller&lt;U: PartialEq&gt;(…)</code>. A <strong>blanket impl</strong> covering the
+trait does not spare you this: a generic parameter’s bounds are answered
+from what it <em>declares</em>, never from an impl, so the same call that
+compiles for a concrete <code>i32</code> is refused for a <code>T</code> — declare it and it
+holds.
+→ <a href="../tour/data-and-traits.html">Data and traits</a>, <a href="../spec/types.html">spec §5.4</a></p>
 <p><strong>“cannot call method ‘…’ on …”</strong>
 The value’s type doesn’t have that method. If the type is a generic
 parameter, you probably need a bound. If it says something like
@@ -273,18 +343,46 @@ different value was passed than you think.
 An <code>impl … with Trait</code> doesn’t provide every required method, or a bound
 demands a trait the type never implemented.
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
-<p><strong>“‘…’ is a trait, not a type: a trait is not a value type (vilan has no trait objects)”</strong>
-A trait’s name was written where a type belongs — a parameter, a return
-type, a struct field, or a generic argument like <code>List&lt;Display&gt;</code>. Traits
-are <strong>bounds</strong>, not types, so no value can ever have that type: the impl
-is fine, the signature is not. Write the generic the message spells out —
-<code>fun show&lt;T: A&gt;(v: T)</code> — or, inside the trait’s own declaration, write
-<code>Self</code>, which is what a trait naming itself in a return position always
-meant. The note points at the trait, which may live in another module.
-For “one of several things at runtime”, use an enum. A <code>let</code> binding’s
-own annotation is not this error: there a trait is a <em>constraint</em> on the
-inferred type, see the next entry.
+<p><strong>“‘…’ is a trait, not a type: a trait names a bound, and a value needs a type”</strong>
+A trait’s name was written where a type belongs — a return type, a struct
+field, or a generic argument like <code>List&lt;Display&gt;</code>. Traits are <strong>bounds</strong>,
+not types, so no value can have that type: the impl is fine, the
+signature is not. Three spellings do what was meant, and the message names
+each. <code>dyn A</code> is the <strong>trait object</strong> — a value whose concrete type is
+erased, carrying the trait’s members in a table — and it is what a field,
+an element type or any other value position takes when what it holds is
+decided at runtime. A <strong>parameter</strong> needs nothing: <code>fun f(x: A)</code> already
+IS <code>fun f&lt;T: A&gt;(x: T)</code>. A <strong>return</strong> takes the generic the message spells
+out, <code>&lt;T: A&gt;</code> with <code>T</code> written in the return position; inside the trait’s
+own declaration it takes <code>Self</code>, which is what a trait naming itself in a
+return position always meant. A <code>let</code> binding’s own annotation is not this
+error at all — there a trait is a <em>constraint</em> on the inferred type; see
+the next entry. The note points at the trait, which may live in another
+module. For a CLOSED set of alternatives, an enum is still better than an
+object: it is exhaustive, checked, and costs nothing at runtime.
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“<code>…</code> cannot be a <code>dyn</code> object: … An object dispatches through a table of its trait’s members, so every member it requires must take a receiver, name no <code>Self</code> in its signature, and be non-generic”</strong>
+The first sentence names the member and why: <strong>“<code>…</code> is a static — it takes
+no <code>self</code>”</strong>, <strong>“… is generic — one vtable slot cannot hold an unbounded
+family of specializations”</strong>, or <strong>“… returns <code>Self</code> — the caller would have
+to know the type the object erased”</strong>. An object dispatches through a table of its
+trait’s members, so each member the trait <em>requires</em> has to fit a slot: it
+takes a receiver, it names no <code>Self</code>, and it is not generic. The message
+names the <strong>member</strong> that disqualified the trait and the note points at
+its declaration, because naming the trait would send you to read every
+signature it has. A trait’s <em>default</em> members never disqualify it — they
+are the trait’s own code over the requirements. Where the trait cannot be
+an object, the generic is the answer: <code>&lt;T: Trait&gt;</code> keeps the type, needs
+no table, and is what the language does everywhere else.
+→ <a href="../tour/data-and-traits.html">Data and traits</a></p>
+<p><strong>“‘…’ is a resource, so it cannot become a <code>dyn …</code>”</strong>
+A <code>resource</code> has exactly one owner and a destructor that runs at a known
+point. Erasing it into a trait object would make that destructor dynamic —
+dispatched through the table like everything else — where the rest of the
+language keeps teardown static. Hold the resource in a struct field of
+your own and put <em>that</em> behind the object, or take it through a generic
+bound, where its type is still known.
+→ <a href="../tour/memory-model.html">Memory model</a></p>
 <p><strong>“‘…’ does not implement trait ‘…’, required by the annotation on ‘…’”</strong>
 A <code>let</code> binding’s annotation named a trait, which reads as a constraint
 on the value’s own type — the binding still has the concrete type its
@@ -351,7 +449,9 @@ every trait-provided one.
 <p><strong>“‘…’ is not an inherent member of ‘…’: … provide… it; call … instead”</strong>
 <code>Type::method(receiver)</code> means the type’s <em>own</em> method. This one comes
 from a trait, so name the trait at the path head instead:
-<code>Trait::method(receiver)</code>.
+<code>Trait::method(receiver)</code>. It reads the same whether the impl block
+declares the method or takes the trait’s default body — a default body
+is provision, and <code>Trait::method</code> is what reaches it either way.
 → <a href="../spec/names.html">Names, modules, and packages</a></p>
 <p><strong>“‘…’ does not implement ‘…’, so ‘…::…’ cannot be called on it”</strong>
 A <code>Trait::method(receiver)</code> call named a trait the receiver’s type has no
@@ -403,6 +503,22 @@ turns it into a “Change to <code>entries</code>” quickfix that rewrites the 
 Close enough is a real threshold: <code>"entires"</code> suggests <code>"entries"</code>, and
 <code>"x"</code> suggests nothing at all.
 → <a href="../tour/control-flow.html">Control flow</a></p>
+<p><strong>“<code>…</code> here is std’s … twin — this file is analyzed under …”</strong> <em>(a note)</em>
+This rides under a field or method miss on a <strong>std</strong> type, and it is
+usually the whole story. A build’s platform selects <code>std</code>’s layer
+overlay, so it decides what a name like <code>View</code> <em>is</em>: <code>{ element }</code> in
+the browser layer, <code>{ tag, attributes, children, text }</code> in the process
+one. If your file is being analyzed under the platform you did not have
+in mind, correct code reports a field that does not exist. The note
+names which twin you got and <strong>why that platform</strong> — one of four: the
+entry that reaches this file, the <code>default-entry</code> that answers when no
+entry reaches it, an explicit <code>--platform</code>, or a single-entry package’s
+own <code>target</code>. Fix the situation the reason names rather than the line:
+if a module should be browser code, have the browser entry reach it
+(import it from that entry, directly or transitively); if it is shared
+between legs, it must type-check under <em>every</em> leg that loads it, and
+the note tells you which one is complaining.
+→ <a href="../tour/platforms.html">Platforms</a>, <a href="../guide/ui.html">Building UI</a></p>
 <p><strong>“<code>…</code> expects N arguments, but got M instead: <code>…</code> is missing.”</strong> ·
 <strong>“<code>…</code> expects N fields, but got M instead: <code>…</code> is not a field of <code>…</code>.”</strong>
 A call or a struct literal is short of, or over, its declared list. The
@@ -459,8 +575,13 @@ printed <code>1,2</code> for a <code>Point { x = 1, y = 2 }</code>. Render it fi
 <code>point.to_string()</code>, adding an <code>impl Point with Display</code> if the type has
 none. <strong>An interpolated string is this same concatenation</strong> (<code>i"a{x}b"</code>
 <em>is</em> <code>("" + "a" + x + "b")</code>), so a hole gets the identical error and the
-identical fix; the same goes for a <code>css</code> block value that mixes text
-with holes. A backed enum is included in the refusal on purpose: its
+identical fix. A <code>css</code> block’s hole is the one that is NOT this
+concatenation any more (A34): a mixed value passes each hole through
+<code>std::style::piece</code>, so <code>border: 1px solid {Color::gray(500)};</code> keeps
+the value typed and puts its <code>:root</code> line on the sheet — which is why
+the message steers a style token into a block rather than into
+<code>.to_string()</code>, whose text would name a custom property nothing
+declares. A backed enum is included in the refusal on purpose: its
 backing is a lowering detail, not a rendering the program chose.
 A <strong>generic parameter</strong> gets the same error worded for its bounds — an
 unbounded one promises nothing, and one bounded to something other than
@@ -488,6 +609,23 @@ admitted set has a trait that names it (<code>Display</code>), a number’s has 
 so <code>T: Add</code> promises <code>T + T</code> and says nothing about <code>i32</code>. Convert where
 the type is known and declare the operand <code>i32</code>.
 → <a href="../tour/values-and-types.html">Values and types</a></p>
+<p><strong>“<code>…</code>’s <code>add</code> accepts <code>…</code>, but the right operand is <code>…</code>”</strong>
+The same membership rule where the left operand <strong>dispatches</strong>: your impl
+says what its operator accepts, and this operand is not it. Three shapes
+reach the message. A <code>Self</code> operator (<code>impl Counter with Add</code>) accepts
+the subject and nothing else — a foreign struct there used to be read
+through the declared type’s fields, so <code>Counter { n = 1 } + Point { x = 1, y = 2 }</code> computed off the <code>Point</code>’s first slot. A <strong>declared</strong> <code>B</code>
+(<code>impl Meters with Add&lt;Feet&gt;</code>) accepts <em>that</em> type, which means it does
+not accept <code>Meters</code>. And an impl over its own parameter
+(<code>impl Bag&lt;type T&gt; with Add&lt;T&gt;</code>) accepts whatever the left operand bound
+<code>T</code> to. The routes out: convert the operand, give the left type a second
+impl whose <code>B</code> is this operand’s type, or — for a <strong>generic</strong> operand,
+where no bound can prove membership — write the left operand’s type over
+that same parameter, so its <code>B</code> <em>is</em> the parameter. Every dispatched
+operator reads this way, <code>eq</code> for <code>==</code>/<code>!=</code> and <code>lt</code>/<code>le</code>/<code>gt</code>/<code>ge</code> for
+the orderings included.
+→ <a href="../tour/data-and-traits.html">Data and traits</a>,
+<a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“<code>+</code> adds numbers and concatenates <code>str</code>, and <code>…</code> is neither: it has no
 <code>Add</code> …”</strong>
 <code>bool</code> and backed enums are native for <code>==</code> and <code>&lt;</code> without being
@@ -502,8 +640,12 @@ needs <code>Add</code>, <code>==</code> needs <code>PartialEq</code>, <code>&lt;
 through it, and <code>lt</code>/<code>le</code>/<code>gt</code>/<code>ge</code> come free as defaults).
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“the literal <code>…</code> is out of range for <code>…</code> (…)”</strong>
-The number doesn’t fit the type. For <code>i53</code>/<code>u53</code> the range is ±2^53,
-JavaScript’s exact-integer window. Bigger integers take <code>BigInt</code> (<code>7n</code>).
+The number doesn’t fit the type. For <code>i53</code>/<code>u53</code>/<code>usize</code> the range is
+±2^53 (non-negative for the unsigned two), JavaScript’s exact-integer
+window. Bigger integers take <code>BigInt</code> (<code>7n</code>). A negative literal at an
+unsigned type (<code>let n: usize = -1</code>) is refused with its own message, which
+names the type’s range: an unsigned value is never below zero, and a
+“nothing here” sentinel is <code>None</code> in an <code>Option&lt;usize&gt;</code>.
 → <a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“unknown numeric suffix <code>…</code>”</strong>
 The letters after the number aren’t a type. If it says <code>i64</code> or <code>u64</code>:
@@ -627,7 +769,7 @@ an <code>Option&lt;…&gt;</code> and <code>take()</code> it out.
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“<code>…</code> is moved on one path through this branch but not another: …”</strong>
 An <code>if</code>/<code>match</code> moves the binding on some paths and not others, so its
-end-of-scope ownership isn’t static (there are no runtime drop flags). Move it
+ownership at the drop point isn’t static (there are no runtime drop flags). Move it
 on <em>every</em> path, on none, or hold it in an <code>Option</code> and <code>take()</code> on the
 path that consumes it. A diverging leg (one that <code>ret</code>s or <code>jump</code>s out) is
 exempt: it never reaches the merge.
@@ -704,10 +846,10 @@ and nothing will close. Send a plain-data name for the resource instead
 The other derives are unaffected: <code>PartialEq</code> and <code>Debug</code> read a resource’s
 fields through the loan and stay available.
 → <a href="../tour/resources.html">Resources</a>, <a href="../guide/services.html">Services</a></p>
-<p><strong>“<code>…</code> implements <code>Drop</code> but is not a resource: … declare it a <code>resource</code> …”</strong>
-<code>Drop</code> (the destruction hook) may be implemented only for a <code>resource</code>
+<p><strong>“<code>…</code> implements <code>Drop</code> but is not a resource: … mark it <code>[resource]</code> …”</strong>
+<code>Drop</code> (the destruction hook) may be implemented only for a resource
 type. A destructor without move discipline is the double-close bug:
-copy the value and each copy would run <code>drop</code>. Declare the type <code>resource</code>
+copy the value and each copy would run <code>drop</code>. Mark the type <code>[resource]</code>
 so it moves instead of being copied. (Plain-data, framework-driven teardown
 uses the cooperative <code>Disposable</code> protocol, not <code>Drop</code>.)
 → <a href="../tour/resources.html">Resources</a></p>
@@ -831,7 +973,8 @@ severed. Wrap it in a closure literal at the use site instead.
 <p><strong>“an injected (<code>context</code>-typed) closure can only be called, forwarded …, or passed to <code>run</code>”</strong>
 Injected closures (the ones with <code>context</code> clauses in their type) are
 deliberately restricted so the ambient value can always be threaded to
-them. Don’t store them; call or forward them.
+them. Call one, forward it to a position carrying the same clause — a
+parameter, a struct field, a return — or pass it as <code>run</code>’s body.
 → <a href="../tour/functions-and-closures.html">Functions &amp; closures</a></p>
 <p><strong>“unused result of a <code>[must_use]</code> call: bind it (e.g. <code>owner.take(…)</code>), or <code>let _ = …</code> to discard.”</strong>
 The call returns something that stops working if you drop it (a
@@ -850,7 +993,8 @@ migration notes.
 <p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> type <code>…</code> is <code>…</code>, which is not Wire: …”</strong>
 Something unserializable (a closure, a <code>Signal</code>) is inside a payload
 type. Wire types carry data only: scalars, <code>str</code>, <code>bool</code>,
-<code>List</code>/<code>Option</code> of Wire, and other Wire types.
+<code>List</code>/<code>Option</code>/<code>Result</code>/<code>Map</code> of Wire, other Wire types, and anything
+you write an <code>impl … with Wire</code> for.
 → <a href="../guide/services.html">Services &amp; RPC</a></p>
 <p><strong><code>RpcError::Contract</code> at connect time</strong>
 Client and server were built from different versions of the service.
@@ -956,24 +1100,40 @@ parentheses, <code>if p == Point { … } { … }</code> leaves a bare <code>Poin
 condition’s operand, which reports <strong>“<code>Point</code> is a type, not a value”</strong>.
 Parenthesize the literal: <code>if p == (Point { x = 1 }) { … }</code>.
 → <a href="../spec/grammar.html">spec §3.8</a></p>
-<p><strong>“<code>#</code> is not a vilan token …”</strong> · <strong>“<code>@</code> is not a vilan token …”</strong>
-Both turn up almost only inside a <code>css</code> block. A colour is written as a
-hole that routes through the <code>Color</code> type — <code>color: {Color::hex("#333")};</code>
-— which is what lets the type carry its own <code>:root</code> line. And a <code>css</code>
-block has no at-rules of any kind: a media query is spelled as a
-breakpoint combinator (<code>.md { … }</code>), and a declaration block under a
-selector of your own is <code>std::style::declare</code>.
+<p><strong>“a <code>css</code> declaration is a CALL …”</strong> · <strong>“<code>@</code> is not a vilan token …”</strong>
+Both turn up only inside a <code>css</code> block. A declaration is a CALL —
+<code>color(Color::hex("#333"));</code>, <code>width(pct(100));</code> — so the property is the
+name and the value is ordinary vilan expressions; the CSS-shaped
+<code>property: value;</code> is what the block used to take, and the <code>:</code> is where
+it reports. There are no <code>{ }</code> holes any more, because there is no token
+span for one to interrupt: a typed value is simply an argument, and a
+colour routes through the <code>Color</code> type as it always did, which is what
+lets the type carry its own <code>:root</code> line. Several arguments join with one
+space, the way CSS’s own value lists do — <code>margin(px(4), px(8))</code>,
+<code>border("1px solid", gray(300))</code>. And a <code>css</code> block has no at-rules of
+any kind: a media query is spelled as a breakpoint combinator
+(<code>.md { … }</code>), and a declaration block under a selector of your own is
+<code>std::style::declare</code>. <code>@</code> lexes as nothing at all, anywhere, which is
+why that one is the lexer’s refusal and not the block’s.
 → <a href="../guide/styling.html">Styling</a></p>
 <p><strong>“<code>pub</code> is not a vilan keyword …”</strong>
 <code>pub</code> (and <code>public</code>) is an ordinary identifier here, so <code>pub fun helper()</code>
 reads as the expression statement <code>pub</code> followed by an item — which used
 to report a missing <code>;</code> three columns in, a true statement about a
-program nobody wrote. Vilan has no visibility marker to reach for: a
-module’s items are importable as written, so the fix is to delete the
-word. <code>export</code> is a different thing — it <em>re-exports</em> something this
-module imported (<code>export import pkg::io::panic;</code>), so importers of this
-module see the name as if it were declared here.
-→ <a href="../spec/names.html">spec §4.3</a></p>
+program nobody wrote. The marker vilan does have is <strong><code>export</code></strong>: write
+<code>export fun helper()</code>. An item a module does not export is the module’s
+own — completion does not offer it, the add-import fix does not propose
+it, and a plain import of it from another file of the same package warns
+— but it is never <em>blocked</em>: an importer who needs it anyway writes the
+reach, <code>import pkg::util::{ #helper };</code>. There is no second marker to
+learn: the default IS private, <code>export *;</code> marks a whole module at once,
+and <code>export(in mod)</code> / <code>export(in pkg)</code> narrow one item. <code>export</code> also
+<em>re-exports</em> something this module imported
+(<code>export import pkg::io::panic;</code>), so importers of this module see that
+name as if it were declared here. Unlike <code>pub</code>, it goes ahead of the
+attributes as well as the keyword — <code>export [derive(Wire)] struct Handle</code>
+— because it wraps the whole declaration.
+→ <a href="../spec/names.html">spec §4.8</a></p>
 <p><strong>“a mutable binding is spelled <code>mut x = …</code> …”</strong>
 <code>let mut x = 1</code> is the Rust spelling. <code>let</code> and <code>mut</code> are vilan’s two
 binding <em>forms</em>, not a keyword and a modifier on it: <code>let</code> binds
@@ -1090,7 +1250,7 @@ page, <code>check_shell</code> catches the same mismatch at boot.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

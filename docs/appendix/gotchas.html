@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -224,6 +224,15 @@ subscriptions.</li>
 <li><strong>Disposal doesn’t cancel the in-flight wave</strong>: a subscriber already
 queued in the draining turn may fire once more; only <em>later</em> deliveries
 are guaranteed gone.</li>
+<li><strong>Don’t leave your own <code>&lt;a href&gt;</code> drag-armed.</strong> In Chrome, a link drag
+that starts while a quick click’s in-app navigation is still settling
+wedges the <em>tab</em>: every later drag there gets <code>dragstart</code> then
+<code>pointercancel</code> and never <code>dragend</code>, and pointer input stays dead — hover,
+<code>:active</code>, clicks, native scrollbars — while wheel scrolling (the
+compositor’s) keeps working. It is per tab and survives a hard refresh;
+only a new tab escapes it. <code>link</code> and <code>link_to</code> set <code>draggable="false"</code>
+for you; a hand-written anchor wants it too. The <code>href</code> is untouched, so
+middle-click, ctrl-click and copy-link-address still behave natively.</li>
 </ul>
 <h2 id="services--the-wire"><a class="header" href="#services--the-wire">Services &amp; the wire</a></h2>
 <ul>
@@ -309,7 +318,7 @@ binary silently writes wrong goldens.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

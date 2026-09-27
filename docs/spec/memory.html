@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -311,7 +311,7 @@ everything that already read the old one keeps the old one. Every other form
 mutates the storage <strong>in place</strong> — assigning through a <strong>view</strong>, writing a
 <strong>component</strong> of a place (<code>t.1 = 9</code>, <code>h.pair.1 = 9</code>, <code>xs[0] = 9</code>), and calling
 a <code>&amp;mut self</code> method that does either. None of it is visible through a capture:</p>
-<pre><code class="language-vilan">enum Feed { Ready(List&lt;str&gt;, i32), Done }
+<pre><code class="language-vilan">enum Feed { Ready(List&lt;str&gt;, usize), Done }
 
 impl Feed {
 	fun step(&amp;mut self): str {
@@ -529,7 +529,7 @@ a copied refcount miscounts. Destruction is therefore not bolted onto the
 data world: the world is partitioned. <strong>Data</strong> is everything above: copied
 on binding, elided at last use, reclaimed by the host. A <strong>resource</strong> is a
 small, explicitly-rooted class with <em>affine</em> discipline (one owner at a
-time, no copies) whose owner’s scope end runs its destructor. This section
+time, no copies) whose owner’s last use runs its destructor. This section
 is the static <strong>death</strong> cell of §6.0: a resource’s move ends the source
 binding’s epoch, and <code>drop</code> is its final event.</p>
 <p>The class is two tiers. <strong>Tier 1</strong>, specified here and enforced on JS, is
@@ -539,21 +539,25 @@ future native arc and is out of scope for this section beyond the forward
 references above.</p>
 <h3 id="the-resource-class"><a class="header" href="#the-resource-class">The resource class</a></h3>
 <ul>
-<li><strong><code>resource</code> is a declaration modifier</strong>, written in <code>external</code>’s
-position: <code>resource struct S</code>, <code>resource external struct D</code>, <code>resource enum E</code>.</li>
+<li><strong><code>[resource]</code> is a declaration attribute</strong>, written ahead of
+<code>external</code>: <code>[resource] struct S</code>, <code>[resource] external struct D</code>,
+<code>[resource] enum E</code>. It labels a struct or an enum and nothing else.
+(<code>resource</code> was a keyword until B413; it is an ordinary name now, and
+the old <code>resource struct</code> spelling is refused with a steer to the
+attribute.)</li>
 <li><strong>Containment infers.</strong> An aggregate (struct, enum, tuple, or fixed
 array <code>[R; n]</code>) with a resource field, payload, element, or member type
 <em>is</em> a resource, recursively (the <code>Wire</code>/<code>Hashable</code> all-fields machinery
 with the polarity flipped: any resource member marks the whole). Declaring
-<code>resource</code> on such a type is allowed and checked; omitting it never hides
+<code>[resource]</code> on such a type is allowed and checked; omitting it never hides
 resource-ness.</li>
-<li><strong>The modifier is required at leaves.</strong> An <code>external struct</code> is opaque, so
+<li><strong>The attribute is required at leaves.</strong> An <code>external struct</code> is opaque, so
 a host-object resource (<code>Database</code>) must declare itself one.</li>
 <li><strong>Per-instantiation for generics.</strong> <code>Option&lt;Database&gt;</code> is a resource
 instantiation; <code>Option&lt;i32&gt;</code> stays data. Resource-ness of a generic type
 is decided at each instantiation, like the platform and asyncness bits.</li>
 <li><strong><code>Drop</code> may be implemented only for a resource type</strong> (see below); an
-impl on a data type is an error steering to add <code>resource</code>.</li>
+impl on a data type is an error steering to add <code>[resource]</code>.</li>
 </ul>
 <h3 id="the-affine-rules"><a class="header" href="#the-affine-rules">The affine rules</a></h3>
 <p><em>Move</em> transfers ownership and leaves the source binding dead; <em>loan</em> is the
@@ -583,7 +587,7 @@ indistinguishable by design, because they write the same storage under
 different names:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-resource struct Guard { label: str }
+[resource] struct Guard { label: str }
 impl Guard with Drop {
     fun drop(&amp;mut self) { print(self.label); }
 }
@@ -610,7 +614,7 @@ old value first” orders the destructor against the <em>write</em>, not against
 right-hand side’s own evaluation: the assignment evaluates its new value,
 then destroys what the place holds, then stores. So a right-hand side that
 panics leaves the place holding its original value — still live, still
-owned, and dropped exactly once at the scope end — rather than a value the
+owned, and dropped exactly once at its last use — rather than a value the
 overwrite had already destroyed. Where the right-hand side has effects of
 its own, they are observable before the outgoing value’s <code>drop</code> body runs.</p>
 <p>The rule is read over the <strong>place</strong>, all the way down: writing over a
@@ -619,7 +623,7 @@ element — destroys the outgoing value too, whether the aggregate is owned
 or reached through a view.</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-resource struct Guard { label: str }
+[resource] struct Guard { label: str }
 impl Guard with Drop {
     fun drop(&amp;mut self) { print(self.label); }
 }
@@ -649,15 +653,16 @@ copy). The rule reads in both directions: because a loan changes no
 ownership, a body may not move a loaned resource parameter <strong>out</strong> — no
 returning it, no <code>own</code>-passing it on, no consuming <code>match</code> of it. Doing so
 would hand the caller a second owner while the caller’s binding stays live
-and still drops at its scope end, destroying one value twice. <code>own</code> is the
+and still drops at its own last use, destroying one value twice. <code>own</code> is the
 only convention a body may consume, and a <strong>consuming method</strong> therefore
 declares <code>own self</code>: <code>o.unwrap()</code> is a move of <code>o</code>, so a later use of <code>o</code> is
-use-after-move and <code>o</code> is not torn down at scope end. A bare <code>self</code>
+use-after-move and <code>o</code> owes no teardown at all. A bare <code>self</code>
 receiver stays a loan (<code>db.exec(..)</code> never consumes <code>db</code>).</p>
 </li>
 <li>
 <p><strong>R4: returns move out</strong>, including through <code>if</code> / <code>match</code> tails (a
-diverging leg is exempt). A tail move-out is still a move on <em>that</em> path
+diverging leg — one that <code>ret</code>s, <code>jump</code>s, <code>panic</code>s or loops forever,
+types §5.1 — is exempt). A tail move-out is still a move on <em>that</em> path
 only — R7 reads the arms against each other, so producing a different
 binding from each arm is a conditional move, not two independent returns.</p>
 </li>
@@ -671,24 +676,24 @@ permitted, and is R2’s overwrite: the outgoing value is destroyed first.</p>
 <li>
 <p><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
 subject; pattern captures move the payloads into the arm, and each capture
-<strong>owns</strong> what it took — it is destroyed at the end of the arm that bound
-it, in reverse capture order, unless it is moved onward first. The same
-holds for a <code>let</code> pattern (<code>let (handle, count) = pair</code>), whose captures
-drop at the declaring scope’s end. Matching a loan (<code>match &amp;self.state</code>,
+<strong>owns</strong> what it took — it is destroyed at its last use inside the arm that
+bound it, simultaneous captures in reverse capture order, unless it is moved
+onward first. The same holds for a <code>let</code> pattern (<code>let (handle, count) = pair</code>), whose captures drop at their last use like any other local. Matching
+a loan (<code>match &amp;self.state</code>,
 and the <code>x is Some(let v)</code> test) inspects without consuming: the subject
 keeps ownership and destroys the payload itself, so its captures own
 nothing — and, owning nothing, they may not be <strong>consumed</strong>. This is R3’s
 “a loan changes no ownership” read in the capture position: <code>own</code>-passing
 a loaned capture, returning it, or matching it by value would hand a
-second owner the payload the subject still destroys at its own scope end.
+second owner the payload the subject still destroys at its own last use.
 The fix is to consume the <em>subject</em> (<code>match x</code> without the <code>&amp;</code>), not to
 redeclare the capture — a capture carries no convention to change.</p>
 </li>
 <li>
 <p><strong>R7: no conditional moves.</strong> A binding must be moved on every path
 through a scope or on none; moving it on one path only is an error. This
-keeps end-of-scope ownership static: there are no runtime drop flags in
-v1. <strong>Branch tails are paths too.</strong> R4 makes each arm’s tail a move-out,
+keeps ownership static at the drop point: there are no runtime drop flags
+in v1. <strong>Branch tails are paths too.</strong> R4 makes each arm’s tail a move-out,
 and the arms are alternatives, not a rejoin — so <code>if flag { x } else { x }</code>
 is moved on every path and fine, while <code>if flag { first } else { second }</code>
 moves each binding on one path and abandons it on the other, and is the
@@ -856,10 +861,12 @@ leg, a loop body or a nested block, exactly as at a body’s top level.</p>
 <ul>
 <li><strong>A loan takes no teardown.</strong> Only an owner destroys. A view <em>binding</em> of a
 resource (<code>let v = &amp;mut holder</code>) names storage another binding still owns,
-so its scope end drops nothing — its referent is destroyed once, where the
-owner’s scope ends. This is the same sentence R2’s view-write half reads in
-the other direction: a loan owns nothing, so it neither destroys at its own
-scope end nor is excused from destroying what it overwrites.</li>
+so the view’s own teardown point drops nothing — its referent is destroyed
+once, at the owner’s last use, which the loan-extension clause above has
+already stretched to cover the view’s. This is the same sentence R2’s
+view-write half reads in the other direction: a loan owns nothing, so it
+neither destroys at its own last use nor is excused from destroying what it
+overwrites.</li>
 <li><strong>Module-level resources never drop.</strong> A top-level <code>let</code> resource has
 process lifetime (the serve-forever server’s <code>Database</code>). It is
 consequently <strong>loan-only</strong>: moving it into a local, an <code>own</code> argument, or
@@ -941,8 +948,10 @@ useful for data too.</p>
 <h3 id="early-teardown--drop"><a class="header" href="#early-teardown--drop">Early teardown — <code>drop</code></a></h3>
 <pre><code class="language-vilan fragment">fun drop&lt;T&gt;(own value: T) {}
 </code></pre>
-<p>Moving a value into <code>drop</code> destroys it at that (immediate) scope end instead
-of waiting for the owner’s scope to close. The call is rewritten at each
+<p>Moving a value into <code>drop</code> destroys it at that statement: the move <em>is</em> a
+use, so <code>drop(x)</code> is <code>x</code>’s last use and the inferred teardown point is the
+one the call was written at (a later mention is use-after-move). The call
+is rewritten at each
 site by the concrete argument type: for a resource it lowers to that type’s
 destructor; for plain data it is a no-op that consumes the argument for its
 effects. There is no public <code>close()</code> to keep in sync with a destructor;
@@ -951,11 +960,12 @@ a still-abstract type <code>T</code> has no concrete destructor (a generic body 
 emitted once, erased), so R11 rejects it <strong>under a resource instantiation</strong>
 (“whose erased body has no concrete destructor; destroy at a concrete type, or move the value out to the caller”); a data
 instantiation keeps the legitimate no-op consume.</p>
-<p><code>drop(x)</code> moves the teardown earlier; it does not remove the scope’s safety
-net. The owner’s scope end still covers the window between the acquisition
-and the <code>drop(x)</code>, so a panic that never reaches the explicit call releases
-the resource on the way out exactly as an implicit scope-end drop would — and
-the two never both fire, so a fall-through path destroys exactly once.</p>
+<p><code>drop(x)</code> names the teardown point; it does not remove the safety net. The
+teardown <code>finally</code> opened at the acquisition closes at the <code>drop(x)</code>
+statement rather than at the scope end, so it still covers the whole window
+between them: a panic that never reaches the explicit call releases the
+resource on the way out exactly as an inferred drop would — and the two
+never both fire, so a fall-through path destroys exactly once.</p>
 <h3 id="ownednursery"><a class="header" href="#ownednursery"><code>OwnedNursery</code></a></h3>
 <p><code>OwnedNursery</code> (<code>std::task</code>) is the resource-owner for object-lifetime
 background work that no function-scoped <code>nursery</code> can hold. It wraps a
@@ -965,8 +975,10 @@ R10-rejected, so ownership lives only in the wrapper). <code>enter(body)</code> 
 in the body’s dynamic extent registers with the owner) but, unlike
 <code>nursery</code>, does <em>not</em> join: it returns the body’s value as soon as the body
 settles, leaving the spawned tasks running under the owner. Its <code>Drop</code>
-cancels the owned nursery, so dropping the owner (at scope end or via
-<code>drop(owner)</code>) aborts in-flight bridged IO.</p>
+cancels the owned nursery, so dropping the owner (at its last use or via
+<code>drop(owner)</code>) aborts in-flight bridged IO. The owner’s last use is
+therefore what bounds the work: if nothing reads the owner after <code>enter</code>,
+the tasks are cancelled as soon as <code>enter</code> returns.</p>
 <p>Its nursery runs in <strong>detached mode</strong>: because nothing ever joins the owned
 children, a child failure that is not a cancellation echo takes the
 free-task reporting path (console, with the spawn origin) rather than being
@@ -1065,6 +1077,51 @@ closure over a <code>&amp;mut</code> parameter, handed to a function that stores
 leaves the frame whose place the view names. Nothing in std does this,
 and the shape needs the closure-escape analysis §6.4’s dynamic remainder
 is future work for.</p>
+<h2 id="610-lazy--a-binding-initialized-at-first-use"><a class="header" href="#610-lazy--a-binding-initialized-at-first-use">6.10 <code>lazy</code> — a binding initialized at first use</a></h2>
+<p><em>(Design: <a href="https://github.com/vilan-lang/proposals/blob/main/projects/vilan/proposal/lazy.md"><code>lazy</code></a> §2.)</em></p>
+<p>A <strong>module-level</strong> <code>let</code> may be written <code>lazy</code>, and then its initializer
+runs at the binding’s <strong>first use</strong> instead of at module load, and
+memoizes:</p>
+<pre><code class="language-vilan">import std::db::Database;
+
+lazy let database: Database = Database::open("kolt.db");
+
+fun main() {
+	database.exec("CREATE TABLE IF NOT EXISTS notes (body TEXT)");
+}
+</code></pre>
+<p><em>Everything else about the binding is unchanged.</em> The module owns the
+value, it has process lifetime and never drops, a resource is loan-only
+and write-frozen (§6.8), a closure may reference it under R9’s
+module-level exemption, and the platform coloring of the initializer
+colors the binding exactly as an eager one’s does. <code>lazy</code> moves one
+event’s <strong>time</strong>, and nothing else.</p>
+<p>Four rules follow from where the initializer runs:</p>
+<ul>
+<li><strong>The initializer is sync and context-free.</strong> First touch can happen
+anywhere, so the deferred code must be self-contained — the same law a
+<code>drop</code> body obeys (§6.8), and for the same reason: neither call site
+threads a context.</li>
+<li><strong>Reentrancy traps.</strong> An initializer that (transitively) reads its own
+binding panics with <code>lazy initialization cycle: `database`</code>, via an
+in-progress flag. It is not a compile error: two lazy bindings that
+reach each other are legal as long as neither is forced into its own
+initialization.</li>
+<li><strong>A failed initializer poisons the binding.</strong> The panic propagates at
+the touching site, and every later touch re-panics naming the poison.
+Retrying would re-run the initializer’s side effects and turn “at most
+once” into “at least once per attempt”.</li>
+<li><strong>Initialization is atomic within a turn</strong>, by construction: the
+initializer is synchronous, so nothing interleaves mid-initialization.</li>
+</ul>
+<p>A <strong>local</strong> <code>let</code> may not be <code>lazy</code>: destroying one at the end of its
+scope would need a runtime was-it-initialized flag, and drop flags are
+ratified out (§6.8). Neither may a struct field — a field’s forcing point
+is any read anywhere, which is interior mutability through a copyable
+value, and <code>Shared</code> (§6.7) is the feature for that.</p>
+<p>The same word on a <strong>parameter</strong> defers an argument rather than an
+initializer; the two share one lowering and one semantic — evaluate at
+first demand, at most once, memoize.</p>
 
                     </main>
 
@@ -1117,7 +1174,7 @@ is future work for.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

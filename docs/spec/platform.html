@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -213,6 +213,28 @@ entries: if code the fenced function reaches requires a layer one of
 the fenced platforms lacks, the error lands <strong>at the fence</strong> with the
 offending chain, not at some distant entry in a dependent build.
 Fences add no runtime behavior; they are checked declarations.</p>
+<p>A fence is also the platform its body is <strong>analyzed under</strong>. One
+analysis types a file under one platform — and so under one <code>std</code>
+twin, which is what a body over <code>std::ui</code>’s <code>Region</code> reads its fields
+from — so a file is analyzed under a platform every fence and label in
+it admits, whenever the colour its package gives it (§11.2, the
+<code>default-entry</code>’s, inference’s) admits none of them. Declarations that
+share no platform make the file a pair of twins; the file’s colour
+stands.</p>
+<p><strong>A file’s own platform.</strong> <code>[platform("browser")] mod self;</code> — the
+attribute on <code>mod self;</code>, the file’s own module (§4.1), as the file’s
+first statement — declares the platform of the whole file. Everything the file declares requires that platform, exactly
+as a layer module’s items require their layer’s: a call into it from an
+entry of another platform is the chain error above
+(<code>`when_value` requires the `browser` platform its file declares and cannot run on `node`</code>, with the path from <code>main</code>). It is also a fence
+on each of the file’s functions, checked the same way. And it is the
+platform the file is analyzed under: it outranks inference and the
+<code>default-entry</code> colour outright, and of the entries that reach the file
+only those it admits type-check it — reaching it from another is the
+error. The same attribute on an <code>impl</code> block does this for the block’s
+members; on a struct, an enum or a trait it takes part in choosing the
+platform the file is analyzed under. A type has no platform of its own
+(§11.2’s requirement is on code), so a label on one requires nothing.</p>
 <h2 id="114-manifests-vilantoml"><a class="header" href="#114-manifests-vilantoml">11.4 Manifests (<code>vilan.toml</code>)</a></h2>
 <p>The manifest declares what a directory builds. Sections:</p>
 <ul>
@@ -389,7 +411,7 @@ only one, the designated <code>default-entry</code>, or the one <code>--entry</c
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

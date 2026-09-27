@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,6 +178,7 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <p>Import what you use:</p>
 <pre><code class="language-vilan fragment">import std::reactive::{
 	Signal, SignalCell, Source, MaybeSignal, Subscription, Disposable, combine,
+	selector, Selector,
 	Owner, owner_scope, get_owner, run_with_owner, comp,
 	Turn, FlushPolicy, turn_scope, turn, batch, flush, at_settle,
 	optimistic, Optimistic, WriteState,
@@ -192,19 +193,30 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <tr><th>Item</th><th>Kind</th><th>One line</th></tr>
 </thead>
 <tbody>
-<tr><td><code>Source&lt;T&gt;</code></td><td>trait</td><td>anything readable + subscribable (<code>get</code>/<code>sub</code>/<code>effect</code>)</td></tr>
+<tr><td><code>Source&lt;T&gt;</code></td><td>trait</td><td>anything readable + subscribable (requires <code>get</code>/<code>on_change</code>; <code>on_settle</code>/<code>sub</code>/<code>effect</code>/<code>effect_on_change</code>/<code>scoped_effect</code>/<code>scoped_effect_on_change</code> are defaults; <code>map</code>/<code>switch</code>/<code>flatten</code>/<code>and_then</code>/<code>cell</code>/<code>distinct</code> are blankets over it)</td></tr>
+<tr><td><code>Subscriber</code></td><td>struct</td><td>one observer’s record — its id (a turn’s dedup key), <code>notify</code>, liveness and class; what <code>on_settle</code> carries</td></tr>
+<tr><td><code>.cell()</code>, <code>.cell_global()</code>, <code>.distinct()</code></td><td>blanket methods</td><td>on any <code>Source</code>: materialise into a cached cell (no comparison), owner-tied — or, <code>.cell_global()</code>, for the life of the program; pass a change on only when the value differs (<code>T: PartialEq</code>)</td></tr>
+<tr><td><code>Map</code>, <code>Switch</code>, <code>FlattenOption</code>, <code>AndThen</code>, <code>Combine</code>, <code>Distinct</code></td><td>structs</td><td>the cold pipeline nodes (A124): hold their upstream, compute when read; what <code>map</code>/<code>switch</code>/<code>flatten</code>/<code>and_then</code>/<code>combine</code> return</td></tr>
+<tr><td><code>Resource&lt;T&gt;</code>, <code>ResourceState&lt;T&gt;</code></td><td>struct/enum</td><td>a value that may still be loading — pending, settled, failed — built by <code>source.load(fetch)</code> or <code>Resource::pending()</code>, read through its fallbacks</td></tr>
 <tr><td><code>Signal&lt;T&gt;</code></td><td>trait</td><td>the writable half (<code>set</code>/<code>notify</code>/<code>set_with</code>); <code>Source</code> is its supertrait</td></tr>
 <tr><td><code>SignalCell&lt;T&gt;</code></td><td>struct</td><td>the canonical cell — mutable value plus subscribers</td></tr>
 <tr><td><code>MaybeSignal&lt;T&gt;</code></td><td>trait</td><td>a component value that may be static OR reactive</td></tr>
 <tr><td><code>Subscription</code></td><td>struct</td><td>an explicit subscription; <code>Disposable</code></td></tr>
 <tr><td><code>combine</code></td><td>fn</td><td>tuple-signal over 2+ signals</td></tr>
+<tr><td><code>selector</code>, <code>Selector&lt;T&gt;</code></td><td>fn/struct</td><td>per-key selection: one subscription, two writes per change</td></tr>
 <tr><td><code>Owner</code></td><td>struct</td><td>disposal bag; the lifetime unit</td></tr>
+<tr><td><code>on_cleanup</code></td><td>fn</td><td>run a cleanup when the ambient owner is released</td></tr>
 <tr><td><code>run_with_owner</code>, <code>comp</code>, <code>get_owner</code>, <code>owner_scope</code></td><td>fns/context</td><td>establish/read the ambient owner</td></tr>
 <tr><td><code>turn</code>, <code>batch</code>, <code>flush</code>, <code>at_settle</code>, <code>FlushPolicy</code>, <code>turn_scope</code></td><td>fns/context</td><td>write batching</td></tr>
 <tr><td><code>optimistic</code></td><td>fn</td><td>paint → commit → confirm-or-rollback (one shot)</td></tr>
 <tr><td><code>Optimistic&lt;T&gt;</code>, <code>WriteState</code></td><td>struct/enum</td><td>the same lifecycle, observable and overlap-safe</td></tr>
 <tr><td><code>draft</code>, <code>Draft&lt;T&gt;</code>, <code>DraftState</code></td><td>fn/struct/enum</td><td>local-first editing cell</td></tr>
-<tr><td><code>reconcile</code>, <code>ReconcilePlan</code>, <code>RowStep</code></td><td>fn/structs</td><td>keyed list diffing engine</td></tr>
+<tr><td><code>reconcile</code>, <code>ReconcilePlan</code>, <code>RowStep</code></td><td>fn/structs</td><td>keyed list diffing engine (<code>K: PartialEq + Hashable</code>)</td></tr>
+<tr><td><code>SeqOp</code>, <code>MapOp</code>, <code>SetOp</code>, <code>DeltaLog</code>, <code>DeltaCursor</code>, <code>DeltaSource</code></td><td>enums/struct/trait</td><td>the change structure: a collection’s change as a value, and its log</td></tr>
+<tr><td><code>DeltaFeed&lt;T&gt;</code></td><td>trait</td><td>a consumer’s question “do you keep ops?” — answered by every <code>Source&lt;List&lt;T&gt;&gt;</code></td></tr>
+<tr><td><code>ListCell&lt;T&gt;</code></td><td>struct</td><td>a <code>List</code> cell whose writes ARE its deltas</td></tr>
+<tr><td><code>SequenceCell&lt;T&gt;</code>, <code>Sequence&lt;T&gt;</code>, <code>Tracked&lt;T&gt;</code></td><td>traits/struct</td><td>twelve mutators over one <code>splice</code> primitive; the <code>&amp;mut</code> twin and its recorder</td></tr>
+<tr><td><code>map_each</code></td><td>fn</td><td><code>map g</code> element-wise and incrementally — one call of <code>g</code> per arriving element</td></tr>
 </tbody>
 </table>
 </div>
@@ -233,18 +245,61 @@ it hands back is a <code>SignalCell&lt;T&gt;</code>.</p>
 }
 impl SignalCell&lt;type T&gt; {
 	fun update(self, mutate: sync |&amp;mut T| void) // mutate in place, notify once
-	fun map&lt;U&gt;(self, transform: sync |T| U): SignalCell&lt;U&gt;
 }
 impl SignalCell&lt;type T&gt; with Source&lt;T&gt; {
 	fun get(self): T
-	fun sub(self, observer: |T| void): Subscription
-	// from the trait default:
+	fun on_change(self, observer: |T| void): Subscription   // the requirement: `observe`
+	fun sub(self, observer: |T| void): Subscription         // the default, one call shallower
+	// from the trait defaults:
 	fun effect(self, observer: |T| void)    // fires now + on change; owner-registered
+	fun effect_on_change(self, observer: |T| void)  // on change only; owner-registered
 }
-impl SignalCell&lt;SignalCell&lt;type U&gt;&gt; {
-	fun flatten(self): SignalCell&lt;U&gt;            // follow the current inner signal
+// A BLANKET over the read trait, not a member of the cell (A86): any source
+// whose element is itself a source joins — a `map` result, a derived cell, a
+// mirror, a plain `SignalCell`.
+impl type S: Source&lt;type I: Source&lt;type U&gt;&gt; {
+	fun flatten(self): Switch&lt;S, I, I, U&gt;       // follow the current inner source
+}
+impl type S: Source&lt;Option&lt;type I: Source&lt;type U&gt;&gt;&gt; {
+	fun flatten(self): FlattenOption&lt;S, I, U&gt;   // `None` detaches; `Some` follows
+}
+// The DYNAMIC pair (A123), written over `on_change` rather than over the join:
+// which source to follow is decided by the value this one currently holds.
+impl type S: Source&lt;type T&gt; {
+	fun map&lt;U&gt;(self, transform: sync |T| U): Map&lt;S, T, U&gt;     // cold: computed when read
+	fun switch&lt;U, I: Source&lt;U&gt;&gt;(self, select: sync |T| I): Switch&lt;S, T, I, U&gt;
+}
+impl type S: Source&lt;Option&lt;type T&gt;&gt; {
+	fun and_then&lt;U, I: Source&lt;Option&lt;U&gt;&gt;&gt;(
+		self, select: sync |T| I
+	): AndThen&lt;S, T, I, U&gt;
 }
 </code></pre>
+<p><code>flatten</code> is a <strong>blanket over <code>Source</code></strong> rather than a member of
+<code>SignalCell&lt;SignalCell&lt;U&gt;&gt;</code>: the read contract is the trait, so an outer that
+is a <code>map</code> result or a mirror holds an inner signal exactly as a cell does and
+joins the same way. A default method on <code>Source&lt;T&gt;</code> could not say it — a
+default cannot add a bound on <code>T</code>, and this one needs <code>T</code> to be a source — so
+the bound lives in the impl subject. The <code>Option</code> form is the second blanket:
+an outer of <code>Option&lt;inner source&gt;</code> (a lazily-created signal) answers <code>None</code> with
+<code>None</code> and detaches from whichever inner was live, and <code>Some(inner)</code> follows
+that inner from its current value. It is <code>sequence</code> then join, not the join of
+the composite <code>Source</code>-of-<code>Option</code> — which is why a chain over optional cells
+ends in a trailing <code>.map(|x| x.flatten())</code> and why <code>and_then</code> exists.</p>
+<p><code>switch</code> and <code>and_then</code> are the <strong>dynamic dependencies</strong> (A123). <code>map</code> and
+<code>combine</code> are static: the expression fixes what the result reads. <code>switch</code>
+follows whichever source its selector answers for the current value and
+re-follows on every change — Rx’s <code>switchMap</code>, meaning
+<code>self.map(select).flatten()</code>. <code>and_then</code> is the same over <code>Source&lt;Option&lt;T&gt;&gt;</code>,
+the total encoding of a signal that may hold nothing: it is the Kleisli
+composition of that encoding (<code>Option::and_then</code> one level up), the outer
+<code>None</code> and the inner <code>None</code> collapse into one, and it replaces the
+<code>map(|x| x.map(f)).flatten().map(|x| x.flatten())</code> chain by hand. Both are
+written directly over <code>on_change</code> rather than as the two-node <code>map</code>-then-join:
+one derived cell, and the selector called exactly once per value of the source
+(the <code>map</code> form calls it a second time at construction and orphans the node it
+answered). Both are derivations, and both give the ambient owner the outer
+subscription and whichever inner is live — <code>flatten</code>’s story exactly.</p>
 <p><code>update</code> is <strong>inherent to the cell</strong>, deliberately: its value is in-place
 mutation with one notification, and a generic default could only
 read-copy-mutate-write-back — the copy it exists to avoid. An implementation may
@@ -262,6 +317,14 @@ once, unconditionally, after the closure returns — the collection door
 drain affinity, and dedup behave identically. A read from <em>inside</em> the
 closure sees the in-progress value; a re-entrant <code>update</code> of the same
 signal is unsupported.</li>
+<li>What the closure receives is a <code>&amp;mut</code> <strong>subject</strong>, not a binding, and a
+pattern binder under it is a binding like any other: <code>Some(mut list)</code>
+takes rule 1’s copy (spec §6.1), so growing <code>list</code> grows the copy and
+the cell keeps the value it had. <strong>Write back through the subject</strong> —
+<code>held = Some(list)</code> — or move the payload out and put one back with
+<code>Option::take</code>/<code>replace</code>. Only a <code>SignalCell</code> whose value is a <em>wrapped</em>
+collection meets this; <code>update</code> on the collection itself mutates the
+storage directly, as the example above does.</li>
 </ul>
 <pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Owner, batch };
 
@@ -279,9 +342,40 @@ fun main() {
 	});                                                        // 3
 }
 </code></pre>
+<p>The write-back, both spellings, on a cell whose value is a wrapped list:</p>
+<pre><code class="language-vilan">import std::option::Option::{ self, None, Some };
+import std::reactive::{ Signal, SignalCell };
+
+fun main() {
+	let held: SignalCell&lt;Option&lt;List&lt;str&gt;&gt;&gt; = Signal::new(Some([]));
+
+	// Through the `&amp;mut` subject: the binder's copy is put back.
+	held.update(|&amp;mut held| {
+		match held {
+			Some(mut list) =&gt; {
+				list.push("one");
+				held = Some(list);
+			}
+			None =&gt; {}
+		}
+	});
+
+	// Or move the payload out and put one back.
+	held.update(|&amp;mut held| {
+		mut list = held.take().unwrap_or([]);
+		list.push("two");
+		held.replace(list);
+	});
+
+	match held.get() {
+		Some(let list) =&gt; print(i"{list.len()}"),   // 2
+		None =&gt; print("none"),
+	}
+}
+</code></pre>
 <ul>
 <li><code>map</code>’s result is a live derived signal, and its internal subscription is
-<strong>detachable</strong>: made inside a boundary — a mounted view, a <code>bind_each</code> row —
+<strong>detachable</strong>: made inside a boundary — a mounted view, an <code>each</code> row —
 it is registered with the ambient owner and dies when that boundary is
 disposed. <code>combine</code> and <code>flatten</code> register theirs the same way (<code>flatten</code>
 also releases whichever inner subscription is live at disposal).</li>
@@ -294,18 +388,59 @@ compile error (context coverage). It fires once immediately.</li>
 <li><code>sub</code> fires once immediately with the current value, like <code>effect</code>, and
 then on every change; its <code>Subscription</code> is yours to dispose (or hand to
 <code>owner.take</code>).</li>
+<li><strong><code>on_change</code> is the same subscription without that first call</strong> — and it is
+the primitive of the two: <code>sub</code> is <code>on_change</code> plus that call, and
+<code>effect</code> is <code>effect_on_change</code> plus it. The eager pair is right for
+a UI binding — the immediate call <em>is</em> the initial paint — and wrong for an
+effect that must not fire on the state the program starts in: a “you have
+unsaved changes” prompt, an analytics ping, a derivation that already seeded
+its own first value. <code>map</code> and <code>combine</code> attach this way.</li>
 </ul>
+<pre><code class="language-vilan">import std::reactive::{ Disposable, Signal, SignalCell };
+
+fun main() {
+	let title: SignalCell&lt;str&gt; = Signal::new("untitled");
+	// Nothing prints here — the current value is not a change.
+	let watch = title.on_change(|value| print(i"renamed to {value}"));
+	title.set("plans");        // renamed to plans
+	watch.dispose();
+}
+</code></pre>
 <h2 id="source"><a class="header" href="#source">Source</a></h2>
 <pre><code class="language-vilan fragment">trait Source&lt;T&gt; {
-	fun get(self): T
+	fun get(self): T                                        // required
 	[must_use]
-	fun sub(self, observer: |T| void): Subscription
-	fun effect(self, observer: |T| void)    // trait default; owner-registered
+	fun on_change(self, observer: |T| void): Subscription   // required; no first call
+	[must_use]
+	fun on_settle(self, subscriber: Subscriber): Subscription  // default; no payload — for node authors
+	[must_use]
+	fun sub(self, observer: |T| void): Subscription         // default; + one immediate call
+	fun effect_on_change(self, observer: |T| void)          // default; owner-registered
+	fun effect(self, observer: |T| void)                    // default; owner-registered, eager
+	fun scoped_effect(self, body: (sync |T| void) context owner_scope)
+	fun scoped_effect_on_change(self, body: (sync |T| void) context owner_scope)
 }
 </code></pre>
 <p>The read-only half of a reactive value. <code>SignalCell&lt;T&gt;</code> implements it, and so does
 any type of yours — a storage-backed cell, a mirror over a transport, a wrapper
-that logs. Implement <code>get</code> and <code>sub</code> and <code>effect</code> comes free.</p>
+that logs. Implement <code>get</code> and <strong><code>on_change</code></strong>; <code>sub</code>, <code>effect</code>,
+<code>effect_on_change</code> and <code>map</code> all come free.</p>
+<p><strong><code>on_change</code> is the primitive; <code>sub</code> is derived from it.</strong> The requirement is
+the <em>lazy</em> attach — add an observer and do not call it — and the default <code>sub</code>
+is that attach plus one call with the current value, in that order. So an
+implementation writes the smaller thing and gets the eager contract every
+<code>std::ui</code> binding reads (<code>sub</code> fires once now, then once per change) without
+writing a line of it, and there is no path anywhere in the trait on which a
+call is made and then discarded.</p>
+<p>The arrangement used to be the other way round — <code>sub</code> required, <code>on_change</code>
+defaulted — and it could not be honest: the only lazy body reachable from an
+eager requirement is one that subscribes eagerly and <em>swallows</em> the first call,
+which costs a wrapper cell and a branch on every later notification, and makes
+a genuine first change indistinguishable from the seeding one. Deriving the
+eager form from the lazy one is pure addition (backlog A49).</p>
+<p><code>SignalCell</code> implements <code>on_change</code> as <code>observe</code> — the direct attach — and
+also overrides <code>sub</code>, which is the default body with one call less
+indirection; every UI binding in a program lands there.</p>
 <pre><code class="language-vilan">import std::reactive::{ Owner, Signal, SignalCell, Source, Subscription };
 
 /// A signal with a place to hang persistence, and no `set` on the trait.
@@ -319,8 +454,8 @@ impl Stored&lt;type T&gt; with Source&lt;T&gt; {
 	}
 
 	[must_use]
-	fun sub(self, observer: |T| void): Subscription {
-		self.inner.sub(observer)
+	fun on_change(self, observer: |T| void): Subscription {
+		self.inner.on_change(observer)
 	}
 }
 
@@ -343,7 +478,7 @@ fun main() {
 </code></pre>
 <p><strong>Anything that only reads takes a <code>Source</code>, not a <code>Signal</code>.</strong> Every read-only
 binding in <a href="browser.html#view-methods"><code>std::ui</code></a> — <code>bind_text</code>, <code>bind_class</code>,
-<code>bind_attr</code>, <code>bind_styled</code>, <code>style_var</code>, <code>bind_each</code>, <code>when</code>, <code>show</code>, <code>swap</code>
+<code>bind_attr</code>, <code>bind_styled</code>, <code>style_var</code>, <code>each</code>, <code>when</code>, <code>show</code>, <code>swap</code>
 and <code>swap_split</code> — is generic over <code>Source&lt;T&gt;</code>, so <code>Stored&lt;str&gt;</code> above drives
 them exactly like a signal does, on the browser layer and on the SSR twin
 alike. <code>ReactiveServer</code>’s <code>expose</code> is generic the same way, and so are the
@@ -351,8 +486,269 @@ alike. <code>ReactiveServer</code>’s <code>expose</code> is generic the same w
 <code>&lt;p&gt;{stored}&lt;/p&gt;</code> and <code>&lt;a href(stored)&gt;</code> work for any source. What asks for a
 <code>Signal</code> is what <strong>writes</strong>: <code>bind_value</code> and its SSR twin bound on
 <code>Signal&lt;str&gt;</code>, and <code>optimistic</code> on <code>Signal&lt;T&gt;</code>, so a custom implementation with
-its own <code>set</code> drives them. <code>Optimistic::over</code> still asks for the cell, because
-<code>Optimistic</code> STORES it in a field and a field must name a real type.</p>
+its own <code>set</code> drives them. <code>Optimistic::over</code> takes any <code>Signal&lt;T&gt;</code> too — the
+cell STORES it in a field, and a field must name a real type, so the cell names
+it: <code>Optimistic&lt;T, S&gt;</code> carries the signal’s type as a second parameter.</p>
+<h3 id="on_settle--the-attach-a-node-author-writes"><a class="header" href="#on_settle--the-attach-a-node-author-writes">on_settle — the attach a node author writes</a></h3>
+<p><code>on_change</code> is the subscription every application writes. <code>on_settle</code> is the one
+a <strong>node</strong> writes: a <code>Source</code> that holds no value of its own and computes it
+from an upstream when read — <code>get</code> pulls through the chain. It attaches a
+<code>Subscriber</code> and hands it <strong>no value</strong>: the subscriber is told that this source
+<em>may</em> have changed and reads <code>get()</code> if it wants to know what to.</p>
+<p>That is what makes a chain of nodes cost nothing per hop. A node implements
+<code>on_settle</code> by <strong>forwarding</strong> the subscriber to its upstream untouched — no
+subscriber minted, nothing computed — so an observer reading a five-deep chain
+puts one record on the root cell, and when two arms of one observer’s chain
+reach the same root (a diamond), the root holds that one record twice. Its id is
+the observer’s, and a turn’s queue is keyed on it, so inside a <code>turn</code> or a
+<code>batch</code> the diamond’s two notifications are one call — reading a settled value,
+because every read is a pull of state that has already been written.</p>
+<pre><code class="language-vilan">import std::reactive::{
+	FlushPolicy, Signal, SignalCell, Source, Subscriber, Subscription, fresh_id,
+	turn,
+};
+import std::shared::Shared;
+
+/// A node: the upstream, doubled when read. It stores nothing.
+struct Doubled&lt;S&gt; {
+	up: S,
+}
+
+impl Doubled&lt;type S: Source&lt;i32&gt;&gt; with Source&lt;i32&gt; {
+	fun get(self): i32 {
+		self.up.get() * 2
+	}
+
+	/// The observer's ONE subscriber: its notification pulls this node.
+	[must_use]
+	fun on_change(self, observer: |i32| void): Subscription {
+		self.on_settle(Subscriber {
+			id = fresh_id(),
+			notify = || observer(self.get()),
+			live = Shared::new(true),
+			derived = false,
+		})
+	}
+
+	/// Forwarded, not wrapped.
+	[must_use]
+	fun on_settle(self, subscriber: Subscriber): Subscription {
+		self.up.on_settle(subscriber)
+	}
+}
+
+fun main() {
+	let count = Signal::new(1);
+	let doubled = Doubled { up = count };
+	let watch = doubled.on_change(|value| print(value));
+	turn(FlushPolicy::AtEnd, || {
+		count.set(2);
+		count.set(3);
+	});                        // 6 — once, for the settled value
+	watch.dispose();
+}
+</code></pre>
+<p>The handle <code>on_settle</code> returns has one obligation: <strong>disposing it retires the
+subscriber</strong> — it never fires again. Forwarding meets that for free, because the
+root cell’s handle carries the subscriber’s own liveness cell. A node that has
+to keep a registration of its own (one that re-selects which upstream to follow,
+the way <code>switch</code> does) registers a subscriber of its own upstream and never
+forwards the one it was handed to a registration it will dispose by itself —
+disposing that would retire the observer below it.</p>
+<p>The <strong>default</strong> is a bridge over <code>on_change</code>: attach, discard the value, wake the
+subscriber through the turn. It is right for a root — a cell of your own, a
+mirror over a transport, <code>Stored</code> above — where <code>on_change</code> is where the value
+lives anyway, and every source gets it without writing a line. It is wrong for a
+node, which would compute a value only to throw it away, once per hop; a node
+overrides it. <code>SignalCell</code> overrides it with the direct attach.</p>
+<h3 id="cell-and-distinct--the-stateful-node-and-the-comparing-one"><a class="header" href="#cell-and-distinct--the-stateful-node-and-the-comparing-one">cell and distinct — the stateful node and the comparing one</a></h3>
+<p>A derivation can be a <em>description</em> rather than state: a node that holds its
+upstream and computes its value when read. Two of those nodes are public on every
+<code>Source</code>:</p>
+<pre><code class="language-vilan fragment">impl type S: Source&lt;type T&gt; {
+	fun cell(self): SignalCell&lt;T&gt;          // materialise: one cached value
+	fun cell_global(self): SignalCell&lt;T&gt;   // the same, for the life of the program
+}
+impl type S: Source&lt;type T: PartialEq&gt; {
+	fun distinct(self): Distinct&lt;S, T&gt;     // pass a change on only when it differs
+}
+</code></pre>
+<p><strong><code>.cell()</code></strong> caches what is above it in a <code>SignalCell</code> and keeps it current. It
+is the one stateful node, and where it belongs is a question of readers: two
+consumers of a chain of nodes each evaluate the chain, and below a <code>.cell()</code> the
+chain above it runs once; a <code>get()</code> in a hot loop pulls a whole chain every time,
+and a <code>.cell()</code> makes it one read. It is a derivation like <code>map</code> — made inside an
+owner it dies with the owner, and a turn settles it before any effect reads it —
+and it is a source again, so a chain continues through it.</p>
+<p><strong>A module-level cell is <code>.cell_global()</code>.</strong> A <code>.cell()</code> is owner-tied, and a
+module binding’s initializer has no owner, so there its registration would stay
+on the upstream for the life of the program — a loop nothing releases, behind a
+spelling that promises a scope. The compiler refuses <code>.cell()</code> written directly
+in a module binding’s initializer and steers to the two doors: build the cell
+under the owner that reads it (inside the view, or an <code>owner_scope.run</code>), or
+write <code>.cell_global()</code>, which is the same cached node with that lifetime in its
+name — it registers with no owner even inside one, and nothing releases it:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Source };
+
+let path: SignalCell&lt;str&gt; = Signal::new("/");
+let depth: SignalCell&lt;usize&gt; = path.map(|value| value.len()).cell_global();
+
+fun main() {
+	path.set("/docs");
+	print(depth.get());     // 5
+}
+</code></pre>
+<p>The refusal reads the initializer’s own calls: a <code>.cell()</code> in a closure the
+initializer creates, or inside a function it calls, is not caught — and leaks
+the same way, because a module-level closure keeps the (owner-less) context it
+was created in. Spell those <code>.cell_global()</code> too.</p>
+<p><code>.cell()</code> <strong>does not compare</strong>: every change above it is a <code>set</code>, and a <code>set</code>
+always notifies. <strong><code>.distinct()</code></strong> is the node that compares — it asks
+<code>T: PartialEq</code> and nothing else does — and passes a change on only when the
+value differs from the last one it passed on:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Source };
+
+fun main() {
+	let width = Signal::new(320);
+	let wide = width.distinct();
+	let watch = wide.on_change(|value| print(i"now {value}"));
+	width.set(320);            // nothing: the same value
+	width.set(1024);           // now 1024
+	watch.dispose();
+}
+</code></pre>
+<p><code>map</code>, <code>switch</code>, <code>flatten</code> and <code>and_then</code> return these cold nodes, and
+<code>.cell()</code> is where you want a cache — the
+<a href="../guide/reactive.html#derived-state-map-combine-flatten">guide</a> has the rule.</p>
+<h3 id="resource--a-value-that-may-still-be-loading"><a class="header" href="#resource--a-value-that-may-still-be-loading">Resource — a value that may still be loading</a></h3>
+<pre><code class="language-vilan fragment">enum ResourceState&lt;T&gt; { Pending, Settled(T), Failed(str) }
+
+impl type S: Source&lt;type T&gt; {
+	fun load&lt;U&gt;(self, fetch: async |T| Result&lt;U, str&gt;): Resource&lt;U&gt;   // re-fetch at every change
+}
+impl Resource&lt;type T&gt; {
+	fun pending(): Resource&lt;T&gt;                     // the hand-driven form
+	fun settle(self, value: T)
+	fun fail(self, reason: str)
+	fun pend(self)
+	fun state(self): SignalCell&lt;ResourceState&lt;T&gt;&gt;
+	fun or(self, default: T): Map&lt;..&gt;              // `default` while pending or failed — RESETS on a re-pend
+	fun latest(self, default: T): Map&lt;..&gt;          // HOLDS the last settled value across a re-pend
+	fun optional(self): Map&lt;..&gt;                    // `None` while pending or failed
+	fun is_pending(self): Map&lt;..&gt;                  // the spinner
+}
+</code></pre>
+<p>A fetch in flight is not a <code>Source</code> — it cannot answer <code>get</code> — so it is a
+<code>Resource</code>, a three-state machine (pending → settled → pending again when its
+source changes; failed is a third state a retry re-pends), and it becomes a
+source only through a <strong>fallback</strong>. That is where the <code>Option</code> of “not there
+yet” is confronted, once, instead of in every <code>map</code> below it. <code>source.load(fetch)</code>
+runs <code>fetch</code> for the source’s current value and again at every change; the newest
+load wins. <code>.or</code> and <code>.latest</code> differ exactly on a re-pend: <code>.or</code> shows the
+default again (a spinner’s product), <code>.latest</code> keeps the old value on screen
+while the new one loads.</p>
+<pre><code class="language-vilan">import std::reactive::{ Resource, Signal, SignalCell, Source };
+import std::result::Result::{ self, Ok };
+
+async fun fetch_name(id: i32): Result&lt;str, str&gt; {
+	Ok(i"user {id}")
+}
+
+fun main() {
+	let id: SignalCell&lt;i32&gt; = Signal::new(1);
+	let user: Resource&lt;str&gt; = id.load(|n| fetch_name(n));
+	let shown = user.or("loading…").map(|name| name + "!");
+	print(shown.get());      // loading…! — the fetch has not landed
+}
+</code></pre>
+<h3 id="scoped_effect--an-owner-per-run"><a class="header" href="#scoped_effect--an-owner-per-run">scoped_effect — an owner per run</a></h3>
+<pre><code class="language-vilan fragment">fun scoped_effect(self, body: (sync |T| void) context owner_scope)
+fun scoped_effect_on_change(self, body: (sync |T| void) context owner_scope)
+fun on_cleanup(cleanup: || void)
+</code></pre>
+<p><code>effect</code>, except that <strong>every run gets its own <code>Owner</code></strong>. Whatever the body
+registers — an <code>on_cleanup</code>, a nested <code>effect</code> or <code>map</code>, an <code>owner.take</code>, a
+mirror’s lease — is released before the next run, and when the enclosing
+boundary goes.</p>
+<p>A plain <code>effect</code> body that subscribes to something accumulates one subscription
+per change for as long as the boundary lives. That is usually what you want for
+a body that only reads and writes; it is never what you want for a body that
+opens something:</p>
+<pre><code class="language-vilan">import std::reactive::{ Owner, Signal, SignalCell, Source, on_cleanup, run_with_owner };
+
+fun main() {
+	let selected = Signal::new(1);
+	let detail = Signal::new("loading");
+	let page = Owner::new();
+	run_with_owner(page, || {
+		// One subscription on `detail` at a time, not one per selection.
+		selected.scoped_effect(|id: i32| {
+			on_cleanup(|| print(i"closing {id}"));
+			detail.effect(|text: str| print(i"{id}: {text}"));
+		});
+	});
+	selected.set(2);   // closing 1, then the new run subscribes
+	page.dispose();    // closing 2
+}
+</code></pre>
+<p><code>on_cleanup(cleanup)</code> is <code>get_owner().defer(cleanup)</code> under a name, and it is
+<strong>one name whose meaning the ambient owner decides</strong>: inside a <code>scoped_effect</code>
+the ambient owner is that run’s, so the cleanup runs per run; inside any other
+boundary — a mounted view, a <code>swap</code> instantiation, an <code>each</code> row — it is the
+boundary’s, so it runs once, at teardown. Like <code>effect</code>, it requires an
+enclosing owner <em>statically</em>: a cleanup with nothing in scope to run it is a
+compile error, not a silent no-op.</p>
+<p>The order inside a run is: release the previous run, install the fresh owner,
+call the body. So a body that throws has already had its owner installed, and
+what it registered before throwing is released by the next run (or by the
+boundary).</p>
+<p><code>swap</code>, <code>when</code> and <code>each</code> are <strong>not</strong> built on this — they keep their own
+per-instantiation owners. Reach for <code>scoped_effect</code> when you want that lifetime
+without a view.</p>
+<h2 id="selector--per-key-selection"><a class="header" href="#selector--per-key-selection">selector — per-key selection</a></h2>
+<p>“Is this row the selected one?”, asked once per row and answered live. The
+obvious spelling derives a boolean per row off the selection signal — and every
+one of them recomputes on every change, so moving a highlight one row costs <code>n</code>
+notifications. <code>selector</code> takes <strong>one</strong> subscription on the source and keeps a
+cell per key, so a change writes exactly <strong>two</strong>: the key that left and the key
+that arrived.</p>
+<pre><code class="language-vilan fragment">fun selector&lt;T: Hashable + PartialEq, S: Source&lt;T&gt;&gt;(source: S): Selector&lt;T&gt;
+
+impl Selector&lt;type T: Hashable + PartialEq&gt; {
+	fun of(self, key: T): SignalCell&lt;bool&gt;
+}
+</code></pre>
+<pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell, selector };
+import std::ui::{ View, each, mount_root, view };
+
+fun main() {
+	let rows: SignalCell&lt;List&lt;i32&gt;&gt; = Signal::new([1, 2, 3]);
+	let current: SignalCell&lt;i32&gt; = Signal::new(1);
+	let selected = selector(current);
+	let _root = mount_root("app", || {
+		view("ul").child(each(rows, |id| id, |id| {
+			view("li").text(i"row {id}").bind_class(selected.of(id).map(|on| {
+				if on { "row current" } else { "row" }
+			}))
+		}))
+	});
+}
+</code></pre>
+<p><code>of(key)</code> creates the key’s cell on first ask (seeded against the source’s
+current value) and hands back that same cell every time after, so it is safe to
+call in a row’s render body. The entry’s <strong>removal</strong> is deferred to the ambient
+owner — which inside an <code>each</code> row is the row’s own — so the map stays the
+size of the live list rather than of every list the session ever showed.</p>
+<p><code>Selector</code> is a handle with a method rather than the bare closure Solid’s
+<code>createSelector</code> returns, and that is forced rather than chosen: a closure
+captures its context <strong>at creation</strong>, so a closure built inside <code>selector</code> would
+defer every key’s cleanup to whatever owner was ambient where <code>selector</code> was
+<em>called</em> — the component, never the row. A method call threads the caller’s
+ambient owner the ordinary way.</p>
+<p>The key type is bounded on <code>Hashable</code> (the canonical key <code>Map</code> and <code>Set</code> use)
+and on <code>PartialEq</code> (to seed a fresh cell against the current value). A key
+nobody has asked about has no cell and costs nothing: a change into it writes
+only the outgoing one.</p>
 <h2 id="writing-a-signal"><a class="header" href="#writing-a-signal">Writing a Signal</a></h2>
 <p>Implement <code>Source</code>’s <code>get</code>/<code>sub</code> and <code>Signal</code>’s <code>set</code>/<code>notify</code>, and the type is
 usable anywhere a signal is wanted. The setter is where custom behaviour lives —
@@ -372,7 +768,7 @@ impl Clamped {
 impl Clamped with Source&lt;i32&gt; {
 	fun get(self): i32 { self.inner.get() }
 	[must_use]
-	fun sub(self, observer: |i32| void): Subscription { self.inner.sub(observer) }
+	fun on_change(self, observer: |i32| void): Subscription { self.inner.on_change(observer) }
 }
 
 impl Clamped with Signal&lt;i32&gt; {
@@ -429,22 +825,24 @@ runtime discrimination anywhere. The reactive arm registers with the ambient
 owner, so a component’s subscription dies with the boundary that built it — and
 that is why <code>bind</code> may only be called under one.</p>
 <h2 id="combine"><a class="header" href="#combine">combine</a></h2>
-<pre><code class="language-vilan fragment">fun combine&lt;T: (2..)&gt;(sources: (U in T: SignalCell&lt;U&gt;)): SignalCell&lt;T&gt;
+<pre><code class="language-vilan fragment">fun combine&lt;T: (2..)&gt;(sources: (U in T: dyn Source&lt;U&gt;)): Combine&lt;T&gt;
 </code></pre>
-<p>A signal of the tuple of the sources’ current values, firing when any source
-changes. Variadic over tuples of signals of mixed element types:</p>
-<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, combine };
+<p>A source of the tuple of the sources’ current values, changing when any source
+changes. Variadic over tuples of mixed element types, and each element is any
+<code>Source</code> — a cell, a node, a mirror — erased to <code>dyn Source&lt;U&gt;</code> at the call:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Source, combine };
 
 fun main() {
 	let flag = Signal::new(true);
 	let count = Signal::new(2);
-	let both: SignalCell&lt;(bool, i32)&gt; = combine((flag, count));
+	let both = combine((flag, count.map(|n: i32| n * 10)));
 	let (_on, current) = both.get();
 	print(current);
 }
 </code></pre>
 <p>(Destructuring names the parts, which reads better than positions;
-<code>both.get().1</code> also works.)</p>
+<code>both.get().1</code> also works.) Like <code>map</code>, it is a cold node: <code>.cell()</code> it where
+the tuple is shared or read hot.</p>
 <h2 id="subscription-disposable"><a class="header" href="#subscription-disposable">Subscription, Disposable</a></h2>
 <pre><code class="language-vilan fragment">trait Disposable { fun dispose(self); }
 struct Subscription { … }        // impl Disposable
@@ -452,8 +850,13 @@ impl Subscription {
 	fun teardown(release: || void): Subscription   // a subscription over no signal
 }
 </code></pre>
-<p>Disposing a subscription guarantees no <em>later</em> deliveries; a delivery already
-queued in the currently-draining turn may still land once.</p>
+<p>Disposing a subscription guarantees no later deliveries — <strong>none</strong>, including
+ones already in flight. A subscriber carries a liveness flag that <code>dispose</code>
+lowers before it detaches anything, and both notification loops skip a lowered
+one, so a delivery is stopped whether it sits in a wave the drain has already
+taken out of the queue, in a turn the disposer’s own extent cannot reach, or in
+the snapshot an inline notify is walking. (Until A110 a delivery queued in the
+currently-draining turn could still land once. It cannot now.)</p>
 <p><code>Subscription::teardown</code> is the registration shape for a source <strong>outside</strong> the
 signal graph: <code>dispose</code> runs the hook once and does nothing else. <code>std::dom</code>’s
 <code>listen</code> is built on it — a DOM listener’s whole teardown is the call that
@@ -463,13 +866,15 @@ unhooks it. The hook is one-shot, so disposing twice is safe.</p>
 	fun new(): Owner
 	fun take&lt;T: Disposable&gt;(self, item: T): T   // adopt a disposable; returns it
 	fun defer(self, cleanup: || void)           // run cleanup at dispose
+	fun is_disposed(self): bool                 // has this owner already been disposed?
 }
 impl Owner with Disposable {
-	fun dispose(self)   // dispose everything collected + run defers
+	fun dispose(self)   // dispose everything collected + run defers; idempotent
 }
 
 let owner_scope: Context&lt;Owner&gt;
 fun get_owner(): Owner                                        // read the ambient owner
+fun on_cleanup(cleanup: || void)                              // = get_owner().defer(..)
 fun run_with_owner&lt;T&gt;(owner: Owner, body: (sync || T) context owner_scope): T
 fun comp&lt;T&gt;(body: (sync || T) context owner_scope): (T, Owner)     // fresh owner + result
 </code></pre>
@@ -477,7 +882,23 @@ fun comp&lt;T&gt;(body: (sync || T) context owner_scope): (T, Owner)     // fres
 implicitly: your component functions thread ownership without mentioning it.
 Establish owners at <strong>disposal boundaries</strong> (places where a subtree can die),
 not per object; in UI code the framework’s boundaries (<code>mount_root</code>,
-<code>bind_each</code> rows, <code>when</code>/<code>swap</code> bodies) already do this.</p>
+<code>each</code> rows, <code>when</code>/<code>swap</code> bodies) already do this.</p>
+<p>An owner has a <strong>disposed state</strong>, and it is what makes ownership hold across
+<code>await</code>. A registration is a promise to release, and an async continuation
+registers whenever it happens to run — a route switched away before a handle’s
+reply, an <code>each</code> row rebuilt while its first fetch is in flight. <code>take</code> and
+<code>defer</code> on an owner that is already disposed therefore run the cleanup <strong>now</strong>
+rather than parking it: the extent it would have belonged to is over, so the
+only way left to keep the promise is to keep it immediately. <code>dispose</code> itself is
+idempotent, and <code>is_disposed</code> reports the flag for a caller that can do
+something cheaper than register-and-immediately-release.</p>
+<p>An <code>effect</code> registered this late still makes its one immediate call — that call
+is the observer’s contract, not a subscription — and then never fires again.</p>
+<p>A disposal group <strong>finishes</strong>: if one cleanup throws, the rest still run and the
+first failure is raised once the group is released. That is the opposite of the
+drain’s rule, on purpose — an owner holds a list of independent promises to
+release, so abandoning the list at the first failure would leak everything after
+it, permanently.</p>
 <h2 id="turns"><a class="header" href="#turns">Turns</a></h2>
 <pre><code class="language-vilan fragment">enum FlushPolicy { AtEnd, AtSuspension }
 let turn_scope: Context&lt;Turn&gt;
@@ -486,6 +907,7 @@ fun turn&lt;T&gt;(policy: FlushPolicy, body: (|| T) context turn_scope): T
 fun batch&lt;T&gt;(body: (sync || T) context turn_scope): T   // join or create
 fun flush()                                             // drain the ambient turn now
 fun at_settle(id: i32, action: || void)                 // run `action` at the ambient settle; now if none
+fun at_release_settle(id: i32, action: || void)          // the same, from a subscription's release hook
 </code></pre>
 <p>Inside a turn, signal writes are recorded and each subscriber runs once with
 final values when the turn settles. The body is asyncness-polymorphic (spec
@@ -501,8 +923,22 @@ called from inside a settle, and runs inline when no turn is ambient. It is
 the primitive under a remote mirror’s deferred <code>Unsubscribe</code>
 (<code>std::rpc</code>); library code that wants “after this turn, once” uses it with
 an id that cannot collide with a subscriber’s (<code>fresh_id()</code> mints one).</p>
+<p>“Ambient” is the context rule’s: reached through a <strong>stored closure</strong> — an
+owner’s cleanup, a subscription’s release hook — the turn <code>at_settle</code> sees is
+the one that closure captured when it was created. That is right for a write
+from a stored callback and wrong for a RELEASE, which belongs to whoever
+disposed the subscription and not to whoever took it; <code>at_release_settle</code> is
+the release hook’s spelling, and it resolves against the turn ambient at the
+<code>dispose</code>. Outside a release hook the two are the same function.</p>
+<p><strong>If an observer throws</strong>, the settle is abandoned at that observer — the rest
+of the wave does not run — and the error keeps unwinding out of the write that
+started the settle, with its own type, message and stack. What it cannot do is
+leave the scheduler broken: the draining flags are restored on the way out, so
+the next write settles normally, this turn included. (Before this, one throwing
+observer left its turn draining forever, and every later write in the program
+queued into it and was never flushed.)</p>
 <h2 id="optimistic"><a class="header" href="#optimistic">optimistic</a></h2>
-<pre><code class="language-vilan fragment">fun optimistic&lt;T, E&gt;(signal: SignalCell&lt;T&gt;, value: T, commit: async || Result&lt;T, E&gt;): Result&lt;T, E&gt;
+<pre><code class="language-vilan fragment">fun optimistic&lt;T, E, S: Signal&lt;T&gt;&gt;(signal: S, value: T, commit: async || Result&lt;T, E&gt;): Result&lt;T, E&gt;
 </code></pre>
 <p>Paint <code>value</code> into <code>signal</code> now, await <code>commit</code>, then reconcile: the
 confirmed value on <code>Ok</code>, the previous value <strong>rolled back</strong> on <code>Err</code>. Returns
@@ -520,17 +956,22 @@ enum WriteState {
 	Rejected(str),  // the newest write was refused; the cell rolled back
 }
 
-struct Optimistic&lt;T&gt; {
-	value: SignalCell&lt;T&gt;,           // the signal you handed to `over`; bind it
+struct Optimistic&lt;T, S: Signal&lt;T&gt;&gt; {
+	value: S,                       // the signal you handed to `over`; bind it
 	state: SignalCell&lt;WriteState&gt;,  // bind a spinner, a disabled button, a banner
 	…                           // internals: the confirmed shadow, two generations
 }
 
-impl Optimistic&lt;type T&gt; {
-	fun over(signal: SignalCell&lt;T&gt;): Optimistic&lt;T&gt;
+impl Optimistic&lt;type T, type S: Signal&lt;T&gt;&gt; {
+	fun over(signal: S): Optimistic&lt;T, S&gt;
 	fun write(self, value: T, commit: async || Result&lt;T, str&gt;): Result&lt;T, str&gt;
 }
 </code></pre>
+<p>The second parameter is the <strong>signal’s own type</strong>. A field must name a real
+type, so widening the cell past <code>SignalCell</code> means naming what it holds — and
+inference binds both from the call, so <code>Optimistic::over(title)</code> needs nothing
+written. You only spell <code>S</code> where you write the cell’s type out: a field or a
+return, <code>Optimistic&lt;str, SignalCell&lt;str&gt;&gt;</code>.</p>
 <p>The same lifecycle as <code>optimistic</code>, with the two things a free function has
 nowhere to keep.</p>
 <ul>
@@ -632,23 +1073,268 @@ permanently refusing cannot spin.</li>
 </ul>
 <p>UI wiring: <code>View.bind_draft(draft)</code>; see the <a href="browser.html">browser reference</a>.
 The reconnect hook is in the <a href="rpc.html#connection-state">rpc reference</a>.</p>
+<h2 id="delta-sources-the-change-structure"><a class="header" href="#delta-sources-the-change-structure">Delta sources: the change structure</a></h2>
+<p>A collection’s change is a value (tracker A112, <code>proposal/incremental-collections.md</code>).
+Every collection shape has an OP type; a cell whose writes RECORD their ops can
+be read by “what changed” instead of “what is now”, and an operator over it runs
+once per changed element rather than once per element.</p>
+<pre><code class="language-vilan fragment">enum SeqOp&lt;T&gt; {
+	Splice(usize, List&lt;T&gt;, List&lt;T&gt;),  // at: these left, these arrived
+	SetAt(usize, T, T),               // at: was this, is now this
+	Reset(List&lt;T&gt;),                   // the collection BECAME this list
+	Move(usize, usize, usize),        // from, count, to — the same elements, elsewhere
+}
+
+enum MapOp&lt;K: Hashable, V&gt; { Put(K, Option&lt;V&gt;, V), Delete(K, V), Reset(Map&lt;K, V&gt;) }
+enum SetOp&lt;T: Hashable&gt; { Add(T), Remove(T), Reset(Set&lt;T&gt;) }
+</code></pre>
+<p>Every arm carries <strong>what left</strong> as well as what arrived. That is a requirement,
+not a courtesy: the O(1) derivative of a fold over a group (<code>sum</code>, <code>count</code>,
+<code>mean</code>) is “add what arrived, subtract what left”, and a payload that only
+counts what left would send the operator back to read the collection — the O(N)
+rerun the whole design deletes.</p>
+<p><code>SetAt</code> is deliberately not <code>Splice(at, [old], [new])</code> even though the
+collection cannot tell them apart: for a per-element owner the two are
+different events, and the difference is whether that owner survives.</p>
+<p>The log and its cursors are the machinery:</p>
+<pre><code class="language-vilan fragment">let delta_log_limit: usize = 1024;
+
+struct DeltaCursor { … }   // one consumer's place in a log
+
+struct DeltaLog&lt;O&gt; { … }
+
+impl DeltaLog&lt;type O&gt; {
+	fun new(): DeltaLog&lt;O&gt;
+	fun with_limit(limit: usize): DeltaLog&lt;O&gt;
+	fun record(self, op: O)                                  // trims first, then appends
+	fun cursor(self): DeltaCursor                            // minted at the current sequence
+	fun drop_cursor(self, cursor: DeltaCursor)
+	fun since(self, cursor: DeltaCursor): Option&lt;List&lt;O&gt;&gt;    // `None` = lost history
+	fun trim(self)
+	fun held(self): usize
+	fun at(self): i32
+	fun oldest(self): i32
+}
+
+trait DeltaSource&lt;C, O&gt; with Source&lt;C&gt; {
+	fun cursor(self): DeltaCursor
+	fun drop_cursor(self, cursor: DeltaCursor)
+	fun since(self, cursor: DeltaCursor): List&lt;O&gt;            // never fails: a lost cursor gets `Reset`
+}
+</code></pre>
+<p><code>since</code> on the LOG answers an <code>Option</code> and <code>since</code> on the SOURCE does not: the
+log does not know what a <code>Reset</code> is for its op type and the cell does, which is
+the only place the two layers need to know about each other.</p>
+<p>A consumer that can USE ops but must not REQUIRE them — <code>each</code> takes any
+<code>Source&lt;List&lt;T&gt;&gt;</code> — bounds on <code>DeltaFeed&lt;T&gt;</code>, which brings <code>Source&lt;List&lt;T&gt;&gt;</code>
+with it:</p>
+<pre><code class="language-vilan fragment">trait DeltaFeed&lt;T&gt; with Source&lt;List&lt;T&gt;&gt; {
+	fun delta_cursor(self): Option&lt;DeltaCursor&gt;              // `None`: no log, take the whole value
+	fun delta_since(self, cursor: DeltaCursor): List&lt;SeqOp&lt;T&gt;&gt;
+	fun drop_delta_cursor(self, cursor: DeltaCursor)
+}
+impl type S: Source&lt;List&lt;type T&gt;&gt; with DeltaFeed&lt;T&gt;                 // every list source: `None`
+impl type S: DeltaSource&lt;List&lt;type T&gt;, SeqOp&lt;T&gt;&gt; with DeltaFeed&lt;T&gt;  // a logged one: its log
+</code></pre>
+<p>Both blankets match a <code>ListCell</code>, and the second is chosen because a subject
+bound by a subtrait is the more specific one. A consumer is written once and
+serves both kinds of source.</p>
+<p>Writes in one turn coalesce into ONE notification, and a consumer drains every
+op at the settle — so the log is as long as one turn’s writes. Two behaviours
+are worth stating because they are easy to state wrongly:</p>
+<ul>
+<li><strong>A log with no consumers holds one op, not zero.</strong> <code>record</code> trims and then
+pushes.</li>
+<li><strong>The log is trimmed at the next WRITE, not at the drain.</strong> A cell written
+once and then read for ever keeps one op’s worth of history.</li>
+</ul>
+<p>Past the limit the history is dropped and <code>base</code> jumps, so a consumer that
+stopped draining is answered with one <code>Reset</code> carrying the collection: bounded
+memory, at the cost of one whole-collection payload to whoever could not keep
+up.</p>
+<p><code>KeyedCell&lt;K, T&gt;</code> (<code>std::rpc</code>) is the shipped delta source: it records the
+positional ops and translates them into the wire’s <code>Delta&lt;K, T&gt;</code> in its own
+<code>since</code>, which is the one place the two vocabularies meet. <code>SignalCell&lt;List&lt;T&gt;&gt;</code>
+is NOT a delta source — it keeps no log — so anything derived from one is on the
+<code>Reset</code> path by construction, which is exactly today’s behaviour.</p>
+<h2 id="listcell--a-list-whose-writes-are-its-deltas"><a class="header" href="#listcell--a-list-whose-writes-are-its-deltas">ListCell — a list whose writes are its deltas</a></h2>
+<pre><code class="language-vilan fragment">struct ListCell&lt;T&gt; { … }            // the list, a DeltaLog&lt;SeqOp&lt;T&gt;&gt;, one notification
+
+impl ListCell&lt;type T&gt; {
+	fun new(): ListCell&lt;T&gt;
+	fun of(elements: List&lt;T&gt;): ListCell&lt;T&gt;
+	fun with_limit(elements: List&lt;T&gt;, limit: usize): ListCell&lt;T&gt;
+	fun peek&lt;U&gt;(self, read: sync |&amp;List&lt;T&gt;| U): U      // read IN PLACE, no copy of the run
+	fun set_at(self, at: usize, value: T)               // an element changed IN PLACE
+	fun move_range(self, from: usize, count: usize, to: usize)
+	fun edit(self, body: sync |&amp;mut Tracked&lt;T&gt;| void)   // many mutations, ONE notification
+	fun logged(self): usize
+}
+impl ListCell&lt;type T: PartialEq&gt; { fun reconcile_to(self, items: List&lt;T&gt;) }
+// and: Source&lt;List&lt;T&gt;&gt;, Signal&lt;List&lt;T&gt;&gt;, SequenceCell&lt;T&gt;, DeltaSource&lt;List&lt;T&gt;, SeqOp&lt;T&gt;&gt;
+</code></pre>
+<p><code>ListCell&lt;T&gt;</code> is an ordinary <code>Source&lt;List&lt;T&gt;&gt;</code> — <code>each</code> takes it, <code>map</code> takes
+it, an effect takes it — that also records what each write DID. Nothing that
+ignores the ops pays for them, and the three <code>each</code> runs do not ignore them:
+over a <code>ListCell</code> they build only the rows a write names.</p>
+<p>A write copies nothing it does not have to. The cell holds its list itself
+rather than inside a <code>SignalCell</code>, so <code>size</code> and every write read it in place;
+<code>get</code> still hands out a VALUE — a copy of the run, as a <code>SignalCell</code>’s <code>get</code>
+does — and <code>peek</code> is the read that does not copy: the closure is lent the
+cell’s own list for the length of the call.</p>
+<pre><code class="language-vilan">import std::reactive::{ ListCell, SequenceCell };
+
+fun main() {
+	let rows: ListCell&lt;str&gt; = ListCell&lt;str&gt;::of(["a", "b", "c"]);
+	let length = rows.peek(|list| list.len());       // no copy of the run
+	let second = rows.peek(|list| list.get(1));      // copies ONE element
+	print(i"{length} {second.unwrap_or("none")}");
+}
+</code></pre>
+<p><code>peek</code> is for reading: its closure must not write the cell it is peeking at.</p>
+<p>Its mutators are trait defaults over ONE primitive, so there is one place a
+write is recorded and no method can forget:</p>
+<pre><code class="language-vilan fragment">trait SequenceCell&lt;T&gt; {
+	fun size(self): usize;
+	fun splice(self, at: usize, removed: usize, inserted: List&lt;T&gt;);
+	// twelve defaults over those two:
+	// is_empty, push, prepend, insert_at, insert_all, remove_at,
+	// remove_range, pop, extend, clear, set_all, truncate
+}
+</code></pre>
+<p><code>Sequence&lt;T&gt;</code> is the same surface with <code>&amp;mut self</code> receivers, and its
+implementor is <code>Tracked&lt;T&gt;</code> — a plain list plus the ops that produced it. That
+is what <code>edit</code> hands a body, and it is why an algorithm can be written against
+the BOUND rather than against a cell:</p>
+<pre><code class="language-vilan">import std::reactive::{ ListCell, Sequence };
+
+fun fill&lt;S: Sequence&lt;str&gt;&gt;(target: &amp;mut S) {
+	target.push("first");
+	target.push("second");
+}
+
+fun main() {
+	let rows: ListCell&lt;str&gt; = ListCell&lt;str&gt;::new();
+	rows.edit(|&amp;mut list| {
+		fill(&amp;mut list);
+		list.remove_at(0);
+	});   // ONE notification, three ops
+	print(rows.get().len());
+}
+</code></pre>
+<p>Three doors write a whole list, and they cost differently on purpose:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th></th><th>records</th><th>a derivation’s cost</th></tr>
+</thead>
+<tbody>
+<tr><td><code>splice</code> and its twelve defaults</td><td>one <code>SeqOp::Splice</code></td><td>the elements that arrived</td></tr>
+<tr><td><code>set_all(values)</code></td><td>one <code>SeqOp::Splice</code> over everything</td><td>every element (they all arrived)</td></tr>
+<tr><td><code>set(values)</code> (the <code>Signal</code> impl)</td><td><code>SeqOp::Reset</code></td><td>every element, rebuilt</td></tr>
+<tr><td><code>reconcile_to(values)</code></td><td>one <code>Splice</code> over what changed</td><td>the elements that changed</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>set_all</code> and <code>set</code> cost a list view the same: <code>each</code> and <code>each_by</code> match a
+<code>Splice</code>’s span by key exactly as they match a <code>Reset</code>, so a row whose key
+survives either one is kept, never rebuilt.</p>
+<p><code>reconcile_to</code> is the compat door: it diffs the common prefix and the common
+suffix and records ONE <code>Splice</code> over what is between them, so an append, a
+prepend, an insertion, a removal or an edited span each cost only the elements
+they really touched, and an identical list records nothing and notifies nobody.
+It does not find a REORDER — a rotated list shares no prefix and no suffix, so
+that is one <code>Splice</code> over the whole run, which is honest (every element did
+move) and is what <code>each</code>’s keyed pass is for. A source that knows it reordered
+says <code>move_range</code>.</p>
+<h2 id="map_each--the-first-derivative"><a class="header" href="#map_each--the-first-derivative">map_each — the first derivative</a></h2>
+<pre><code class="language-vilan fragment">fun map_each&lt;T, U, S: DeltaSource&lt;List&lt;T&gt;, SeqOp&lt;T&gt;&gt;&gt;(
+	source: S, g: sync |T| U,
+): ListCell&lt;U&gt;
+</code></pre>
+<p><code>map_each(source, g)</code> is <code>source.get().map(g)</code> kept up to date by running <code>g</code>
+once per element that ARRIVES or CHANGES, and zero times for anything else —
+the derivative of <code>map g</code>, where <code>Splice(at, left, arrived)</code> becomes
+<code>Splice(at, left, arrived.map(g))</code>:</p>
+<pre><code class="language-vilan">import std::reactive::{ ListCell, SequenceCell, map_each };
+
+fun main() {
+	let raw: ListCell&lt;str&gt; = ListCell&lt;str&gt;::new();
+	let parsed = map_each(raw, |text: str| {
+		print("ran");
+		text.parse_f64().unwrap_or(0f)
+	});
+	raw.push("10.5");      // "ran" — once
+	raw.remove_at(0);      // nothing
+	print(parsed.get().len());
+}
+</code></pre>
+<p>Three pushes are three calls; a removal, a <code>clear</code>, a <code>pop</code> and a <code>move_range</code>
+are none; a <code>Reset</code> is the honest N. It takes any <code>DeltaSource</code>, so it serves
+<code>ListCell</code>, <code>std::rpc</code>’s <code>KeyedCell</code> and anything an app writes.</p>
+<p>The result is itself a <code>ListCell&lt;U&gt;</code>, so <code>map_each</code> composes: a chain runs one
+call of each <code>g</code> per arriving element, at every step.</p>
+<p>Two rules to hold on to. The subscription is a DERIVATION and the ambient
+owner’s, like every other combinator’s, and the cursor goes with it — a
+disposed derivation stops pinning the source’s history. And <code>g</code> must be pure IN
+THE ELEMENT: its result is kept, so a <code>g</code> that reads another signal will not
+re-run when that signal changes. That is <code>map</code>’s contract already; here nothing
+re-runs it at all, which makes the contract sharper rather than different.</p>
 <h2 id="reconcile-keyed-list-diffing"><a class="header" href="#reconcile-keyed-list-diffing">reconcile: keyed list diffing</a></h2>
 <pre><code class="language-vilan fragment">enum RowStep {
-	Keep(i32),     // reuse old row at index (moved into the new order)
-	Refresh(i32),  // same key, changed value: rebuild, dispose old index
-	Fresh,         // a new row
+	Keep(usize),     // reuse old row at index (moved into the new order)
+	Refresh(usize),  // same key, changed value: rebuild, dispose old index
+	Fresh,           // a new row
 }
 struct ReconcilePlan {
 	steps: List&lt;RowStep&gt;,  // one per NEW item, in the new order
-	removed: List&lt;i32&gt;,    // old indices gone entirely
+	removed: List&lt;usize&gt;,  // old indices gone entirely
 }
-fun reconcile&lt;T: PartialEq, K: PartialEq&gt;(
+fun reconcile&lt;T, K: PartialEq + Hashable&gt;(
 	old_keys: List&lt;K&gt;, old_items: List&lt;T&gt;, items: List&lt;T&gt;, key_of: sync |T| K,
+	same: sync |T, T| bool,
 ): ReconcilePlan
 </code></pre>
-<p>The pure engine under <code>ui.bind_each</code>; duplicate keys claim the first
+<p>The pure engine under <code>ui::each</code>; duplicate keys claim the first
 surviving row once. Reach for it directly only when building a custom
 list-rendering primitive.</p>
+<p><strong>“Unchanged” is the caller’s predicate, not <code>T: PartialEq</code>.</strong> The key decides
+identity and whether the row moves; <code>same</code> decides, for a surviving key, reuse
+against dispose-and-rebuild. <code>each</code> passes <code>|a, b| a == b</code>;
+<code>each_by</code> passes <code>|_a, _b| true</code>, which is why it never emits a <code>Refresh</code>
+and asks nothing of <code>T</code>.</p>
+<p><strong>A pass is one walk, not N of them (tracker M82).</strong> The matcher used to scan
+the old keys from 0 for every new item, so a list that did not reorder cost
+N(N+1)/2 iterations whatever the change was — 500,500 at 1,000 rows, for one
+append. It keeps a position index instead: per canonical key, the chain of old
+positions holding it. Measured over <code>each</code>’s scan half, callgrind Ir per change
+under <code>node --jitless</code>: <strong>355.1 M → 29.1 M at 1,000 rows</strong>, and 95.1 M → 14.8 M
+at 500 with 1,369.9 M → 58.5 M at 2,000 — 1.97× and 2.01× per doubling where it
+used to be 3.73× and 3.86×, which is linear where it was quadratic.</p>
+<p><strong>A REORDER is linear too, and <code>K: Hashable</code> is what pays for it (tracker
+A125).</strong> The index was keyed on the canonical hash with nothing binding that
+hash to <code>K</code>’s equality, so an earlier equal key could sit outside the chain the
+index named and the stretch from the smallest unclaimed index up to the
+candidate had to be scanned as well. That stretch is empty when nothing moved —
+which is why the append case above went linear — and it is the WHOLE prefix
+when a list is reversed: N(N+1)/2 key comparisons, 500,500 at 1,000 rows, on
+every sort-in-place. The bound states the obligation <code>Hashable</code> already names,
+<code>a == b</code> implies <code>a.hash() == b.hash()</code>, so every key equal to this item’s is
+somewhere in this item’s chain and the scan is gone. A 1,000-row reversal costs
+<strong>1,000</strong> key comparisons, down from 500,500 (<code>vilan/test/reconcile-reorder.vl</code>
+counts them); callgrind Ir per reversal under <code>node --jitless</code>: <strong>738.4 M → 14.6 M at 1,000
+rows</strong>, a factor of 50.7, and 1.98× then 2.00× per doubling across 500 / 1,000
+/ 2,000 rows where the scan was 3.92× from 500 to 1,000 — linear where it was
+quadratic.</p>
+<p>A COLLISION is still fine: two keys that are not <code>==</code> may share a hash — a
+hand-written impl hashing a subset of the fields its <code>eq</code> reads — and the walk
+steps past them along the chain, which is what any hash container does. What
+the bound forbids is the other direction, an <code>==</code> coarser than the hash, which
+would hide a moved row; that is now a compile error rather than a quadratic
+scan. The plan is gated by a differential rather than by a golden: the
+pre-index scan is reproduced verbatim in <code>vilan/test/reconcile-index.vl</code> and
+1,415 cases — named shapes, 600 randomized, 400 with a coarse <code>==</code> and coarse
+hash, 400 with a coarse hash alone — are compared plan for plan.</p>
 
                     </main>
 
@@ -701,7 +1387,7 @@ list-rendering primitive.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

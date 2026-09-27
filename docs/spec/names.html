@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-554318aa.js";
+            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-a869b85a.js"></script>
+        <script src="../toc-24f605af.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -179,6 +179,54 @@ declarations (<code>fun</code>, <code>struct</code>, <code>enum</code>, <code>tr
 <code>let</code>, <code>mod</code> blocks) are its items. There is no separate module
 declaration: a file <code>routes.vl</code> in a package’s source root is the module
 <code>routes</code> of that package.</p>
+<p>The one statement that speaks about the file’s module itself is
+<strong><code>mod self;</code></strong> — <code>self</code> is the file’s own module, the statement has no
+body, and it must be the file’s first statement. It is the host for
+attributes about the whole file: today <code>[platform("browser")] mod self;</code>
+(§11.3). <code>self</code> is reserved for it, so a nested module cannot be named
+<code>self</code> (<code>mod self { … }</code> is refused).</p>
+<p>Modules form a <strong>tree</strong>, and a directory under the source root is a
+module path. <code>a.vl</code> <strong>or</strong> <code>a/lib.vl</code> is the body of module <code>a</code> (both
+present is an ambiguity error, §4.2), and <code>a/b.vl</code> is the module <code>a::b</code>
+whether or not <code>a</code> has a body of its own; nesting is unbounded, so
+<code>a/b/c.vl</code> is <code>a::b::c</code>. A directory with no body is a <strong>pure
+namespace</strong>: it holds modules but is not one, and an <code>import</code> naming it
+is a diagnostic listing the modules it does hold.</p>
+<p><code>lib</code> is a body’s <strong>file name</strong>, not a path segment: <code>a/lib.vl</code> is what
+<code>pkg::a</code> resolves to, so <code>pkg::a::lib</code> would name one file under two
+names and is a <strong>diagnostic</strong> steering to <code>pkg::a</code> (whose items are that
+file’s). The rule reads the DIRECTORY: a <code>lib.vl</code> at the source root is
+the ordinary module <code>lib</code>, because the root is nobody’s body, and a
+directory literally named <code>lib</code> (<code>a/lib/x.vl</code>) is a path segment like any
+other.</p>
+<p>A module is reached by its <strong>own</strong> path. <code>import pkg::a</code> binds the items
+of <code>a</code>’s body and nothing below it; <code>a::b</code> is reached by
+<code>import pkg::a::b</code>. Item lookup through a module in expression position
+(<code>a::item</code>) reads that module’s items only, so what a path means never
+depends on which other files a build happens to load.</p>
+<p><strong>Loading is not lookup, and a child pulls its parent.</strong> Importing
+<code>pkg::a::b</code> LOADS <code>a</code>’s body too, when <code>a</code> has one — <code>a</code> is a node on the
+path to <code>a::b</code>, and the tree is built by loading each segment that names a
+file (Rust’s model, where <code>a::b</code> is reached through <code>a</code>’s own <code>mod b;</code>).
+Nothing of <code>a</code>’s becomes visible by it: the own-path rule above is
+unchanged, and <code>a::item</code> after <code>import pkg::a::b</code> still does not resolve.
+What is paid is the COMPILE: <code>a.vl</code> is parsed and analyzed, and its
+diagnostics are the build’s. This is stated because it is payable — a
+directory whose <code>a.vl</code> does real work is a cost every one of its children
+imposes on any build that reaches one, so a heavy parent beside light
+children is worth splitting. A directory with no body (the pure namespace
+above) has nothing to load and costs nothing. Emission is unaffected: it
+follows reachability, so a parent body nothing references contributes no
+output.</p>
+<p><strong>What a parent DOES contribute is its <code>impl</code> blocks.</strong> Items are reached
+by a module’s own path and nothing below it; implementations are not
+items, and a plain <code>import pkg::a::b;</code> admits every block declared along
+the path — <code>a</code>’s as well as <code>a::b</code>’s. So an extension impl written in a
+directory’s body arrives in any file that imports a module beneath it,
+without that file naming <code>a</code>, and <code>a.vl</code> is the place to put one that
+every child’s importer should have. <code>only</code> declines them all and an impl
+selector takes the blocks it names (§4.3); a block the declaring module
+does not <code>export</code> is not admitted at all (§4.8).</p>
 <h2 id="42-the-three-namespaces"><a class="header" href="#42-the-three-namespaces">4.2 The three namespaces</a></h2>
 <p>A path’s first segment selects a namespace:</p>
 <ul>
@@ -198,29 +246,106 @@ though std has one: <code>pkg::ui</code> is always the package’s own module,
 <strong>reserved</strong>: a manifest may not declare a dependency — or a
 <code>[package] name</code> — as <code>std</code>, <code>pkg</code>, or <code>macro_std</code> (§11.4), so no
 package can shadow a root or vanish behind one; <code>vilan</code>, the language’s
-own name, is reserved alongside them (§11.4). A module name that
-resolves both as <code>name.vl</code> and <code>name/lib.vl</code> is an <strong>ambiguity error</strong>.</p>
-<p>A module name must match the on-disk directory entry <strong>byte for byte</strong>: a
+own name, is reserved alongside them (§11.4). A module path that
+resolves both as <code>path.vl</code> and <code>path/lib.vl</code> is an <strong>ambiguity error</strong>.</p>
+<p>A path is resolved by its <strong>longest module prefix</strong>: the segments after
+the root are matched against the tree longest-first, and what is left
+over is looked up as items of the module that answered. So
+<code>pkg::a::b::c</code> is the module <code>a/b/c.vl</code> when that file exists, and
+otherwise the item <code>c</code> of the module <code>a/b.vl</code>, and otherwise the item
+path <code>b::c</code> under <code>a.vl</code>.</p>
+<p>A segment that names <strong>both</strong> — <code>a.vl</code> declares an item <code>b</code> and <code>a/b.vl</code>
+exists — is an <strong>ambiguity error</strong>, the same answer <code>a.vl</code> beside
+<code>a/lib.vl</code> gets (§4.1): one of the two has to be renamed. A module’s own
+items are matched before its directory’s files, so the declaration is
+what an import would land on and the file could not be reached at all;
+a silent winner here is what makes a rename on either side change what
+every existing <code>pkg::a::b</code> means. The refusal is raised at the
+declaration, once, whether or not anything imports the path.</p>
+<p>Every segment must match the on-disk directory entry <strong>byte for byte</strong>: a
 case-insensitive filesystem that answers <code>import foo</code> with <code>Foo.vl</code> is a
 <strong>diagnostic naming both spellings</strong>, not a resolution, so that a program
 compiles identically on case-sensitive and case-insensitive filesystems
 (<a href="https://github.com/vilan-lang/proposals/blob/main/proposal/windows-support.md">design notes</a> §5). Every component of the resolved path
-carries the rule, so <code>foo/lib.vl</code> is reached by <code>import foo</code> only when the
-directory is spelled <code>foo</code>.</p>
+carries the rule — directory components included — so <code>foo/lib.vl</code> is
+reached by <code>import foo</code> only when the directory is spelled <code>foo</code>, and
+<code>a/b.vl</code> by <code>import pkg::a::b</code> only when both are.</p>
 <h2 id="43-imports"><a class="header" href="#43-imports">4.3 Imports</a></h2>
 <p><code>import path</code> (§3.2) loads the target module (once per program: loading
 is idempotent and cycle-tolerant) and binds the imported items in the
 importing module’s scope:</p>
 <ul>
-<li><code>import std::io::print;</code> binds the item <code>print</code>.</li>
-<li><code>import std::reactive::{ Signal, SignalCell, combine };</code> binds each set member.</li>
-<li><code>import std::option::Option::{ self, Some, None };</code> is a path into a
+<li>
+<p><code>import std::io::print;</code> binds the item <code>print</code>.</p>
+</li>
+<li>
+<p><code>import std::reactive::{ Signal, SignalCell, combine };</code> binds each set member.</p>
+</li>
+<li>
+<p><code>import std::option::Option::{ self, Some, None };</code> is a path into a
 TYPE: <code>self</code> binds the type itself; variant names bind the variants for
-unqualified use.</li>
+unqualified use.</p>
+</li>
+<li>
+<p><code>import std::style::Length::rem;</code> is the same path into a type, reaching
+its <strong>statics</strong> — the functions its <code>impl</code> blocks declare that take no
+<code>self</code> (§4.6). A static is reached through the module whose file writes
+the block, which is the type’s own module for a type whose impls sit
+beside it and the extending module for an extension impl; a <code>self</code>
+method is not importable under either form, and says so. The set and
+<code>as</code> forms reach statics like any other leaf, which is what lets an
+app’s own prelude module re-export one bare
+(<code>export import std::style::Length::rem as rem;</code>).</p>
+</li>
+<li>
+<p>A <strong>type segment replaces</strong> the path’s namespace. What follows
+<code>Length</code> is resolved in <code>Length</code>’s namespace and nowhere else — its
+variants, then its statics — so a module-level <code>rem</code> declared beside
+<code>Length</code> does not shadow <code>Length::rem</code>, and <code>style::Length::px</code> does
+not reach the module’s <code>px</code>. One rule for both kinds: an enum segment
+has always worked this way, and a struct segment does too. A path
+reaching a module’s item through a type-named prefix is a diagnostic
+naming the spelling that replaces it (<code>style::px</code>).</p>
+</li>
+<li>
+<p><code>import std::json::Json as Document;</code> binds <code>Document</code>. <code>as</code> renames the
+leaf and changes nothing else: the path resolves exactly as it would
+without one, and the imported item is the same item under a second
+spelling — go-to-definition on <code>Document</code> lands on <code>Json</code>, and a rename
+of <code>Json</code> rewrites the alias with every other reference to it. The form
+reaches a set member too (<code>import a::{ b as x, c };</code>), and a re-export
+publishes the alias (<code>export import a::b as c;</code> publishes <code>c</code>).</p>
+</li>
+<li>
+<p><code>import std::list only;</code> binds the statement’s names and <strong>no
+implementations</strong>. A plain <code>import</code> brings every <code>impl</code> declared in the
+files on the path to its leaf — that is how an extension impl arrives —
+and <code>only</code> is the spelling that declines them.</p>
+</li>
+<li>
+<p><code>import std::list::{ (impl List&lt;i32&gt;) };</code> is an <strong>impl selector</strong>: a
+brace-set element that binds no name and admits exactly the <code>impl</code>
+blocks of the module whose subject unifies with the written type. A set
+naming one means “these implementations only”, so <code>only</code> is for
+statements without a selector. <code>_</code> is the placeholder — <code>(impl List&lt;_&gt;)</code>
+admits every <code>List</code> block whatever its element, and <code>(impl _)</code> admits
+every block the module declares — and no <code>type X</code> binders are written in
+a selector. <code>import std::list::{ (impl List&lt;i32&gt;)::first };</code> takes ONE
+member into the type’s namespace for this file, and
+<code>::{ first, last }</code> takes several; a selector takes no <code>as</code>, because a
+method is called by name on a receiver. The subject resolves in the
+IMPORTING file’s scope: <code>impl S</code> after <code>import item::Struct as S;</code>
+reaches <code>S</code>, and <code>impl item::Struct</code> is the qualified spelling.</p>
+</li>
 </ul>
 <p><code>use path</code> binds names from an already-visible type’s namespace without
-loading (variants, statics). <code>export statement</code> re-exports: importers of
-this module see the exported names as if declared here.</p>
+loading (variants, statics) — the same two kinds <code>import</code> reaches by
+path, and the difference is only that <code>use</code> loads nothing, the type being
+in scope already. <code>export statement</code> re-exports: importers of this module
+see the exported names as if declared here.</p>
+<p><strong>Visibility</strong> is §4.8. In an import path it shows up as one token: <code>#</code>
+before a leaf is the <strong>reach</strong> marker, <code>import pkg::a::{ #hidden };</code>,
+which takes an item the module does not export and says so.</p>
 <p>Platform gating is not checked at the import: a module outside the
 current platform’s layers (e.g. <code>std::ui</code> in a Node build) still loads,
 so its items type-check. The error is reported where platform-colored
@@ -245,6 +370,13 @@ declaration onward, including imports and items:</p>
 <strong>throughout</strong> the module regardless of declaration order (a function may
 call one declared later). Local <code>let</code> bindings are visible only after
 their declaration.</p>
+<p>One module declares a name <strong>once</strong>, whatever the sorts: two <code>struct N</code>,
+two <code>fun n</code>, a <code>struct N</code> beside an <code>enum N</code> or a <code>trait N</code> are all an
+error at the second declaration, naming the first. Order is not a rule a
+reader can see, and without this it decided which declaration a name
+meant. Two <em>modules</em> may each declare <code>N</code> freely — a module is a
+namespace, and <code>shapes::N</code> and <code>colors::N</code> are two types the program can
+name apart.</p>
 <p>The full ladder, weakest first: the <strong>prelude</strong> (§4.7) → module items and
 explicit <strong>imports</strong> → enclosing scopes → the innermost local binding.
 Two rungs deserve stating outright, because both are silent:</p>
@@ -277,15 +409,51 @@ name does not shadow a type there.</li>
 </ul>
 <p>Consequently a local variable named <code>Signal</code> does not break <code>let s: SignalCell&lt;i32&gt;</code> annotations in the same scope, but relying on this is poor
 style.</p>
+<p>A type may also be <strong>qualified</strong> by the modules that declare it —
+<code>style::Style</code>, <code>std::reactive::SignalCell&lt;i32&gt;</code> — in any type position
+(grammar §3.9, types §5.1). The namespace segments resolve as §4.2’s
+paths do, so an imported module reaches its types as it reaches its
+values. The preference above does not apply to a qualified path: it
+addresses exactly what that one namespace declares, so a member that is
+not a type is an error there rather than a reason to keep looking.</p>
 <h2 id="46-statics-and-members"><a class="header" href="#46-statics-and-members">4.6 Statics and members</a></h2>
 <p><code>Type::member</code> (§3.6) resolves <code>member</code> in <code>Type</code>’s namespace: enum
 variants, the static functions of the type’s impls (those without <code>self</code>),
 and the type’s own <code>self</code>-methods. Generic statics take their arguments at
 the path head: <code>List&lt;str&gt;::new()</code>.</p>
-<p>A type has <strong>one</strong> namespace, and receiver position is not part of a
-name. Two impls of one type declaring the same name — two statics, two
-methods, or one of each — are a compile error at the declaration, since
-nothing ranks them and one would simply never be reachable.</p>
+<p>A type has <strong>one namespace per importing file</strong>, and receiver position is
+not part of a name. The namespace is the union of the <code>impl</code> blocks that
+file’s own import statements admit (§4.3): a plain <code>import a::b;</code> admits
+every block declared in <code>a</code>’s file and in every file on the path to it,
+<code>import a::b only;</code> admits none, and
+<code>import a::{ (impl T) }</code> admits exactly the blocks whose subject unifies
+with <code>T</code>.</p>
+<p>Two impls declaring the same name for one subject — two statics, two
+methods, or one of each — are refused, and <em>where</em> depends on how far
+apart they are declared:</p>
+<ul>
+<li><strong>In one module</strong>, at the declaration. Nothing ranks them and one would
+simply never be reachable, so the file that writes both is told so.</li>
+<li><strong>In two modules</strong>, at the <strong>import</strong>, spanned on the second import
+statement and naming both blocks. Each module stays importable on its
+own; it is the file that takes both that has to choose. The fix is an
+impl selector, which is why the refusal is reported where selectors are
+written: <code>import pkg::z::{ (impl Thing)::tag };</code> takes one member from
+one block and leaves the other module’s alone.</li>
+</ul>
+<p>That is what lets two independent extension modules declare the same
+method for the same type and both ship: a file that never imports both
+never sees a conflict, and the refusal is a fact about the FILE’s imports
+rather than about the order modules happened to load in.</p>
+<p>It is also the <strong>whole</strong> namespace of the path that names it: <code>Type::</code>
+replaces what the rest of the path resolves against rather than adding to
+it (§4.3), so the module the type is declared in does not answer through
+it. A name that is not in the type’s namespace is not in the path’s.</p>
+<p>That namespace is what <code>import</code> and <code>use</code> reach into (§4.3), and receiver
+position IS the line they draw: a static binds to a bare name, and a
+<code>self</code>-method does not — it is called on a value, so a bare binding would
+name something uncallable. The refusal says so rather than reporting the
+member as missing.</p>
 <p><code>value.member</code> resolves against the value’s type: fields first, then
 methods, by a <strong>precedence rule</strong> — not by the order the impl blocks
 happen to be written or the modules happen to load:</p>
@@ -329,6 +497,13 @@ fun main() {
 provider to use, and works on a concrete receiver or a trait-bounded
 generic one. <code>Type::member(receiver, args…)</code> means the type’s own member
 or nothing.</p>
+<p>The <strong>impl selector</strong> is the other disambiguator, and it answers a
+different question: <code>Trait::member</code> picks between two providers both of
+which the file can see, while a selector decides which blocks the file
+sees at all. A file that would otherwise take one name from two modules
+writes <code>import pkg::z::{ (impl Thing)::tag };</code> and the rest of <code>z</code>’s
+blocks stay out of its namespace. Both spellings are per file, and
+neither changes what any other file resolves.</p>
 <h2 id="47-the-prelude"><a class="header" href="#47-the-prelude">4.7 The prelude</a></h2>
 <p>Two sets of names are in scope without imports.</p>
 <p><strong>The built-in set</strong>, always: the primitive types (<code>i32</code>, <code>str</code>, <code>bool</code>,
@@ -344,7 +519,7 @@ exports. <code>[package] prelude</code> (and <code>[library] prelude</code>) nam
 </thead>
 <tbody>
 <tr><td><em>omitted</em> — the default</td><td>std’s base set: <code>print</code>, <code>Option</code>, <code>Some</code>, <code>None</code>, <code>Result</code>, <code>Ok</code>, <code>Err</code></td></tr>
-<tr><td><code>"std::web"</code></td><td>the base set, plus <code>Signal</code>, <code>view</code>, <code>View</code>, and the <strong>modules</strong> <code>style</code> and <code>ui</code></td></tr>
+<tr><td><code>"std::web"</code></td><td>the base set, plus <code>Signal</code>, <code>SignalCell</code>, <code>view</code>, <code>View</code>, the five slot values (<code>when</code>, <code>swap</code>, <code>each</code>, <code>each_values</code>, <code>each_by</code>), and the <strong>modules</strong> <code>style</code> and <code>ui</code></td></tr>
 <tr><td>any module path (<code>pkg::…</code>, <code>std::…</code>, a dependency)</td><td>that module’s exports</td></tr>
 <tr><td><code>false</code></td><td>none — only the built-in set above</td></tr>
 </tbody>
@@ -378,6 +553,63 @@ the module and qualifying through it — <code>import std::io;</code> then
 <code>io::print(…)</code>.</p>
 <p>The standard library itself declares <code>prelude = false</code>, so its own
 resolution stays greppable.</p>
+<h2 id="48-visibility"><a class="header" href="#48-visibility">4.8 Visibility</a></h2>
+<p>Every top-level item carries one bit: <strong>exported</strong>, or the module’s own.
+The default is the module’s own — a declaration with no marker is
+private.</p>
+<p><strong>The four forms.</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>form</th><th>means</th></tr>
+</thead>
+<tbody>
+<tr><td><code>export fun helper()</code></td><td>this item is the module’s surface. Any declaration takes it: <code>fun</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>impl</code>, a module-level <code>let</code>, a <code>macro</code>, a <code>mod</code> block</td></tr>
+<tr><td><code>export *;</code></td><td>every item of this module is exported. One bare statement at the module’s top level; <code>vilan fmt</code> puts it just below the file’s leading import run</td></tr>
+<tr><td><code>export(in PATH) item</code></td><td>narrower than <code>export</code>. <code>export(in mod)</code> keeps one item private under an <code>export *;</code>; <code>export(in pkg)</code> publishes it to its own package and no further</td></tr>
+<tr><td><code>export import pkg::io::print;</code></td><td>a <strong>re-export</strong>: importers of this module see <code>print</code> as if it were declared here. This is how a prelude module is written (§4.7)</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>export</code> on an <code>impl</code> block means what it means on every other
+declaration. A block a consumer cannot see contributes <strong>no methods</strong> to
+that consumer — not even as an ambient impl arriving along a path — so a
+curated module writes <code>export impl Thing { … }</code> for the blocks it means
+to publish. A module with no marker anywhere is <strong>uncurated</strong> and offers
+everything, which is what keeps a package that has never thought about
+visibility compiling exactly as it did.</p>
+<p><strong>Visibility never blocks access.</strong> The bit is consulted by completion,
+by the add-import fix, by the “import it first” steer and by the
+per-importer method namespace (§4.6) — and by nothing in name resolution.
+An importer who needs a private item writes the <strong>reach</strong>:</p>
+<pre><code class="language-text">import pkg::util::{ #helper };     // "not exported, and I want it anyway"
+</code></pre>
+<p>A plain <code>import pkg::util::helper;</code> of an unexported item still compiles
+and <strong>warns</strong>, naming the marked spelling; so does a qualified reach
+through the module (<code>util::helper()</code> after <code>import pkg::util;</code>), which
+has no leaf to mark. The reach marker on an item that IS exported warns
+the other way — it says something about the author’s belief that is not
+true — and the fix is to delete one character.</p>
+<p>Reaching a <strong>dependency’s</strong> unexported item is no diagnostic at all, at
+any release. Whether an item should be exported is its author’s
+judgement, and a consumer’s need is real evidence against it; the marker
+is available there too and says the same thing, but nothing asks for it.</p>
+<p><strong>The second warning is about signatures.</strong> An exported item whose
+signature names an unexported type is reported once at the declaration:</p>
+<blockquote>
+<p><code>S</code> is returned here. <code>my_fun</code> is exported, but <code>S</code> is not. A consumer
+can call <code>my_fun</code> but cannot name the return type.</p>
+</blockquote>
+<p>Its reach is the signature positions and only those — a module-level
+<code>let</code>’s type, a parameter type, a return type, an exported struct’s field
+types, an exported enum’s variant payloads, a declared bound, and a
+generic argument in any of them. A private type used inside an exported
+function’s <strong>body</strong> is exactly the encapsulation the bit exists to
+permit, and is never reported. The fix is to export the type; when the
+type belongs to a dependency there is no fix, and the message says so.</p>
+<p>The standard library is curated: its modules export what they publish and
+keep their own machinery private, which is why <code>vilan check</code> on a program
+that reaches into std’s internals tells you so.</p>
 
                     </main>
 
@@ -430,7 +662,7 @@ resolution stays greppable.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9da96573.js"></script>
+        <script src="../theme/vilan-0310f649.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
