@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -429,16 +429,14 @@ they were made in, they hold a <code>Shared</code> cell together. The
 <h2 id="named-functions-as-closures"><a class="header" href="#named-functions-as-closures">Named functions as closures</a></h2>
 <p>When a function already does what your closure would do, pass the
 function itself:</p>
-<pre><code class="language-vilan">import std::reactive::Signal;
-
-fun exclaim(text: str): str {
+<pre><code class="language-vilan">fun exclaim(text: str): str {
 	text + "!"
 }
 
 fun main() {
-	let words = Signal::new("hello");
+	let words = ["hello", "there"];
 	let loud = words.map(exclaim);   // instead of .map(|w| exclaim(w))
-	print(loud.get());
+	print(loud[0]);
 }
 </code></pre>
 <p>You can also just name one and call it later. A binding holding a
@@ -565,7 +563,7 @@ channel would be severed. Both produce clear errors when you hit them.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

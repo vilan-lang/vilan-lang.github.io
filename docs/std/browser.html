@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -382,7 +382,7 @@ fun view(tag: str): View
 fun mount(id: str, view: View)                                   // attach only
 fun mount_root(id: str, body: (sync || View) context owner_scope): Owner
 
-trait Slot { fun place(self, parent: View) }   // str | View | List&lt;View&gt;, and a Source of each
+trait Slot { fun place(own self, parent: View) }   // str | View | List&lt;View&gt;, and a Flow of each
 trait AttrValue { fun apply(self, parent: View, name: str) }   // str | Option&lt;str&gt;, and a Source of each
 </code></pre>
 <p><code>mount_root</code> = fresh owner + turn boundary + attach; it returns the root
@@ -567,16 +567,18 @@ serializes to nothing, so a browser tree and the <code>@process</code> twin’s 
 stay byte-comparable. On the process side a <code>Region</code> plants no node at all — a
 server render is one pass in source order, so appending already <em>is</em> inserting
 before the anchor.</p>
-<h3 id="a-binding-takes-a-source-not-a-signal"><a class="header" href="#a-binding-takes-a-source-not-a-signal">A binding takes a <code>Source</code>, not a <code>Signal</code></a></h3>
+<h3 id="a-binding-takes-a-flow-not-a-signal"><a class="header" href="#a-binding-takes-a-flow-not-a-signal">A binding takes a <code>Flow</code>, not a <code>Signal</code></a></h3>
 <p>Every binding above that only READS its argument is generic over
-<a href="reactive.html#source"><code>Source&lt;T&gt;</code></a>, so a <code>Signal</code>, a derived signal, a
-<code>RemoteSource</code> mirror or a type of your own all drive it:</p>
+<a href="reactive.html#source-flow-and-pipe"><code>Flow&lt;T&gt;</code></a> and consumes it (<code>own</code>), so a
+<code>Signal</code>, a pipe (<code>count.derive(..)</code>), a sealed memo, a <code>RemoteSource</code> mirror or
+a source of your own all drive it (the three <code>each</code> forms take a <code>Source</code>: seal a
+derived list with <code>.memo()</code>):</p>
 <pre><code class="language-vilan fragment">struct Stored&lt;T&gt; { inner: SignalCell&lt;T&gt; }
 
 impl Stored&lt;type T&gt; with Source&lt;T&gt; {
 	fun get(self): T { self.inner.get() }
 	[must_use]
-	fun on_change(self, observer: |T| void): Subscription { self.inner.on_change(observer) }
+	fun on_settle(self, subscriber: Subscriber): Subscription { self.inner.on_settle(subscriber) }
 }
 </code></pre>
 <p><code>Stored&lt;str&gt;</code> now feeds <code>bind_text</code>, <code>bind_class</code>, <code>bind_attr</code>,
@@ -586,13 +588,14 @@ layer and the SSR twin.</p>
 <p>Two things deliberately still ask for the concrete type:</p>
 <ul>
 <li><strong><code>bind_value</code> and <code>bind_draft</code></strong>, because they WRITE BACK. <code>Source</code>
-declares <code>get</code> and <code>on_change</code> and no <code>set</code>, so there is nothing to widen to
+declares <code>get</code> and <code>on_settle</code> and no <code>set</code>, so there is nothing to widen to
 yet — the write side is its own design question.</li>
 <li><strong><code>attr</code> and <code>child</code></strong>, whose reactive arms are the <code>AttrValue</code> and
 <code>Slot</code> traits. Widening a trait ARM is a blanket impl rather than a bound
 on a parameter, and that is a separate piece of machinery — which B158/B165
 then built, so <code>&lt;div href(source)&gt;</code> and <code>&lt;p&gt;{source}&lt;/p&gt;</code> do take any
-<code>Source</code> today; <code>AttrValue</code>’s <code>Option</code> arms (A115) arrived the same way.</li>
+<code>Flow</code> today — a source or a pipe; <code>AttrValue</code>’s <code>Option</code> arms (A115) arrived
+the same way.</li>
 </ul>
 <h2 id="stdrouter"><a class="header" href="#stdrouter">std::router</a></h2>
 <pre><code class="language-vilan fragment">fun current_path(): SignalCell&lt;str&gt;       // location.pathname, live (navigate + back/forward)
@@ -601,9 +604,9 @@ fun navigate_replace(path: str)       // replaceState — same, WITHOUT a new hi
 fun location_url(): str               // pathname + search + hash — the whole relative URL
 fun segments(path: str): List&lt;str&gt;    // "/w/3/task/7" → ["w", "3", "task", "7"], RAW
 fun percent_decode(text: str): str    // decodeURIComponent, total (a bad escape decodes to itself)
-fun parse_query(query: str): Map&lt;str, str&gt;   // "a=1&amp;flag" → { "a": "1", "flag": "" }
+fun parse_query(query: str): HashMap&lt;str, str&gt;   // "a=1&amp;flag" → { "a": "1", "flag": "" }
 
-struct PathParts { segments: List&lt;str&gt;, query: Map&lt;str, str&gt;, fragment: Option&lt;str&gt; }
+struct PathParts { segments: List&lt;str&gt;, query: HashMap&lt;str, str&gt;, fragment: Option&lt;str&gt; }
 fun parse_path(path: str): PathParts  // cut, then decode — the READ direction
 
 trait Routable { fun to_path(self): str }              // route → URL
@@ -826,7 +829,7 @@ reach the browser rides the render or an rpc call.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

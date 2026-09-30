@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -344,18 +344,20 @@ An <code>impl … with Trait</code> doesn’t provide every required method, or 
 demands a trait the type never implemented.
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“‘…’ is a trait, not a type: a trait names a bound, and a value needs a type”</strong>
-A trait’s name was written where a type belongs — a return type, a struct
-field, or a generic argument like <code>List&lt;Display&gt;</code>. Traits are <strong>bounds</strong>,
+A trait’s name was written where a type belongs — a struct field, a
+closure parameter, a trait method’s return, or a generic argument like
+<code>Option&lt;Display&gt;</code> in a return type. Traits are <strong>bounds</strong>,
 not types, so no value can have that type: the impl is fine, the
 signature is not. Three spellings do what was meant, and the message names
 each. <code>dyn A</code> is the <strong>trait object</strong> — a value whose concrete type is
 erased, carrying the trait’s members in a table — and it is what a field,
 an element type or any other value position takes when what it holds is
 decided at runtime. A <strong>parameter</strong> needs nothing: <code>fun f(x: A)</code> already
-IS <code>fun f&lt;T: A&gt;(x: T)</code>. A <strong>return</strong> takes the generic the message spells
-out, <code>&lt;T: A&gt;</code> with <code>T</code> written in the return position; inside the trait’s
-own declaration it takes <code>Self</code>, which is what a trait naming itself in a
-return position always meant. A <code>let</code> binding’s own annotation is not this
+IS <code>fun f&lt;T: A&gt;(x: T)</code>. A free <code>fun</code> or an inherent method may <strong>return</strong>
+<code>A</code> itself — the ONE type its body picks, which callers see (it is not
+hidden) — while a caller-chosen return is the generic the message spells
+out, <code>&lt;T: A&gt;</code>, and a TRAIT method’s return is <code>dyn A</code> or a concrete type;
+inside the trait’s own declaration a trait naming itself takes <code>Self</code>. A <code>let</code> binding’s own annotation is not this
 error at all — there a trait is a <em>constraint</em> on the inferred type; see
 the next entry. The note points at the trait, which may live in another
 module. For a CLOSED set of alternatives, an enum is still better than an
@@ -376,12 +378,14 @@ an object, the generic is the answer: <code>&lt;T: Trait&gt;</code> keeps the ty
 no table, and is what the language does everywhere else.
 → <a href="../tour/data-and-traits.html">Data and traits</a></p>
 <p><strong>“‘…’ is a resource, so it cannot become a <code>dyn …</code>”</strong>
-A <code>resource</code> has exactly one owner and a destructor that runs at a known
-point. Erasing it into a trait object would make that destructor dynamic —
-dispatched through the table like everything else — where the rest of the
-language keeps teardown static. Hold the resource in a struct field of
-your own and put <em>that</em> behind the object, or take it through a generic
-bound, where its type is still known.
+A <code>resource</code> with a <code>Drop</code> somewhere inside it has a destructor that runs
+at a known point. Erasing it into a trait object would make that destructor
+dynamic — dispatched through the table like everything else — where the
+rest of the language keeps teardown static. Hold the resource in a struct
+field of your own and put <em>that</em> behind the object, or take it through a
+generic bound, where its type is still known. (A resource with no <code>Drop</code>
+inside may become the object of a <code>[resource] trait</code>; erasing one into
+any other trait’s object says so: “mark the trait <code>[resource]</code>”.)
 → <a href="../tour/memory-model.html">Memory model</a></p>
 <p><strong>“‘…’ does not implement trait ‘…’, required by the annotation on ‘…’”</strong>
 A <code>let</code> binding’s annotation named a trait, which reads as a constraint
@@ -415,7 +419,11 @@ you don’t want, or rename it. It is reported where it is defined, not
 where it is called.</p>
 <p>A type has one namespace, so <strong>receiver position is not part of the
 name</strong>: a static <code>fun new()</code> and a method <code>fun new(self)</code> for the same
-type collide with each other too. Give one of them a different name.
+type collide with each other too. Give one of them a different name.</p>
+<p>One pair is ranked rather than refused: a BLANKET (<code>impl type S: Read&lt;type T&gt; { fun peek … }</code>) beside a type it covers that declares the same name
+itself (<code>impl Cell&lt;type T&gt; { fun peek … }</code>). At a <code>Cell</code> receiver the
+type’s own member answers; for every other <code>Read</code> type, and through a
+<code>S: Read&lt;…&gt;</code> bound, the blanket’s does — in either declaration order.
 → <a href="../spec/names.html">Names, modules, and packages</a></p>
 <p><strong>“‘…’ is already implemented for ‘…’; remove or merge this impl”</strong>
 The same trait is implemented twice for the same type. A trait has one
@@ -645,7 +653,9 @@ The number doesn’t fit the type. For <code>i53</code>/<code>u53</code>/<code>u
 window. Bigger integers take <code>BigInt</code> (<code>7n</code>). A negative literal at an
 unsigned type (<code>let n: usize = -1</code>) is refused with its own message, which
 names the type’s range: an unsigned value is never below zero, and a
-“nothing here” sentinel is <code>None</code> in an <code>Option&lt;usize&gt;</code>.
+“nothing here” sentinel is <code>None</code> in an <code>Option&lt;usize&gt;</code>. A literal-only
+expression that folds negative (<code>0 - 1</code>) is refused the same way, naming
+the value it folds to.
 → <a href="../tour/values-and-types.html">Values and types</a></p>
 <p><strong>“unknown numeric suffix <code>…</code>”</strong>
 The letters after the number aren’t a type. If it says <code>i64</code> or <code>u64</code>:
@@ -761,11 +771,14 @@ parameter, returned, or matched by value) and then used again. The note
 points at the move. Loan it instead (<code>&amp;x</code> / <code>&amp;mut x</code>, or a method call),
 or, if you really need two owners, restructure with <code>Option</code> + <code>take</code>.
 → <a href="../tour/resources.html">Resources</a></p>
-<p><strong>“cannot move a resource field out of a live aggregate: … no partial moves …”</strong>
+<p><strong>“cannot move a resource field out of a live aggregate: … a field moves out only as a destructure …”</strong>
 <code>let x = s.db</code>, or passing / returning <code>s.db</code> by value, would move a
-resource out of a struct that is still alive: there are no partial moves.
-Loan the field (<code>&amp;s.db</code>, <code>&amp;mut s.db</code>, <code>s.db.method(…)</code>), or make the field
-an <code>Option&lt;…&gt;</code> and <code>take()</code> it out.
+resource out of a struct that is still alive, and here it cannot be a
+destructure: the struct is a loan (not <code>own</code>), or a <code>Drop</code> sits somewhere
+inside its type, which would be left to run on half a value. Loan the field
+(<code>&amp;s.db</code>, <code>&amp;mut s.db</code>, <code>s.db.method(…)</code>), take the struct by <code>own</code> (when
+nothing inside it has a <code>Drop</code>), or make the field an <code>Option&lt;…&gt;</code> and
+<code>take()</code> it out.
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“<code>…</code> is moved on one path through this branch but not another: …”</strong>
 An <code>if</code>/<code>match</code> moves the binding on some paths and not others, so its
@@ -824,7 +837,7 @@ would launder the discipline away. Debug-print the resource’s fields
 instead.
 → <a href="../tour/resources.html">Resources</a></p>
 <p><strong>“<code>…</code> cannot hold the resource <code>…</code>…: … a native container’s internals are host code …”</strong>
-<code>List</code>, <code>Map</code>, <code>Set</code>, and the external generics (<code>Shared</code>, <code>Task</code>,
+<code>List</code>, <code>HashMap</code>, <code>HashSet</code>, and the external generics (<code>Shared</code>, <code>Task</code>,
 <code>Promise</code>, <code>Context</code>) can’t hold a resource: the move checker
 can’t see inside host storage. <code>Option</code> is the sanctioned resource
 container; or keep the resource in a struct field.
@@ -993,7 +1006,7 @@ migration notes.
 <p><strong>“field <code>…</code> of <code>[derive(Wire)]</code> type <code>…</code> is <code>…</code>, which is not Wire: …”</strong>
 Something unserializable (a closure, a <code>Signal</code>) is inside a payload
 type. Wire types carry data only: scalars, <code>str</code>, <code>bool</code>,
-<code>List</code>/<code>Option</code>/<code>Result</code>/<code>Map</code> of Wire, other Wire types, and anything
+<code>List</code>/<code>Option</code>/<code>Result</code>/<code>HashMap</code> of Wire, other Wire types, and anything
 you write an <code>impl … with Wire</code> for.
 → <a href="../guide/services.html">Services &amp; RPC</a></p>
 <p><strong><code>RpcError::Contract</code> at connect time</strong>
@@ -1250,7 +1263,7 @@ page, <code>check_shell</code> catches the same mismatch at boot.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

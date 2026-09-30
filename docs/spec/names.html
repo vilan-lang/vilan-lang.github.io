@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -427,7 +427,13 @@ file’s own import statements admit (§4.3): a plain <code>import a::b;</code> 
 every block declared in <code>a</code>’s file and in every file on the path to it,
 <code>import a::b only;</code> admits none, and
 <code>import a::{ (impl T) }</code> admits exactly the blocks whose subject unifies
-with <code>T</code>.</p>
+with <code>T</code>. A block’s members are what it declares AND the trait defaults it
+inherits, so a default-only <code>impl Box with One {}</code> is a block <code>(impl Box)</code>
+admits, and <code>(impl Box)::describe</code> takes the default it inherits. Method
+lookup reads the file’s namespace: two blocks offering one name, one of
+them declined by the file, are not ambiguous — the admitted block answers —
+and a call only a declined block answers is refused, naming the import
+that declined it.</p>
 <p>Two impls declaring the same name for one subject — two statics, two
 methods, or one of each — are refused, and <em>where</em> depends on how far
 apart they are declared:</p>
@@ -662,7 +668,7 @@ that reaches into std’s internals tells you so.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

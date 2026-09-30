@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -668,10 +668,15 @@ binding from each arm is a conditional move, not two independent returns.</p>
 </li>
 <li>
 <p><strong>R5: fields.</strong> A struct literal moves resources in. A resource field is
-read only by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>); moving it out of a
-live aggregate is rejected; v1 has no partial moves. The sanctioned
-partial move is <code>Option</code> (below). Writing <em>over</em> a resource field is
-permitted, and is R2’s overwrite: the outgoing value is destroyed first.</p>
+read by loan (<code>self.db.exec(..)</code>, <code>&amp;mut self.db</code>). Moving a field <em>out</em>
+is a <strong>destructure</strong> when the aggregate is one this function OWNS (an
+<code>own</code> parameter or an owned local) and its type has no <code>Drop</code> anywhere
+inside it: the move spends the whole aggregate, so any later use of it,
+or of one of its other fields, is a use after move (<code>let tag = p.tag; sink(p.a);</code> is the order that works). Out of a loan, or out of an
+aggregate with a <code>Drop</code> inside, moving a field is rejected — there the
+sanctioned partial move is <code>Option</code> (below). Writing <em>over</em> a resource
+field is permitted, and is R2’s overwrite: the outgoing value is
+destroyed first.</p>
 </li>
 <li>
 <p><strong>R6: match consumes.</strong> Matching a resource <em>by value</em> consumes the
@@ -719,8 +724,8 @@ reference is a per-call loan, exactly like a parameter. Captures of a
 <strong>local</strong> or a <strong>parameter</strong> stay rejected.</p>
 </li>
 <li>
-<p><strong>R10: no resource elements in the native containers.</strong> <code>List</code> / <code>Map</code> /
-<code>Set</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
+<p><strong>R10: no resource elements in the native containers.</strong> <code>List</code> / <code>HashMap</code> /
+<code>HashSet</code> and every external generic (<code>Shared</code>, <code>Task</code>, <code>Promise</code>, <code>Context</code>)
 reject resource type arguments in v1: their internals are host code the
 move checker cannot see. <code>Option</code> is the sanctioned container (it is a
 Vilan enum, checkable under R11). The rule is read <strong>per instantiation</strong>,
@@ -730,9 +735,9 @@ generic aggregate’s member is rejected the same way, so <code>SignalCell&lt;Da
 <code>Shared&lt;Database&gt;</code> is. Holding the resource in a struct field of your own
 is the sanctioned alternative, and stays legal.</p>
 <p>The set is closed over the standard library’s own internals, not just the
-surface it publishes: the raw <code>NativeMap</code> that <code>Map</code> and <code>Set</code> are built on
+surface it publishes: the raw <code>NativeMap</code> that <code>HashMap</code> and <code>HashSet</code> are built on
 rejects a resource the same way, so the rule holds however the raw layer is
-reached. Because a <code>Map&lt;K, Database&gt;</code> offends at <em>both</em> heads — its own and
+reached. Because a <code>HashMap&lt;K, Database&gt;</code> offends at <em>both</em> heads — its own and
 the <code>NativeMap</code> inside it — and one mistake is one diagnostic, the refusal
 is reported at the head you wrote, and never a second time at the storage
 behind it. That collapse is scoped to the one mistake: it silences only the
@@ -768,6 +773,15 @@ took a consumed subject’s payload (R6). Each is the same leak and is rejected
 at the instantiation site. The consequence worth stating: a combinator that
 hands a payload to a closure and then discards it — the closure only <em>loans</em>
 it — cannot be resource-clean, whatever its receiver convention.</p>
+<p>A <strong>trait default</strong> is in the same position for its <code>Self</code>: its body is
+written once for every implementing type, so an impl whose subject is a
+resource inherits a body whose <code>self</code> is one. It is checked under that
+instantiation at the impl that inherits it, called or not, and a move
+violation there is refused with the words a body written in the impl would
+get (“declare it <code>own self</code>”), noting the impl; an <code>own self</code> default must
+move <code>self</code> out on every path. When the subject is a resource only for some
+arguments (<code>impl Box&lt;type X&gt; with Wrap</code> at <code>Box&lt;Guard&gt;</code>), the call that
+makes it one is the instantiation site, as for any generic.</p>
 <p>Read the same sentence at R2’s seam and it reaches <strong>writes</strong>, not only
 scope ends. Overwriting a <code>T</code>-typed place destroys the outgoing value, and a
 generic body cannot run that destructor either — so a body that writes
@@ -1174,7 +1188,7 @@ first demand, at most once, memoize.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

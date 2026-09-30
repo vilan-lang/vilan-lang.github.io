@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -195,27 +195,51 @@ canonical on-disk form is LF with no BOM, and <code>vilan fmt</code> writes it.)
 block comments.</p>
 <h2 id="22-identifiers-and-keywords"><a class="header" href="#22-identifiers-and-keywords">2.2 Identifiers and keywords</a></h2>
 <pre><code class="language-text">IDENT = ascii_letter | "_" , { ascii_letter | digit | "_" } ;
+RESERVED = (* a word of the reserved list below: its own token, never IDENT *) ;
 </code></pre>
 <p>Identifiers are ASCII. The following words are <strong>reserved</strong>; they lex as
 keyword tokens and are never <code>IDENT</code>:</p>
-<pre><code class="language-text">async     await     borrows  const   css    dyn     else  enum
-export    external  for      fun     if     impl    import in
-is        jump      lazy     let     macro  match   mod   mut
-null      own       ret      struct  trait  type    use   with
-true      false
+<pre><code class="language-text">async     await     const    css     else    enum    export
+external  for       fun      if      impl    import  in
+is        let       macro    match   mod     mut     null
+ret       struct    trait    type    use     true    false
 </code></pre>
 <p>(<code>true</code>/<code>false</code> lex as boolean literals; <code>null</code> as the null literal.)</p>
-<p><strong>Contextual keywords</strong> lex as <code>IDENT</code> and take meaning only by position:
-<code>context</code> (the clause after a closure type, §3.9), <code>sync</code> (the marker
-opening a closure type, §3.9), <code>void</code> (the unit value/type), <code>self</code> and
-<code>Self</code> (receiver and receiver type; <code>self</code> is also the file’s own module
-in <code>mod self;</code>, §3.1), <code>as</code> (the alias on an import path leaf, §3.2),
-<code>only</code> (the trailing modifier on an import, §3.2), <code>derive</code>, <code>service</code>,
-<code>extern</code>, <code>must_use</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code>,
-<code>deprecated</code>, <code>internal</code>, <code>resource</code> (attribute names in <code>[...]</code>
-position — <code>resource</code> was a keyword until B413 made it the <code>[resource]</code>
-attribute), and jump targets (<code>break</code>, <code>continue</code>) after <code>jump</code>. All remain usable as ordinary
-identifiers elsewhere, with one exception: <code>void</code> may not be a
+<p>A reserved word is still a <strong>member name</strong> (B414 S4): the name after a
+member <code>.</code> or <code>?.</code>, a field declared in a struct or given with <code>=</code> in a
+struct literal, a method declared in an <code>impl</code> or a <code>trait</code>, and a segment
+after <code>::</code> in an expression path — <code>event.type</code>, <code>Event { type = kind }</code>,
+<code>fun match(self)</code>, <code>Kit::if()</code>. Each of those positions is entered after a
+token that commits to it, so no keyword reading can begin there (§3.6). A
+reserved word never names a binding, a parameter, a free function or a
+type, and the struct-literal shorthand <code>{ type }</code> — which reads a binding
+of that name — stays refused. After a member dot the name is written
+AGAINST the dot, with nothing between them (§3.6).</p>
+<p>The following words are <strong>contextual keywords</strong>: they lex as <code>IDENT</code> and
+take meaning only by position, and are ordinary identifiers everywhere
+else (<code>vilan --print-keywords</code> prints both lists, each word flagged):</p>
+<pre><code class="language-text">as        borrows   context   dyn       jump      lazy      only
+own       self      Self      sync      then      void      with
+</code></pre>
+<p><code>with</code> is the trait list of an <code>impl</code> or <code>trait</code> head (§3.3); <code>borrows</code>
+the return clause after a declaration’s return type (§3.3); <code>own</code> and
+<code>lazy</code> a parameter’s prefix when a binder follows (§3.3), and <code>lazy</code> also
+opens a <code>lazy let</code> (§3.4); <code>dyn</code> the trait-object marker at a type’s head
+(§3.9 — <code>dyn::</code> is a path instead); <code>jump</code> loop control when its target
+follows (§3.4); <code>context</code> the clause after a closure type or a return type
+(§3.9); <code>sync</code> the marker opening a closure type (§3.9); <code>then</code> the
+infix conditional after a complete operand (§3.8); <code>void</code> the unit
+value and type; <code>self</code> and <code>Self</code> the receiver and its type (<code>self</code> is
+also the file’s own module in <code>mod self;</code>, §3.1); <code>as</code> the alias on an
+import path leaf and <code>only</code> the trailing modifier on an import (§3.2).
+Beside them, two families of words are matched by text in one position
+and are ordinary identifiers everywhere else: the ATTRIBUTE names in
+<code>[...]</code> position (<code>derive</code>, <code>service</code>, <code>client_service</code>, <code>extern</code>,
+<code>must_use</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code>,
+<code>deprecated</code>, <code>internal</code>, <code>resource</code>, <code>hint</code> — <code>resource</code> was a keyword
+until B413 made it the <code>[resource]</code> attribute), and the jump TARGETS <code>break</code> and
+<code>continue</code> after <code>jump</code>. All remain usable as ordinary identifiers
+elsewhere, with one exception: <code>void</code> may not be a
 BINDER’s name (a <code>let</code>, a <code>for</code> binder, a function parameter, a match
 capture). An expression <code>void</code> is always the unit, so a binding by
 that name could never be read back, and it is refused where it is
@@ -252,8 +276,12 @@ where the same expression with no annotation truncates to <code>3</code>. A
 FRACTIONAL literal never takes an integer type from its context: to the
 right of an integer operand (<code>y / 2.0</code> with <code>y: i32</code>) it is a compile error
 whose fix is the other operand’s conversion (<code>y.as_f64() / 2.0</code>). Every
-integer literal is <strong>range-checked</strong> against its type at compile time, and
-a negative one at an unsigned type (<code>let n: usize = -1</code>) is out of range.</p>
+integer literal is <strong>range-checked</strong> against its type at compile time,
+and a negative one at an unsigned type (<code>let n: usize = -1</code>) is out of
+range — as is a literal-only expression that folds
+negative there (<code>let end: usize = 0 - 1;</code>). Negating an unsigned VALUE
+(<code>-u</code> for <code>u: usize</code>) is refused too: convert it to a signed type first
+(<code>-u.as_i53()</code>).</p>
 <p><code>i53</code> spans the symmetric range ±2^53 and <code>u53</code> spans [0, 2^53]: the
 window in which every integer is exactly representable in an IEEE-754
 double (the backing representation). The names deliberately follow
@@ -461,7 +489,7 @@ lexes as ordinary vilan tokens and admits not one byte more.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

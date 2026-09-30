@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -235,6 +235,46 @@ error. The same attribute on an <code>impl</code> block does this for the block�
 members; on a struct, an enum or a trait it takes part in choosing the
 platform the file is analyzed under. A type has no platform of its own
 (§11.2’s requirement is on code), so a label on one requires nothing.</p>
+<p><strong>Twins.</strong> Two items of one identity — two module-level functions of one
+name, or two <code>impl</code>s of one trait for one subject — may stand in one file
+when both are fenced and their fences share no platform. They are
+<strong>twins</strong>, and each build compiles the one its platform admits:</p>
+<pre><code class="language-vilan">import std::io::print;
+
+[platform("browser")]
+fun where_am_i(): str {
+	"the browser"
+}
+
+[platform("@process")]
+fun where_am_i(): str {
+	"a server"
+}
+
+fun main() {
+	print(where_am_i());
+}
+</code></pre>
+<p>Each twin is analyzed only under a platform its fence admits, so a body
+reads its own platform’s <code>std</code> twin (a browser twin’s <code>View</code> has an
+<code>element</code>, a <code>@process</code> twin’s has <code>attributes</code>), and a build collects
+only its own: the other twin is not type-checked, registered or emitted
+by it. Twins whose fences overlap are refused, naming a platform both
+admit; so is an unfenced item beside a fenced one — there is no default
+with a platform override, the default is the complement fence written
+out. Twin functions agree on their written signature (parameters, return
+type, generics). A platform no twin admits simply has none: reaching the
+name from it is a miss that names the twins there are. A file whose
+<code>mod self;</code> declares a platform holds its twins to it — a twin that
+admits none of the file’s platforms is refused, since nothing could
+compile it. The twin trait impls and functions are the whole of it:
+nominals and inherent impls have no twins.</p>
+<p>This bends §11.2’s “unreachable code is still type-checked” for twins
+alone, and the rule that replaces it is: every item is type-checked under
+at least one platform it admits, and <code>vilan check</code> checks a file under
+each platform its twins name as well as under its colour — so a
+single-platform <code>vilan build</code> checks its own twins and no others, and
+<code>vilan check</code> is the answer for all of them.</p>
 <h2 id="114-manifests-vilantoml"><a class="header" href="#114-manifests-vilantoml">11.4 Manifests (<code>vilan.toml</code>)</a></h2>
 <p>The manifest declares what a directory builds. Sections:</p>
 <ul>
@@ -411,7 +451,7 @@ only one, the designated <code>default-entry</code>, or the one <code>--entry</c
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

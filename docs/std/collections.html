@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -173,8 +173,9 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="collections-reference"><a class="header" href="#collections-reference">Collections reference</a></h1>
-<p>The container types: <code>List</code> (built in), <code>std::map::Map</code>, <code>std::set::Set</code>,
-<code>std::range::Range</code>, and the <code>std::iterator</code> protocol underneath <code>for</code>.</p>
+<p>The container types: <code>List</code> (built in), <code>std::hash_map::HashMap</code>,
+<code>std::hash_set::HashSet</code>, <code>std::range::Range</code>, and the <code>std::iterator</code> protocol
+underneath <code>for</code>.</p>
 <h2 id="listt"><a class="header" href="#listt"><code>List&lt;T&gt;</code></a></h2>
 <p>Built in, with literal syntax: <code>[1, 2, 3]</code>. An empty literal needs a type
 annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
@@ -301,11 +302,12 @@ fun main() {
 	print([1, 2, 3].join("-"));                    // 1-2-3
 }
 </code></pre>
-<h2 id="mapk-v"><a class="header" href="#mapk-v"><code>Map&lt;K, V&gt;</code></a></h2>
-<pre><code class="language-vilan fragment">impl Map&lt;type K: Hashable, type V&gt; {
-	fun new(): Map&lt;K, V&gt;
+<h2 id="hashmapk-v"><a class="header" href="#hashmapk-v"><code>HashMap&lt;K, V&gt;</code></a></h2>
+<pre><code class="language-vilan fragment">impl HashMap&lt;type K: Hashable, type V&gt; {
+	fun new(): HashMap&lt;K, V&gt;
 	fun insert(&amp;mut self, key: K, value: V)
 	fun get(self, key: K): Option&lt;V&gt;
+	fun get_or_insert(&amp;mut self, key: K, make: || V): V   // the held value, or make() stored and answered
 	fun contains_key(self, key: K): bool
 	fun remove(&amp;mut self, key: K)
 	fun len(self): usize
@@ -314,23 +316,33 @@ fun main() {
 	fun values(self): List&lt;V&gt;
 	fun entries(self): List&lt;(K, V)&gt;
 }
-impl Map&lt;type K: Hashable, type V: PartialEq&gt; {
+impl HashMap&lt;type K: Hashable, type V: PartialEq&gt; {
 	fun contains_value(self, value: V): bool
 }
-impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): Map&lt;K, V&gt; }
-impl Map&lt;type K: Hashable, type V&gt; with Default {
-	fun default(): Map&lt;K, V&gt;                 // the empty map
+impl HashMap&lt;type K: Hashable, type V: PartialEq&gt; with PartialEq   // same keys, equal values; order ignored
+impl List&lt;(type K: Hashable, type V)&gt; { fun to_map(self): HashMap&lt;K, V&gt; }
+impl HashMap&lt;type K: Hashable, type V&gt; with Default {
+	fun default(): HashMap&lt;K, V&gt;                 // the empty map
 }
 </code></pre>
+<p>A <code>HashMap</code> iterates in <strong>insertion order</strong>, on both backends: <code>keys()</code>,
+<code>values()</code> and <code>entries()</code> walk the keys in the order they first arrived, an
+overwrite keeps its key’s place, and a key removed and inserted again goes to
+the end. The name says how it keys — by <code>Hashable</code> value — not that its order
+is arbitrary. Equality follows the same line: two maps are <code>==</code> when they hold the same keys
+with equal values, whatever order either was built in, so a struct holding a
+map can <code>[derive(PartialEq)]</code>. Before v0.42 the type was <code>std::map::Map</code>; that name is
+kept one release as a deprecated alias of the same type (<code>Map</code> <em>is</em> <code>HashMap</code>),
+and a use of it warns with the new spelling.</p>
 <p>Keys compare <strong>by value</strong>. Scalars work directly, and so does a <strong>backed enum</strong>
 — one with explicit backing values, which <em>is</em> that value at runtime, so the
 backing value is the key and no derive is needed:</p>
-<pre><code class="language-vilan">import std::map::Map;
+<pre><code class="language-vilan">import std::hash_map::HashMap;
 
 enum Align { Start = "flex-start", End = "flex-end" }
 
 fun main() {
-	mut widths: Map&lt;Align, i32&gt; = Map::new();
+	mut widths: HashMap&lt;Align, i32&gt; = HashMap::new();
 	widths.insert(Align::Start, 1);
 	print(widths.get(Align::Start).unwrap_or(0)); // 1
 }
@@ -339,7 +351,7 @@ fun main() {
 backing value it lowers to an array, like a struct, so it needs the derive along
 with every other aggregate. A struct, an unbacked or payload-carrying enum, or a
 <code>List</code> key works as long as it is <code>Hashable</code>. Derive it:</p>
-<pre><code class="language-vilan">import std::map::Map;
+<pre><code class="language-vilan">import std::hash_map::HashMap;
 import std::hash::Hashable;
 import std::option::Option::{ self, Some, None };
 
@@ -350,7 +362,7 @@ struct Point {
 }
 
 fun main() {
-	mut seen: Map&lt;Point, str&gt; = Map::new();
+	mut seen: HashMap&lt;Point, str&gt; = HashMap::new();
 	seen.insert(Point { x = 1, y = 2 }, "origin-ish");
 	// A fresh, distinct Point with equal fields hits.
 	match seen.get(Point { x = 1, y = 2 }) {
@@ -363,12 +375,12 @@ fun main() {
 on insert, so mutating the original afterward can’t desync the map.</p>
 <p><code>entries()</code> pairs <code>keys()</code>/<code>values()</code> into one <code>List&lt;(K, V)&gt;</code> snapshot, so
 walking both together needs no hand-zipping; <code>contains_value</code> (needing
-<code>V: PartialEq</code>, unlike the rest of <code>Map</code>) is the value-side counterpart to
+<code>V: PartialEq</code>, unlike the rest of <code>HashMap</code>) is the value-side counterpart to
 <code>contains_key</code>:</p>
-<pre><code class="language-vilan">import std::map::Map;
+<pre><code class="language-vilan">import std::hash_map::HashMap;
 
 fun main() {
-	mut scores: Map&lt;str, i32&gt; = Map::new();
+	mut scores: HashMap&lt;str, i32&gt; = HashMap::new();
 	scores.insert("alice", 1);
 	scores.insert("bob", 2);
 	mut total = 0;
@@ -380,34 +392,49 @@ fun main() {
 	print(scores.contains_value(9));     // false
 }
 </code></pre>
-<h2 id="sett"><a class="header" href="#sett"><code>Set&lt;T&gt;</code></a></h2>
-<pre><code class="language-vilan fragment">impl Set&lt;type T: Hashable&gt; {
-	fun new(): Set&lt;T&gt;
+<p><code>get_or_insert</code> is the entry idiom: the value held for <code>key</code>, or — on a miss,
+and only there — the one <code>make</code> builds, inserted and then answered. The maker
+runs once per key, at the call site:</p>
+<pre><code class="language-vilan">import std::hash_map::HashMap;
+
+fun main() {
+	mut lengths: HashMap&lt;str, usize&gt; = HashMap::new();
+	print(lengths.get_or_insert("alpha", || "alpha".len()));  // 5 -- made and stored
+	print(lengths.get_or_insert("alpha", || 0));              // 5 -- held; the maker did not run
+	print(lengths.len());                                     // 1
+}
+</code></pre>
+<h2 id="hashsett"><a class="header" href="#hashsett"><code>HashSet&lt;T&gt;</code></a></h2>
+<pre><code class="language-vilan fragment">impl HashSet&lt;type T: Hashable&gt; {
+	fun new(): HashSet&lt;T&gt;
 	fun insert(&amp;mut self, value: T)
 	fun contains(self, value: T): bool
 	fun remove(&amp;mut self, value: T)
 	fun len(self): usize
 	fun is_empty(self): bool
 	fun values(self): List&lt;T&gt;
-	fun union(self, other: Set&lt;T&gt;): Set&lt;T&gt;
-	fun intersection(self, other: Set&lt;T&gt;): Set&lt;T&gt;
-	fun difference(self, other: Set&lt;T&gt;): Set&lt;T&gt;
+	fun union(self, other: HashSet&lt;T&gt;): HashSet&lt;T&gt;
+	fun intersection(self, other: HashSet&lt;T&gt;): HashSet&lt;T&gt;
+	fun difference(self, other: HashSet&lt;T&gt;): HashSet&lt;T&gt;
 }
-impl List&lt;type T: Hashable&gt; { fun to_set(self): Set&lt;T&gt; }
-impl Set&lt;type T: Hashable&gt; with Default { fun default(): Set&lt;T&gt; }  // the empty set
+impl List&lt;type T: Hashable&gt; { fun to_set(self): HashSet&lt;T&gt; }
+impl HashSet&lt;type T: Hashable&gt; with Default { fun default(): HashSet&lt;T&gt; }  // the empty set
+impl HashSet&lt;type T: Hashable&gt; with PartialEq                             // same members; order ignored
 </code></pre>
-<p>Value-keyed like <code>Map</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
-iterates the elements in insertion order.</p>
+<p>Value-keyed like <code>HashMap</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
+iterates the elements in insertion order (a duplicate insert keeps its value’s
+place; a value removed and inserted again goes to the end). <code>std::set::Set</code> is its deprecated
+name, kept one release as an alias, as <code>Map</code> is.</p>
 <p><code>union</code>/<code>intersection</code>/<code>difference</code> are the standard set operations, each
-returning a new <code>Set</code> and leaving both receivers untouched:</p>
-<pre><code class="language-vilan">import std::set::Set;
+returning a new <code>HashSet</code> and leaving both receivers untouched:</p>
+<pre><code class="language-vilan">import std::hash_set::HashSet;
 
 fun main() {
-	mut a: Set&lt;i32&gt; = Set::new();
+	mut a: HashSet&lt;i32&gt; = HashSet::new();
 	a.insert(1);
 	a.insert(2);
 	a.insert(3);
-	mut b: Set&lt;i32&gt; = Set::new();
+	mut b: HashSet&lt;i32&gt; = HashSet::new();
 	b.insert(2);
 	b.insert(3);
 	b.insert(4);
@@ -419,42 +446,57 @@ fun main() {
 <h2 id="memok-v"><a class="header" href="#memok-v"><code>Memo&lt;K, V&gt;</code></a></h2>
 <pre><code class="language-vilan fragment">impl Memo&lt;type K: Hashable, type V&gt; {
 	fun new(): Memo&lt;K, V&gt;
-	fun get_or(self, key: K, make: || V): V
+	fun get_or_insert(self, key: K, make: || V): V
 	fun get(self, key: K): Option&lt;V&gt;
 	fun forget(self, key: K)
 	fun clear(self)
 	fun len(self): usize
 }
 </code></pre>
-<p>A per-key cache of values <strong>made on first ask</strong>. <code>get_or</code> answers what is held
-for <code>key</code>, or runs <code>make</code>, keeps the result and answers that. <code>get</code> is the
-passive read — it makes nothing.</p>
+<p>A per-key cache of values <strong>made on first ask</strong>. <code>get_or_insert</code> answers what
+is held for <code>key</code>, or runs <code>make</code>, inserts the result and answers that. <code>get</code>
+is the passive read — it makes nothing. (<code>get_or</code> is the old name, kept one
+release as a deprecated alias.)</p>
 <pre><code class="language-vilan">import std::memo::Memo;
 
 fun main() {
 	let squares: Memo&lt;i32, i32&gt; = Memo::new();
-	print(squares.get_or(7, || 7 * 7));   // 49 -- made
-	print(squares.get_or(7, || 0));       // 49 -- held; the maker did not run
+	print(squares.get_or_insert(7, || 7 * 7));   // 49 -- made
+	print(squares.get_or_insert(7, || 0));       // 49 -- held; the maker did not run
 	squares.forget(7);
-	print(squares.len());                 // 0
+	print(squares.len());                        // 0
 }
 </code></pre>
-<p><code>make</code> runs <strong>at the call site</strong>, which is what makes a memo usable for values
-that read an ambient context — the one this exists for is a remote handle:</p>
-<pre><code class="language-vilan fragment">// One handle per id, shared by every call site (`guide/services.md`).
-let bodies: Memo&lt;str, RemoteSource&lt;MessageBody&gt;&gt; = Memo::new();
+<p><code>make</code> runs <strong>at the call site</strong>, so a maker that reads an ambient context —
+the rpc client, a theme — reads the caller’s. Its <em>lifetime</em> is not the
+caller’s, though: <strong>what the maker builds outlives the caller.</strong> The memo keeps
+it for the life of the program, past every owner the first call ran under, so a
+derivation built in a maker is <code>.cell_global()</code>, and a lease (<code>.cell()</code>,
+<code>effect</code>) belongs at the call site, on what the memo answers:</p>
+<pre><code class="language-vilan fragment">// The memo holds the program-lifetime cell of the handle; the view that asks
+// takes its own lease, released with the view.
+let bodies: Memo&lt;str, SignalCell&lt;Option&lt;RemoteSource&lt;MessageBody&gt;&gt;&gt;&gt; = Memo::new();
 
-fun body_of(id: str): RemoteSource&lt;MessageBody&gt; {
-	bodies.get_or(id, || client().get_message(id))
+fun body_of(id: str): MemoCell&lt;Option&lt;MessageBody&gt;&gt; {
+	bodies
+		.get_or_insert(id, || client_cell().derive(|client| client.map(|c| c.get_message(id))).cell_global())
+		.and_then(|mirror| mirror)
+		.memo()
 }
 </code></pre>
-<p>Two views asking for the same row then lease the <em>same</em> mirror instead of
-minting a second one, so a row that re-renders finds the handle it had.
-Nothing is evicted by itself, and a remote handle needs no eviction to stay
-correct — demand decides its channel’s life, and a released mirror re-mints on
-the next lease. <code>forget</code> is yours, for a value that turned out wrong.</p>
+<p>A <code>.cell()</code> inside the maker would be tied to the FIRST caller’s owner: it dies
+with that view, and every later ask is answered with the dead cell — stale, and
+never updating again. The compiler warns at a <code>.cell()</code> or an <code>effect</code> written
+directly in a maker.</p>
+<p>You do not need a memo to get one remote handle per id: a generated handle
+stub already answers the same mirror for the same method and arguments (see the
+<a href="../guide/services.html">services guide</a>). Nothing is evicted by itself; <code>forget</code>
+is yours, for a value that turned out wrong.</p>
 <p>It holds a <code>Shared</code> table inside, so a <code>Memo</code> bound with <code>let</code> at module level
 is written by every call site that reads it; no <code>mut</code> is needed.</p>
+<p>The one-slot twin is <code>Shared&lt;Option&lt;T&gt;&gt;::get_or_insert(make)</code>: the held value,
+or <code>make()</code> stored and answered — the same rule about what <code>make</code> builds. The
+unshared form is <code>HashMap::get_or_insert(key, make)</code> on a map you hold <code>mut</code>.</p>
 <h2 id="hashable"><a class="header" href="#hashable"><code>Hashable</code></a></h2>
 <p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>. Three
 routes reach it:</p>
@@ -469,12 +511,12 @@ accepted as a <em>field</em> of a derived type too. A <code>resource</code> enum
 resource cannot be hashed by value.</li>
 <li><strong><code>[derive(Hashable)]</code></strong> — for a struct or an enum whose fields are all
 <code>Hashable</code> (scalars, <code>str</code>, <code>bool</code>, <code>List</code>/<code>Option</code> of <code>Hashable</code>, a backed
-enum, or another derived type); a closure, <code>Set</code>, <code>Map</code>, or <code>Shared</code> field is
+enum, or another derived type); a closure, <code>HashSet</code>, <code>HashMap</code>, or <code>Shared</code> field is
 rejected. Writing it on a backed enum is harmless and does nothing.</li>
 </ul>
 <p>You can also hand-write <code>impl Hashable</code> to key by a subset of fields — except on
 a backed enum, whose impl the compiler already provides — and build your own
-container by bounding on <code>K: Hashable</code> and keying a <code>Map&lt;Hash, …&gt;</code> yourself.</p>
+container by bounding on <code>K: Hashable</code> and keying a <code>HashMap&lt;Hash, …&gt;</code> yourself.</p>
 <p>A <code>Hash</code> is opaque: you can hold it, compare two with <code>==</code>, hash it again (it is
 itself <code>Hashable</code>, being already a canonical key), and use it as a key. You
 cannot read the value inside, which is what keeps the representation free to
@@ -594,7 +636,7 @@ so <code>fun next(&amp;mut self) { (self.fn)() }</code> is fine (it yields an <c
 <li><strong>A type with <code>next</code></strong> (or <code>next_mut</code>, for <code>for e in &amp;mut it</code>) — the protocol
 above, declared on the type or inherited from a trait default.</li>
 <li><strong>A natively iterable value</strong>: <code>List&lt;T&gt;</code>, a fixed array <code>[T; n]</code>, a tuple, a
-<code>str</code> (yielding its characters), <code>Set&lt;T&gt;</code> (insertion order), and any host type
+<code>str</code> (yielding its characters), <code>HashSet&lt;T&gt;</code> (insertion order), and any host type
 an <code>external struct</code> names.</li>
 </ul>
 <p>Anything else is a compile error. A struct or enum of your own that provides no
@@ -609,8 +651,8 @@ fun main() {
 	}
 }
 </code></pre>
-<p><code>Map</code> is in that group: walk it through <code>entries()</code>, <code>keys()</code> or <code>values()</code>, as
-the <code>Map</code> section above does.</p>
+<p><code>HashMap</code> is in that group: walk it through <code>entries()</code>, <code>keys()</code> or
+<code>values()</code>, as the <code>HashMap</code> section above does.</p>
 <h3 id="adapters"><a class="header" href="#adapters">Adapters</a></h3>
 <p>Every <code>Iterator</code> gets these, as trait defaults — implement <code>next</code> and you have
 all of them:</p>
@@ -668,10 +710,10 @@ fun main() {
 put it after a <code>filter</code> and you get the positions in the <em>output</em>, not in the
 source.</p>
 <p>The adapter types are named in the past participle — <code>Mapped</code>, <code>Taken</code>,
-<code>Filtered</code> — while the methods keep the plain names. That is deliberate: <code>Map</code>
-is already a std type, and vilan’s method resolution picks by registration order
-rather than reporting a collision, so the type names stay out of each other’s
-way.</p>
+<code>Filtered</code> — while the methods keep the plain names. That is deliberate: a verb’s
+bare name can be a std type too (the hash map was <code>Map</code> until v0.42), and vilan’s
+method resolution picks by registration order rather than reporting a collision,
+so the type names stay out of each other’s way.</p>
 <p>A <code>for</code> binding gets the element type the iterator was instantiated at, whatever
 shape it is — a tuple, a struct, another container, a closure:</p>
 <pre><code class="language-vilan">struct Point { x: i32, y: i32 }
@@ -723,12 +765,12 @@ work up to that point has already happened — and <code>rev</code> never return
 unbounded source. (A lazy reverse needs a double-ended protocol, where every
 adapter decides whether it can walk backwards. That is purely additive later:
 <code>rev</code>’s signature would not change, only its body.)</p>
-<p>For a <code>Set</code> or a <code>Map</code>, terminate with <code>to_list()</code> and convert:</p>
-<pre><code class="language-vilan fragment">impl List&lt;type T: Hashable&gt;            { fun to_set(self): Set&lt;T&gt; }
-impl List&lt;(type K: Hashable, type V)&gt;  { fun to_map(self): Map&lt;K, V&gt; }
+<p>For a <code>HashSet</code> or a <code>HashMap</code>, terminate with <code>to_list()</code> and convert:</p>
+<pre><code class="language-vilan fragment">impl List&lt;type T: Hashable&gt;            { fun to_set(self): HashSet&lt;T&gt; }
+impl List&lt;(type K: Hashable, type V)&gt;  { fun to_map(self): HashMap&lt;K, V&gt; }
 </code></pre>
-<pre><code class="language-vilan">import std::map::Map;
-import std::set::Set;
+<pre><code class="language-vilan">import std::hash_map::HashMap;
+import std::hash_set::HashSet;
 import std::option::Option::{ self, Some, None };
 
 fun main() {
@@ -799,7 +841,7 @@ makes with <code>Display</code>. A repeated key in <code>to_map</code> keeps the
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

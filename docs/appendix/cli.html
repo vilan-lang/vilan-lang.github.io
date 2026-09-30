@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,6 +186,15 @@ a <code>note:</code> line rather than passed over silently.</p>
 <p>For the guided on-ramp, see <a href="../tour/hello-vilan.html">Hello Vilan</a>; for
 <code>--watch</code>, HMR, and the manifest keys that shape the dev loop, see
 <a href="../guide/dev-loop.html">the dev loop</a>.</p>
+<p>One flag stands outside the commands: <code>vilan --print-keywords</code> prints the
+language’s keyword table as JSON, <code>{"keywords": ["Self", "as", "async", …], "contextual": ["Self", "as", …]}</code>, and exits. <code>keywords</code> is every word with
+a keyword reading; <code>contextual</code> is the subset that is a keyword only in one
+position and an ordinary name everywhere else (<code>with</code>, <code>own</code>, <code>lazy</code>, <code>as</code>,
+…); the rest are reserved. It is the list for a tool that highlights or
+escapes Vilan outside this toolchain to read instead of keeping its own
+copy, which drifts: the playground’s editor on this site reads it, and
+<code>vilan bindgen</code> escapes exactly the reserved words (a TypeScript member
+named <code>css</code> binds as <code>css_</code>, one named <code>lazy</code> as <code>lazy</code>).</p>
 <h2 id="vilan-init-name"><a class="header" href="#vilan-init-name"><code>vilan init [name]</code></a></h2>
 <p>Scaffolds a ready-to-run project: a manifest, sources that compile, and
 a <code>.gitignore</code>. With <code>name</code>, creates that directory (it must not exist
@@ -261,7 +270,7 @@ emits the program as Rust, writes a cargo project under <code>dist/native/</code
 and builds it with the host’s <code>cargo</code> — <strong>in debug</strong>, because rustc is
 the inner loop from there on (<code>--release</code> is yours to run over the
 generated project). It is a first cut whose scope is structs, enums,
-<code>Option</code>/<code>Result</code>, <code>str</code>, <code>List</code>, <code>Map</code>/<code>Set</code>, closures, <code>impl</code>s,
+<code>Option</code>/<code>Result</code>, <code>str</code>, <code>List</code>, <code>HashMap</code>/<code>HashSet</code>, closures, <code>impl</code>s,
 <code>print</code> and <code>panic</code>; anything outside that — a generic function, a
 module-level binding, <code>async</code>, any host binding — is refused by name
 rather than mis-compiled. <a href="../guide/native.html">Native binaries</a> has the
@@ -397,8 +406,8 @@ for them, in its own <code>vilan.toml</code>:</p>
 <pre><code class="language-toml">[lints]
 internal_use = "warn"
 </code></pre>
-<p><code>internal_use</code> warns at every import and use of an <code>[internal("reason")]</code>
-item outside the module that declares it — <code>`anchor` is internal: place against it, never through it</code>. The label on its own only changes what the
+<p><code>internal_use</code> warns at every use of an <code>[internal("reason")]</code> item outside
+the module that declares it (an <code>import</code> line alone is not a use) — <code>`anchor` is internal: place against it, never through it</code>. The label on its own only changes what the
 editor shows (the name is hidden from completion, dimmed, and its hover leads
 with the reason); a package that wants the terminal to say so too sets the
 key. Each lint is <code>"allow"</code> (the default) or <code>"warn"</code>, and a lint name or a
@@ -830,7 +839,7 @@ the crossing. The same fact rules out three tempting mappings:</p>
 <code>[tag, …payload]</code> — unless it is a <strong>backed</strong> enum, which is the bare
 backing value and <em>does</em> cross (that is what a closed string set maps to,
 below);</li>
-<li><code>Map&lt;str, T&gt;</code> is a Vilan struct over a hashed native map, not a plain
+<li><code>HashMap&lt;str, T&gt;</code> is a Vilan struct over a hashed native map, not a plain
 host object;</li>
 <li><code>List&lt;T&gt;</code> is a real JS array, and an array-<em>like</em> (<code>{[index: number]: T}</code> — numeric keys and <code>length</code>, no <code>Symbol.iterator</code>) is not one:
 iterating it throws. Convert at the boundary with <code>Array.from</code> and bind
@@ -892,6 +901,17 @@ release, downloading for your platform and swapping the pair atomically
 (<code>vilan-lsp</code> first, so the two are never newer-cli/older-lsp). The
 licenses and third-party notices travel along. <code>--check</code> reports whether
 a newer release exists and changes nothing.</p>
+<p>The VS Code extension comes along. After the swap — and when the
+toolchain is already the newest release but the installed extension is
+not its version — <code>vilan upgrade</code> runs the installers’ extension step:
+<code>code --install-extension vilan-lang.vilan</code> from the Marketplace or Open
+VSX first (an install VS Code keeps updated from then on), and the
+release’s own <code>vilan-vscode.vsix</code>, verified against its checksum, when
+the gallery cannot be reached. The editor is found as the installers find
+it: <code>code</code> on your <code>PATH</code>, else a VS Code Server’s own CLI. Its last line
+says which it did; an editor that refuses the extension is reported,
+never a failed upgrade. <code>--no-vscode</code> (or <code>VILAN_NO_VSCODE=1</code>) leaves the
+editor alone.</p>
 <p><code>vilan upgrade</code> also prunes the std cache described below while it has
 <code>~/.vilan</code> open.</p>
 <h2 id="vilan-cache-prune"><a class="header" href="#vilan-cache-prune"><code>vilan cache prune</code></a></h2>
@@ -974,7 +994,7 @@ its own table open.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

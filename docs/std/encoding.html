@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -420,7 +420,7 @@ copy of the bag and writes through to the same writer:</p>
 you and are the paths to prefer.</p>
 <p>It gives you the wire codec and nothing else: a type that also needs
 <code>to_json</code>/<code>from_json</code> asks for both, <code>[derive(Json, Wire)]</code>. The two are
-separate trait families with separate field rules — <code>Map</code> and any
+separate trait families with separate field rules — <code>HashMap</code> and any
 hand-written <code>impl … with Wire</code> type are Wire and are not Json — so a
 <code>Wire</code> derive that quietly emitted a JSON codec as well would refuse
 fields the wire boundary admits, in <code>to_json</code>’s vocabulary rather than
@@ -438,7 +438,7 @@ needs nothing hand-written. An unrecognized tag is a sticky decode
 failure, so <code>decode</code> answers <code>Err(reason)</code> rather than panicking on a
 malformed frame. <code>std::json</code>’s direct pair writes the same tags, so the
 two spellings of a <code>Result</code> are one encoding.</p>
-<p><code>Map&lt;K, V&gt;</code> is Wire when both its key and its value are (the key is
+<p><code>HashMap&lt;K, V&gt;</code> is Wire when both its key and its value are (the key is
 already <code>Hashable</code> by the type’s own bound). It narrates as a list of
 <code>{key, value}</code> pairs — codec-neutral, readable in JSON, and
 insertion-ordered in both directions.</p>
@@ -569,7 +569,7 @@ fun decode_url(text: str): Option&lt;Bytes&gt;
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

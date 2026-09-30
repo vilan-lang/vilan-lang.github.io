@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,8 +181,11 @@ stdio, so any LSP client can drive it; the one the project configures and
 tests is the VS Code extension.</p>
 <h2 id="getting-it"><a class="header" href="#getting-it">Getting it</a></h2>
 <p>The <a href="../tour/hello-vilan.html#install-the-toolchain">toolchain install</a> puts
-<code>vilan-lsp</code> next to <code>vilan</code> in <code>~/.vilan/bin</code>. Then install <strong>Vilan</strong>
-(<code>vilan-lang.vilan</code>) from the VS Code Marketplace or Open VSX. The
+<code>vilan-lsp</code> next to <code>vilan</code> in <code>~/.vilan/bin</code>, and — when VS Code’s <code>code</code>
+is on your <code>PATH</code> — installs <strong>Vilan</strong> (<code>vilan-lang.vilan</code>) from the VS
+Code Marketplace or Open VSX too; <code>vilan upgrade</code> brings the extension to
+the toolchain’s version each time it runs. Otherwise install it from
+either gallery yourself. The
 extension activates on a <code>.vl</code> file or a workspace containing a
 <code>vilan.toml</code>, and finds the server by looking, in order, at
 <code>vilan.server.path</code>, a <code>target/release/vilan-lsp</code> or <code>target/debug/</code>
@@ -215,12 +218,33 @@ about the field; the struct’s whole declaration block is what its own
 name answers.</p>
 <p>Hovering a call to a GENERIC function shows two signatures in one block:
 the declaration as it is written, then the same signature under the
-bindings this call solved — <code>fun get_or(self, key: K, make: || V): V</code>
-above <code>fun get_or(self, key: UserId, make: || SignalCell&lt;Option&lt;User&gt;&gt;): SignalCell&lt;Option&lt;User&gt;&gt;</code>. A call that substitutes nothing, and a hover on
+bindings this call solved — <code>fun get_or_insert(self, key: K, make: || V): V</code>
+above <code>fun get_or_insert(self, key: UserId, make: || SignalCell&lt;Option&lt;User&gt;&gt;): SignalCell&lt;Option&lt;User&gt;&gt;</code>. A call that substitutes nothing, and a hover on
 the declaration itself, show the one line they always did.</p>
 <p><strong>Inlay hints</strong> — the inferred type of a binding you left unannotated
 (<code>let</code>/<code>mut</code>, a <code>for</code> binder, a comprehension binder). A parameter is not
-hinted: its type is written in the signature already.</p>
+hinted: its type is written in the signature already. While you type, a
+hint stays where it is and follows the text like any other position —
+typing before it on its line moves it right, a line inserted above moves
+it down, typing after it or below it leaves it alone — and keeps its last
+analysed type until the next analysis replaces the set; deleting the name
+it follows removes it.</p>
+<p>A pipeline node’s type spells its whole upstream, so a type whose
+declaration carries <strong><code>[hint(Trait&lt;..&gt;)]</code></strong> is hinted by the trait it is
+used as: <code>let selected = combine((names, index)).derive(..)</code> shows
+<code>: ~Pipe&lt;Option&lt;str&gt;&gt;</code>, not <code>: Derive&lt;Combine&lt;(List&lt;str&gt;, usize)&gt;, …&gt;</code>. The
+<code>~</code> marks the abbreviation — it lexes nowhere, so it cannot be mistaken
+for a type you could write — and a node nested in another type
+abbreviates in place (<code>(~Pipe&lt;Option&lt;str&gt;&gt;, i32)</code>). It is printed only
+when the value’s own instantiation is admitted by an impl of that trait,
+so it never promises what the value lacks. The hint’s tooltip carries the
+full type, and hover shows both: the full type in the declaration, and
+<em>Shown as <code>~Pipe&lt;Option&lt;str&gt;&gt;</code></em> beneath it. std’s pipe stages
+(<code>~Pipe&lt;T&gt;</code>) and collection stages (<code>~CollPipe&lt;T&gt;</code>, sealed as
+<code>~CollSource&lt;T&gt;</code>), its sealed <code>MemoCell</code> and <code>RemoteSource</code> (<code>~Source&lt;..&gt;</code>),
+<code>.transient()</code>’s seal (<code>~TransientSource&lt;T, E&gt;</code>) and
+its iterator adapters (<code>~Iterator&lt;T&gt;</code>) carry the attribute, and a package’s
+own types can too. <code>vilan.inlayHints.abbreviate</code> turns it off.</p>
 <p><strong>Semantic highlighting</strong> from the analyzer, over the TextMate grammar,
 which also highlights <code>vilan</code> fences inside Markdown.</p>
 <p><strong>Go to definition</strong> (including into <code>std</code>), <strong>find references</strong>,
@@ -244,7 +268,15 @@ analyzed under decides which <code>std</code> twin its types come from, so the s
 bar says it for the vilan file in front of you — <code>analyzed as: browser — declared</code>, <code>analyzed as: node — default-entry</code> — with the whole reason in
 its tooltip. A file can say it itself: <code>[platform("browser")] mod self;</code> as
 its first line — and at the top of a file, completion offers that line.</p>
-<p><strong>A generic <code>&lt;</code> closes itself.</strong> <code>List&lt;</code>, <code>Map&lt;</code>, <code>fun pair&lt;</code> and a
+<p>A file holding platform-fenced <strong>twins</strong> (a function or a trait <code>impl</code>
+written once under <code>[platform("browser")]</code> and once under
+<code>[platform("@process")]</code>) is analyzed under each twin’s platform, and the
+editor keeps every one of those analyses: inside the twin the file’s own
+platform excludes, hover, completion, inlay hints and colour come from the
+analysis that admits it, as they do everywhere else. Go-to-definition on a
+call to a twin offers both twins, the one the file’s platform compiles
+first.</p>
+<p><strong>A generic <code>&lt;</code> closes itself.</strong> <code>List&lt;</code>, <code>HashMap&lt;</code>, <code>fun pair&lt;</code> and a
 generic call’s own argument list each get their <code>&gt;</code> as you type the <code>&lt;</code>.
 The editor’s static bracket pairs cannot do this — <code>&lt;</code> is also the
 comparison operator, and <code>a &lt; b</code> must not grow a <code>&gt;</code> — so the server
@@ -499,6 +531,7 @@ plain go-to-definition, and no pull diagnostics — diagnostics are pushed.</p>
 <tr><td><code>vilan.server.path</code></td><td>—</td><td>an explicit <code>vilan-lsp</code> binary; changing it restarts the client</td></tr>
 <tr><td><code>vilan.stdPath</code></td><td>—</td><td>an explicit <code>std</code> root, overriding discovery</td></tr>
 <tr><td><code>vilan.inlayHints.enabled</code></td><td><code>true</code></td><td></td></tr>
+<tr><td><code>vilan.inlayHints.abbreviate</code></td><td><code>true</code></td><td>show a <code>[hint]</code>ed type by its trait, <code>~Source&lt;T&gt;</code>; off shows every full type</td></tr>
 <tr><td><code>vilan.semanticTokens.enabled</code></td><td><code>true</code></td><td>off falls back to the TextMate grammar</td></tr>
 <tr><td><code>vilan.completion.functionCall</code></td><td><code>full</code></td><td><code>parensOnly</code>, or <code>none</code></td></tr>
 <tr><td><code>vilan.autoClosing.generics</code></td><td><code>true</code></td><td>pair a generic <code>&lt;</code> and type over its <code>&gt;</code>; off for Vim emulation</td></tr>
@@ -571,7 +604,7 @@ to report prints <code>?</code> rather than a zero.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

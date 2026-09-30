@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -183,7 +183,7 @@ signal fields, the macro generates:</p>
 <pre><code class="language-vilan fragment">// client side
 FooClient::connect(url: str, codec: Codec): Result&lt;FooClient&lt;SocketTransport&gt;, RpcError&gt;
 client.some_rpc(args…): Result&lt;T, RpcError&gt;     // per [rpc] method; implicitly awaited
-client.some_handle(args…): RemoteSource&lt;T&gt;      // per [rpc] method RETURNING a source; sync, unleased
+client.some_handle(args…): RemoteSource&lt;T&gt;      // per [rpc] method RETURNING a source (SignalCell or MemoCell); sync, unleased
 client.some_keyed(args…): KeyedSource&lt;K, V&gt;     // per [rpc] method returning a KeyedCell; same, keyed
 client.some_signal: RemoteSource&lt;T&gt;             // per [expose] field; a typed mirror (below)
 client.some_map: KeyedSource&lt;K, V&gt;              // per [expose(keyed)] field; a patched mirror (below)
@@ -193,6 +193,12 @@ client.transport: SocketTransport               // connection state lives here
 foo.dispatcher(): Dispatcher                    // the method table
 dispatcher.into_protocol(codec: Codec): RpcProtocol   // what Service::new takes
 </code></pre>
+<p>A handle stub is <strong>idempotent per origin</strong>: a second call with the same
+arguments on the same client answers the mirror the first one minted (one
+call, one <code>Subscribe</code>), until that mirror’s last lease closes. The table
+behind it is generated beside the client — one <code>MirrorTable</code> per handle
+method — so a stub is safe inside a cold select (<code>and_then</code>, <code>switch</code>)
+that runs on every read.</p>
 <p><code>connect</code> accepts a relative url (<code>"/"</code>) in the browser; it dials the same
 host over WebSocket, waits for the server’s announcement, and verifies the
 <strong>contract hash</strong>: a drifted server fails the connect with
@@ -203,17 +209,26 @@ host over WebSocket, waits for the server’s announcement, and verifies the
 impl RemoteSource&lt;type T&gt; with Source&lt;Option&lt;T&gt;&gt; {
 	fun get(self): Option&lt;T&gt;                              // passive: the cache, `None` before the first update
 	[must_use]
-	fun on_change(self, observer: |Option&lt;T&gt;| void): Subscription    // counted, lazy: no immediate call
+	fun on_settle(self, subscriber: Subscriber): Subscription       // counted: attach, then lease
 	[must_use]
-	fun sub(self, observer: |Option&lt;T&gt;| void): Subscription          // counted, eager: one immediate call
-	fun effect(self, observer: |Option&lt;T&gt;| void)                     // counted, eager, owner-scoped
+	fun attach_observer(self, observer: |Option&lt;T&gt;| void, immediately: bool): Subscription
+	                                                      // counted; eager = lease first, one immediate call
 }
+// Through `Flow` (every source is one): `on_change` (counted, lazy), `sub`
+// (counted, eager), `effect` (counted, eager, owner-scoped), `derive`, …
 
 impl RemoteSource&lt;type T&gt; {
 	fun status(self): SignalCell&lt;Status&gt;                      // passive: what the mirror was last told
-	fun or(self, initial: T): Map&lt;RemoteSource&lt;T&gt;, Option&lt;T&gt;, T&gt;   // a cold node: `initial` until the first update
+	fun or(self, initial: T): Derive&lt;RemoteSource&lt;T&gt;, Option&lt;T&gt;, T&gt;   // a pipe: `initial` until the first update
 	[must_use]
 	fun sub(self, observer: |T| void): Subscription       // counted, manual: present values; dispose to release
+}
+
+// A mirror is a transient source (std::transient): Status mapped arm for arm.
+impl RemoteSource&lt;type T&gt; with TransientSource&lt;T, RpcError&gt; {
+	fun state(self): MemoCell&lt;TransientState&lt;T, RpcError&gt;&gt;   // passive, like `status`
+	fun latest(self): dyn Pipe&lt;Option&lt;T&gt;&gt;                    // leases while bound; keeps the stale value
+	fun is_pending(self): dyn Pipe&lt;bool&gt;                     // leases while bound
 }
 
 [derive(PartialEq, Debug)]
@@ -284,16 +299,17 @@ receives a <code>Patch</code> of <code>Delta</code> ops and applies them in orde
 impl KeyedSource&lt;type K: Wire + Hashable, type T: Wire + Keyed&lt;K&gt;&gt; with Source&lt;Option&lt;List&lt;T&gt;&gt;&gt; {
 	fun get(self): Option&lt;List&lt;T&gt;&gt;                            // passive: what this client subscribed to
 	[must_use]
-	fun on_change(self, observer: |Option&lt;List&lt;T&gt;&gt;| void): Subscription   // counted, lazy
+	fun on_settle(self, subscriber: Subscriber): Subscription           // counted: attach, then lease
 	[must_use]
-	fun sub(self, observer: |Option&lt;List&lt;T&gt;&gt;| void): Subscription         // counted, eager
-	fun effect(self, observer: |Option&lt;List&lt;T&gt;&gt;| void)                    // counted, eager, owner-scoped
+	fun attach_observer(self, observer: |Option&lt;List&lt;T&gt;&gt;| void, immediately: bool): Subscription
 }
+// Through `Flow`: `on_change` (counted, lazy), `sub` (counted, eager), `effect`
+// (counted, eager, owner-scoped), `derive`, …
 
 impl KeyedSource&lt;type K: Wire + Hashable, type T: Wire + Keyed&lt;K&gt;&gt; {
 	fun status(self): SignalCell&lt;Status&gt;                      // passive: `Waiting` until the first patch
 	fun fault(self): Option&lt;str&gt;                              // passive: the first protocol fault, sticky
-	fun or(self, initial: List&lt;T&gt;): Map&lt;KeyedSource&lt;K, T&gt;, Option&lt;List&lt;T&gt;&gt;, List&lt;T&gt;&gt;   // a cold node: the whole collection
+	fun or(self, initial: List&lt;T&gt;): Derive&lt;KeyedSource&lt;K, T&gt;, Option&lt;List&lt;T&gt;&gt;, List&lt;T&gt;&gt;   // a pipe: the whole collection
 	[must_use]
 	fun sub(self, observer: |List&lt;T&gt;| void): Subscription     // counted, manual: the whole collection
 	fun of(self, key: K): SignalCell&lt;Option&lt;T&gt;&gt;               // counted per KEY, owner-scoped
@@ -323,17 +339,17 @@ collection. <code>fault()</code> is <code>Some(reason)</code> if a patch ever na
 mirror does not hold; that op is refused rather than applied.</p>
 <p>Hand-wired exposures use <code>ReactiveServer::expose_keyed(source, key_of)</code>
 (for a <code>Source&lt;List&lt;T&gt;&gt;</code>) or <code>expose_keyed_map(source, key_of)</code> (for a
-<code>Source&lt;Map&lt;K, V&gt;&gt;</code>), with <code>ReactiveClient::attached_keyed_source</code> /
+<code>Source&lt;HashMap&lt;K, V&gt;&gt;</code>), with <code>ReactiveClient::attached_keyed_source</code> /
 <code>keyed_source</code> on the other end. <code>key_of</code> is a value parameter rather than
 a <code>Keyed&lt;K&gt;</code> bound alone because <code>K</code> appears nowhere else in the
 signature, and vilan infers a type parameter from a call’s types, not from
 its bounds.</p>
 <p>The attribute generates whichever of the two the field’s collection calls for,
-and the key type comes from wherever it is written (tracker A51): a <code>Map&lt;K, V&gt;</code>
+and the key type comes from wherever it is written (tracker A51): a <code>HashMap&lt;K, V&gt;</code>
 element names it and takes the bare <code>[expose(keyed)]</code>, and every other
 collection names it in the attribute — <code>[expose(keyed = str)] items: SignalCell&lt;List&lt;Task&gt;&gt;</code>. Naming it in both places is redundant rather than
 wrong, but the two spellings must AGREE: an argument that disagrees with the
-<code>Map</code>’s own key is refused at the attribute (tracker A56), because the
+<code>HashMap</code>’s own key is refused at the attribute (tracker A56), because the
 expansion reads <code>K</code> from the annotation before any type resolves and cannot
 pick between them. The generated wiring is the hand-written call, frame
 for frame, and the two spellings are one contract: same <code>Patch</code> frames, same
@@ -361,7 +377,7 @@ impl KeyedCell&lt;type K: Hashable, type T: Keyed&lt;K&gt;&gt; {
 impl KeyedCell&lt;type K: Hashable, type T: Keyed&lt;K&gt;&gt; with Source&lt;List&lt;T&gt;&gt; {
 	fun get(self): List&lt;T&gt;
 	[must_use]
-	fun on_change(self, observer: |List&lt;T&gt;| void): Subscription
+	fun on_settle(self, subscriber: Subscriber): Subscription
 }
 </code></pre>
 <p>It is a <code>Source&lt;List&lt;T&gt;&gt;</code> with no <code>Option</code> in it — a cell always holds a
@@ -690,7 +706,7 @@ transport or protocol bridge.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

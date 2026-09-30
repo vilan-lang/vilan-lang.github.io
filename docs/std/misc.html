@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,7 +175,7 @@
                         <h1 id="misc-reference"><a class="header" href="#misc-reference">Misc reference</a></h1>
 <p>The small modules that don’t need a page of their own: <code>std::io</code>,
 <code>std::task</code>, <code>std::promise</code>, <code>std::context</code>, <code>std::crypto</code>, <code>std::jwt</code>,
-<code>std::asset</code>.</p>
+<code>std::asset</code>, <code>std::tuple</code>.</p>
 <h2 id="stdio"><a class="header" href="#stdio">std::io</a></h2>
 <pre><code class="language-vilan fragment">fun print(message: any)                     // console.log
 fun panic(message: str)                     // abort with a message
@@ -258,6 +258,7 @@ that only spawns never sees this type.</p>
 	fun run&lt;U&gt;(self, value: T, body: || U): U   // establish for the body's extent
 	fun get(self): T                            // read (compile error if possibly absent)
 	fun get_safe(self): Option&lt;T&gt;               // read, absence as None
+	fun clear&lt;U&gt;(self, body: || U): U           // run `body` with the value NOT established
 }
 </code></pre>
 <ul>
@@ -301,7 +302,7 @@ main();
 </code></pre>
 <p>Do not reach for them for passwords — a raw digest is far too fast, and
 <code>pbkdf2_sha512</code> is the primitive for that. They are also not <code>std::hash</code>,
-which is the Map/Set canonical-key mechanism and promises no avalanche.</p>
+which is the HashMap/HashSet canonical-key mechanism and promises no avalanche.</p>
 <p>The std surface is <strong>async</strong> because WebCrypto is. On a path that must
 stay sync — the walkthrough’s rpc dispatch hashes passwords inside a
 sync method — binding the host’s sync primitive as an extern is still
@@ -522,6 +523,33 @@ whenever the bytes do can be served with a year-long <code>max-age</code>:</p>
 re-mints the url. Listings charge fuel per entry; <code>digest</code> charges per
 byte at an eighth of <code>read</code>’s rate, since its bytes never enter the
 program and its result is 64 characters whatever the file weighs.</p>
+<h2 id="stdtuple"><a class="header" href="#stdtuple">std::tuple</a></h2>
+<p>A tuple you can walk, keyed by position (types.md §5.9). Every tuple of
+arity two or more — concrete, a value of <code>T: (2..)</code>, or a mapped tuple over
+one — implements <code>Tuple</code>:</p>
+<pre><code class="language-vilan fragment">external struct TupleKey&lt;T, U&gt;;   // a position in the family T, at element type U
+
+trait Tuple {
+	fun len(self): usize                                // the arity
+	fun keys(self): (U in Self: TupleKey&lt;Self, U&gt;)      // one key per position
+	fun entries(self): (U in Self: (TupleKey&lt;Self, U&gt;, U))
+	fun get&lt;U&gt;(self, key: TupleKey&lt;Self, U&gt;): U         // the element a key names
+	fun map&lt;F&gt;(self, transform: F): Self                // `(x in t =&gt; e)`: see below
+}
+</code></pre>
+<p>A key for <code>T</code> reads every tuple MAPPED from <code>T</code> too, at the mapped element
+type — the key from <code>whole.keys()</code> reads <code>cells.get(key)</code> as a
+<code>SignalCell&lt;U&gt;</code> when <code>cells: (V in T: SignalCell&lt;V&gt;)</code>. Keys come only from
+<code>keys()</code>/<code>entries()</code>; the type is opaque, so a key always names a position
+its family has.</p>
+<p><code>map</code> is the comprehension spelled as a call: <code>t.map(|x| e)</code> IS <code>(x in t =&gt; e)</code>. It takes a closure literal — its body is checked once, with <code>x</code> at the
+element template — and answers the tuple of the body’s type per position;
+its signature above is a placeholder the compiler does not read. A <code>for</code>
+over <code>entries()</code> binds each <code>(key, value)</code> the same way:</p>
+<pre><code class="language-vilan fragment">for (key, value) in fresh.entries() {
+	cells.get(key).set(value);   // key: TupleKey&lt;T, U&gt;, value: U
+}
+</code></pre>
 
                     </main>
 
@@ -574,7 +602,7 @@ program and its result is 64 characters whatever the file weighs.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

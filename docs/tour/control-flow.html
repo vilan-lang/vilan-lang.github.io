@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,57 @@ has that value:</p>
 	print(label);
 }
 </code></pre>
-<p>There is no ternary operator because <code>if</code> already is one.</p>
+<p>There is no ternary operator because <code>if</code> already is one — and when both
+branches are short, <code>then</code>/<code>else</code> spells it without the braces.</p>
+<h2 id="then--else"><a class="header" href="#then--else"><code>then</code> / <code>else</code></a></h2>
+<p><code>cond then a else b</code> is <code>if cond { a } else { b }</code> written infix. It is sugar:
+the compiler reads it as that <code>if</code>, so typing, scoping and errors are the
+<code>if</code>’s. As a value it needs both branches, exactly as <code>if</code> does, and a chain
+reads left to right as an <code>else if</code> ladder:</p>
+<pre><code class="language-vilan">fun sign(n: i32): str {
+	n &lt; 0 then "negative" else n == 0 then "zero" else "positive"
+}
+
+fun main() {
+	let verbose = true;
+	let label = verbose then "loud" else "quiet";
+	print(i"{label} {sign(-3)}");
+}
+</code></pre>
+<p>Written as a STATEMENT — ended by its <code>;</code> — each branch is one statement, so
+the two branches need not produce the same type, and either may be left out.
+<code>cond then S;</code> runs <code>S</code> when <code>cond</code> holds, and <code>cond else S;</code> runs it when it
+does not — the <strong>guard</strong>, which reads best before the work it protects:</p>
+<pre><code class="language-vilan">fun first_positive(xs: List&lt;i32&gt;): i32 {
+	for x in xs {
+		x &gt; 0 then ret x;
+	}
+	-1
+}
+
+fun main() {
+	let ready = first_positive([ -1, 4 ]) &gt; 0;
+	ready else print("nothing to do");
+	ready then print("ready") else print("waiting");
+}
+</code></pre>
+<p>When a guard’s <code>else</code> leaves — <code>ret</code>, <code>jump</code>, a <code>panic</code> — the only way past
+it is the condition holding, so what an <code>is</code> in the condition binds stays
+bound for the rest of the block:</p>
+<pre><code class="language-vilan">fun describe(found: Option&lt;i32&gt;): str {
+	found is Some(let n) else ret "none";
+	i"got {n}"
+}
+
+fun main() {
+	print(describe(Some(4)));
+}
+</code></pre>
+<p>The word binds looser than <code>||</code> and tighter than <code>=</code>: <code>a || b then x else y</code>
+tests <code>a || b</code>, and <code>label = ok then "yes" else "no";</code> assigns the whole form.
+A branch is a single statement with no block of its own, so a <code>let</code> there is
+refused — bind it first, or write an <code>if</code>. <code>then</code> is a keyword only in this
+position; <code>promise.then(f)</code> and <code>let then = 1;</code> are ordinary names.</p>
 <h2 id="match"><a class="header" href="#match"><code>match</code></a></h2>
 <p><code>match</code> is the workhorse, a <code>switch</code> that can take values apart and that
 the compiler checks for completeness. Arms are <code>pattern =&gt; expression</code>.
@@ -258,7 +308,7 @@ through <code>Align::parse</code>, wherever an unrecognized value is an answer y
 expect.</p>
 <p>When you only need a yes/no answer instead of a full match, <code>is</code> tests a
 pattern as a boolean:</p>
-<pre><code class="language-vilan fragment">let present = entry.map(|current| current is Some(let _task));
+<pre><code class="language-vilan fragment">let present = entry.derive(|current| current is Some(let _task));
 </code></pre>
 <p>A <code>let</code> inside the pattern <strong>captures</strong>, and the capture is in scope
 wherever the test is known to have passed: the then-branch, and the rest
@@ -551,7 +601,7 @@ and neither does one that ends in a <code>for { … }</code> nothing breaks out 
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

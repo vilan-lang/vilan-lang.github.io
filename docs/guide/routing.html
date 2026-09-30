@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -247,8 +247,10 @@ impl Route with Routable {
 }
 
 fun main() {
-	let route = current_path().map(parse);
 	let _root = mount_root("app", || {
+		// Built where it is consumed: the route is a pipe, and `swap` is its one
+		// consumer.
+		let route = current_path().derive(|path| parse(path));
 		view("div").child(swap(route, |current| match current {
 			Route::Home =&gt; view("h1").text("Home"),
 			Route::Workspace(let id, let _inner) =&gt; view("h1").text(i"Workspace {id}"),
@@ -338,11 +340,12 @@ you get to render it.</p>
 <h2 id="the-live-path-becomes-a-route-signal"><a class="header" href="#the-live-path-becomes-a-route-signal">The live path becomes a route signal</a></h2>
 <p><code>current_path()</code> is a <code>SignalCell&lt;str&gt;</code> of <code>location.pathname</code>. It stays
 current across <code>navigate</code> calls and the browser’s back/forward buttons.
-Derive your typed route from it once:</p>
-<pre><code class="language-vilan fragment">let route = current_path().map(parse);
+Derive your typed route from it where you consume it:</p>
+<pre><code class="language-vilan fragment">let route = current_path().derive(|path| parse(path));
 </code></pre>
-<p>(Passing <code>parse</code> by name instead of <code>|p| parse(p)</code> is the named-function
-coercion from <a href="../tour/functions-and-closures.html">the tour</a>.)</p>
+<p>The route is a pipe, consumed once — by the <code>swap</code> below. Where several parts of
+the app read it, seal it once with <code>.memo()</code> (at the top of <code>main</code>, or
+<code>.memo_global()</code> at module level) and hand the source around.</p>
 <h2 id="pages-swap-on-the-route"><a class="header" href="#pages-swap-on-the-route">Pages swap on the route</a></h2>
 <p><code>swap(route, render)</code> is the page container. When the route
 changes, it tears down the old page (disposing all its bindings) and
@@ -490,7 +493,7 @@ URL with <code>location_url()</code> when the query matters, on load and in a
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -189,7 +189,7 @@ compiler’s own suite proves it over the test corpus.</p>
 <ul>
 <li>structs, enums, <code>Option</code> and <code>Result</code>, generics (monomorphised per type
 argument), traits, trait objects (<code>dyn</code>), overloaded operators</li>
-<li><code>str</code>, <code>List</code>, <code>Map</code>, <code>Set</code>, closures, <code>impl</code> blocks, <code>match</code>, loops,
+<li><code>str</code>, <code>List</code>, <code>HashMap</code>, <code>HashSet</code>, closures, <code>impl</code> blocks, <code>match</code>, loops,
 recursion, module-level bindings, <code>lazy</code></li>
 <li><code>async</code>, <code>await</code>, <code>Task</code> and <code>Nursery</code>, on a single-threaded executor of the
 runtime’s own</li>
@@ -212,8 +212,9 @@ subscribes to, byte-for-byte on the wire with the node build</li>
 </ul>
 <p>What it does <strong>not</strong> reach yet — each refused by name, with the construct in the
 message, rather than silently mis-compiled: the browser platform (<code>std::dom</code>,
-<code>std::ui</code>, <code>std::web</code>, <code>std::router</code>), <code>resource</code> types (deterministic
-teardown natively is its own slice), a handful of host bindings (the <code>fs</code>
+<code>std::ui</code>, <code>std::web</code>, <code>std::router</code>), a <code>resource</code> type with a <code>Drop</code> impl
+(deterministic teardown natively is its own slice; a resource with no <code>Drop</code>,
+such as a pipe node, builds as an ordinary move-only type), a handful of host bindings (the <code>fs</code>
 calls that take an options object), and
 <code>--watch</code> (a native round is a full <code>cargo build</code>; the dev loop’s hot-swap
 belongs to the JS backend).</p>
@@ -227,6 +228,15 @@ the <code>Uint8Array</code> it is on the JS backend: <code>let b = a</code> is a
 server answers <code>Connection: close</code> on every response and sends no <code>Date</code>; node
 keeps connections alive and dates every answer. Everything a program sets — the
 status, its headers, its body — is the same on both.</p>
+<p><strong>A native server stops gracefully on SIGTERM.</strong> <code>Server::stop()</code> works as it
+does on node. Beyond it, a program that starts a server answers SIGTERM, SIGINT
+and SIGHUP (Ctrl-C, and the console’s close on Windows) by stopping its
+servers: it stops accepting, closes the connections that are only waiting and
+the upgraded sockets, lets a request already being answered finish — and then
+<code>main</code> returns, where node would have died of the signal. A second signal ends
+the process at once, for a server whose open response never ends. The handler
+lives in a third runtime crate, linked only by a program that serves, so a
+native server build fetches the <code>ctrlc</code> crate the first time.</p>
 <h2 id="debug-by-default"><a class="header" href="#debug-by-default">Debug by default</a></h2>
 <p><code>vilan run --backend rust</code> builds in <strong>debug</strong>, and so does <code>vilan build --backend rust</code>. rustc is the inner loop from here on: a release build of a
 seven-hundred-line program took over a second of CPU in the design probe, and a
@@ -334,7 +344,7 @@ being settled first.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -197,15 +197,21 @@ everything it calls, transitively). <code>run</code> yields <code>body</code>’
 <li><code>flavor.get()</code> (the <strong>strict</strong> read): yields the established <code>T</code>.</li>
 <li><code>flavor.get_safe()</code> (the <strong>safe</strong> read): yields <code>Option&lt;T&gt;</code>,
 <code>Some(value)</code> under an enclosing <code>run</code>, <code>None</code> otherwise.</li>
+<li><code>flavor.clear(body)</code> (clear): <code>run</code>’s inverse — for the dynamic extent
+of <code>body</code> the context is <strong>not</strong> established. A strict <code>get()</code> inside
+is the coverage error a <code>get()</code> outside every <code>run</code> is (the refusal
+names the <code>clear</code>); <code>get_safe()</code> yields <code>None</code>; a closure created
+inside captures the cleared state; a <code>run</code> inside re-establishes it
+(the nearest wins). <code>clear</code> yields <code>body</code>’s value.</li>
 </ul>
-<p><code>Context::new</code>, <code>run</code>, <code>get</code>, and <code>get_safe</code> are intrinsics: the
+<p><code>Context::new</code>, <code>run</code>, <code>get</code>, <code>get_safe</code> and <code>clear</code> are intrinsics: the
 threading pass rewrites their call sites away. They must be applied
 directly to the context’s <strong>name</strong> (a receiver that is not a named
 context is rejected). A context is not otherwise useful as a value:
 moving one through a parameter or a field severs the link between its
 <code>run</code>s and its reads; the reads can then never be covered. <code>run</code>’s
 body argument must be a closure literal (or an injected closure value,
-§8.5).</p>
+§8.5); <code>clear</code>’s must be a closure literal.</p>
 <p><code>Context&lt;T&gt;</code>’s value type is inferred from its first <code>run</code>, exactly as
 a <code>List&lt;T&gt;</code>’s element type is inferred from <code>push</code>.</p>
 <pre><code class="language-vilan">import std::context::Context;
@@ -319,6 +325,26 @@ across suspensions or across deferred invocation, because the closure’s
 channel was fixed when it was made. (Contrast dynamic-binding systems
 where the <em>call site’s</em> environment decides; in Vilan only <code>run</code>’s
 extent and creation sites decide.)</p>
+<p>A callback that must NOT carry the value — one minted inside a tracking
+scope and invoked after it closed — is made inside <code>clear</code>, which fixes
+its channel as absent:</p>
+<pre><code class="language-vilan">import std::context::Context;
+import std::option::Option::{ Some, None };
+
+let flavor: Context&lt;i32&gt; = Context::new();
+
+fun describe(): str {
+	match flavor.get_safe() {
+		Some(let value) =&gt; i"flavor {value}",
+		None =&gt; "no flavor",
+	}
+}
+
+fun main() {
+	let callback = flavor.run(3, || flavor.clear(|| || describe()));
+	print(callback());   // no flavor — minted with the value cleared
+}
+</code></pre>
 <h2 id="85-injected-closures-the-context-clause"><a class="header" href="#85-injected-closures-the-context-clause">8.5 Injected closures: the <code>context</code> clause</a></h2>
 <p>Capture-at-creation has one structural consequence: a closure literal
 passed <strong>to</strong> an establishing function is created <em>before</em> the extent
@@ -510,7 +536,7 @@ language rules; they are specified by their reference pages.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

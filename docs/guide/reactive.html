@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -243,8 +243,8 @@ is exactly what makes the push land in the signal rather than in a copy.
 Subscribers are notified <strong>once</strong>, after the closure returns, whatever it
 did (a closure that writes nothing still notifies — <code>update</code> is a write,
 like <code>set</code>). Inside a <code>batch</code>, that notification defers and coalesces like
-any other write. <code>update</code> works for any <code>T</code> a closure can mutate: <code>Map</code>,
-<code>Set</code>, a struct’s fields, a nested aggregate.</p>
+any other write. <code>update</code> works for any <code>T</code> a closure can mutate: <code>HashMap</code>,
+<code>HashSet</code>, a struct’s fields, a nested aggregate.</p>
 <p><code>set_with</code> remains the read-<strong>transform</strong>-write form, and it still reads
 better when you’re computing a new value rather than editing one:</p>
 <pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell };
@@ -258,72 +258,93 @@ fun main() {
 <p>(If you tried <code>items.get().push("first")</code>, you’d be mutating a copy. The
 <a href="../tour/memory-model.html">memory model</a> chapter explains why that’s a
 feature.)</p>
-<h2 id="derived-state-map-combine-flatten"><a class="header" href="#derived-state-map-combine-flatten">Derived state: <code>map</code>, <code>combine</code>, <code>flatten</code></a></h2>
-<p>Build state as a graph and let it compute itself. Every combinator below
-returns a <strong>node</strong> — a description of a value, holding the source it reads and
-what it does to it, and nothing else. A node computes when it is READ: <code>get()</code>
-pulls through the chain, and a subscriber is told “something changed” and pulls
-too. Building one registers nothing and runs nothing.</p>
+<h2 id="derived-state-derive-pipes-and-memo"><a class="header" href="#derived-state-derive-pipes-and-memo">Derived state: <code>derive</code>, pipes and <code>.memo()</code></a></h2>
+<p>Build state as a graph and let it compute itself. Two kinds of reactive value
+make up the graph:</p>
 <ul>
-<li>
-<p><code>signal.map(transform)</code> gives a source of the transformed value, computed
-when it is read:</p>
+<li>A <strong>source</strong> has state and can be read: a <code>SignalCell</code>, a constant, an rpc
+mirror, and a sealed derivation. <code>get()</code> reads it, and copying one copies a
+handle to the same state.</li>
+<li>A <strong>pipe</strong> is a transformation: <code>count.derive(|n| n * 2)</code>. It is a
+<em>description</em> — the source it reads and what it does to it — with no <code>get()</code>
+of its own, and it runs only once something consumes it.</li>
+</ul>
+<p>A pipe is consumed exactly <strong>once</strong>: by a consumer (an <code>effect</code>, a UI binding),
+or by <strong>sealing</strong> it into a source.</p>
 <pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell };
+
 fun main() {
 	let count = Signal::new(2);
-	let doubled = count.map(|n: i32| n * 2);
+	let doubled = count.derive(|n: i32| n * 2).memo();   // seal: a source again
 	print(doubled.get());
 	count.set(5);
 	print(doubled.get());
 }
 </code></pre>
-</li>
-<li>
-<p><code>combine((a, b, …))</code> gives a source of the tuple of several sources’
-values — cells, nodes and mirrors mixed freely. It fires when any of
-them changes. Takes two or more.</p>
-</li>
-<li>
-<p><code>nested.flatten()</code> on <strong>any source whose element is a source</strong> follows
-whichever inner signal is current, and detaches from a replaced one — a
-<code>SignalCell&lt;SignalCell&lt;U&gt;&gt;</code>, a <code>map</code> result that picks between signals, a
-mirror. An outer of <code>Option&lt;inner&gt;</code> joins too: <code>None</code> gives <code>None</code> and
-detaches, <code>Some(inner)</code> follows that inner.</p>
-</li>
+<ul>
+<li><code>source.derive(transform)</code> gives a pipe of the transformed value.</li>
+<li><code>combine((a, b, …))</code> gives a pipe of the tuple of several sources’ values,
+changing when any of them changes. Takes two or more; each input is a source,
+so a derived input is sealed first.</li>
+<li><code>.memo()</code> seals a pipe into a read-only source backed by one cell: the pipe
+runs once per change of its input, and every reader shares the value.
+<code>.cell()</code> seals into a writable <code>SignalCell</code> instead (a local <code>set</code> holds until
+the next change upstream overwrites it). <code>.sample()</code> reads a pipe once — start
+it, take its value, release it — and subscribes to nothing.</li>
 </ul>
 <pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, combine };
 
 fun main() {
 	let first = Signal::new("Ada");
 	let last = Signal::new("Lovelace");
-	let full = combine((first, last)).map(|pair: (str, str)| {
-		let (a, b) = pair;
-		a + " " + b
-	});
+	let full = combine((first, last))
+		.derive(|pair: (str, str)| {
+			let (a, b) = pair;
+			a + " " + b
+		})
+		.memo();
 	print(full.get());
 	first.set("Grace");
 	print(full.get());
 }
 </code></pre>
-<p>A named function can stand in for the closure (<code>signal.map(parse)</code>).
-See <a href="../tour/functions-and-closures.html">functions &amp; closures</a>.</p>
+<p><strong>Why a pipe is consumed once.</strong> Every stage of a pipe runs inside the one
+consumer that started it, once per change of its input — five stages sealed
+into one <code>.memo()</code> put one subscription on the root and run once per change, in
+one pass. Handing the same pipe to two consumers would run it twice, so the
+compiler refuses it: the second use is “use of <code>p</code> after it was moved”. Two
+readers of one derived value need a source between them, and sealing is that
+source:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell };
+
+fun main() {
+	let cart = Signal::new(3);
+	let total = cart.derive(|n: i32| n * 25).memo();   // one instance, one run per change
+	let big = total.derive(|cents: i32| cents &gt; 100).memo();
+	let label = total.derive(|cents: i32| i"{cents} cents").memo();
+	print(i"{label.get()} {big.get()}");
+}
+</code></pre>
+<p>A source is data — pass it anywhere, as often as you like. A pipe is built where
+it is consumed, and each consumer builds its own over a shared source.</p>
 <p>A dependency is <strong>static</strong> when the expression fixes what the result reads —
-that is <code>map</code> and <code>combine</code> — and <strong>dynamic</strong> when the current value decides
+that is <code>derive</code> and <code>combine</code> — and <strong>dynamic</strong> when the current value decides
 <em>which</em> source to follow next, which is what “the selected channel’s unread
-count” needs. <code>flatten</code> is the primitive underneath the dynamic half; two
-combinators are its everyday spelling, and each is one node rather than a
-chain:</p>
+count” needs:</p>
 <ul>
-<li><code>source.switch(select)</code> follows whichever source <code>select</code> answers for the
-current value and re-follows when this one changes — Rx’s <code>switchMap</code>. It
-means <code>source.map(select).flatten()</code>.</li>
-<li><code>source.and_then(select)</code> is the same on a <code>Source&lt;Option&lt;T&gt;&gt;</code>, the total
-encoding of a signal that may hold nothing yet: <code>None</code> on the outer is
-<code>None</code> on the result, <code>Some(value)</code> follows the <code>Source&lt;Option&lt;U&gt;&gt;</code> that
-<code>select</code> answers, and the two absences collapse into one. It is
-<code>Option::and_then</code> one level up, and it replaces the
-<code>map(|x| x.map(f)).flatten().map(|x| x.flatten())</code> a model layer of
-optional cells otherwise writes by hand.</li>
+<li><code>source.switch(select)</code> follows whichever flow <code>select</code> builds for the current
+value and re-selects when this one changes — Rx’s <code>switchMap</code>. <code>select</code> runs
+once per change, and whatever the previous selection built is released.</li>
+<li><code>source.switch_some(select)</code> is the same over an <code>Option</code>: <code>None</code> detaches and
+reads <code>None</code>, <code>Some(x)</code> follows what <code>select</code> builds for <code>x</code>, wrapped.</li>
+<li><code>source.and_then(select)</code> is the Kleisli form over a <code>Source&lt;Option&lt;T&gt;&gt;</code>:
+<code>select</code> answers a <code>Source&lt;Option&lt;U&gt;&gt;</code>, and the two absences collapse into
+one. It is <code>Option::and_then</code> one level up.</li>
+<li><code>flag.then_some(source)</code> follows <code>source</code> while the flag is true and reads
+<code>None</code> (holding nothing) while it is false.</li>
+<li><code>nested.flatten()</code> over a source of <code>Option&lt;source&gt;</code> follows whichever inner
+source is current and detaches from a replaced one (<code>None</code> reads <code>None</code>). The
+total join of a source of sources is <code>nested.switch(|inner| inner)</code>.</li>
 </ul>
 <pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell };
 
@@ -331,7 +352,7 @@ fun main() {
 	let which = Signal::new(0);
 	let first = Signal::new(10);
 	let second = Signal::new(20);
-	let picked = which.switch(|n: i32| if n == 0 { first } else { second });
+	let picked = which.switch(|n: i32| if n == 0 { first } else { second }).memo();
 	print(picked.get());     // 10
 	first.set(11);
 	print(picked.get());     // 11 — the current inner drives the result
@@ -341,30 +362,32 @@ fun main() {
 	print(picked.get());     // 20 — and detaches from the replaced one
 }
 </code></pre>
-<p>Both are nodes, like <code>map</code>, with one difference: subscribed, they keep a
-registration of their own on whichever inner is current, and re-wire it at
-every switch. The handle the subscriber holds owns that registration, so an
-effect made inside a boundary releases the outer and the live inner together
-when the boundary goes.</p>
-<h3 id="where-a-derivation-lives-cell-and-dyn-sourcet"><a class="header" href="#where-a-derivation-lives-cell-and-dyn-sourcet">Where a derivation lives: <code>.cell()</code> and <code>dyn Source&lt;T&gt;</code></a></h3>
-<p>A derivation is a <em>description</em> of a value: the source it reads and what it does
-to it. It does not have to be stored anywhere. Read it with <code>get()</code> and it pulls
-through its chain; subscribe to it and it tells you when the source changed, and
-you pull. A chain nobody reads costs nothing, and a chain one reader reads costs
-one evaluation per change. Three rules cover where one should live:</p>
+<p>A selector must <strong>build</strong> the flow it answers: a closure cannot capture a pipe
+built outside it (a pipe is consumed once, and the selector runs once per
+change). Selecting between sources, as above, is always fine — a source is data.</p>
+<p>Every dependency so far is named where the pipe is built. A body may also read a
+source with <code>.track()</code>, which makes it a dependency of that body wherever the read
+happens — <code>derive(|| if flag.track() { a.track() } else { b.track() })</code> follows
+whichever branch it read last. That optional layer has its own chapter:
+<a href="tracked-reads.html">Tracked reads</a>.</p>
+<p>When an unchanged value should stay quiet, <code>.distinct()</code> passes a change on only
+when the value differs from the last one (it asks <code>T: PartialEq</code>), and
+<code>.distinct_by(key)</code> compares <code>key</code> of the value. Sealing does not compare: every
+change above a <code>.memo()</code> is a write, and a write always notifies.</p>
+<p><code>Source::constant(value)</code> is a source that never changes — the way to fit a
+static value into a position that asks for a reactive one.</p>
+<h3 id="where-a-derivation-lives-memo-and-dyn-sourcet"><a class="header" href="#where-a-derivation-lives-memo-and-dyn-sourcet">Where a derivation lives: <code>.memo()</code> and <code>dyn Source&lt;T&gt;</code></a></h3>
 <ul>
-<li><strong>A chain is cold.</strong> Leave a derivation with one reader as it is — no cell, no
-cache, nothing to keep in step.</li>
-<li><strong><code>.cell()</code> where you share it or read it hot.</strong> Two readers of a cold chain
-each evaluate it; below a <code>.cell()</code> the chain above runs once and the readers
-share the cached value. A <code>get()</code> in a loop pulls the whole chain every time;
-after a <code>.cell()</code> it is one read. <code>.cell()</code> is a source again, so a chain can
-go on through it, and it can sit anywhere in one — after the expensive part,
-not at every step.</li>
+<li><strong>A pipe is built where it is consumed.</strong> A binding over a derivation takes
+the pipe directly: <code>text.bind_text(count.derive(|n| i"{n}"))</code>. Nothing is
+stored, and the binding is the pipe’s one consumer.</li>
+<li><strong><code>.memo()</code> where you share it or read it.</strong> A derivation read by two
+consumers, or read with <code>get()</code>, is sealed once and shared. <code>.memo()</code> can sit
+anywhere in a chain — after the expensive part, not at every step.</li>
 <li><strong><code>dyn Source&lt;T&gt;</code> where you store it.</strong> A struct field names a type, and two
 derivations built differently are two types. A field of type <code>dyn Source&lt;T&gt;</code>
-holds any of them — a cell, a derivation, a mirror — and a list of such structs
-mixes them freely.</li>
+holds any source — a cell, a sealed memo, a mirror — and a list of such
+structs mixes them freely. A pipe is not a source, so it is sealed first.</li>
 </ul>
 <pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Source };
 
@@ -374,10 +397,10 @@ struct Label {
 
 fun main() {
 	let count = Signal::new(2);
-	let total = count.map(|n: i32| n * 100).cell();   // shared below: cache it
+	let total = count.derive(|n: i32| n * 100).memo();   // shared below: seal it
 	let labels: List&lt;Label&gt; = [
 		Label { text = Signal::new("fixed") },
-		Label { text = total.map(|cents: i32| i"{cents} cents") },
+		Label { text = total.derive(|cents: i32| i"{cents} cents").memo() },
 	];
 	count.set(3);
 	for label in labels {
@@ -386,37 +409,32 @@ fun main() {
 	print(total.get());
 }
 </code></pre>
-<p><code>.cell()</code> does not compare: every change above it is a write, and a write always
-notifies. When an unchanged value should stay quiet, <code>.distinct()</code> is the node
-that compares (it asks <code>T: PartialEq</code>, and nothing else in the chain does).</p>
-<p><strong>What a node’s type is, and where you write it.</strong> <code>map</code> answers a
-<code>Map&lt;S, T, U&gt;</code>, <code>switch</code> and the total <code>flatten</code> a <code>Switch</code>, the <code>Option</code>
-<code>flatten</code> a <code>FlattenOption</code>, <code>and_then</code> an <code>AndThen</code>, <code>combine</code> a <code>Combine</code> —
-types you rarely spell. Leave a binding unannotated, take a parameter as a
-<code>Source&lt;T&gt;</code> bound (any node satisfies it), store one as <code>dyn Source&lt;T&gt;</code>, or
-<code>.cell()</code> it where a <code>SignalCell&lt;T&gt;</code> is what you mean. An annotation of
-<code>SignalCell&lt;U&gt;</code> on a <code>map</code> is the one spelling that no longer fits, and so is
-handing a node to a <code>Signal&lt;T&gt;</code> parameter, which is the WRITABLE half — a node
-cannot be written to; a <code>.cell()</code> of it can (and the next change overwrites
-what you wrote).</p>
-<p><strong>At module level, <code>.cell_global()</code>.</strong> A <code>.cell()</code> ties its registration to the
-ambient owner, and a module binding’s initializer has none, so there the
-compiler refuses <code>.cell()</code> and steers you to build it under the owner that reads
-it — or to write <code>.cell_global()</code>, which says the cell lives for the program:</p>
-<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Source };
+<p><strong>What a pipe’s type is, and where you write it.</strong> <code>derive</code> answers a
+<code>Derive&lt;S, T, U&gt;</code>, <code>switch</code> a <code>Switch</code>, <code>switch_some</code> and <code>flatten</code> a
+<code>SwitchSome</code>, <code>and_then</code> an <code>AndThen</code>, <code>combine</code> a <code>Combine</code> — types you rarely
+spell. Leave a binding unannotated, take a parameter as a <code>Flow&lt;T&gt;</code> bound (any
+source or pipe satisfies it; write <code>own</code> on it, since a pipe is consumed), or
+seal it where a <code>MemoCell&lt;T&gt;</code> or <code>SignalCell&lt;T&gt;</code> is what you mean. A struct that
+holds a pipe becomes move-only itself, so a model layer stores sealed sources, or
+offers methods that build pipes on request.</p>
+<p><strong>At module level, <code>.memo_global()</code>.</strong> A <code>.memo()</code> ties its subscription to the
+ambient owner, and a module binding’s initializer has none, so there the compiler
+refuses <code>.memo()</code> (and <code>.cell()</code>) and steers you to build it under the owner that
+reads it — or to write <code>.memo_global()</code> (<code>.cell_global()</code>), which says the value
+lives for the program:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, MemoCell, Source };
 
 let path: SignalCell&lt;str&gt; = Signal::new("/docs/intro");
-let is_deep = path.map(|value: str| value.len() &gt; 5);            // a node: fine anywhere
-let segments: SignalCell&lt;usize&gt; = path.map(|value: str| value.len()).cell_global();
+let segments: MemoCell&lt;usize&gt; = path.derive(|value: str| value.len()).memo_global();
 
 fun main() {
-	print(is_deep.get());
+	print(segments.get());
 	path.set("/");
 	print(segments.get());
 }
 </code></pre>
 <h3 id="selection-over-a-list-selector"><a class="header" href="#selection-over-a-list-selector">Selection over a list: <code>selector</code></a></h3>
-<p><code>map</code> is the wrong tool for one particular shape — “is <em>this</em> row the
+<p><code>derive</code> is the wrong tool for one particular shape — “is <em>this</em> row the
 selected one?”, asked once per row. A derivation per row means every row
 recomputes on every change: <code>n</code> notifications to move a highlight one
 row. <code>selector(source)</code> keeps one subscription and a cell per key, so a
@@ -506,7 +524,7 @@ fun main() {
 }
 </code></pre>
 <h3 id="who-cleans-up-what"><a class="header" href="#who-cleans-up-what">Who cleans up what</a></h3>
-<p>Five rules, and they are the whole answer:</p>
+<p>Six rules, and they are the whole answer:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -515,10 +533,10 @@ fun main() {
 <tbody>
 <tr><td><code>signal.effect(..)</code> / <code>effect_on_change(..)</code></td><td>the ambient owner (required, <em>statically</em>)</td><td>the boundary is disposed</td></tr>
 <tr><td><code>signal.sub(..)</code> / <code>on_change(..)</code> / <code>observe(..)</code></td><td><strong>nobody</strong> — you hold the <code>Subscription</code></td><td>you call <code>dispose()</code>, or the owner you gave it to is disposed</td></tr>
-<tr><td><code>map</code> / <code>combine</code> / <code>flatten</code> / <code>switch</code> / <code>and_then</code></td><td>nothing to release — a node registers nothing until a leaf subscribes</td><td>—</td></tr>
-<tr><td><code>.cell()</code> / <code>selector</code> <strong>inside</strong> a boundary</td><td>the ambient owner</td><td>the boundary is disposed</td></tr>
-<tr><td><code>.cell()</code> / <code>selector</code> <strong>outside</strong> every boundary (a function body), <code>.cell_global()</code> anywhere</td><td>nobody — it lives as long as its source</td><td>never (deliberate: see below)</td></tr>
-<tr><td><code>signal.scoped_effect(..)</code>, and anything its body registers</td><td>that <strong>run’s</strong> owner</td><td>before the next run, and with the boundary</td></tr>
+<tr><td><code>derive</code> / <code>combine</code> / <code>flatten</code> / <code>switch</code> / <code>and_then</code></td><td>nothing to release — a pipe registers nothing until it is consumed</td><td>—</td></tr>
+<tr><td><code>.memo()</code> / <code>.cell()</code> / <code>selector</code> <strong>inside</strong> a boundary</td><td>the ambient owner</td><td>the boundary is disposed</td></tr>
+<tr><td><code>.memo()</code> / <code>.cell()</code> / <code>selector</code> <strong>outside</strong> every boundary (a function body), <code>.memo_global()</code> / <code>.cell_global()</code> anywhere</td><td>nobody — it lives as long as its source</td><td>never (deliberate: see below)</td></tr>
+<tr><td>anything an <code>effect</code> body, a <code>derive</code> body or a <code>switch</code> selector registers — and any task it starts</td><td>that <strong>run’s</strong> owner</td><td>before the next run, and with the boundary (a task is cancelled)</td></tr>
 </tbody>
 </table>
 </div>
@@ -528,25 +546,26 @@ destructors here, so a handle you forget about keeps firing. Hold it and
 <code>dispose()</code> it, hand it to an owner (<code>owner.take(..)</code>), or use <code>effect</code>,
 which does that for you — and <code>effect</code> is the one to reach for.</p>
 <p><strong>A cached derivation made outside every boundary lives as long as its
-source, on purpose.</strong> <code>current_path().map(parse)</code> at the top of <code>main</code> is a
-node and costs nothing until something reads it; a <code>.cell()</code> of it there is
+source, on purpose.</strong> <code>current_path().derive(|path| parse(path))</code> at the top of
+<code>main</code> is a pipe and costs nothing until something consumes it; a <code>.memo()</code> of it there is
 meant to last as long as the program. Refusing that would be the stricter rule
 and would break the idiom, so vilan does not — except in a module binding’s
-initializer, where the lifetime is spelled <code>.cell_global()</code>. Inside a boundary
-a <code>.cell()</code> dies with the boundary, which is what a component wants. A
+initializer, where the lifetime is spelled <code>.memo_global()</code>. Inside a boundary
+a <code>.memo()</code> dies with the boundary, which is what a component wants. A
 <em>mirror</em> is where the owner is asked strictly: an <code>effect</code> on a
-<code>RemoteSource</code> (or on a node over one) requires an owner, because its
+<code>RemoteSource</code> (or on a pipe over one) requires an owner, because its
 subscription costs a network frame.</p>
 <p>A disposed owner is <strong>single-use</strong>: a <code>take</code> or <code>defer</code> that arrives
 after it was disposed runs the cleanup on the spot rather than parking
 it on a list nothing will read again. That is what makes ownership hold
 across <code>await</code>.</p>
-<h3 id="an-owner-per-run-scoped_effect"><a class="header" href="#an-owner-per-run-scoped_effect">An owner per run: <code>scoped_effect</code></a></h3>
-<p>An effect’s body normally runs under the <em>boundary’s</em> owner, so whatever
-it registers accumulates: one subscription, timer or lease per change,
-released all together when the boundary goes. That is right for a body
-that reads and writes, and wrong for a body that <em>opens</em> something.</p>
-<p><code>scoped_effect</code> gives every run its own owner:</p>
+<h3 id="an-owner-per-run"><a class="header" href="#an-owner-per-run">An owner per run</a></h3>
+<p>Every body a pipe runs — an <code>effect</code>’s, a <code>derive</code>’s, a <code>switch</code> selector — runs
+<strong>under an owner of its own, per run</strong>. Whatever the body registers (an
+<code>on_cleanup</code>, a nested <code>effect</code>, a <code>.memo()</code>, a mirror’s lease) is released
+<strong>before the next run</strong>, and the last run’s with the boundary; a task the body
+starts is cancelled at the same moment. So a body that <em>opens</em> something opens
+one at a time:</p>
 <pre><code class="language-vilan">import std::reactive::{ Owner, Signal, Source, on_cleanup, run_with_owner };
 
 fun main() {
@@ -554,7 +573,7 @@ fun main() {
 	let detail = Signal::new("loading");
 	let page = Owner::new();
 	run_with_owner(page, || {
-		selected.scoped_effect(|id: i32| {
+		selected.effect(|id: i32| {
 			on_cleanup(|| print(i"closing {id}"));
 			// One subscription on `detail` at a time, not one per selection.
 			detail.effect(|text: str| print(i"{id}: {text}"));
@@ -564,11 +583,36 @@ fun main() {
 	page.dispose();    // closing 2
 }
 </code></pre>
-<p>Everything the body registered is released <strong>before the next run</strong>, and
-the last run is released with the boundary. <code>on_cleanup</code> is one name
-whose meaning the ambient owner decides: inside a <code>scoped_effect</code> it is
-per run, inside any other boundary it is once, at teardown.
-<code>scoped_effect_on_change</code> is the same without the immediate first run.</p>
+<p><code>on_cleanup</code> is one name whose meaning the ambient owner decides: inside a body
+it is per run, inside any other boundary it is once, at teardown. A body that
+registers nothing pays for no owner — the run’s owner is allocated at its first
+registration. (<code>scoped_effect</code> is the old name of this behaviour, kept one
+release as a deprecated alias of <code>effect</code>.)</p>
+<p>A task works the same way: a <code>derive</code> whose body starts a fetch cancels the
+superseded one when its input changes, because the old run is released before
+the new one starts:</p>
+<pre><code class="language-vilan">import std::reactive::{ Owner, Signal, Source, run_with_owner };
+import std::time::sleep;
+
+fun main() {
+	let id = Signal::new(1);
+	let page = Owner::new();
+	run_with_owner(page, || {
+		id.effect(|value: i32| {
+			let _pending = async {
+				sleep(20);
+				print(i"loaded {value}");
+			};
+		});
+	});
+	id.set(2);          // run 1's task is cancelled; only `loaded 2` prints
+	sleep(60);
+	page.dispose();
+}
+</code></pre>
+<p>Because a body’s owner and nursery are INJECTED into it (a <code>context</code> clause), a
+body must be a closure literal (or a local closure): <code>count.derive(|n| label(n))</code>,
+not <code>count.derive(label)</code>.</p>
 <p>Creating reactive state <em>outside</em> any owner is a compile error. That
 sounds strict, but it’s the property that makes leaks impossible by
 construction, and in practice <code>mount_root</code> already gave you an owner
@@ -819,7 +863,7 @@ hide a moved row, and the bound is there so it cannot be written.</p>
 <strong>every</strong> element when one changes, because a <code>set</code> says only “the list is
 this now”:</p>
 <pre><code class="language-vilan fragment">let rows: SignalCell&lt;List&lt;str&gt;&gt; = Signal::new([]);
-let lengths = rows.map(|list: List&lt;str&gt;| list.map(|text: str| text.len()));
+let lengths = rows.derive(|list: List&lt;str&gt;| list.map(|text: str| text.len()));
 // N calls of the inner function on every push
 </code></pre>
 <p><code>ListCell&lt;T&gt;</code> is the same list with its writes recorded as <em>changes</em>, so a
@@ -834,7 +878,7 @@ fun main() {
 	print(lengths.get().len());
 }
 </code></pre>
-<p>It is an ordinary <code>Source&lt;List&lt;T&gt;&gt;</code> besides — <code>each</code>, <code>map</code>, <code>effect</code> all
+<p>It is an ordinary <code>Source&lt;List&lt;T&gt;&gt;</code> besides — <code>each</code>, <code>derive</code>, <code>effect</code> all
 take it — and nothing that ignores the changes pays for them. <code>each</code>,
 <code>each_values</code> and <code>each_by</code> use them: a push into a 1,000-row <code>ListCell</code>
 builds one row, where the same push into a <code>SignalCell&lt;List&lt;T&gt;&gt;</code> re-reads
@@ -863,20 +907,60 @@ diffs the ends and records only the span that moved — reach for it when a
 whole list arrives from somewhere (a fetch, a form) and you want the
 derivations to stay cheap. A <code>g</code> handed to <code>map_each</code> must be pure in its
 element: its result is kept, and nothing re-runs it.</p>
+<h2 id="collections-that-follow-filter-map-any-over-a-listcell"><a class="header" href="#collections-that-follow-filter-map-any-over-a-listcell">Collections that follow: <code>filter</code>, <code>map</code>, <code>any</code> over a <code>ListCell</code></a></h2>
+<p><code>map_each</code> is one operator. The rest of the family works the same way — a
+<code>ListCell</code> (or anything sealed from one) has <code>map</code>, <code>filter</code>, <code>filter_map</code>,
+<code>any</code>, <code>all</code>, <code>count</code> and <code>flatten</code>, and each returns a <strong>collection pipe</strong>:
+a move-only description, consumed once, exactly like a <code>derive</code> pipe. Seal it
+with <code>.memo()</code> where two things read it, or hand it straight to <code>each</code>:</p>
+<pre><code class="language-vilan browser">import std::reactive::{ ListCell, Signal, SignalCell };
+import std::ui::{ each, mount_root, view };
+
+[derive(PartialEq)]
+struct Task {
+	id: usize,
+	title: str,
+}
+
+fun main() {
+	let finished: List&lt;SignalCell&lt;bool&gt;&gt; = [Signal::new(false), Signal::new(true)];
+	let tasks: ListCell&lt;Task&gt; = ListCell::of([
+		Task { id = 0, title = "write" },
+		Task { id = 1, title = "ship" },
+	]);
+	let _root = mount_root("app", || view("ul").child(each(
+		tasks.filter(|task| finished[task.id].derive(|done| !done)),
+		|task| task.id,
+		|task| view("li").text(task.title),
+	)));
+}
+</code></pre>
+<p>The closure may return a plain value or a reactive one, and the operator
+<strong>follows</strong> what it returns: here each task’s <code>derive</code> is started for that task,
+and when one flips, one row arrives or leaves — nothing else is re-read. A
+closure returning a plain value (<code>|task| task.id &gt; 3</code>) subscribes to nothing at
+all. What a closure registers is released when its element leaves.</p>
+<p>A list that arrives whole — a fetch result, a <code>SignalCell&lt;List&lt;T&gt;&gt;</code> — has no
+changes to follow, only values. <code>.coll_by(key)</code> diffs each new list against the
+last by key (a reorder becomes a move) and <code>.coll()</code> by position, and either
+hands back a collection pipe the operators work on:</p>
+<pre><code class="language-vilan fragment">let visible = fetched.coll_by(|row| row.id).filter(|row| row.visible).memo();
+</code></pre>
 <h2 id="traps"><a class="header" href="#traps">Traps</a></h2>
 <ul>
 <li><code>sub</code> gives you a <code>Subscription</code> to dispose manually. Prefer <code>effect</code>
 and let the owner handle it.</li>
 <li>Disposal stops <em>future</em> deliveries. A watcher already queued in the
 currently-settling turn may fire one final time.</li>
-<li>Derivations (<code>map</code>/<code>combine</code>/<code>flatten</code>/<code>switch</code>/<code>and_then</code>) are nodes:
-they register nothing, so there is nothing to dispose. A <code>.cell()</code> takes
+<li>Derivations (<code>derive</code>/<code>combine</code>/<code>flatten</code>/<code>switch</code>/<code>and_then</code>) are pipes:
+they register nothing until consumed, so there is nothing to dispose. A <code>.memo()</code> takes
 the ambient owner when there is one, so one built inside a view dies with
 the view; built at the top of <code>main</code> it lives as long as its source, and
-at module level it is spelled <code>.cell_global()</code>. Either way you never hold
+at module level it is spelled <code>.memo_global()</code>. Either way you never hold
 a handle.</li>
-<li>Two readers of one node each evaluate it. When a derivation is expensive
-or read in several places, <code>.cell()</code> it once and share the cell.</li>
+<li>A pipe has one consumer. A derivation read in several places is sealed
+once with <code>.memo()</code> and the source shared; handing one pipe to two
+consumers is a compile error rather than silent duplicate work.</li>
 </ul>
 
                     </main>
@@ -887,7 +971,7 @@ or read in several places, <code>.cell()</code> it once and share the cell.</li>
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../guide/ui.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../guide/tracked-reads.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -901,7 +985,7 @@ or read in several places, <code>.cell()</code> it once and share the cell.</li>
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../guide/ui.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../guide/tracked-reads.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -930,7 +1014,7 @@ or read in several places, <code>.cell()</code> it once and share the cell.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

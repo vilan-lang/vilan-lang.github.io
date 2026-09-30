@@ -14,6 +14,7 @@
   <url><loc>https://vilan-lang.org/docs/guide/services.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/ssr.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/styling.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/guide/tracked-reads.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/ui.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/walkthrough.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/spec/appendix.html</loc></url>
@@ -46,6 +47,7 @@
   <url><loc>https://vilan-lang.org/docs/std/style.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/time.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/traits.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/std/transient.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/tour/async.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/tour/coming-from-javascript.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/tour/control-flow.html</loc></url>

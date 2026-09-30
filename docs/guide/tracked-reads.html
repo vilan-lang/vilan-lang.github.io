@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - The Vilan documentation</title>
-        <base href="/">
+        <title>Tracked reads - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -14,33 +13,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-25ad18c5.css">
-        <link rel="stylesheet" href="css/general-e96d0476.css">
-        <link rel="stylesheet" href="css/chrome-d279d366.css">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
+        <link rel="stylesheet" href="../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../css/chrome-d279d366.css">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-8a28418f.css">
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-f8cb5b1f.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-1af6398e.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-265c7273.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="theme/css/vilan-09a971c3.css">
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-86876258.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -107,7 +106,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -173,14 +172,180 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="tracked-reads"><a class="header" href="#tracked-reads">Tracked reads</a></h1>
+<p>The <a href="reactive.html">reactive guide</a> builds every derivation from its inputs:
+<code>count.derive(|n| n * 2)</code> depends on <code>count</code> because <code>count</code> is where the pipe
+starts, and <code>combine((a, b))</code> depends on <code>a</code> and <code>b</code> because it names them.
+That is the base layer, and it is all you ever need.</p>
+<p>Tracked reads are an optional layer on top of it. Inside a body a pipe runs, a
+source read with <code>.track()</code> instead of <code>.get()</code> becomes a dependency of that
+body:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, derive };
+
+fun main() {
+	let price: SignalCell&lt;i32&gt; = Signal::new(3);
+	let quantity: SignalCell&lt;i32&gt; = Signal::new(2);
+	let total = derive(|| price.track() * quantity.track()).memo();
+	print(total.get());   // 6
+	quantity.set(5);
+	print(total.get());   // 15
+}
+</code></pre>
+<p>Nothing is tracked unless a body says <code>track()</code>. <code>get()</code> never registers
+anything, anywhere, so code that does not opt in pays nothing and behaves
+exactly as before.</p>
+<h2 id="which-bodies-track"><a class="header" href="#which-bodies-track">Which bodies track</a></h2>
+<p>Every body a pipe runs opens a <strong>tracking scope</strong> for the length of one run:</p>
+<ul>
+<li>a <code>derive</code> transform: <code>count.derive(|c| c + offset.track())</code> follows <code>offset</code>
+as well as <code>count</code>;</li>
+<li>a <code>switch</code>, <code>switch_some</code> or <code>and_then</code> selector: a tracked read there is a
+dependency of the <em>selection</em>, so a change re-selects;</li>
+<li>an <code>effect</code> body: a change re-runs the body with the value its input
+delivered last;</li>
+<li>the free <code>derive(|| body)</code>: a pipe whose only dependencies are the ones its
+body tracks.</li>
+</ul>
+<p>The scope is a context (<code>std::reactive::tracking</code>), and <code>track()</code> reads it
+through the strict <code>get</code>. A <code>track()</code> that no body encloses — at the top of
+<code>main</code>, in a helper called only from there, in a callback written outside every
+body — is a <strong>compile-time error</strong>, the same coverage error as any context read
+with no enclosing <code>run</code>. There is no runtime lookup and no runtime “not tracking”
+case: the compiler threads the scope as a hidden parameter, exactly as it threads
+the ambient owner.</p>
+<p>A helper function may call <code>track()</code>. It then needs a scope, and the compiler
+checks that every call to it has one:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Source, derive };
+
+fun area(width: SignalCell&lt;i32&gt;, height: SignalCell&lt;i32&gt;): i32 {
+	width.track() * height.track()   // tracks into whichever body calls it
+}
+
+fun main() {
+	let width: SignalCell&lt;i32&gt; = Signal::new(2);
+	let height: SignalCell&lt;i32&gt; = Signal::new(3);
+	let sealed = derive(|| area(width, height)).memo();
+	height.set(10);
+	print(sealed.get());   // 20
+}
+</code></pre>
+<h2 id="dynamic-dependencies"><a class="header" href="#dynamic-dependencies">Dynamic dependencies</a></h2>
+<p>A body’s dependencies are what its <strong>last run</strong> read. After every run the stage
+compares that run’s reads with the edges it holds: an edge to a source read
+again is kept, a source read for the first time gets a new edge, and an edge
+nothing read this time is released. A branch that is not taken stops waking the
+body:</p>
+<pre><code class="language-vilan">import std::reactive::{ Owner, Signal, SignalCell, derive, run_with_owner };
+
+fun main() {
+	let signed_in: SignalCell&lt;bool&gt; = Signal::new(false);
+	let name: SignalCell&lt;str&gt; = Signal::new("Ada");
+	let owner = Owner::new();
+	run_with_owner(owner, || {
+		derive(|| if signed_in.track() { name.track() } else { "guest" })
+			.effect(|who: str| print(i"hello, {who}"));
+	});
+	name.set("Grace");      // no run: the last run never read `name`
+	signed_in.set(true);    // hello, Grace
+	name.set("Lin");        // hello, Lin
+	owner.dispose();
+}
+</code></pre>
+<p>This is what <code>switch</code> does for a <em>structural</em> dependency — follow whichever
+source the current value selects — written as ordinary control flow.</p>
+<p>Keeping an edge rather than re-attaching it needs the source to say which state
+it is. <code>Source::identity()</code> answers that: a <code>SignalCell</code> and a sealed <code>.memo()</code>
+name their cell, so a body that reads the same cell on every run holds one edge
+on it for its whole life. A source that answers <code>None</code> (the default for a type
+you write yourself) still works — each run attaches a fresh edge and releases
+the previous one.</p>
+<h2 id="glitch-free"><a class="header" href="#glitch-free">Glitch-free</a></h2>
+<p>A tracked edge wakes its body in the turn’s first phase, the phase in which
+derivations settle, and the consumer below it runs in the second. So in a
+<a href="reactive.html#turns-when-changes-become-visible">turn</a> a body that reads two values
+derived from one root runs once per change, on the settled pair — never once with
+a fresh value and a stale one. (With no turn at all a write notifies inline and
+depth-first, as it does for every consumer, <code>combine</code> included.)</p>
+<pre><code class="language-vilan">import std::reactive::{ FlushPolicy, Owner, Signal, SignalCell, derive, run_with_owner, turn };
+
+fun main() {
+	let root: SignalCell&lt;i32&gt; = Signal::new(1);
+	let tens = root.derive(|x: i32| x * 10).memo();
+	let hundreds = root.derive(|x: i32| x * 100).memo();
+	let owner = Owner::new();
+	run_with_owner(owner, || {
+		derive(|| tens.track() + hundreds.track())
+			.effect(|sum: i32| print(i"sum {sum}"));   // sum 110
+	});
+	turn(FlushPolicy::AtEnd, || root.set(2));        // sum 220, once
+	owner.dispose();
+}
+</code></pre>
+<p>The same holds for an effect whose input and tracked reads change in one turn:
+it runs once, with both.</p>
+<h2 id="a-scope-is-one-run"><a class="header" href="#a-scope-is-one-run">A scope is one run</a></h2>
+<p>A closure created inside a body captures that run’s scope (the
+<a href="../spec/contexts.html">contexts chapter</a> calls this capture-at-creation). It can
+outlive the run — a callback the body hands out, a closure stored for later —
+and a <code>track()</code> through it after the run has returned registers nothing: it is
+a <code>get()</code>. A body’s dependencies are only ever the reads of its own runs.</p>
+<p>To make that explicit, and to make a <code>track()</code> there a compile-time error
+instead, create the closure inside <code>tracking.clear(..)</code>. <code>clear</code> runs its body
+with the scope <strong>not</strong> established: a closure minted inside holds no scope at
+all, and a <code>track()</code> written inside is refused. It is the layer’s <code>untrack</code>:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, derive, tracking };
+
+fun main() {
+	let followed: SignalCell&lt;i32&gt; = Signal::new(1);
+	let ignored: SignalCell&lt;i32&gt; = Signal::new(10);
+	let sealed = derive(|| {
+		let noted = tracking.clear(|| ignored.get());   // read, never followed
+		followed.track() + noted
+	}).memo();
+	ignored.set(20);          // no run
+	followed.set(2);          // runs: 2 + 20
+	print(sealed.get());      // 22
+}
+</code></pre>
+<h2 id="callbacks-do-not-track"><a class="header" href="#callbacks-do-not-track">Callbacks do not track</a></h2>
+<p><code>on_change</code>, <code>sub</code> and <code>effect_on_change</code> take <strong>callbacks</strong>, not bodies: they
+open no scope of their own. A <code>track()</code> in a callback written outside every body
+is refused at compile time. One written inside a body captured that body’s run,
+and when the callback fires later it registers nothing — the run it belonged to
+is over. Either way a callback never becomes a hidden dependency of anything. (The second case is guarded when the callback runs; making it a compile-time
+refusal too — a callback parameter that runs its callback with the scope cleared —
+is a planned follow-up.)</p>
+<p><code>on_change</code> over a pipe that tracks still hears its first change: a consumer
+that does not read at once <em>primes</em> the pipe — it runs the pipe’s bodies once,
+discarding the value, so their tracked reads are dependencies from the start.
+The callback itself still runs only on a change.</p>
+<h2 id="collections-do-not-track-per-element"><a class="header" href="#collections-do-not-track-per-element">Collections do not track per element</a></h2>
+<p>A collection operator’s closure (<code>map</code>, <code>filter</code>, …) runs once per element and
+opens no scope: tracking there is a choice you spell, not one the operator makes
+for every element of every list.</p>
+<h2 id="what-it-costs"><a class="header" href="#what-it-costs">What it costs</a></h2>
+<ul>
+<li>A stage whose body tracks nothing pays a tracker per instance (a few cells,
+made when a consumer starts it) and, per run, an epoch bump and a scope value:
+no edge, no relay, no allocation per read.</li>
+<li>Each tracked source holds one edge per body that tracked it, reused across
+runs when the source can name its identity.</li>
+<li>A tracked read is checked against the run’s earlier reads, so reading one
+source twice in a run still makes one edge (for a source that names its
+identity; one that cannot is followed once per read).</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../guide/reactive.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
+                            <a rel="next prefetch" href="../guide/ui.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -188,7 +353,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../guide/reactive.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
+                    <a rel="next prefetch" href="../guide/ui.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
             </nav>
 
         </div>
@@ -206,17 +377,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-609e4cb8.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/vilan-9c73b872.js"></script>
-        <script src="theme/picker-309f18e2.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
 
 
 

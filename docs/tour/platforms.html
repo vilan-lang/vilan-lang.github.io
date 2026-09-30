@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-25509ce1.js";
+            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-24f605af.js"></script>
+        <script src="../toc-86876258.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -260,6 +260,12 @@ that must stay neutral. The editor shows the same information as you
 write: violations appear as live diagnostics at the offending call, and
 hovering a function shows its inferred requirement and how it got it,
 e.g. <code>requires the `process` layer of `std` (via `save → write_file (std::fs)`)</code>.</p>
+<p>When the SAME function (or the same trait <code>impl</code>) needs a different body
+per platform, write it twice, each under its own fence —
+<code>[platform("browser")]</code> and <code>[platform("@process")]</code> — and each build
+compiles the twin its platform admits. The fences must not overlap, and
+<code>vilan check</code> checks every twin under its own platform
+(<a href="../spec/platform.html#113-fences">spec §11.3</a>).</p>
 </blockquote>
 <h2 id="externs-talking-to-the-host"><a class="header" href="#externs-talking-to-the-host">Externs: talking to the host</a></h2>
 <p>You’ll mostly consume host bindings through std. But when you need a
@@ -390,7 +396,7 @@ layered; most libraries never need this.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0310f649.js"></script>
+        <script src="../theme/vilan-9c73b872.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
