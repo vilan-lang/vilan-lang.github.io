@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -273,6 +273,29 @@ instead:</p>
 </code></pre>
 <p>Inside the loop, <code>*e</code> reads the element and assigning to <code>e</code> writes
 through to the list.</p>
+<p>A <code>match</code> does the same for an enum’s payload. A plain <code>match held</code>
+copies what it captures; <code>match &amp;mut held</code> captures each payload as a
+writable view, so a write lands in <code>held</code> itself, and <code>match &amp;held</code>
+captures readonly views:</p>
+<pre><code class="language-vilan">struct Point { x: i32 }
+
+fun main() {
+	mut held: Option&lt;Point&gt; = Some(Point { x = 1 });
+	match &amp;mut held {
+		Some(let p) =&gt; {
+			p.x = 2;
+		},
+		None =&gt; {},
+	}
+	if &amp;mut held is Some(let p) {
+		p.x += 40;
+	}
+	print(held.map(|p| p.x).unwrap_or(0)); // 42
+}
+</code></pre>
+<p><code>held</code> is frozen while a capture is still to be used (<code>held = None</code>
+before the capture’s last use is refused), and a <code>mut</code> capture there is
+refused: it would be a copy that looks like a write.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> A method may return a view that projects its
 receiver, like <code>fun get(&amp;mut self, i: i32): &amp;mut T</code>. The compiler
@@ -440,7 +463,7 @@ of the stored value — never by mutating a <code>get()</code> result.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

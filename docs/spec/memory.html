@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -283,6 +283,14 @@ signature that hands back a value hands back a value, so <code>fun make(&amp;sel
 projection and keeps naming the receiver’s storage. Together these are what
 make “a call owns its result” true, which is the premise every elision below
 rests on:</p>
+<p>The rule underneath all of these is one sentence: <strong>a value taken out of a place
+the binding does not own is copied.</strong> A dereference is the plainest such place —
+<code>*v</code> names the storage the view’s OWNER holds — so <code>mut c: P = *v</code> copies, and a
+later <code>c.x = 99</code> never writes the caller’s <code>P</code>; <code>Some(*v)</code> is a snapshot that a
+later write through <code>v</code> does not reach; and <code>out = *v</code> and a body returning <code>*v</code>
+copy alike. A constructor that KEEPS its argument (<code>Shared::new</code>, <code>ListCell::of</code>)
+declares it <code>own</code>, so a value its caller still reads afterwards is copied in
+rather than shared with the new cell.</p>
 <p>The return reads <strong>through</strong> a view to reach the place, because a returned
 expression can name storage without being a place: <code>fun grab(&amp;self): Inner { &amp;self.inner }</code> hands back a reference, and <code>fun get(h: &amp;Holder): (i32, i32) { peek(h) }</code> hands back what the <code>borrows</code> callee projected — which is <code>h</code>’s
 storage, named in the call. Both copy, exactly as the bare <code>self.inner</code> /
@@ -390,12 +398,35 @@ not cross an <code>await</code> (§6.6).</li>
 </ul>
 <p>Mutating through a view writes the viewed place; reading its value
 requires an explicit <code>*</code>. A view in <strong>value position</strong> (passed where a
-value is expected, used as an operator’s operand, or bound to a value
-type) is a compile error, never a silent coercion to the pointee (so the
-<code>(base, key)</code> representation of a scalar view can’t leak); write <code>*v</code> to
-copy the value out. Iteration by view (<code>for e in &amp;mut list</code>) binds each
+value is expected, used as an operator’s operand, or bound or ASSIGNED to a
+value type — <code>out = v</code> as much as <code>let out: T = v</code>, and a view EXPRESSION
+alike: <code>out = &amp;a</code>, <code>out = inner(&amp;holder)</code> of a <code>borrows</code> function, or a
+branch of a value <code>if</code> handing either back — at a binding as at an
+assignment, so <code>let v = if c { &amp;a } else { &amp;b }</code> initializes no view
+binding, and as an argument or operand) is a compile error, never
+a silent coercion to the pointee (so the <code>(base, key)</code> representation of a
+scalar view can’t leak); write <code>*v</code> to copy the value out. A closure’s view
+parameter is a view by the same rule, whether the literal spells it
+(<code>|&amp;mut list|</code>) or takes it from the closure type it is handed to: <code>|c|</code>
+passed where <code>|&amp;str| void</code> is expected receives a <code>&amp;str</code>, and reads it as
+<code>*c</code>. The <code>&amp;</code>/<code>&amp;mut</code> is part of the closure TYPE — <code>|&amp;str| void</code> and
+<code>|str| void</code> are different types — so a bare <code>|c|</code> takes its position’s
+mode however it reaches it (a <code>let</code> the annotation re-types, a generic’s
+argument, an <code>Option</code> or <code>List</code> of view closures, a field), and a closure
+whose parameter states one mode (written on its type, or spelled on the
+literal) is refused where the other is wanted: a value-into-view adapter
+would hide a copy, so write it (<code>|c| f(*c)</code>). Iteration by view (<code>for e in &amp;mut list</code>) binds each
 element as a view: assignment and field writes go through; <code>*e</code> reads the
-element. The parameter conventions:</p>
+element. Matching by view is the same act on one value: the SUBJECT
+carries the mode, so <code>match &amp;mut place { V(let p) =&gt; .. }</code> (and
+<code>&amp;mut place is V(let p)</code>) binds every <code>let</code> payload capture as a writable
+view into its slot — assigning <code>p</code> replaces the payload and keeps the
+variant — and <code>match &amp;place</code> binds readonly views, while a bare
+<code>match place</code> copies, as it always has. A <code>mut</code> capture under a view
+subject is refused (it would be a copy that looks like a write). Rule 4
+guards the subject place, and every prefix of it, from the arm’s start to
+the capture’s LAST use. A binding inside a tuple sub-pattern stays a copy.
+The parameter conventions:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -441,7 +472,13 @@ through the parameter) passes freely. Views anchor at their origin roots
 wherever they arise: a direct <code>&amp;place</code>, a view-returning call (the
 callee’s <code>borrows</code> positions mapped through the arguments), or a
 wrapped-view <code>match</code> capture. A projection returned through a call is
-policed exactly like the <code>&amp;place</code> it came from.</p>
+policed exactly like the <code>&amp;place</code> it came from. An enclosing place is any
+prefix of the viewed path (<code>bag.items</code> under a view of <code>bag.items[0]</code>, an
+aggregate element at any index); a view a call hands back may point anywhere
+under the place the call was lent, so writing any AGGREGATE at or under that
+place is an event while it is live (<code>match first(&amp;mut bag) { Some(let p) =&gt; .. }</code> forbids <code>bag.items = []</code>). A write beside the viewed path (<code>bag.items</code>
+under a view of <code>bag.label</code>), and a write of a scalar (<code>bag.count = 3</code>, a
+content write the view reads through), are not.</p>
 <p><em>Implementation note: the dynamic remainder (aliasing reached through
 calls, container-internal invalidation) is tracked future work. When it
 lands it enforces the <strong>same event set</strong> as the static rule above (§6.0’s
@@ -587,7 +624,8 @@ indistinguishable by design, because they write the same storage under
 different names:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-[resource] struct Guard { label: str }
+[resource]
+struct Guard { label: str }
 impl Guard with Drop {
     fun drop(&amp;mut self) { print(self.label); }
 }
@@ -623,7 +661,8 @@ element — destroys the outgoing value too, whether the aggregate is owned
 or reached through a view.</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-[resource] struct Guard { label: str }
+[resource]
+struct Guard { label: str }
 impl Guard with Drop {
     fun drop(&amp;mut self) { print(self.label); }
 }
@@ -1188,7 +1227,7 @@ first demand, at most once, memoize.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

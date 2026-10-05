@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -196,7 +196,7 @@ and because both generated sides would agree about that empty surface, even
 <pre><code class="language-vilan norun">import std::reactive::{ Signal, SignalCell };
 import std::json::json_codec;
 import std::http::{ Response, Server };
-import std::rpc_server::Service;
+import std::rpc::server::Service;
 import std::shared::Shared;
 
 [derive(Wire, PartialEq, Debug)]
@@ -242,7 +242,8 @@ fun main() {
 <p>And a client. <code>NotesClient::connect</code> gives you an object whose exposed
 fields are typed <strong>mirrors</strong> (<code>RemoteSource&lt;T&gt;</code>, one per <code>[expose]</code>) and
 whose rpc methods are ordinary calls that return <code>Result</code>:</p>
-<pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell };
+<pre><code class="language-vilan browser">import std::debug::Debug;
+import std::reactive::{ Signal, SignalCell };
 import std::json::json_codec;
 import std::result::Result::{ self, Ok, Err };
 import std::shared::Shared;
@@ -472,7 +473,7 @@ import std::reactive::{ Signal, SignalCell };
 import std::result::Result::{ self, Ok, Err };
 import std::rpc::SocketTransport;
 import std::shared::Shared;
-import std::ui::{ View, each, mount_root, view };
+import std::web::ui::{ View, each, mount_root, view };
 
 [derive(Wire, PartialEq, Debug)]
 struct Note {
@@ -539,6 +540,7 @@ channel id, and what the client’s stub answers is a mirror:</p>
 <tr><td><code>MemoCell&lt;T&gt;</code></td><td><code>RemoteSource&lt;T&gt;</code></td></tr>
 <tr><td><code>Option&lt;MemoCell&lt;T&gt;&gt;</code></td><td><code>RemoteSource&lt;T&gt;</code></td></tr>
 <tr><td><code>KeyedCell&lt;K, T&gt;</code></td><td><code>KeyedSource&lt;K, T&gt;</code></td></tr>
+<tr><td><code>HashMapEntry&lt;K, V&gt;</code>, <code>MemoEntry&lt;K, V&gt;</code></td><td><code>RemoteSource&lt;Option&lt;V&gt;&gt;</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -546,6 +548,11 @@ channel id, and what the client’s stub answers is a mirror:</p>
 derivation — <code>MemoCell&lt;T&gt;</code>, what <code>.memo()</code> answers — crosses exactly as
 the writable cell does. Keep it on the service (a field, or a <code>Memo</code>
 whose maker writes <code>.memo_global()</code>) rather than sealing one per call.</p>
+<p>A map’s per-key handle — <code>messages.at(id)</code> on a <code>HashMapCell</code>, or <code>at(id)</code> on a
+sealed map pipe — crosses as a mirror of <code>Option&lt;V&gt;</code>, the same mirror a
+<code>MemoCell&lt;Option&lt;V&gt;&gt;</code> reply makes, and needs no view kept for it: the forward
+rides the key’s own slot in the cell, so a write to another key sends that
+mirror nothing.</p>
 <p><strong>The stub is sync, and it makes no call.</strong> No <code>async</code>, no <code>!</code>, no
 <code>Result</code> — because there is nothing to await: the mirror is handed back
 <em>unleased</em>, and the <strong>first lease</strong> is what issues the call, mints the
@@ -1378,7 +1385,7 @@ other:</p>
 <pre><code class="language-vilan norun">import std::shared::Shared;
 import std::json::json_codec;
 import std::http::{ Response, Server };
-import std::rpc_server::Service;
+import std::rpc::server::Service;
 
 [service(TodosClient)]
 struct Todos {
@@ -1592,7 +1599,7 @@ channel your method minted: the mirror is invalidated (<code>status</code> back 
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

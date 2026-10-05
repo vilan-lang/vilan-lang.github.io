@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -180,13 +180,13 @@ prints it back, and the type system takes it from there. Every link targets
 a page that exists. Every page receives exactly the parameters it declares.
 When you add a page, the compiler points at every <code>match</code> that now needs to
 handle it. A pattern-string router can’t promise any of that.</p>
-<p><code>std::router</code> supplies the primitives: the live path signal, <code>navigate</code>,
+<p><code>std::web::router</code> supplies the primitives: the live path signal, <code>navigate</code>,
 the <code>link</code> helper, and <code>parse_path</code> / <code>FromPath</code> for reading a URL back.</p>
 <h2 id="the-route-model"><a class="header" href="#the-route-model">The route model</a></h2>
 <p>Here’s a small two-level app: a home page, and workspace pages that have
 their own sub-pages.</p>
-<pre><code class="language-vilan browser">import std::ui::{ swap, view, View, mount_root };
-import std::router::{ current_path, navigate, segments, link, Routable };
+<pre><code class="language-vilan browser">import std::web::ui::{ swap, view, View, mount_root };
+import std::web::router::{ current_path, navigate, segments, link, Routable };
 import std::reactive::{ Signal, SignalCell };
 import std::option::Option::{ self, Some, None };
 
@@ -250,7 +250,7 @@ fun main() {
 	let _root = mount_root("app", || {
 		// Built where it is consumed: the route is a pipe, and `swap` is its one
 		// consumer.
-		let route = current_path().derive(|path| parse(path));
+		let route = current_path().derive(parse);
 		view("div").child(swap(route, |current| match current {
 			Route::Home =&gt; view("h1").text("Home"),
 			Route::Workspace(let id, let _inner) =&gt; view("h1").text(i"Workspace {id}"),
@@ -265,7 +265,7 @@ free to do things pattern strings can’t (validation, aliases, redirects).
 Now the pieces one at a time.</p>
 <h2 id="reading-the-url-back"><a class="header" href="#reading-the-url-back">Reading the URL back</a></h2>
 <p><code>parse</code> above is one half of a pair the compiler cannot hold together, so
-<code>std::router</code> gives it a shape: <code>Routable</code> writes a route to a URL,
+<code>std::web::router</code> gives it a shape: <code>Routable</code> writes a route to a URL,
 <code>FromPath</code> reads one back, and a type implementing both states its wire
 format once in each direction.</p>
 <p><code>FromPath</code>’s member takes SEGMENTS, not a path — <code>parse_path</code> has already
@@ -276,7 +276,7 @@ on. It’s a free function rather than a trait default because an associated
 function can’t be inherited through a receiver that doesn’t exist — the
 compiler says so if you try.</p>
 <pre><code class="language-vilan browser">import std::io::print;
-import std::router::{ FromPath, PathParts, Routable, from_path, parse_path };
+import std::web::router::{ FromPath, PathParts, Routable, from_path, parse_path };
 
 [derive(PartialEq)]
 enum Route {
@@ -341,7 +341,7 @@ you get to render it.</p>
 <p><code>current_path()</code> is a <code>SignalCell&lt;str&gt;</code> of <code>location.pathname</code>. It stays
 current across <code>navigate</code> calls and the browser’s back/forward buttons.
 Derive your typed route from it where you consume it:</p>
-<pre><code class="language-vilan fragment">let route = current_path().derive(|path| parse(path));
+<pre><code class="language-vilan fragment">let route = current_path().derive(parse);
 </code></pre>
 <p>The route is a pipe, consumed once — by the <code>swap</code> below. Where several parts of
 the app read it, seal it once with <code>.memo()</code> (at the top of <code>main</code>, or
@@ -396,7 +396,7 @@ and the page change land together as one update.</p>
 That’s the standard history-API fallback, and the <code>on_request</code> handler
 on your server’s builder chain does it:</p>
 <pre><code class="language-vilan norun">import std::build::require_build;
-import std::document::require_shell;
+import std::web::document::require_shell;
 import std::http::{ Response, Server };
 
 async fun main() {
@@ -493,7 +493,7 @@ URL with <code>location_url()</code> when the query matters, on load and in a
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

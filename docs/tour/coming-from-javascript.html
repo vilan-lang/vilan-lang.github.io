@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -217,6 +217,7 @@ for the explicit keywords when you <em>don’t</em> want to wait. The
 </thead>
 <tbody>
 <tr><td><code>function f(x) { … }</code></td><td><code>fun f(x: i32): i32 { … }</code></td></tr>
+<tr><td><code>return x;</code></td><td><code>ret x;</code> — the compiler steers <code>return</code> here</td></tr>
 <tr><td><code>const x = …</code> / <code>let x = …</code></td><td><code>let x = …</code> / <code>mut x = …</code></td></tr>
 <tr><td><code>x === y</code></td><td><code>x == y</code> (type-checked equality)</td></tr>
 <tr><td><code>`Hello ${name}`</code></td><td><code>i"Hello {name}"</code></td></tr>
@@ -243,7 +244,7 @@ for the explicit keywords when you <em>don’t</em> want to wait. The
 </table>
 </div>
 <p>The CSS rows are a real block, not a template string: <code>css { … }</code> is
-core syntax that lowers to a <code>std::style</code> chain, so the property names
+core syntax that lowers to a <code>std::web::style</code> chain, so the property names
 are tokens the compiler sees, every value is an ordinary vilan
 expression the type system checks, and <code>vilan fmt</code> orders them for you. The
 <a href="../guide/styling.html#the-css-block">styling guide</a> has the whole shape.</p>
@@ -323,7 +324,7 @@ is written down there.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

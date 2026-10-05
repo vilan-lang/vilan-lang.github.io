@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -201,7 +201,7 @@ fun main() {
 </code></pre>
 <h2 id="signals"><a class="header" href="#signals">Signals</a></h2>
 <p>A <code>SignalCell&lt;T&gt;</code> is a mutable cell whose readers can subscribe to changes.</p>
-<pre><code class="language-vilan fragment">Signal::new(value: T): SignalCell&lt;T&gt;       // a fresh signal
+<pre><code class="language-vilan fragment">Signal::new(own value: T): SignalCell&lt;T&gt;   // a fresh signal
 signal.get(): T                        // current value
 signal.set(value: T)                   // write + notify subscribers
 signal.set_with(transform: sync |T| T) // read-modify-write in one step
@@ -546,7 +546,7 @@ destructors here, so a handle you forget about keeps firing. Hold it and
 <code>dispose()</code> it, hand it to an owner (<code>owner.take(..)</code>), or use <code>effect</code>,
 which does that for you — and <code>effect</code> is the one to reach for.</p>
 <p><strong>A cached derivation made outside every boundary lives as long as its
-source, on purpose.</strong> <code>current_path().derive(|path| parse(path))</code> at the top of
+source, on purpose.</strong> <code>current_path().derive(parse)</code> at the top of
 <code>main</code> is a pipe and costs nothing until something consumes it; a <code>.memo()</code> of it there is
 meant to last as long as the program. Refusing that would be the stricter rule
 and would break the idiom, so vilan does not — except in a module binding’s
@@ -611,8 +611,9 @@ fun main() {
 }
 </code></pre>
 <p>Because a body’s owner and nursery are INJECTED into it (a <code>context</code> clause), a
-body must be a closure literal (or a local closure): <code>count.derive(|n| label(n))</code>,
-not <code>count.derive(label)</code>.</p>
+body is a closure literal, a local closure, or a named function or variant that
+reads none of them: <code>count.derive(label)</code> and <code>count.derive(Some)</code> work as
+<code>count.derive(|n| label(n))</code> does.</p>
 <p>Creating reactive state <em>outside</em> any owner is a compile error. That
 sounds strict, but it’s the property that makes leaks impossible by
 construction, and in practice <code>mount_root</code> already gave you an owner
@@ -914,7 +915,7 @@ element: its result is kept, and nothing re-runs it.</p>
 a move-only description, consumed once, exactly like a <code>derive</code> pipe. Seal it
 with <code>.memo()</code> where two things read it, or hand it straight to <code>each</code>:</p>
 <pre><code class="language-vilan browser">import std::reactive::{ ListCell, Signal, SignalCell };
-import std::ui::{ each, mount_root, view };
+import std::web::ui::{ each, mount_root, view };
 
 [derive(PartialEq)]
 struct Task {
@@ -1014,7 +1015,7 @@ consumers is a compile error rather than silent duplicate work.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

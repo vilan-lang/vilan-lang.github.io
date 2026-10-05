@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -329,7 +329,7 @@ nothing else: <code>extname("/app.js?v=2")</code> is <code>.js?v=2</code> under 
 <code>.js</code> under a URL rule, <code>%2F</code> is not a separator, and a URL’s root is an
 origin rather than a filesystem root. The split is that a URL’s own grammar —
 scheme, authority, query, fragment — is cut first, and what is left is an
-ordinary path these functions read. <code>std::document</code>’s internal <code>file_name_of</code>
+ordinary path these functions read. <code>std::web::document</code>’s internal <code>file_name_of</code>
 is exactly that, in two lines:</p>
 <pre><code class="language-vilan fragment">fun file_name_of(url: str): str {
 	path::basename(url.split("?")[0].split("#")[0])
@@ -387,7 +387,7 @@ is exactly that, in two lines:</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

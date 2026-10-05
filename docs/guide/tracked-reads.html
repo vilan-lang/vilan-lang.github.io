@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -254,9 +254,10 @@ fun main() {
 <p>This is what <code>switch</code> does for a <em>structural</em> dependency — follow whichever
 source the current value selects — written as ordinary control flow.</p>
 <p>Keeping an edge rather than re-attaching it needs the source to say which state
-it is. <code>Source::identity()</code> answers that: a <code>SignalCell</code> and a sealed <code>.memo()</code>
-name their cell, so a body that reads the same cell on every run holds one edge
-on it for its whole life. A source that answers <code>None</code> (the default for a type
+it is. <code>Source::identity()</code> answers that: a <code>SignalCell</code>, a sealed <code>.memo()</code>, a
+<code>ListCell</code>, a <code>KeyedCell</code> and a remote mirror (<code>RemoteSource</code>, <code>KeyedSource</code>)
+name their cell, so a body that reads the same one on every run holds one edge
+on it for its whole life — for a mirror, one lease. A source that answers <code>None</code> (the default for a type
 you write yourself) still works — each run attaches a fresh edge and releases
 the previous one.</p>
 <h2 id="glitch-free"><a class="header" href="#glitch-free">Glitch-free</a></h2>
@@ -308,13 +309,18 @@ fun main() {
 }
 </code></pre>
 <h2 id="callbacks-do-not-track"><a class="header" href="#callbacks-do-not-track">Callbacks do not track</a></h2>
-<p><code>on_change</code>, <code>sub</code> and <code>effect_on_change</code> take <strong>callbacks</strong>, not bodies: they
-open no scope of their own. A <code>track()</code> in a callback written outside every body
-is refused at compile time. One written inside a body captured that body’s run,
-and when the callback fires later it registers nothing — the run it belonged to
-is over. Either way a callback never becomes a hidden dependency of anything. (The second case is guarded when the callback runs; making it a compile-time
-refusal too — a callback parameter that runs its callback with the scope cleared —
-is a planned follow-up.)</p>
+<p><code>on_change</code>, <code>sub</code>, <code>effect_on_change</code> and the UI event handlers (<code>on</code>,
+<code>on_event</code>) take <strong>callbacks</strong>, not bodies: they open no scope of their own, and
+they run their callback with <code>tracking</code> <strong>cleared</strong>. So a <code>track()</code> in a callback
+is refused at compile time wherever the callback is written — inside a body or
+outside every body — and <code>tracking.get_safe()</code> in one reads <code>None</code>. A callback
+never becomes a hidden dependency of anything.</p>
+<p>A callback position’s parameter is typed <code>context tracking</code>, so it takes a
+closure literal, a named function, or a value whose type carries the same
+clause. A closure VALUE typed without it — <code>fun watch(react: |i32| void)</code> handing
+<code>react</code> on — is refused there; wrap it in a literal
+(<code>cell.on_change(|value| react(value))</code>) or type it
+<code>(|i32| void) context tracking</code>.</p>
 <p><code>on_change</code> over a pipe that tracks still hears its first change: a consumer
 that does not read at once <em>primes</em> the pipe — it runs the pipe’s bodies once,
 discarding the value, so their tracked reads are dependencies from the start.
@@ -325,9 +331,10 @@ opens no scope: tracking there is a choice you spell, not one the operator makes
 for every element of every list.</p>
 <h2 id="what-it-costs"><a class="header" href="#what-it-costs">What it costs</a></h2>
 <ul>
-<li>A stage whose body tracks nothing pays a tracker per instance (a few cells,
-made when a consumer starts it) and, per run, an epoch bump and a scope value:
-no edge, no relay, no allocation per read.</li>
+<li>A stage whose body tracks nothing pays one cell per instance (where its runs
+stand, made when a consumer starts it) and, per run, an epoch bump and a scope
+value: no edge, no relay, no list. The lists that record what a body read are
+made at its first <code>track()</code>.</li>
 <li>Each tracked source holds one edge per body that tracked it, reused across
 runs when the source can name its identity.</li>
 <li>A tracked read is checked against the run’s earlier reads, so reading one
@@ -386,7 +393,7 @@ identity; one that cannot is followed once per read).</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

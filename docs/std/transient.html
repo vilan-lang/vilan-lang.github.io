@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -172,12 +172,12 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="stdtransient-reference"><a class="header" href="#stdtransient-reference">std::transient reference</a></h1>
+                        <h1 id="stdreactivetransient-reference"><a class="header" href="#stdreactivetransient-reference">std::reactive::transient reference</a></h1>
 <p>Values that come and go: a fetch in flight, a refresh on its way, a failure
 that still remembers the last good value, a remote source that says there is
 no such thing. Concepts: the <a href="../guide/reactive.html">reactive guide</a>; the pipe
 model this builds on: <a href="reactive.html">std::reactive</a>.</p>
-<pre><code class="language-vilan fragment">import std::transient::{ TransientState, TransientSource, Transient, TaskSource };
+<pre><code class="language-vilan fragment">import std::reactive::transient::{ TransientState, TransientSource, Transient, TaskSource };
 </code></pre>
 <h2 id="at-a-glance"><a class="header" href="#at-a-glance">At a glance</a></h2>
 <div class="table-wrapper">
@@ -187,8 +187,10 @@ model this builds on: <a href="reactive.html">std::reactive</a>.</p>
 </thead>
 <tbody>
 <tr><td><code>TransientState&lt;T, E&gt;</code></td><td>enum</td><td><code>Pending</code>, <code>Ready(T)</code>, <code>Refreshing(T)</code>, <code>Failed(E, Option&lt;T&gt;)</code>, <code>Absent</code></td></tr>
-<tr><td><code>TransientSource&lt;T, E&gt;</code></td><td>trait</td><td>a <code>Source&lt;Option&lt;T&gt;&gt;</code> that also says where it stands: <code>state()</code>, <code>latest()</code>, <code>is_pending()</code></td></tr>
+<tr><td><code>TransientSource&lt;T, E&gt;</code></td><td>trait</td><td>a <code>Source&lt;Option&lt;T&gt;&gt;</code> that also says where it stands: <code>states()</code>, <code>state()</code>, <code>latest()</code>, <code>is_pending()</code></td></tr>
+<tr><td><code>map</code>, <code>and_then</code>, <code>zip</code></td><td>methods on <code>TransientState</code></td><td>move the value and keep the arm; let the value decide the state; pair two states</td></tr>
 <tr><td><code>.transient()</code></td><td>method on a pipe of tasks</td><td>seal a flow of tasks: the latest task wins</td></tr>
+<tr><td><code>.transient_global()</code></td><td>method on a pipe of tasks</td><td><code>.transient()</code> for the program’s lifetime (a module binding’s spelling)</td></tr>
 <tr><td><code>Transient&lt;T, E&gt;</code></td><td>struct</td><td>what <code>.transient()</code> returns</td></tr>
 <tr><td><code>TaskSource&lt;T, E&gt;</code></td><td>struct</td><td>one task as a transient: <code>TaskSource::new(task)</code>, <code>TaskSource::of(task)</code></td></tr>
 </tbody>
@@ -213,9 +215,42 @@ model this builds on: <a href="reactive.html">std::reactive</a>.</p>
 <p><code>Absent</code> is what lets a view tell a spinner (<code>Pending</code>) from “not found”: both
 read <code>None</code> through <code>get()</code>. The same readings are methods on the state itself
 (<code>state.ready()</code>, <code>state.latest()</code>, <code>state.is_pending()</code>).</p>
+<p>Three combinators change what a state carries without re-matching its arms:</p>
+<ul>
+<li><strong><code>map(|T| U)</code></strong> transforms every value the state holds — a <code>Refreshing</code>’s
+and a <code>Failed</code>’s stale one included — and keeps the arm.</li>
+<li><strong><code>and_then(|T| TransientState&lt;U, E&gt;)</code></strong> lets the value decide the state:
+<code>Ready(v)</code> is <code>next(v)</code>; <code>Refreshing(v)</code> is <code>next(v)</code> with a newer value still
+on its way (its <code>Ready</code>/<code>Refreshing</code> read <code>Refreshing</code>, its <code>Pending</code>/<code>Absent</code>
+read <code>Pending</code>, its <code>Failed</code> stands); <code>Failed(e, stale)</code> keeps <code>e</code> with
+<code>next</code> applied to the stale value; <code>Pending</code> and <code>Absent</code> pass through. The
+common use reads a transient of a maybe as a transient that can be absent.</li>
+<li><strong><code>zip(other)</code></strong> is <code>Ready((a, b))</code> while both are ready, and otherwise the
+arm that says the most about why not, in this order: <code>Failed</code> (this one’s
+error first, carrying the pair of latest values when both have one), <code>Absent</code>,
+<code>Pending</code>, <code>Refreshing((a, b))</code>.</li>
+</ul>
+<pre><code class="language-vilan">import std::reactive::transient::TransientState;
+
+fun found(maybe: Option&lt;str&gt;): TransientState&lt;str, str&gt; {
+	match maybe {
+		Some(let name) =&gt; TransientState::Ready(name),
+		None =&gt; TransientState::Absent,
+	}
+}
+
+fun main() {
+	let fetched: TransientState&lt;Option&lt;str&gt;, str&gt; = TransientState::Refreshing(Some("kolt"));
+	let channel = fetched.and_then(|maybe| found(maybe));
+	let length = channel.map(|name| name.len());
+	print(length.latest().unwrap_or(0));
+	print(length.zip(channel).is_pending());
+}
+</code></pre>
 <h2 id="transientsource"><a class="header" href="#transientsource">TransientSource</a></h2>
 <pre><code class="language-vilan fragment">export trait TransientSource&lt;T, E&gt; with Source&lt;Option&lt;T&gt;&gt; {
 	fun state(self): MemoCell&lt;TransientState&lt;T, E&gt;&gt;;
+	fun states(self): dyn Pipe&lt;TransientState&lt;T, E&gt;&gt;;
 	fun latest(self): dyn Pipe&lt;Option&lt;T&gt;&gt;;
 	fun is_pending(self): dyn Pipe&lt;bool&gt;;
 }
@@ -236,8 +271,15 @@ reloads:</p>
 <p><strong><code>is_pending()</code></strong> is a fresh pipe per call: the spinner.</p>
 </li>
 <li>
-<p><strong><code>state()</code></strong> is the whole story, as a read-only source (a <code>MemoCell</code>, which
-nothing downstream can <code>set</code>).</p>
+<p><strong><code>states()</code></strong> is the whole story, <code>Absent</code> included, as a FRESH pipe per
+call that watches what it reports — on a mirror it LEASES while its consumer
+holds it, as <code>latest()</code> does. Bind it where a view must tell a spinner from
+“not found”.</p>
+</li>
+<li>
+<p><strong><code>state()</code></strong> is the same story as a PASSIVE report, a read-only source (a
+<code>MemoCell</code>, which nothing downstream can <code>set</code>). It leases nothing: a mirror
+nobody else watches stays <code>Pending</code> here.</p>
 </li>
 </ul>
 <h2 id="transient-a-flow-of-tasks"><a class="header" href="#transient-a-flow-of-tasks"><code>.transient()</code>: a flow of tasks</a></h2>
@@ -260,7 +302,10 @@ going) drops whatever is in flight too.</p>
 raised again, reported like any unobserved failure, and the transient stays
 where the change left it.)</p>
 <p>Like <code>.memo()</code>, the seal is owner-tied: made inside a boundary, it is released
-with the boundary.</p>
+with the boundary. In a module binding’s initializer, which has no owner,
+<code>.transient()</code> is refused; <code>.transient_global()</code> is the same seal for the life of
+the program — it registers with no owner, even inside a boundary, and nothing
+releases it (the <code>.cell_global()</code> rule).</p>
 <h2 id="tasksource-one-task"><a class="header" href="#tasksource-one-task">TaskSource: one task</a></h2>
 <pre><code class="language-vilan fragment">let loaded: TaskSource&lt;User, str&gt; = TaskSource::new(async fetch_user(id));
 let counted: TaskSource&lt;i32, str&gt; = TaskSource::of(async count_rows());
@@ -273,8 +318,10 @@ answers <code>Result&lt;T, E&gt;</code>; <code>TaskSource::of</code> watches a b
 <p><code>RemoteSource&lt;T&gt;</code> maps its <code>Status</code> arm for arm: <code>Waiting</code> is <code>Pending</code>,
 <code>Ready</code> is <code>Ready(v)</code>, <code>Absent</code> is <code>Absent</code>, and <code>Failed(e)</code> is
 <code>Failed(e, stale)</code>, carrying what the mirror last held. <code>state()</code> reports, like
-<code>status()</code>: it leases nothing, so an unwatched mirror is <code>Pending</code>. <code>latest()</code>
-and <code>is_pending()</code> lease the mirror while a view binds them. The mirror’s own
+<code>status()</code>: it leases nothing, so an unwatched mirror is <code>Pending</code>. <code>states()</code>,
+<code>latest()</code> and <code>is_pending()</code> lease the mirror while a view binds them —
+<code>states()</code> is the whole state watched, so binding it alone moves a mirror from
+<code>Pending</code> to <code>Ready</code>, <code>Absent</code> or <code>Failed</code>. The mirror’s own
 <code>get()</code> reads what it holds, as it always has. See <a href="rpc.html">std::rpc</a>.</p>
 
                     </main>
@@ -285,7 +332,7 @@ and <code>is_pending()</code> lease the mirror while a view binds them. The mirr
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../std/style.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/store.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -299,7 +346,7 @@ and <code>is_pending()</code> lease the mirror while a view binds them. The mirr
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../std/style.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/store.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -328,7 +375,7 @@ and <code>is_pending()</code> lease the mirror while a view binds them. The mirr
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

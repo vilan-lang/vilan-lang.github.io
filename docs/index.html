@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-86876258.js"></script>
+        <script src="toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -266,6 +266,14 @@ affected docs page <strong>in the same commit</strong>.</li>
 </table>
 </div>
 <h3 id="std-reference"><a class="header" href="#std-reference">std reference</a></h3>
+<p>std’s modules sit under four namespaces where a family shares a purpose: the
+web modules under <code>std::web::</code> (<code>dom</code>, <code>ui</code>, <code>style</code>, <code>router</code>, <code>storage</code>,
+<code>dev</code>, <code>document</code>, <code>asset</code>, and the web prelude <code>std::web::prelude</code>), the
+reactive family under <code>std::reactive::</code> (<code>store</code>, <code>transient</code>, <code>delta</code>, the
+hash cells), the JS-only modules under <code>std::js::</code> (<code>promise</code>, <code>native_map</code>,
+<code>null</code>) and the server half of RPC at <code>std::rpc::server</code>. Everything else —
+the collections, the traits, the codecs, the process modules — sits at
+<code>std::&lt;name&gt;</code>.</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -282,12 +290,12 @@ affected docs page <strong>in the same commit</strong>.</li>
 <tr><td><a href="std/encoding.html">encoding</a></td><td>json, wire, binary, bytes, base64</td></tr>
 <tr><td><a href="std/net.html">net</a></td><td>fetch, ws</td></tr>
 <tr><td><a href="std/reactive.html">reactive</a></td><td>the full <code>std::reactive</code> API</td></tr>
-<tr><td><a href="std/style.html">style</a></td><td>the full <code>std::style</code> API</td></tr>
+<tr><td><a href="std/style.html">style</a></td><td>the full <code>std::web::style</code> API</td></tr>
 <tr><td><a href="std/rpc.html">rpc</a></td><td><code>std::rpc</code>: transports, clients, frames</td></tr>
-<tr><td><a href="std/browser.html">browser</a></td><td><code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>, <code>std::storage</code></td></tr>
-<tr><td><a href="std/dev.html">dev / HMR</a></td><td><code>std::dev</code>: <code>stash</code>/<code>take</code>, <code>on_teardown</code>, <code>hmr_active</code></td></tr>
-<tr><td><a href="std/process.html">process</a></td><td>db, http, fs, build, document, process, rpc_server, watch</td></tr>
-<tr><td><a href="std/misc.html">misc</a></td><td>io, task, promise, context, crypto, jwt, asset</td></tr>
+<tr><td><a href="std/browser.html">browser</a></td><td><code>std::web::dom</code>, <code>std::web::ui</code>, <code>std::web::router</code>, <code>std::web::storage</code></td></tr>
+<tr><td><a href="std/dev.html">dev / HMR</a></td><td><code>std::web::dev</code>: <code>stash</code>/<code>take</code>, <code>on_teardown</code>, <code>hmr_active</code></td></tr>
+<tr><td><a href="std/process.html">process</a></td><td>db, http, fs, build, <code>web::document</code>, process, <code>rpc::server</code>, watch</td></tr>
+<tr><td><a href="std/misc.html">misc</a></td><td>io, task, <code>js::promise</code>, context, crypto, jwt, <code>web::asset</code></td></tr>
 </tbody>
 </table>
 </div>
@@ -359,7 +367,7 @@ affected docs page <strong>in the same commit</strong>.</li>
         <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="theme/vilan-9c73b872.js"></script>
+        <script src="theme/vilan-0a81600c.js"></script>
         <script src="theme/picker-309f18e2.js"></script>
 
 

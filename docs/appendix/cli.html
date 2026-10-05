@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -193,8 +193,11 @@ position and an ordinary name everywhere else (<code>with</code>, <code>own</cod
 …); the rest are reserved. It is the list for a tool that highlights or
 escapes Vilan outside this toolchain to read instead of keeping its own
 copy, which drifts: the playground’s editor on this site reads it, and
-<code>vilan bindgen</code> escapes exactly the reserved words (a TypeScript member
-named <code>css</code> binds as <code>css_</code>, one named <code>lazy</code> as <code>lazy</code>).</p>
+<code>vilan bindgen</code> escapes exactly the reserved words, and only where a
+reserved word cannot stand: a free function, a parameter or a type named
+<code>css</code> binds as <code>css_</code>, one named <code>lazy</code> as <code>lazy</code>. A MEMBER may be any word,
+so a TypeScript method or property named <code>type</code> or <code>css</code> binds as written
+(<code>event.type()</code>); only a member named <code>self</code> keeps its <code>_</code>.</p>
 <h2 id="vilan-init-name"><a class="header" href="#vilan-init-name"><code>vilan init [name]</code></a></h2>
 <p>Scaffolds a ready-to-run project: a manifest, sources that compile, and
 a <code>.gitignore</code>. With <code>name</code>, creates that directory (it must not exist
@@ -375,22 +378,71 @@ compile no macro world at all — and that memory lives under
 <code>~/.vilan/check-cache/</code>, keyed by the package’s path, <em>not</em> in the package.
 <code>dist/.cache</code> belongs to <code>vilan build</code>, which has a <code>dist/</code> because it has
 artifacts; a check has neither, and creating one would make a read-only
-command mutate the tree it was pointed at. <code>vilan cache prune</code> sweeps the
-check tables beside the std trees.</p>
+command mutate the tree it was pointed at. The root holds itself to a
+bound — tables untouched for thirty days go, and past 256 tables or 256 MiB
+the oldest go first — and <code>vilan cache clean</code> empties it; <code>vilan cache prune</code> sweeps the check tables beside the std trees. <code>VILAN_CHECK_CACHE</code>
+names a different root.</p>
+<p>In a multi-entry package the entries are checked <strong>at the same time</strong>, one
+thread each, and their diagnostics are printed in entry order, exactly as
+a one-by-one round would print them (<code>VILAN_SEQUENTIAL_CHECK=1</code> runs them
+one by one).</p>
+<p><strong><code>--explain-cost [N]</code></strong> prints, after checking, the <code>N</code> declarations
+(default 20) of your own package whose type inference cost the solver the
+most work: the constraint attempts, inferences, impl selections, type slots
+and impl rows its body’s constraints took, each a <em>count</em> — never a time —
+so the same program ranks the same on every machine. Closures count toward
+the function that writes them, generated code toward the attribute that
+generated it, and std’s declarations are left out.</p>
+<pre><code class="language-sh">vilan check --explain-cost 5
+</code></pre>
 <p><strong><code>--fix</code></strong> is the one exception to “writes nothing”, and it is asked for
-by name. Before checking, it applies the fix every <strong>numeric mismatch</strong>
-carries — the <code>.as_*()</code> conversion the message names, or <code>: usize</code> on a
-counter bound by a bare literal — to the package’s own files (never to
-std or a dependency), analyzes again, and repeats until a round finds
-nothing more to fix; then it checks as usual and reports what is left.
-It prints one line first, <code>fixed 12 numeric mismatches in 3 files</code>. The
-edits are the editor’s quick fixes (<strong>Convert with <code>.as_usize()</code></strong>,
-<strong>Declare <code>at</code> a <code>usize</code></strong>), computed by the same function, so the two
-never disagree. It is the migration tool for the release that moved
-std’s positions, lengths and counts to <a href="../std/numbers.html"><code>usize</code></a>: what
-it cannot decide — a <code>-1</code> “not found”, a <code>for i &gt;= 0</code> loop, signed
-arithmetic that should convert once at its end — stays a diagnostic, for
-a person. It cannot be combined with <code>--watch</code>.</p>
+by name. Before checking, it applies the fixes the diagnostics carry to
+the package’s own files (never to std or a dependency), analyzes again,
+and repeats until a round finds nothing more to fix; then it checks as
+usual and reports what is left. The edits are the editor’s quick fixes,
+computed by the same functions, so the two never disagree. It cannot be
+combined with <code>--watch</code>. It fixes two kinds of diagnostic, each the
+migration tool for one release:</p>
+<ul>
+<li>
+<p><strong>A moved std path</strong> (v0.44.0, where std’s modules were grouped under
+namespaces): every <code>import std::dom::…</code> becomes <code>import std::web::dom::…</code>, a brace list keeps its names (<code>std::{ delta::SeqOp }</code>
+becomes <code>std::{ reactive::delta::SeqOp }</code>), and <code>prelude = "std::web"</code>
+in <code>vilan.toml</code> becomes <code>prelude = "std::web::prelude"</code> — only that
+value changes, the file’s comments and layout stay. One run migrates a
+package, even one whose old imports are its only errors. A file that
+<code>vilan fmt</code> left canonical is kept canonical (a moved import can sort
+to a new place). Two things are left, and named: a file under the
+package’s
+<a href="../guide/dev-loop.html#when-the-hook-generates-vilan"><code>generated</code></a>
+root, which the project regenerates — change what generates it — and
+a brace list
+under the old web-prelude path that names <code>self</code>
+(<code>std::web::{ self, Signal }</code>), which no one edit rewrites correctly.</p>
+<pre><code class="language-sh">vilan check --fix
+</code></pre>
+</li>
+<li>
+<p><strong>A numeric mismatch</strong> (the release that moved std’s positions,
+lengths and counts to <a href="../std/numbers.html"><code>usize</code></a>): the <code>.as_*()</code>
+conversion the message names, or <code>: usize</code> on a counter bound by a bare
+literal (<strong>Convert with <code>.as_usize()</code></strong>, <strong>Declare <code>at</code> a <code>usize</code></strong>).
+What it cannot decide — a <code>-1</code> “not found”, a <code>for i &gt;= 0</code> loop, signed
+arithmetic that should convert once at its end — stays a diagnostic,
+for a person.</p>
+</li>
+</ul>
+<p>It prints what it did before the check’s own report: for moved paths, a
+total and then one line per file with its count, and a line for each
+path it left; then, always, the numeric line.</p>
+<pre><code class="language-text">fixed 4 moved std paths in 3 files
+  src/main.vl: 2
+  src/views.vl: 1
+  vilan.toml: 1
+fixed 0 numeric mismatches in 0 files
+</code></pre>
+<p>A second run finds nothing, writes nothing, and says
+<code>fixed 0 numeric mismatches in 0 files</code>.</p>
 <p>One thing it does that <code>build</code> does not: when the file has a <strong>syntax
 error</strong>, <code>check</code> reports it and then type-checks the rest of the file
 anyway. The parser recovers at the next statement or item boundary, so a
@@ -422,6 +474,9 @@ expression. Under <code>--watch</code> it rebuilds and
 restarts on every save; in a project with a browser leg, hot module
 replacement is on by default: the page swaps changed code in place
 instead of reloading (see <a href="../guide/dev-loop.html">the dev loop</a>).</p>
+<p>Stdout is the program’s: what the build itself reports on the way (the
+<code>Bundled</code> line for each resource it carries) goes to stderr, so a
+program prints the same bytes under either backend.</p>
 <ul>
 <li><code>--watch</code>: place it before the file, ahead of any program args.</li>
 <li><code>--no-hmr</code>: plain restart-the-server watching, no dev channel.</li>
@@ -942,6 +997,17 @@ nothing can keep memory without writing into your tree. Deleting a table
 costs a recompile of that package’s macro worlds and nothing else; the
 same seven-day guard applies, because a check running right now is holding
 its own table open.</p>
+<h2 id="vilan-cache-clean"><a class="header" href="#vilan-cache-clean"><code>vilan cache clean</code></a></h2>
+<p>Deletes every macro expansion table <code>vilan check</code> keeps in
+<code>~/.vilan/check-cache/</code>, whatever its age. Each one is re-created by the
+next check of its package, so nothing is lost but the warm start.</p>
+<pre><code class="language-sh">vilan cache clean            # every check table
+vilan cache clean --dry-run  # print what would go, with sizes; delete nothing
+</code></pre>
+<p>A check also holds that root to a bound by itself, at most once a day:
+every table untouched for thirty days goes, and past 256 tables or 256 MiB
+the oldest go first — never the package being checked, and never a table
+younger than ten minutes, which a check running right now may be reading.</p>
 
                     </main>
 
@@ -994,7 +1060,7 @@ its own table open.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

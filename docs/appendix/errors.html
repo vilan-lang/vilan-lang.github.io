@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -191,7 +191,7 @@ quoted here.</p>
 <h2 id="names-and-imports"><a class="header" href="#names-and-imports">Names and imports</a></h2>
 <p><strong>“cannot find ‘…’ in this scope”</strong> · <strong>“cannot find type ‘…’”</strong>
 The name isn’t visible here. Usually a missing <code>import</code> — though the
-basics (<code>print</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code>) are in the
+basics (<code>print</code>, <code>Iterator</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code>) are in the
 prelude and need none. If you did import it, check for a typo or a
 shadowing local. One case that reads as a compiler mistake and isn’t: an
 <code>is</code> capture is in scope only where its test is known to have <strong>passed</strong> —
@@ -209,10 +209,10 @@ differently and gets a message of its own (“is bound only inside the <code>is<
 test that captured it”): a plain <code>bool</code> does not carry the payload, so
 the capture reaches the rest of that expression and nothing after it.
 → <a href="../tour/hello-vilan.html">Hello Vilan</a>, <a href="../spec/names.html">spec §4.7</a>, <a href="../spec/types.html">spec §5.7</a></p>
-<p><strong>“… is in the prelude of the web set — set <code>prelude = \"std::web\"</code>”</strong>
+<p><strong>“… is in the prelude of the web set — set <code>prelude = \"std::web::prelude\"</code>”</strong>
 The name (<code>Signal</code>, <code>SignalCell</code>, <code>view</code>, <code>View</code>) is one std’s <strong>web</strong>
 prelude makes ambient, and this package is on the base one. Either set
-<code>prelude = "std::web"</code> in <code>vilan.toml</code>, or import the name explicitly —
+<code>prelude = "std::web::prelude"</code> in <code>vilan.toml</code>, or import the name explicitly —
 both work; the steer only means the manifest line is usually what you
 wanted. It fires only for names the web set carries as bare members,
 never for its module-carried names (<code>style</code>, <code>ui</code>): switching preludes
@@ -229,7 +229,7 @@ name: <code>import std::math;</code> and <code>math::min(1, 2)</code>.
 → <a href="../tour/hello-vilan.html">Hello Vilan</a></p>
 <p><strong>“<code>…</code> requires the <code>…</code> layer of <code>std</code> and cannot run on <code>…</code>”</strong>
 Code reachable from this build’s entry calls into a module the platform
-doesn’t have: <code>std::fs</code> from a browser build, <code>std::dom</code> from a Node
+doesn’t have: <code>std::fs</code> from a browser build, <code>std::web::dom</code> from a Node
 build. The error lists the call chain from <code>main</code> to the crossing.
 Importing the module is not the problem (imports are free); reaching it
 is. Move the call behind the right entry, or check the package’s
@@ -585,7 +585,7 @@ none. <strong>An interpolated string is this same concatenation</strong> (<code>
 <em>is</em> <code>("" + "a" + x + "b")</code>), so a hole gets the identical error and the
 identical fix. A <code>css</code> block’s hole is the one that is NOT this
 concatenation any more (A34): a mixed value passes each hole through
-<code>std::style::piece</code>, so <code>border: 1px solid {Color::gray(500)};</code> keeps
+<code>std::web::style::piece</code>, so <code>border: 1px solid {Color::gray(500)};</code> keeps
 the value typed and puts its <code>:root</code> line on the sheet — which is why
 the message steers a style token into a block rather than into
 <code>.to_string()</code>, whose text would name a custom property nothing
@@ -1033,7 +1033,7 @@ ordered by the CSS cascade, not by a contribution’s key”</strong>
 The stylesheet’s order is decided by the cascade — base rules before
 <code>@media</code> blocks, media blocks by ascending min-width — so a sort key
 handed to it would have nowhere to apply. Write the rule with
-<code>asset::emit("css", …)</code>, or let <a href="../std/style.html"><code>std::style</code></a> own the
+<code>asset::emit("css", …)</code>, or let <a href="../std/style.html"><code>std::web::style</code></a> own the
 sheet. <code>emit_keyed</code> is for a kind of the program’s own.</p>
 <p><strong>“… is compile-time-only; evaluate this call inside a <code>const</code> expression”</strong>
 The same rule, caught statically: some function on this call path reaches
@@ -1126,7 +1126,7 @@ space, the way CSS’s own value lists do — <code>margin(px(4), px(8))</code>,
 <code>border("1px solid", gray(300))</code>. And a <code>css</code> block has no at-rules of
 any kind: a media query is spelled as a breakpoint combinator
 (<code>.md { … }</code>), and a declaration block under a selector of your own is
-<code>std::style::declare</code>. <code>@</code> lexes as nothing at all, anywhere, which is
+<code>std::web::style::declare</code>. <code>@</code> lexes as nothing at all, anywhere, which is
 why that one is the lexer’s refusal and not the block’s.
 → <a href="../guide/styling.html">Styling</a></p>
 <p><strong>“<code>pub</code> is not a vilan keyword …”</strong>
@@ -1143,9 +1143,9 @@ learn: the default IS private, <code>export *;</code> marks a whole module at on
 and <code>export(in mod)</code> / <code>export(in pkg)</code> narrow one item. <code>export</code> also
 <em>re-exports</em> something this module imported
 (<code>export import pkg::io::panic;</code>), so importers of this module see that
-name as if it were declared here. Unlike <code>pub</code>, it goes ahead of the
-attributes as well as the keyword — <code>export [derive(Wire)] struct Handle</code>
-— because it wraps the whole declaration.
+name as if it were declared here. Like <code>pub</code>, it goes after the
+attributes and ahead of the other keywords — <code>[derive(Wire)]</code> ⏎ <code>export struct Handle</code> — and it still wraps the whole declaration, attributes
+included.
 → <a href="../spec/names.html">spec §4.8</a></p>
 <p><strong>“a mutable binding is spelled <code>mut x = …</code> …”</strong>
 <code>let mut x = 1</code> is the Rust spelling. <code>let</code> and <code>mut</code> are vilan’s two
@@ -1263,7 +1263,7 @@ page, <code>check_shell</code> catches the same mismatch at boot.
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

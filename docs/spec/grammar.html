@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,7 +186,9 @@ name can, so the position alone decides. <code>own</code> and <code>lazy</code> 
 head, <code>lazy</code> before <code>let</code>/<code>mut</code>, <code>jump</code> before its target and <code>dyn</code> at a
 type’s head are PREFIXES of a name, and the grammar never puts two names side
 by side, so the word is the keyword when a name follows it (for <code>dyn</code>, when
-anything but <code>::</code> follows it) and a name otherwise: <code>fun f(own: Owner)</code>,
+anything but <code>::</code> follows it; for <code>own</code> and <code>lazy</code>, also when a binder’s
+other heads do — <code>mut</code>, a destructure’s <code>(</code> or <code>[</code>, a spread’s <code>...</code> — but
+never a single <code>.</code>) and a name otherwise: <code>fun f(own: Owner)</code>,
 <code>|lazy| lazy.force()</code>, <code>jump.height</code>, <code>dyn::Registry</code>. <code>then</code> follows a
 complete operand (§3.8), which is where no name can stand either.</p>
 <h2 id="31-modules-and-statements"><a class="header" href="#31-modules-and-statements">3.1 Modules and statements</a></h2>
@@ -235,19 +237,25 @@ path-branch = [ "#" ] NAME [ "::" ( path-branch | path-set )
                    | "as" NAME ] ;        (* alias, §4.3 *)
 path-set    = "{" set-element { "," set-element } [ "," ] "}" ;
 set-element = path-branch | impl-selector ;
-impl-selector = "(" "impl" type ")"
+impl-selector = "(" "impl" type [ "with" type ] ")"
                 [ "::" ( MEMBER | "{" MEMBER { "," MEMBER } [ "," ] "}" ) ] ;
 NAME        = IDENT | "true" | "false" ;   (* variant re-exports *)
 
-export      = "export" [ "(" "in" path-branch ")" ]
-              [ deprecated-label ]   (* only before `import`: B382's re-export *)
+export      = { lead-attribute }   (* the item's own prefix, in THE order below *)
+              "export" [ "(" "in" path-branch ")" ]
               statement   (* §4.8 *)
             | "export" "*" ";" ;          (* the whole-module marker *)
+lead-attribute = deprecated-label | internal-label | hint-label | platform-attr
+               | resource-attr | extern-attr | "[" "must_use" "]" | "[" "rpc" "]"
+               | "[" "trait_only" "]" | derive-attr | service-attr
+               | client-service-attr | macro-attr ;
 </code></pre>
 <p><code>import</code> brings names from another module into scope; <code>use</code> brings names
 from a type’s namespace (e.g. variants) into scope. In a set, <code>self</code> names
 the item itself (<code>Option::{ self, Some, None }</code> imports the type and its
-variants). Semantics: §4.</p>
+variants), and <code>self as name</code> imports it under another name. <code>vilan fmt</code>
+and Organize Imports write a set’s <code>self</code> first, then <code>self as name</code>, then
+the members. Semantics: §4.</p>
 <p><code>export</code> is a statement WRAPPER, not a declaration kind: it takes the
 statement under it, which is what lets one production cover every
 declaration and the re-export alike. <code>export statement</code> marks a
@@ -257,9 +265,44 @@ declaration as the module’s surface (or re-exports an import);
 is the one form carrying no inner statement. The wrapper does not change
 the statement’s own shape, so a wrapped <code>let</code> keeps its terminator —
 <code>export let registry = …;</code> — and a wrapped <code>fun</code> still takes none. A
-declaration carrying attributes is wrapped as a whole, with the marker
-ahead of them: <code>export [derive(Wire)] struct Handle { … }</code>. A <code>#</code> before
-a path element is the <strong>reach</strong> marker:
+declaration carrying attributes is wrapped as a whole, attributes and all;
+an attribute it carries joins the item’s own prefix, whose admissions are
+the item production’s (§3.3).</p>
+<p><strong>A declaration head is written in ONE order</strong> (B485, B536): its
+attributes, by rank; then its keywords, in Q8’s order — <code>export</code> (with its
+<code>(in PATH)</code>), then <code>const</code> or <code>lazy</code>, then <code>async</code>, then <code>external</code> or
+<code>macro</code>; then the declaration word (<code>fun</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>,
+<code>impl</code>, <code>let</code>, <code>mut</code>, <code>mod</code>, <code>import</code>, <code>use</code>). The productions in §3.3
+each state their own slice of it.</p>
+<p>The attributes’ ranks, which are the order <code>vilan fmt</code> prints them in,
+each on its own line:</p>
+<ol>
+<li>generation — <code>[derive(..)]</code>, <code>[service(..)]</code>, <code>[client_service(..)]</code>, a
+macro attribute (among themselves, as written);</li>
+<li>the labels — <code>[deprecated(..)]</code>, then <code>[internal(..)]</code>, then <code>[hint(..)]</code>;</li>
+<li>the binding — <code>[extern(..)]</code>;</li>
+<li>the checks — <code>[must_use]</code>, then <code>[rpc]</code>, then <code>[trait_only]</code>;</li>
+<li>the fence — <code>[platform(..)]</code>;</li>
+<li>the class — <code>[resource]</code>.</li>
+</ol>
+<p>So <code>[derive(Wire)]</code> ⏎ <code>export struct Handle { … }</code>, <code>[platform("browser")]</code>
+⏎ <code>export impl …</code>, <code>[deprecated("use g")]</code> ⏎ <code>[must_use]</code> ⏎ <code>export async fun f()</code>, <code>[deprecated("use b")] export import a::b as c;</code>, and <code>async macro fun</code> (B524). A head written in another order is read exactly as if written
+in this one, and reported:</p>
+<ul>
+<li><strong>attributes out of rank</strong>, and nothing else out of order —
+<code>[internal("why")]</code> ⏎ <code>[deprecated("use g")]</code> ⏎ <code>fun</code> — a <strong>warning</strong>
+that names the head in the order (<code>write `[deprecated(..)] [internal(..)] fun`</code>);</li>
+<li><strong>a keyword ahead of an attribute, or two keywords inverted</strong> — <code>async [platform("node")] fun</code>, <code>external async fun</code>, <code>lazy export let</code>, <code>macro async fun</code> — an <strong>error</strong>, with the head respelled in the order. That
+includes <code>export</code> and <code>macro</code> ahead of the attributes: <code>export [derive(Wire)] struct Handle</code>, the spelling before B485, read by v0.43.0
+and refused from v0.44.0 (B485 S3).</li>
+</ul>
+<p><code>vilan fmt</code> writes every such head in the order, the refused ones included,
+so it is the migration either diagnostic asks for; the editor’s quick fix
+does the same for one head. A keyword set no order makes legal (<code>async const fun</code>, <code>lazy fun</code>) is refused by its production instead. Only an attribute
+shape — <code>[</code> then a name — leads a head; <code>export *;</code> takes none. The
+marker is written once: a second <code>export</code> on one declaration is refused
+(B492).</p>
+<p>A <code>#</code> before a path element is the <strong>reach</strong> marker:
 <code>import pkg::a::{ #hidden };</code> imports an item the module does not export,
 deliberately (§4.3, §4.8).</p>
 <p><code>as</code> renames the LEAF a branch ends at — <code>import a::b::c as d;</code> binds
@@ -279,7 +322,11 @@ which of the module’s <code>impl</code> blocks this file admits, and its optio
 <code>::</code> tail names the members it takes (§4.3). <code>_</code> stands for any type at
 an argument position (<code>(impl List&lt;_&gt;)</code>) and <code>(impl _)</code> selects every
 implementation the module declares; a selector writes no <code>type X</code> binders
-and takes no <code>as</code>. The subject is the ordinary <code>type</code> production, and it
+and takes no <code>as</code>. <code>with TRAIT</code> names the block by the trait it implements,
+as its declaration does — <code>(impl Box with One)</code> takes <code>impl Box with One</code>
+and no other <code>Box</code> block — which is how a block with no declarations of its
+own (all defaults, or a marker) is named; the trait resolves in the
+importing file’s scope, as the subject does. The subject is the ordinary <code>type</code> production, and it
 resolves in the IMPORTING file’s scope, so <code>impl S</code> reaches an alias that
 file bound and <code>impl item::Struct</code> is the qualified spelling.</p>
 <p>A <code>::</code> path may <strong>not cross a line break</strong>: the segment after a <code>::</code>
@@ -361,9 +408,9 @@ declaration or any <code>impl</code> member, and on an <code>external fun</code>
 combines with a convention — the argument is a tuple the <em>call site</em>
 builds, so there is nothing to transfer or alias — but <code>mut</code> may precede
 it (<code>mut ...items: T</code>).</p>
-<p>The attribute prefix is <strong>ordered</strong> — each attribute is optional, but
-they appear in exactly the production’s order. <code>[deprecated("use …")]</code>
-leads it: the function is <strong>deprecated</strong>, and every use in code outside
+<p>Each attribute of the prefix is optional, and the prefix is written in any
+order (§3.2): the production lists the canonical one, which <code>vilan fmt</code>
+prints. <code>[deprecated("use …")]</code> leads it: the function is <strong>deprecated</strong>, and every use in code outside
 the standard library — a call, a method call, the function passed as a
 value — still compiles but raises the non-fatal warning
 <code>`{name}` is deprecated; {steer}</code>, anchored at the using name, once
@@ -378,7 +425,7 @@ the CHANGELOG’s fact, not the source’s — the removal comes no earlier
 than the minor release after the warning first shipped.</p>
 <p>The same steer labels a <strong>struct</strong>, an <strong>enum</strong>, a <strong>trait</strong> or a module
 binding (leading its prefix, as on a function), and a <strong>re-export</strong>:
-<code>export [deprecated("use pkg::inner::DeltaCursor")] import pkg::inner::DeltaCursor as KeyedCursor;</code> deprecates the name <code>KeyedCursor</code>
+<code>[deprecated("use pkg::inner::DeltaCursor")] export import pkg::inner::DeltaCursor as KeyedCursor;</code> deprecates the name <code>KeyedCursor</code>
 the re-export publishes, while the item stays exactly the item —
 <code>KeyedCursor</code> is still a <code>DeltaCursor</code>. A use of a deprecated type in
 another module — an annotation, a literal’s head — warns with the
@@ -396,7 +443,7 @@ semantic-token modifier) and leads its hover with the steer.</p>
 <p><code>[internal("reason")]</code> follows it, and answers a different question.
 Visibility says whether a module may <strong>name</strong> an item; this says whether
 a reader should <strong>reach for</strong> one that is named — an item exported on
-purpose and dangerous on purpose, like <code>std::ui</code>’s <code>Region.anchor</code>,
+purpose and dangerous on purpose, like <code>std::web::ui</code>’s <code>Region.anchor</code>,
 which <code>each</code> and a hand-written <code>Slot</code> legitimately need and which
 corrupts the reconciler’s view when a row is moved through it without
 <code>hold_rows</code>. The one argument is the reason, and it is required: it is
@@ -433,7 +480,10 @@ std’s and a dependency’s stay silent.</p>
          (IDENT | "null") [ generic-params ]
          ( "{" [ field { "," field } [ "," ] ] "}" | ";" ) ;
 field  = [ internal-label ]
-         [ "[" "expose" [ "(" "keyed" [ "=" type ] ")" ] "]" ] MEMBER [ ":" type ] ;
+         ( [ reactive-attr ] [ expose-attr ] | expose-attr reactive-attr ) MEMBER [ ":" type ] ;
+expose-attr    = "[" "expose" [ "(" "keyed" [ "=" type ] ")" ] "]" ;
+reactive-attr  = "[" "reactive" "(" reactive-arg { "," reactive-arg } ")" "]" ;   (* A142 S7 *)
+reactive-arg   = "coarse" | "name" "=" STRING ;
 internal-label = "[" "internal" "(" STRING ")" "]" ;
 deprecated-label = "[" "deprecated" "(" STRING ")" "]" ;
 resource-attr    = "[" "resource" "]" ;   (* B413 *)
@@ -546,16 +596,16 @@ generic-args = "&lt;" type { "," type } [ "," ] "&gt;" ;
 <p>A tuple bound constrains a variadic tuple parameter’s arity and,
 optionally, each element (<code>T: (2..)</code>, <code>T: (..: Display)</code>); see §5.9.</p>
 <h3 id="attributes-and-macro-items"><a class="header" href="#attributes-and-macro-items">Attributes and macro items</a></h3>
-<pre><code class="language-text">derived-item   = "[" "derive" "(" IDENT { "," IDENT } [ "," ] ")" "]"
-                 ( struct | enum ) ;
+<pre><code class="language-text">derived-item   = derive-attr ( struct | enum ) ;
+derive-attr    = "[" "derive" "(" IDENT { "," IDENT } [ "," ] ")" "]" ;
 service-item   = { service-attr | client-service-attr }- struct ;
 service-attr   = "[" "service" [ "(" service-args ")" ] "]" ;
 service-args   = service-arg { "," service-arg } ;   (* a client name leads or is absent; each other arg at most once *)
 service-arg    = IDENT | "http" | "client" "=" IDENT ;
 client-service-attr = "[" "client_service" "]" ;
-macro-attributed-item = "[" IDENT [ "(" [ expr-span { "," expr-span } ] ")" ] "]"
-                        ( struct | enum | function ) ;
-macro-fun        = "macro" function ;
+macro-attributed-item = macro-attr ( struct | enum | function ) ;
+macro-attr       = "[" IDENT [ "(" [ expr-span { "," expr-span } ] ")" ] "]" ;
+macro-fun        = "macro" function ;   (* written in §3.2's order: attributes, [ "async" ] "macro", "fun" *)
 macro-invocation = "macro" IDENT "(" [ expr-span { "," expr-span } ] ")" ;
 macro-block      = "macro" block ;
 </code></pre>
@@ -563,8 +613,12 @@ macro-block      = "macro" block ;
 macro receives their text, not their values (§10). The built-in
 attribute names (<code>derive</code>, <code>service</code>, <code>client_service</code>, <code>extern</code>,
 <code>must_use</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code>,
-<code>deprecated</code>, <code>internal</code>) are not available as user macro-attribute
-names.</p>
+<code>deprecated</code>, <code>internal</code>, <code>resource</code>, <code>hint</code>, <code>reactive</code>) are not
+available as user macro-attribute names.</p>
+<p><code>[reactive(..)]</code> is a field’s store knobs, read by <code>[derive(Storable)]</code>
+(<code>std::reactive::store</code>) and by nothing else: <code>coarse</code> makes the field one slot,
+compared whole, and <code>name = "x"</code> generates its projection as <code>x()</code>. The
+<code>name</code> must be an identifier. It may stand on either side of <code>[expose]</code>.</p>
 <p><code>[service(..)]</code> and <code>[client_service]</code> may be written in either order
 on one struct; a struct carrying both is peer-to-peer and expands
 once (<code>proposal/transport-rpc.md</code> §9.3). <code>http</code> in <code>[service(..)]</code> is a
@@ -583,13 +637,19 @@ ret        = "ret" [ expression ] ;
 jump       = "jump" IDENT ;          (* break | continue *)
 </code></pre>
 <p><code>let</code> binds immutably, <code>mut</code> mutably; a tuple binder destructures
-(irrefutably: names and nested tuples only). Both the type and the
+(irrefutably: names and nested tuples only), one sub-pattern per element of
+the value’s own shape — <code>let ((a, b), c) = ((1, 2), 3);</code> — and a pattern of
+another arity, or over a value that is no tuple, is refused. Both the type and the
 initializer are syntactically optional. <code>lazy</code> is accepted only on a
 MODULE-LEVEL <code>let</code> binding one name to one initializer (§6.10): a <code>lazy mut</code>, a lazy destructure, a lazy binding with no initializer and a lazy
 local are each refused. A <strong>place</strong> is a chain expression
 (§3.6) denoting a location: a local, a field chain, an index, or a place
-reached through a call (<code>a.write().count</code>); the optional leading <code>*</code>
-assigns through a view. <code>jump break</code> / <code>jump continue</code> control the
+reached through a call (<code>a.write().count</code>), a call that returns a <code>&amp;mut</code>
+view (<code>cell.write() += 1</code>), or a tuple of places (<code>(a, b) = (b, a)</code>); the
+optional leading <code>*</code> assigns through a view. The grammar reads any chain
+there, so a left side that denotes no location — <code>-x</code>, <code>!b</code>, <code>(x + 1)</code>,
+<code>await p</code>, a literal, a value-returning call, a variant constructor — is
+refused by the checker, once per assignment. <code>jump break</code> / <code>jump continue</code> control the
 innermost enclosing loop.</p>
 <h2 id="35-blocks-and-control-expressions"><a class="header" href="#35-blocks-and-control-expressions">3.5 Blocks and control expressions</a></h2>
 <pre><code class="language-text">block      = "{" { statement } [ expression ] "}" ;
@@ -729,7 +789,7 @@ tag’s token for token. In a head item, an undotted name is an attribute
 (a bare name is a boolean attribute) and a leading <code>.</code> is an ordinary
 chain member — the grammar never consults any method list. Text
 children are quoted strings; bare text is a parse error. An element is
-an ordinary expression: it desugars before analysis to the <code>std::ui</code>
+an ordinary expression: it desugars before analysis to the <code>std::web::ui</code>
 view chain (<code>view("tag")</code> with one method call per head item and a
 <code>.child(…)</code> per child), and postfix suffixes apply to it
 (<code>&lt;div /&gt;.show(flag)</code>).</p>
@@ -773,7 +833,7 @@ formatter may never invent a token. A condition rule’s parenthesized
 arguments are ordinary expressions
 (<code>.on(within(attribute("data-theme").eq("dark")) + hover()) { … }</code>).</p>
 <p>Like an element, a block is an ordinary expression that desugars before
-analysis — to the <code>std::style</code> chain: <code>style()</code>, then <code>.raw(property, value)</code> per declaration and <code>.name(args…, style() … )</code> per condition
+analysis — to the <code>std::web::style</code> chain: <code>style()</code>, then <code>.raw(property, value)</code> per declaration and <code>.name(args…, style() … )</code> per condition
 rule, with the rule’s own chain appended as the final argument, in
 written order. <code>@</code> does not lex at all, so there are no at-rules inside
 one (lexical spec §2.4); <code>#</code> lexes (it is the import reach marker) but
@@ -1038,7 +1098,7 @@ catch-all.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

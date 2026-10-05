@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,10 +186,10 @@ runtime crash. That’s the whole idea of this chapter.</p>
 <code>Option</code>/<code>Result</code>, strings, numbers, <code>reactive</code>, <code>shared</code>, <code>time</code>,
 json/wire/binary, the rpc client machinery, <code>style</code>, <code>fetch</code>,
 <code>crypto</code>, and friends).</li>
-<li><strong>Browser layer</strong>: <code>std::dom</code>, <code>std::ui</code>, <code>std::router</code>,
-<code>std::storage</code>. Browser builds only.</li>
+<li><strong>Browser layer</strong>: <code>std::web::dom</code>, <code>std::web::ui</code>, <code>std::web::router</code>,
+<code>std::web::storage</code>. Browser builds only.</li>
 <li><strong>Process layer</strong> (Node/Deno/Bun): <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
-<code>std::process</code>, <code>std::rpc_server</code>. Server builds only.</li>
+<code>std::process</code>, <code>std::rpc::server</code>. Server builds only.</li>
 </ul>
 <blockquote>
 <p><strong>Going deeper.</strong> The check is on <em>reachable code</em>, not on imports. A
@@ -314,8 +314,8 @@ property on a RECEIVER with <code>[extern(get, "activeElement")]</code> when the
 program holds the object it hangs off, or — for a true global, which has no
 receiver — wrap it in a one-line host function of your own and bind that.
 std does the second for <code>window</code>, <code>location.pathname</code> and
-<code>document.activeElement</code>, which is why <code>std::dom::window()</code> and
-<code>std::dom::active_element()</code> exist.</p>
+<code>document.activeElement</code>, which is why <code>std::web::dom::window()</code> and
+<code>std::web::dom::active_element()</code> exist.</p>
 <p>Any of them takes a trailing <code>retains</code> —
 <code>[extern(method, "addEventListener", retains)]</code> — and you need it whenever
 the host <em>keeps</em> what you hand it instead of reading it only until the
@@ -334,10 +334,10 @@ were emitted. Your server serves those two files and an HTML shell; the
 <a href="../guide/services.html">services guide</a> shows the standard fallback
 shape.</p>
 <blockquote>
-<p><strong>Going deeper.</strong> Build assets come from <code>std::asset::emit(kind, content)</code> — or <code>emit_keyed(kind, key, content)</code>, where the
+<p><strong>Going deeper.</strong> Build assets come from <code>std::web::asset::emit(kind, content)</code> — or <code>emit_keyed(kind, key, content)</code>, where the
 contribution carries its own sort key — callable only during <code>const</code>
 evaluation; the input sibling
-<code>std::asset::read(path)</code> pulls a project file in at compile time the
+<code>std::web::asset::read(path)</code> pulls a project file in at compile time the
 same way. The styling
 system’s <code>const style()</code> chains call it to write CSS rules. Libraries
 can also declare platform overlays of their own (a base root plus
@@ -396,7 +396,7 @@ layered; most libraries never need this.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

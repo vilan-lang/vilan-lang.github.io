@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -196,7 +196,7 @@ this package’s files with no <code>import</code>. It sits on <code>[package]</
 <code>[library]</code> alike:</p>
 <pre><code class="language-toml">[package]
 name = "app"
-prelude = "std::web"
+prelude = "std::web::prelude"
 </code></pre>
 <div class="table-wrapper">
 <table>
@@ -204,8 +204,8 @@ prelude = "std::web"
 <tr><th>Value</th><th>Meaning</th></tr>
 </thead>
 <tbody>
-<tr><td><em>omitted</em></td><td>std’s base set: <code>print</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code></td></tr>
-<tr><td><code>"std::web"</code></td><td>the base set plus <code>Signal</code>, <code>SignalCell</code>, <code>view</code>, <code>View</code>, the five slot values (<code>when</code>, <code>swap</code>, <code>each</code>, <code>each_values</code>, <code>each_by</code>), and the modules <code>style</code> and <code>ui</code></td></tr>
+<tr><td><em>omitted</em></td><td>std’s base set: <code>print</code>, <code>Iterator</code>, <code>Option</code>/<code>Some</code>/<code>None</code>, <code>Result</code>/<code>Ok</code>/<code>Err</code></td></tr>
+<tr><td><code>"std::web::prelude"</code></td><td>the base set plus <code>Signal</code>, <code>SignalCell</code>, <code>CollPipe</code>, <code>SetPipe</code>, <code>view</code>, <code>View</code>, the six slot values (<code>when</code>, <code>when_some</code>, <code>swap</code>, <code>each</code>, <code>each_values</code>, <code>each_by</code>), and the modules <code>style</code> and <code>ui</code></td></tr>
 <tr><td><code>"pkg::my_prelude"</code></td><td>your own module — its exports are the ambient names</td></tr>
 <tr><td><code>"some_dep::their_prelude"</code></td><td>a dependency’s module</td></tr>
 <tr><td><code>false</code></td><td>no prelude at all</td></tr>
@@ -218,8 +218,8 @@ what you want to keep:</p>
 <pre><code class="language-vilan fragment">export import std::io::print;
 export import std::option::Option::{ self, Some, None };
 export import std::reactive::Signal;
-export import std::style;                 // a whole MODULE, as `style::…`
-export import std::style::Length::rem as rem;   // a type's STATIC, bare
+export import std::web::style;                 // a whole MODULE, as `style::…`
+export import std::web::style::Length::rem as rem;   // a type's STATIC, bare
 </code></pre>
 <p>Three rules make the key safe to use:</p>
 <ul>
@@ -233,7 +233,7 @@ prelude name wins, silently. Adding a prelude cannot break code that
 compiles today.</li>
 <li><strong><code>"std"</code> is not a value.</strong> It names the package root, not a prelude
 module; the manifest refuses it and points at <code>"std::prelude"</code> (the
-default) or <code>"std::web"</code>.</li>
+default) or <code>"std::web::prelude"</code>.</li>
 </ul>
 <p>A prelude that re-exports a platform-layered name makes your package’s
 ambient scope platform-dependent. Nothing special happens — platform
@@ -385,7 +385,7 @@ to remember, because inheritance only happens where you ask for it.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

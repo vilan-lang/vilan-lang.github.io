@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Core traits - The Vilan documentation</title>
+        <title>Stores - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -172,202 +172,313 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="core-traits-reference"><a class="header" href="#core-traits-reference">Core traits reference</a></h1>
-<p>The traits behind the operators and the derive set: <code>std::compare</code>,
-<code>std::default</code>, <code>std::operators</code>.</p>
-<h2 id="stdcompare"><a class="header" href="#stdcompare">std::compare</a></h2>
-<pre><code class="language-vilan fragment">trait PartialEq&lt;B = Self&gt; {
-	fun eq(self, b: B): bool;      // ==
-	fun ne(self, b: B): bool;      // != (default: !eq)
-}
-trait Eq with PartialEq {}
-
-enum Ordering { Less, Equal, Greater }
-
-trait PartialOrd&lt;B = Self&gt; with PartialEq&lt;B&gt; {
-	fun partial_compare(self, b: B): Option&lt;Ordering&gt;;
-	fun lt(self, b: B): bool;      // &lt;   (defaults over partial_compare)
-	fun le(self, b: B): bool;      // &lt;=
-	fun gt(self, b: B): bool;      // &gt;
-	fun ge(self, b: B): bool;      // &gt;=
-}
-
-trait Ord with Eq + PartialOrd {
-	fun compare(self, b: Self): Ordering;
-	fun min(self, b: Self): Self;
-	fun max(self, b: Self): Self;
-	fun clamp(self, min: Self, max: Self): Self;
-}
+                        <h1 id="stdreactivestore-reference"><a class="header" href="#stdreactivestore-reference">std::reactive::store reference</a></h1>
+<p>The fine-grained version of a type, generated from its shape. A
+<code>SignalCell&lt;User&gt;</code> wakes every reader on every write — a new city reruns the
+binding that shows the user’s name. A <strong>store</strong> wakes exactly the readers whose
+value changed, and nobody writes a reactive twin of <code>User</code> to get that.
+Concepts: the <a href="../guide/reactive.html">reactive guide</a>; the traits a store
+implements: <a href="reactive.html">std::reactive</a>.</p>
+<pre><code class="language-vilan fragment">import std::reactive::store::{ Storable, Store, StoreSome, StoreFlag };
 </code></pre>
-<ul>
-<li><code>==</code>/<code>!=</code> dispatch through <code>PartialEq</code>; <code>&lt;</code>/<code>&lt;=</code>/<code>&gt;</code>/<code>&gt;=</code> through
-<code>PartialOrd</code>. Numbers, <code>str</code>, and <code>bool</code> implement them in std.</li>
-<li>For your own types, <code>[derive(PartialEq)]</code> gives structural equality,
-the usual path. Implement <code>PartialOrd</code>/<code>Ord</code> by hand when ordering is
-meaningful (<code>Instant</code> does this in std).</li>
-<li>The <code>B = Self</code> parameter allows cross-type comparison impls; you’ll
-rarely need it.</li>
-</ul>
-<h2 id="stddefault"><a class="header" href="#stddefault">std::default</a></h2>
-<pre><code class="language-vilan fragment">trait Default {
-	fun default(): Self;
-}
-</code></pre>
-<p>Zero for numbers, <code>""</code> for <code>str</code>, <code>false</code> for <code>bool</code>, <code>None</code> for
-<code>Option&lt;T&gt;</code>, and the empty container for <code>List&lt;T&gt;</code>, <code>HashMap&lt;K, V&gt;</code> and
-<code>HashSet&lt;T&gt;</code>. <code>[derive(Default)]</code> composes fields’ defaults — so a struct
-holding a container derives one. Used as a bound by helpers like
-<code>unwrap_or_default</code> and <code>List.sum</code>.</p>
-<p>Each impl lives in its own type’s module (<code>Option</code>’s in <code>std::option</code>,
-<code>List</code>’s in <code>std::list</code>, and so on); <code>std::default</code> itself carries only
-the two scalars that have no module of their own.</p>
-<h2 id="stdoperators-the-operator-traits"><a class="header" href="#stdoperators-the-operator-traits">std::operators: the operator traits</a></h2>
-<p>Each operator dispatches through a trait; implement the trait, get the
-operator:</p>
+<h2 id="at-a-glance"><a class="header" href="#at-a-glance">At a glance</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Trait</th><th>Operator</th><th></th><th>Trait</th><th>Operator</th></tr>
+<tr><th>Item</th><th>Kind</th><th>One line</th></tr>
 </thead>
 <tbody>
-<tr><td><code>Add&lt;B = Self&gt;</code></td><td><code>+</code></td><td></td><td><code>Shl</code></td><td><code>&lt;&lt;</code></td></tr>
-<tr><td><code>Sub</code></td><td><code>-</code></td><td></td><td><code>Shr</code></td><td><code>&gt;&gt;</code></td></tr>
-<tr><td><code>Mul</code></td><td><code>*</code></td><td></td><td><code>BitAnd</code></td><td><code>&amp;</code></td></tr>
-<tr><td><code>Div</code></td><td><code>/</code></td><td></td><td><code>BitOr</code></td><td><code>|</code></td></tr>
-<tr><td><code>Rem</code></td><td><code>%</code></td><td></td><td><code>BitXor</code></td><td><code>^</code></td></tr>
+<tr><td><code>[derive(Storable)]</code></td><td>derive</td><td>a struct’s or an enum’s store surface: its diff and one projection per field</td></tr>
+<tr><td><code>Store&lt;T&gt;</code></td><td>struct</td><td>a root plus a path: a <code>Source&lt;T&gt;</code> and a <code>Signal&lt;T&gt;</code>, the root and every projection alike</td></tr>
+<tr><td><code>Store::new(value)</code></td><td>constructor</td><td>a root holding <code>value</code></td></tr>
+<tr><td><code>StoreSome&lt;P&gt;</code></td><td>struct</td><td>a handle <em>through</em> an <code>Option</code> (or an enum variant): a <code>Source&lt;Option&lt;P&gt;&gt;</code> plus <code>patch</code></td></tr>
+<tr><td><code>StoreFlag</code></td><td>struct</td><td>a discriminant as a read-only <code>Source&lt;bool&gt;</code> (<code>is_some()</code>, <code>is_online()</code>)</td></tr>
+<tr><td><code>[reactive(coarse)]</code></td><td>field attribute</td><td>the field is one slot, compared whole</td></tr>
+<tr><td><code>[reactive(name = "..")]</code></td><td>field attribute</td><td>the name the field’s projection is generated under</td></tr>
+<tr><td><code>when_live(handle, body)</code></td><td><code>std::web::ui</code></td><td>a variant as content: rebuilt only when the variant changes, the payload’s <code>Store&lt;P&gt;</code> in hand</td></tr>
+<tr><td><code>.at(key)</code></td><td>on a <code>HashMap</code> field</td><td>one key’s value as a <code>Store&lt;Option&lt;V&gt;&gt;</code> that wakes for that key only</td></tr>
+<tr><td><code>.contains(x)</code></td><td>on a <code>HashSet</code> field</td><td>one member’s presence as a <code>Store&lt;bool&gt;</code></td></tr>
+<tr><td><code>.by_key(k)</code></td><td>on a keyed <code>List</code> field</td><td>one element, found by its <code>Keyed</code> key, as a <code>Store&lt;Option&lt;T&gt;&gt;</code></td></tr>
+<tr><td><code>.push(x)</code>, <code>.splice(..)</code>, …</td><td>on a <code>List</code> field</td><td>the <code>SequenceCell</code> writes, landed in place</td></tr>
+<tr><td><code>.keys()</code>, <code>.map(..)</code>, <code>each_by(..)</code></td><td>on a collection field</td><td>the shape’s operators, told per-key or per-span ops</td></tr>
 </tbody>
 </table>
 </div>
-<p>The <code>B = Self</code> parameter types the right-hand side; mixed-operand impls
-are how std’s <code>Instant + Duration</code> works:</p>
-<pre><code class="language-vilan">import std::operators::Add;
+<h2 id="a-store"><a class="header" href="#a-store">A store</a></h2>
+<pre><code class="language-vilan">import std::reactive::{ Owner, Signal, Source, run_with_owner };
+import std::reactive::store::{ Storable, Store };
 
-struct Celsius {
-	degrees: f64,
+[derive(PartialEq, Storable)]
+struct Address {
+	city: str,
+	zip: str,
 }
 
-impl Celsius with Add {
-	fun add(self, b: Celsius): Celsius {
-		Celsius { degrees = self.degrees + b.degrees }
-	}
-}
-
-fun main() {
-	let morning = Celsius { degrees = 20.5 };
-	let rise = Celsius { degrees = 1.5 };
-	print((morning + rise).degrees);
-}
-</code></pre>
-<p>Compound assignment (<code>+=</code>, <code>/=</code>, …) rides the same impls. The
-operator’s result type is <code>Self</code> (the left operand’s type).</p>
-<h2 id="stdoperators-try-and-lift"><a class="header" href="#stdoperators-try-and-lift">std::operators: <code>Try</code> and <code>Lift</code></a></h2>
-<p>The machinery behind <code>!</code>, <code>?.</code> and <code>?</code>
-(<a href="../tour/control-flow.html">control flow</a>):</p>
-<pre><code class="language-vilan fragment">enum Verdict&lt;T, B&gt; { Good(T), Bad(B) }
-
-trait Try&lt;T, B&gt; {
-	fun verdict(self): Verdict&lt;T, B&gt;;   // split into good/bad
-	fun from_bad(bad: B): Self;         // rebuild from the bad half (for propagation)
-}
-trait Lift {}                           // opt-in marker for ? and ?.
-</code></pre>
-<p><code>Option</code> and <code>Result</code> implement both in std. A custom two-outcome type that
-implements <code>Try</code> gets <code>!</code>; adding the <code>Lift</code> marker gets both lift forms —
-the <code>?.</code> chain and the bare <code>?</code> that lifts a whole expression.</p>
-<p><code>Lift</code> declares no members: it is consent, not a contract you fill in. What
-the operators actually call is a pair of ordinary methods your container
-supplies — <code>map&lt;U&gt;(self, |T| U)</code> for the plain case, and
-<code>and_then&lt;U&gt;(self, |T| Self-of-U)</code> for the flattening one. The element is the
-container’s <strong>first type argument</strong>.</p>
-<pre><code class="language-vilan">import std::operators::Lift;
-
-struct Tagged&lt;T&gt; {
-	value: T,
-	tag: str,
-}
-
-impl Tagged&lt;type T&gt; with Lift {}
-
-impl Tagged&lt;type T&gt; {
-	fun map&lt;U&gt;(self, fn: |T| U): Tagged&lt;U&gt; {
-		Tagged { value = fn(self.value), tag = self.tag }
-	}
-
-	fun and_then&lt;U&gt;(self, fn: |T| Tagged&lt;U&gt;): Tagged&lt;U&gt; {
-		let inner = fn(self.value);
-		Tagged { value = inner.value, tag = self.tag + "+" + inner.tag }
-	}
+[derive(Storable)]
+struct User {
+	name: str,
+	address: Address,
 }
 
 fun main() {
-	let price = Tagged { value = 40, tag = "eur" };
-	let tax = Tagged { value = 2, tag = "eur" };
-
-	let doubled = price? * 2;        // map — Tagged&lt;i32&gt;, value 80
-	let total = price? + tax?;       // and_then, then map — value 42
-	print(total.tag);                // eur+eur
+	let user = Store::new(User { name = "Alice", address = Address { city = "Oslo", zip = "0150" } });
+	let city: Store&lt;str&gt; = user.address().city();   // a handle, not a value
+	let page = Owner::new();
+	run_with_owner(page, || {
+		user.name().effect(|name| print(i"name: {name}"));
+		city.effect(|now| print(i"city: {now}"));
+	});
+	city.set("Bergen");                               // prints "city: Bergen" — and not the name
+	print(user.address().zip().get());                // 0150
+	page.dispose();
 }
 </code></pre>
-<p>A region with several <code>?</code>s nests the calls left to right — <code>price.and_then(|p| tax.map(|t| p + t))</code> above — so short-circuiting and laziness are whatever
-your <code>and_then</code> does with the closure it is handed. Every receiver in one
-expression must be the same container; a type with a <code>map</code> but no <code>Lift</code> is
-refused, and a missing <code>map</code>/<code>and_then</code> is named in the error.</p>
-<h2 id="stdoperators-callable"><a class="header" href="#stdoperators-callable">std::operators: <code>Callable</code></a></h2>
-<p><code>Callable</code> is the opt-in marker for the <strong>call operator</strong>: a value whose
-type implements it is called like a function, and <code>value(args)</code> resolves
-as the method <code>call</code> on it.</p>
-<pre><code class="language-vilan fragment">trait Callable {}                       // opt-in marker for value(args)
-</code></pre>
-<p>The marker declares no members. The <code>call</code> method the impl writes carries
-the arity and the types, so everything the call checks — argument count,
-argument types, generic binding, a <code>context</code> clause — is the ordinary
-method check, and <code>value(args)</code> and <code>value.call(args)</code> are the same call:</p>
-<pre><code class="language-vilan">import std::operators::Callable;
-
-struct Scale {
-	unit: f64,
-}
-
-impl Scale with Callable {
-	fun call(self, n: f64): f64 {
-		self.unit * n
-	}
-}
-
-fun main() {
-	let space = Scale { unit = 0.25 };
-	print(space(2f));             // 0.5
-	print(space.call(2f));        // 0.5 — the same call
-	let step: |f64| f64 = space;  // a Callable coerces into a closure slot
-	print(step(8f));              // 2
-}
-</code></pre>
-<p>Three rules complete it:</p>
+<p><code>Store::new(value)</code> makes a ROOT and hands back the handle to it. Every field
+of a derived type is a projection — another <code>Store</code>, cut from its parent:
+<code>user.address().city()</code> is a <code>Store&lt;str&gt;</code>. A projection reads, writes,
+subscribes and projects further exactly as the root does, so there is one type
+for both.</p>
+<p>The value lives in the root, in place. <code>get()</code> copies out only the value at the
+handle’s path — a read of <code>city</code> copies the city, never the whole user — and
+<code>set(v)</code> assigns in place through the root.</p>
+<p>A handle is data: copying it allocates nothing, and it has no owner. It is a
+<code>Source&lt;T&gt;</code>, so every pipe, effect and binding takes one (<code>city.derive(..)</code>,
+<code>&lt;p&gt;{city}&lt;/p&gt;</code>), and a <code>Signal&lt;T&gt;</code>, so anything that writes a signal writes it
+(<code>set_with</code>, <code>optimistic</code>, <code>bind_value</code>). Every handle to one path of one store
+has one <code>identity()</code>, so a body that <code>track()</code>s a handle on every run keeps one
+edge on it.</p>
+<h2 id="what-a-write-wakes"><a class="header" href="#what-a-write-wakes">What a write wakes</a></h2>
+<blockquote>
+<p>A write wakes exactly the live slots whose value changed.</p>
+</blockquote>
+<p>A <strong>slot</strong> is one path’s subscriber list. It is made by the first subscription
+at its path, counts its subscriptions, and goes with the last one, taking every
+level of the tree it leaves empty. A read allocates nothing.</p>
 <ul>
-<li><strong><code>impl T with Callable</code> must give <code>T</code> a <code>call</code> method</strong> — here or in a
-separate <code>impl T</code> block. The marker alone calls nothing, and the refusal
-is at the impl rather than at every call site.</li>
-<li><strong>A <code>call</code> method without the marker stays an ordinary method.</strong> Calling
-such a value is refused, with the impl named as the fix.</li>
-<li><strong>A <code>Callable</code> in a FIELD is called through the field</strong> — <code>(a.b)(c)</code>,
-never <code>a.b(c)</code>, which is method lookup. This is the rule a closure-valued
-field already has, for the same reason.</li>
+<li><strong>A whole-value write</strong> (<code>user.set(next)</code>) compares old against new, but only
+where a slot is live — or where a whole-value slot above needs to know whether
+anything changed. A write into a store nobody watches compares nothing.</li>
+<li><strong>A handle write</strong> (<code>city.set("Bergen")</code>) diffs only the handle’s own value,
+then wakes the whole-value slots of its ancestors — <code>address</code>, then <code>user</code> —
+if it changed. Siblings are never looked at: the path is static. This is the
+fast path; a whole write is the compat path, for a fetch result or a snapshot
+arriving at a boundary.</li>
+<li><strong>A write of the value already held wakes nothing.</strong> Unlike
+<code>SignalCell::set</code>, which never compares, a store write always does: that is
+the layer’s whole job.</li>
+<li><strong><code>notify()</code></strong> wakes the handle’s slot and its ancestors’ without comparing —
+the escape hatch for a change the store cannot see.</li>
 </ul>
-<p>A <code>Callable</code> value also <strong>coerces wherever a function declaration does</strong>
-(<code>let f: |f64| f64 = space;</code>, <code>list.map(space)</code>): the slot takes it, and it
-is lowered as the wrapping closure <code>|n| space.call(n)</code>. A struct TYPE name
-is not a value, so <code>Scale(0.25)</code> is still the construction refusal it
-always was.</p>
+<p>The wakes go through one turn, so an observer of two changed fields — a
+<code>combine</code>, a tracked <code>derive</code> reading both — runs once, after the write has
+fully landed.</p>
+<h2 id="derivestorable"><a class="header" href="#derivestorable">[derive(Storable)]</a></h2>
+<p>The derive is the opt-in, and it is also the boundary: vilan has no private
+fields, so a type projects its fields only if its author derived <code>Storable</code>.
+Every other type is a <strong>leaf</strong>: one slot holding the whole value, compared with
+<code>==</code> when it has <code>PartialEq</code>, and counted as changed on every write that covers
+it when it has not (a closure, an opaque handle). <code>Option</code> needs no derive (see
+below).</p>
+<p>A field named like a member of the handle — <code>get</code>, <code>set</code>, <code>derive</code>, <code>effect</code>,
+<code>patch</code>, … — could never be reached as a projection, because a handle’s own
+member wins. The derive refuses it; rename the projection:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, Source };
+import std::reactive::store::{ Storable, Store };
+
+[derive(Storable)]
+struct Request {
+	[reactive(name = "verb")]
+	get: str,
+}
+
+fun main() {
+	let request = Store::new(Request { get = "/" });
+	request.verb().set("/index");
+	print(request.verb().get());
+}
+</code></pre>
+<p><code>[reactive(coarse)]</code> makes a field ONE slot, compared whole with <code>==</code>, even when
+its type derives <code>Storable</code> — an <code>Address</code> that is always edited as a whole:</p>
+<pre><code class="language-vilan fragment">[derive(Storable)]
+struct User {
+	name: str,
+	[reactive(coarse)]
+	address: Address,     // one comparison per covering write, not one per field
+}
+</code></pre>
+<h2 id="through-an-option"><a class="header" href="#through-an-option">Through an Option</a></h2>
+<p><code>Option</code> is structural: a handle on an <code>Option</code> reaches through its <code>Some</code>.</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, Source };
+import std::reactive::store::{ Storable, Store, StoreSome };
+
+[derive(Storable)]
+struct Profile {
+	nick: Option&lt;str&gt;,
+}
+
+fun main() {
+	let profile = Store::new(Profile { nick = None });
+	let nick: StoreSome&lt;str&gt; = profile.nick().some();
+	print(nick.patch("al"));                 // false: the option is None, nothing lands
+	profile.nick().set(Some("ally"));
+	print(nick.patch("al"));                 // true
+	print(nick.get().unwrap_or("-"));        // al
+	print(profile.nick().is_some().get());   // true
+}
+</code></pre>
+<p><code>some()</code> is a <code>StoreSome&lt;P&gt;</code>: a <code>Source&lt;Option&lt;P&gt;&gt;</code> that reads <code>None</code> while the
+option is <code>None</code>, and <code>patch(value)</code>, which writes only while it is <code>Some</code> and
+answers whether it landed. It is not a <code>Signal</code> — <code>set(None)</code> would mean
+nothing there. Making the option <code>None</code> (or <code>Some</code>) is a write to the option’s
+own handle. A subscription through the <code>Some</code> survives a write that only
+changes what the payload holds. <code>is_some()</code> is a <code>StoreFlag</code>, the
+discriminant: it wakes when the option comes or goes, and never on a write
+inside it.</p>
+<h2 id="enums"><a class="header" href="#enums">Enums</a></h2>
+<p>A derived enum’s store diffs its discriminant first, then the live variant’s
+payload. Per variant the derive writes <code>is_&lt;variant&gt;()</code>, the discriminant as a
+<code>StoreFlag</code>, and per variant WITH a payload a handle through it, named after the
+variant in snake case (<code>Online(Device)</code> gives <code>online()</code>, a <code>StoreSome&lt;Device&gt;</code>;
+<code>Away(str, i32)</code> gives <code>away()</code>, a <code>StoreSome&lt;(str, i32)&gt;</code>):</p>
+<pre><code class="language-vilan">import std::reactive::{ Owner, Signal, Source, run_with_owner };
+import std::reactive::store::{ Storable, Store, StoreSome };
+
+[derive(PartialEq, Storable)]
+struct Device {
+	name: str,
+	since: i32,
+}
+
+[derive(PartialEq, Storable)]
+enum Presence {
+	Offline,
+	Online(Device),
+}
+
+fun main() {
+	let presence = Store::new(Presence::Online(Device { name = "laptop", since = 1 }));
+	let name: StoreSome&lt;str&gt; = presence.online().name();
+	let page = Owner::new();
+	run_with_owner(page, || {
+		presence.is_online().effect(|live| print(i"online: {live}"));
+	});
+	print(name.patch("phone"));                  // true — and `is_online` does not wake
+	presence.set(Presence::Offline);             // online: false
+	print(name.patch("ghost"));                  // false: the variant is not live
+	print(name.get().unwrap_or("-"));            // -
+	page.dispose();
+}
+</code></pre>
+<ul>
+<li><strong>A same-variant write patches the payload.</strong> <code>Online(d1)</code> to <code>Online(d2)</code>
+with only <code>since</code> changed wakes <code>since</code> and the enum’s own slot — not <code>name</code>,
+not the discriminant. Subscriptions into the payload survive, because slots
+hang off the type’s paths, not off the value.</li>
+<li><strong>A different variant</strong> moves every live slot under either payload between
+<code>Some</code> and <code>None</code>, so all of them wake, and so do the two variants’ flags
+(<code>is_offline()</code>, <code>is_online()</code>). A third variant’s flag does not: its answer
+did not change.</li>
+<li><strong>A handle through a variant writes only while the variant is live</strong>: <code>patch</code>
+answers whether it landed. A write cannot choose the variant; switching it is a
+write to the enum’s own handle (<code>presence.set(..)</code>).</li>
+</ul>
+<p>A payload variant’s handle also has <code>live()</code>, its discriminant as a <code>StoreFlag</code>,
+and <code>assume()</code>, the payload as a <code>Store&lt;P&gt;</code> for code that only runs while the
+variant is live.</p>
+<h3 id="when_live--rebuild-only-on-the-variant"><a class="header" href="#when_live--rebuild-only-on-the-variant">when_live — rebuild only on the variant</a></h3>
+<p><code>when_some</code> hands its body a cell of the WHOLE payload, so every binding in the
+body reruns on every write to any of its fields. <code>when_live</code> follows only the
+discriminant, and hands the body the payload’s own <code>Store&lt;P&gt;</code>:</p>
+<pre><code class="language-vilan fragment">&lt;aside&gt;{when_live(presence.online(), |device| device_panel(device))}&lt;/aside&gt;
+</code></pre>
+<p>The body is built under a fresh owner when the variant goes live and disposed
+when it goes away; a write inside the payload wakes only the bindings that read
+what changed. Should a derivation in the body run in the turn that ends the
+variant — a derivation settles before the effect that tears the body down — it
+reads the LAST payload a read through the live variant saw (a message edited
+and then deleted shows its edit, never the text the body was built over), and a
+write then lands nowhere. On the server it renders the live payload once.</p>
+<h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
+<p>A collection field takes its declared shape — no derive to write:</p>
+<ul>
+<li>a <strong><code>HashMap&lt;K, V&gt;</code></strong> is a KEYED node. <code>at(key)</code> is a <code>Store&lt;Option&lt;V&gt;&gt;</code> whose
+slot is that key’s alone: a write to key 7 wakes the readers of key 7 and
+nobody else. <code>at(key).set(None)</code> removes the key, and <code>.some()</code> reaches into
+a present value. <code>insert(key, value)</code> and <code>remove(key)</code> are the same two
+writes.</li>
+<li>a <strong><code>HashSet&lt;T&gt;</code></strong> likewise: <code>contains(x)</code> is a <code>Store&lt;bool&gt;</code>, and
+<code>set(true)</code>/<code>set(false)</code> (or <code>insert</code>/<code>remove</code>) add and remove <code>x</code>.</li>
+<li>a <strong><code>List&lt;T&gt;</code></strong> is a SEQUENCE node. Every <code>SequenceCell</code> write — <code>push</code>,
+<code>prepend</code>, <code>insert_at</code>, <code>remove_at</code>, <code>splice</code>, <code>clear</code>, … — lands in place.
+A list of <code>Keyed</code> values reads one element with <code>by_key(k)</code>. There is no
+<code>at(index)</code>: a position shifts under a splice, and the handle would silently
+change which element it names.</li>
+</ul>
+<pre><code class="language-vilan">import std::reactive::delta::SequenceCell;
+import std::hash_map::HashMap;
+import std::reactive::{ Owner, Signal, Source, run_with_owner };
+import std::reactive::store::{ Storable, Store };
+
+[derive(PartialEq, Storable)]
+struct Channel {
+	name: str,
+	messages: List&lt;i32&gt;,
+}
+
+[derive(Storable)]
+struct Global {
+	channels: HashMap&lt;i32, Channel&gt;,
+}
+
+fun main() {
+	let global = Store::new(Global { channels = HashMap::new() });
+	global.channels().insert(1, Channel { name = "general", messages = [] });
+	global.channels().insert(2, Channel { name = "random", messages = [] });
+	let page = Owner::new();
+	run_with_owner(page, || {
+		global.channels().at(1).some().name().effect(|name| print(i"1 is {name.unwrap_or("-")}"));
+		global.channels().at(2).effect(|channel| print(i"2 has {channel.map(|held| held.messages.len()).unwrap_or(0)}"));
+	});
+	global.channels().at(2).some().messages().push(40);   // "2 has 1" — channel 1 does not wake
+	let _renamed = global.channels().at(1).some().name().patch("lobby");   // "1 is lobby"
+	global.channels().remove(2);                          // "2 has 0"
+	page.dispose();
+}
+</code></pre>
+<p>A whole write of a collection diffs by key — a list by its common prefix and
+suffix, as <code>ListCell::reconcile_to</code> does — and wakes only the keys whose value
+changed. A map is never compared with <code>==</code>.</p>
+<p>A collection handle is also the shape’s FLOW. <code>global.channels().keys()</code>,
+<code>.values()</code>, <code>log.map(..)</code>, <code>each_by(log, ..)</code> start from it and are told OPS —
+a <code>MapOp</code> per changed key, a <code>SetOp</code> per member, a <code>SeqOp</code> per splice (<code>SetAt</code>
+for an element changed in place) — never handed a copy to diff. A push builds
+one row. Each flow keeps its own op log at the collection, recorded only while
+the flow is open.</p>
+<h2 id="what-it-costs"><a class="header" href="#what-it-costs">What it costs</a></h2>
+<ul>
+<li><strong>A derive line per type</strong>, and a knob per coarse field.</li>
+<li><strong>A handle is four fields</strong> — the root’s slot tree, its path, and an in-place
+read and write — and it allocates nothing until something subscribes.</li>
+<li><strong>A whole write costs one comparison per live slot.</strong> A handle write costs
+the comparisons under the handle.</li>
+<li><strong>Projections are methods</strong>: <code>user.address().city()</code>.</li>
+<li><strong>A write through a variant lands in place</strong> for a single payload and an
+<code>Option</code>’s <code>Some</code> (a <code>match &amp;mut</code> capture is a writable view); a variant
+with several payloads copies its tuple out and back. A write under a map key
+copies that key’s value out and back: a map lends no value in place.</li>
+<li><strong>A <code>by_key</code> read scans the list</strong> for the first element under its key.</li>
+</ul>
+<p>On the native backend a store builds, wakes and is observed as it does on JS.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../std/numbers.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../std/transient.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../std/cells.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/style.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -377,11 +488,11 @@ always was.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../std/numbers.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../std/transient.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../std/cells.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/style.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -173,14 +173,14 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="building-ui"><a class="header" href="#building-ui">Building UI</a></h1>
-<p><code>std::ui</code> is a declarative view layer with no virtual DOM. A <code>View</code>
+<p><code>std::web::ui</code> is a declarative view layer with no virtual DOM. A <code>View</code>
 describes a DOM element. Methods chain to build it. Where React re-runs
 components and diffs the result, Vilan binds individual DOM properties to
 signals: when a signal changes, exactly that text node or attribute
 updates and nothing else runs.</p>
 <p>Available in browser builds (<code>target = "browser"</code> in <code>vilan.toml</code>, or
 <code>vilan build --target browser</code>).</p>
-<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 fun main() {
@@ -205,7 +205,7 @@ view so you can keep going:</p>
 <li><strong>Events</strong>: <code>.on(event, handler)</code>, or <code>.on_event(event, |e| …)</code> when
 you need the DOM event itself (<code>prevent_default</code>, <code>key()</code>, modifiers,
 <code>pointer_x()</code>/<code>pointer_y()</code>). For window-level events, and for a listener
-you need to remove, drop to <code>std::dom</code> — <a href="#escaping-to-the-dom">Escaping to the DOM</a>.</li>
+you need to remove, drop to <code>std::web::dom</code> — <a href="#escaping-to-the-dom">Escaping to the DOM</a>.</li>
 <li><strong>Reactive bindings</strong>: <code>.bind_text(source)</code>, <code>.bind_class(source)</code>,
 <code>.bind_attr(name, source)</code>, <code>.toggle_attr(name, flag)</code>,
 <code>.style_var(name, source)</code>.</li>
@@ -251,7 +251,7 @@ than moving surviving rows. <code>each</code> is the keyed form, and it is
 what a list of <em>data</em> wants.</p>
 <p>Text nodes make mixed content direct: prose around an inline element is
 a run of siblings, not a pile of wrapper spans.</p>
-<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
 
 fun tip(): View {
 	view("p")
@@ -302,7 +302,7 @@ exactly as a cell does.</p>
 sugar that lowers, before analysis, to exactly the chain you would have
 written — the same methods, in the same order, emitting the same code:</p>
 <pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell };
-import std::ui::{ View, mount_root, view };
+import std::web::ui::{ View, mount_root, view };
 
 fun counter(): View {
 	let count = Signal::new(0);
@@ -345,7 +345,7 @@ that suggests the quoted form.</p>
 <p>An element is an ordinary expression: it nests in holes, sits in match
 arms, and takes postfix chains. The two forms mix freely —</p>
 <pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell };
-import std::ui::{ View, each, mount_root, view };
+import std::web::ui::{ View, each, mount_root, view };
 
 fun panel(items: SignalCell&lt;List&lt;str&gt;&gt;, flag: SignalCell&lt;bool&gt;): View {
 	&lt;section class("panel")&gt;
@@ -364,7 +364,7 @@ fun main() {
 element. <code>&lt;&gt;…&lt;/&gt;</code> is the nameless head, and it lowers to a <strong>list
 literal</strong> of its children — so its type is <code>List&lt;View&gt;</code>, the arm <code>child</code>
 already places:</p>
-<pre><code class="language-vilan browser">import std::ui::{ View, mount_root, view };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root, view };
 
 fun labelled(name: str, value: str): List&lt;View&gt; {
 	&lt;&gt;
@@ -398,7 +398,7 @@ called in holes: <code>{todo_row(items, todo)}</code>. Reactivity stays explicit
 an <code>if</code> or <code>match</code> inside a hole runs once at build, exactly as it does
 in a chain; reactive structure is <code>.show</code> in head position and the
 <code>when</code>/<code>swap</code>/<code>each</code> values in holes, with <code>Signal</code> values in slots. The sugar adds no
-semantics: an element means <code>std::ui::view</code> whatever the file has
+semantics: an element means <code>std::web::ui::view</code> whatever the file has
 imported, so element syntax needs no <code>view</code> import of its own (a <code>View</code>
 you write as a TYPE still needs one, and the editor offers it), and
 everything this guide says about ownership, boundaries, and binding
@@ -407,7 +407,7 @@ types applies unchanged.</p>
 <p>A “component” is a function that returns a <code>View</code>. There is no
 registration, special types, or props system; the parameters are the
 props:</p>
-<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 fun labelled_input(label: str, value: SignalCell&lt;str&gt;): View {
@@ -457,7 +457,7 @@ commit is typically an rpc. Typing updates the input instantly and
 commits in the background. A remote update folds in without re-sending.
 An echo of your own edit never moves the caret. Use it for fields that
 edit <em>server</em> state as you type:</p>
-<pre><code class="language-vilan browser">import std::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
 import std::reactive::{ draft, Draft, DraftState };
 import std::option::Option::{ self, Some, None };
 
@@ -491,7 +491,7 @@ that row (that’s why <code>T: PartialEq</code>).</li>
 <li>Removed rows are disposed: each row is its own owner, so a
 row’s bindings die with the row.</li>
 </ul>
-<pre><code class="language-vilan browser">import std::ui::{ each, view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ each, view, View, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 [derive(PartialEq)]
@@ -562,7 +562,7 @@ expensive to rebuild; reach for <code>each_by</code> when <code>T</code> can’t
 or when the row’s own bindings are the natural update path.</p>
 </li>
 </ul>
-<pre><code class="language-vilan browser">import std::ui::{ each_by, each_values, view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ each_by, each_values, view, View, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 struct Task {
@@ -613,7 +613,7 @@ refuses.</p>
 microtask, and if the element did not take focus it attempts again on the
 next animation frame and once more on the frame after, then stops. Three
 attempts on the platform’s own clock — no timer, no millisecond to tune.
-Written out, with <code>std::dom::request_animation_frame</code> as the clock and
+Written out, with <code>std::web::dom::request_animation_frame</code> as the clock and
 <code>matches(":focus")</code> as the read-back (<code>focus()</code> returns nothing):</p>
 <pre><code class="language-vilan fragment">view("input").on_mount(|element| {
 	element.focus();
@@ -629,14 +629,21 @@ runs when it flips visibility, or <code>&lt;dialog&gt;.showModal()</code>, whose
 steps run once the dialog is rendered.</p>
 <p>The hook is a <strong>microtask</strong>, which is enough because the whole
 synchronous build — and the <code>mount</code> that finishes it — runs to
-completion before any microtask does. On the SSR twin both methods
-accept and drop, like the event binders: there is no document to be in.</p>
-<p><code>autofocus</code> also writes the <code>autofocus</code> <strong>attribute</strong>. The attribute is
-inert for an element inserted after the page parsed — that is <em>why</em> this
-method exists — so it costs nothing at runtime and makes the choice
-readable: to a focus scope, to devtools, and to a test that asserts
-markup. The SSR twin deliberately does not write it, because a <em>served</em>
-<code>autofocus</code> is honored by the browser’s own initial parse.</p>
+completion before any microtask does. On the SSR twin <code>on_mount</code> accepts
+and drops, like the event binders: there is no document to be in.</p>
+<p><code>autofocus</code> writes <strong>no attribute</strong> in the browser. It registers the
+element with std (in a <code>WeakSet</code>, so nothing is kept alive), and a focus
+scope reads that registration — see below. The native <code>autofocus</code>
+attribute is not free on an element inserted after the page parsed: the
+document queues it as an autofocus candidate and refuses it once
+something has focus, which Chromium reports on the console once per page.
+So <code>.autofocus()</code> is the one spelling, and an element head’s <em>written</em>
+<code>autofocus</code> attribute (<code>&lt;input autofocus /&gt;</code>) gets a warning with a quick
+fix that rewrites it to <code>.autofocus()</code>. The native attribute is still
+yours when you mean it — <code>.attr("autofocus", "")</code> writes it as spelled,
+for a <code>&lt;dialog&gt;</code> or a popover, whose own focusing steps read it. On the
+SSR twin <code>.autofocus()</code> writes the native attribute: a <em>served</em> page’s
+initial parse is the one place it works, and it logs nothing there.</p>
 <h2 id="focus-scopes"><a class="header" href="#focus-scopes">Focus scopes</a></h2>
 <p>An overlay usually wants more than one focused input: it wants Tab to
 stay inside it while it is open, and it wants focus back where it was
@@ -664,12 +671,18 @@ let scope = focus_scope(panel, FocusContainment::Contain);
 // …in the pass that flips it visible:
 let _took = scope.focus_initial();
 </code></pre>
-<p><code>focus_initial</code> focuses the first <code>[autofocus]</code> descendant, else the
-first tabbable one, else the panel itself at <code>tabindex="-1"</code> — and it
-answers whether the focus was taken, so a show that fired too early is
-simply asked again on the next pass. It is idempotent: once focus has
-been taken, a later call leaves alone whatever the user has since moved
-to.</p>
+<p><code>focus_initial</code> focuses the first descendant, in tree order, that
+<code>.autofocus()</code> registered; else the first carrying a native <code>[autofocus]</code>;
+else the first tabbable one; else the panel itself at <code>tabindex="-1"</code> —
+and it answers whether the focus was taken, so a show that fired too
+early is simply asked again on the next pass. It is idempotent: once
+focus has been taken, a later call leaves alone whatever the user has
+since moved to. Inside a scope, <code>.autofocus()</code>’s own bounded clock stands
+aside and lets the show decide.</p>
+<p>The scope does not have to exist before its content is built: the walk
+happens at the show, over whatever the panel holds then, so an element
+that mounts later — a <code>when</code> that opens inside the panel — is found in its
+place, and an element removed since it registered is simply not there.</p>
 <p>Scopes NEST as a stack, not by DOM ancestry, because an overlay is a
 portal: a submenu opened from inside a menu mounts beside its parent’s
 panel rather than inside it. The topmost <code>Contain</code> scope is the one that
@@ -743,9 +756,21 @@ a single row, and it is why <code>T</code> needs no <code>PartialEq</code>: noth
 Read the cell inside a binding, exactly as an <code>each_by</code> row does:</p>
 <pre><code class="language-vilan fragment">{when_some(selected, |account| &lt;p&gt;{account.derive(|current| current.name)}&lt;/p&gt;)}
 </code></pre>
+<p>When the content needs SEVERAL maybes — a message and its author — reach for
+<code>ui::when_all_some</code> rather than nesting <code>when_some</code>s. It takes a tuple of flows
+of <code>Option</code>s and builds while EVERY one is <code>Some</code>; the body takes ONE
+parameter, a tuple of cells, destructured where it is written. The cells are
+made under the body’s owner, written in place while everything stays <code>Some</code>,
+and released with the body when any part goes <code>None</code> — so the negative states
+are handled once, here, and the body reads plain values:</p>
+<pre><code class="language-vilan fragment">{ui::when_all_some((message, author), |(message, author)| &lt;p&gt;
+	&lt;b&gt;{author.derive(|user| user.name)}&lt;/b&gt;
+	{message.derive(|current| current.content)}
+&lt;/p&gt;)}
+</code></pre>
 <h3 id="position-and-placing-one-at-the-end"><a class="header" href="#position-and-placing-one-at-the-end">Position, and placing one at the end</a></h3>
 <p>A value fills a child position, so the conditional or the run sits exactly
-among the siblings it is written between. <code>std::ui</code> exports six —
+among the siblings it is written between. <code>std::web::ui</code> exports six —
 <code>when</code>, <code>when_some</code>, <code>swap</code>, <code>each</code>, <code>each_values</code>, <code>each_by</code> — and each
 returns something that fills a child slot:</p>
 <pre><code class="language-vilan fragment">&lt;ul&gt;
@@ -821,12 +846,12 @@ arms are untouched, deliberately: a <code>str</code>, a <code>View</code> or a <
 child belongs to the parent element it was appended to, not to a
 boundary.</p>
 <h2 id="server-side-rendering"><a class="header" href="#server-side-rendering">Server-side rendering</a></h2>
-<p>The same component code runs on the server. On a Node build <code>std::ui</code>
+<p>The same component code runs on the server. On a Node build <code>std::web::ui</code>
 builds an HTML string instead of live DOM, and <code>render(view)</code>
 serializes it: first paint and SEO, before any JavaScript. A route
 handler calls your own <code>app()</code> and splices the markup into its HTML
 shell. The <a href="ssr.html">server-side rendering guide</a> walks the whole loop.</p>
-<pre><code class="language-vilan">import std::ui::{ view, View, render };
+<pre><code class="language-vilan">import std::web::ui::{ view, View, render };
 import std::reactive::{ Signal, SignalCell };
 
 fun greeting(name: SignalCell&lt;str&gt;): View {
@@ -850,12 +875,12 @@ stale. Text and attribute values are escaped, so a hostile string is inert.</li>
 renderable view, so the natural factoring is a shared <code>fun app(): View</code> with a
 per-leg <code>main</code>: <code>mount_root("app", app)</code> in the browser, <code>render(app())</code> on the
 server. Event handlers (<code>on</code>) are accepted and discarded; a server-rendered
-<code>&lt;button&gt;</code> is a plain button. <code>std::dom</code> stays browser-only, so a component
+<code>&lt;button&gt;</code> is a plain button. <code>std::web::dom</code> stays browser-only, so a component
 reaching for raw DOM cannot SSR; the cross-platform error says so at the import.</li>
 </ul>
 <h2 id="escaping-to-the-dom"><a class="header" href="#escaping-to-the-dom">Escaping to the DOM</a></h2>
-<p><code>View</code> is a thin wrapper over <code>std::dom::Element</code> (it’s right there as
-<code>view.element</code>). For anything the chain doesn’t cover, use <code>std::dom</code>
+<p><code>View</code> is a thin wrapper over <code>std::web::dom::Element</code> (it’s right there as
+<code>view.element</code>). For anything the chain doesn’t cover, use <code>std::web::dom</code>
 directly: <code>get_element_by_id</code>, <code>query_selector</code>,
 <code>element.set_attribute</code>, and so on. See the
 <a href="../std/browser.html">browser reference</a>.</p>
@@ -950,7 +975,7 @@ framework already puts them there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

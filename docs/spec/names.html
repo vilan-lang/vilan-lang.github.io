@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -241,7 +241,7 @@ package</strong>.</li>
 own package). The namespaces are disjoint: resolution is scoped by the
 root segment, so a package is free to name a module <code>ui</code> or <code>json</code> even
 though std has one: <code>pkg::ui</code> is always the package’s own module,
-<code>std::ui</code> always std’s, and neither shadows the other. (Conversely,
+<code>std::web::ui</code> always std’s, and neither shadows the other. (Conversely,
 <code>pkg::</code> never reaches a std module.) The root names themselves are
 <strong>reserved</strong>: a manifest may not declare a dependency — or a
 <code>[package] name</code> — as <code>std</code>, <code>pkg</code>, or <code>macro_std</code> (§11.4), so no
@@ -287,7 +287,7 @@ TYPE: <code>self</code> binds the type itself; variant names bind the variants f
 unqualified use.</p>
 </li>
 <li>
-<p><code>import std::style::Length::rem;</code> is the same path into a type, reaching
+<p><code>import std::web::style::Length::rem;</code> is the same path into a type, reaching
 its <strong>statics</strong> — the functions its <code>impl</code> blocks declare that take no
 <code>self</code> (§4.6). A static is reached through the module whose file writes
 the block, which is the type’s own module for a type whose impls sit
@@ -295,7 +295,7 @@ beside it and the extending module for an extension impl; a <code>self</code>
 method is not importable under either form, and says so. The set and
 <code>as</code> forms reach statics like any other leaf, which is what lets an
 app’s own prelude module re-export one bare
-(<code>export import std::style::Length::rem as rem;</code>).</p>
+(<code>export import std::web::style::Length::rem as rem;</code>).</p>
 </li>
 <li>
 <p>A <strong>type segment replaces</strong> the path’s namespace. What follows
@@ -347,7 +347,7 @@ see the exported names as if declared here.</p>
 before a leaf is the <strong>reach</strong> marker, <code>import pkg::a::{ #hidden };</code>,
 which takes an item the module does not export and says so.</p>
 <p>Platform gating is not checked at the import: a module outside the
-current platform’s layers (e.g. <code>std::ui</code> in a Node build) still loads,
+current platform’s layers (e.g. <code>std::web::ui</code> in a Node build) still loads,
 so its items type-check. The error is reported where platform-colored
 code becomes <strong>reachable</strong> from the build’s entry (§11).</p>
 <h2 id="44-scopes-and-shadowing"><a class="header" href="#44-scopes-and-shadowing">4.4 Scopes and shadowing</a></h2>
@@ -429,7 +429,10 @@ every block declared in <code>a</code>’s file and in every file on the path to
 <code>import a::{ (impl T) }</code> admits exactly the blocks whose subject unifies
 with <code>T</code>. A block’s members are what it declares AND the trait defaults it
 inherits, so a default-only <code>impl Box with One {}</code> is a block <code>(impl Box)</code>
-admits, and <code>(impl Box)::describe</code> takes the default it inherits. Method
+admits, and <code>(impl Box)::describe</code> takes the default it inherits.
+<code>(impl Box with One)</code> takes that block alone among <code>Box</code>’s, naming it by the
+trait as its declaration does; a whole-block selector admits a block that
+declares and inherits nothing (a marker impl) as well. Method
 lookup reads the file’s namespace: two blocks offering one name, one of
 them declined by the file, are not ambiguous — the admitted block answers —
 and a call only a declined block answers is refused, naming the import
@@ -524,8 +527,8 @@ exports. <code>[package] prelude</code> (and <code>[library] prelude</code>) nam
 <tr><th>Value</th><th>Ambient names</th></tr>
 </thead>
 <tbody>
-<tr><td><em>omitted</em> — the default</td><td>std’s base set: <code>print</code>, <code>Option</code>, <code>Some</code>, <code>None</code>, <code>Result</code>, <code>Ok</code>, <code>Err</code></td></tr>
-<tr><td><code>"std::web"</code></td><td>the base set, plus <code>Signal</code>, <code>SignalCell</code>, <code>view</code>, <code>View</code>, the five slot values (<code>when</code>, <code>swap</code>, <code>each</code>, <code>each_values</code>, <code>each_by</code>), and the <strong>modules</strong> <code>style</code> and <code>ui</code></td></tr>
+<tr><td><em>omitted</em> — the default</td><td>std’s base set: <code>print</code>, <code>Iterator</code>, <code>Option</code>, <code>Some</code>, <code>None</code>, <code>Result</code>, <code>Ok</code>, <code>Err</code></td></tr>
+<tr><td><code>"std::web::prelude"</code></td><td>the base set, plus <code>Signal</code>, <code>SignalCell</code>, the collection pipes’ sealers <code>CollPipe</code> and <code>SetPipe</code>, <code>view</code>, <code>View</code>, the six slot values (<code>when</code>, <code>when_some</code>, <code>swap</code>, <code>each</code>, <code>each_values</code>, <code>each_by</code>), and the <strong>modules</strong> <code>style</code> and <code>ui</code></td></tr>
 <tr><td>any module path (<code>pkg::…</code>, <code>std::…</code>, a dependency)</td><td>that module’s exports</td></tr>
 <tr><td><code>false</code></td><td>none — only the built-in set above</td></tr>
 </tbody>
@@ -668,7 +671,7 @@ that reaches into std’s internals tells you so.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

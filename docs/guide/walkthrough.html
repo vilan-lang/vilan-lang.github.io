@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -197,7 +197,7 @@ follows keystroke by keystroke.</p>
 <h2 id="the-shape"><a class="header" href="#the-shape">The shape</a></h2>
 <pre><code class="language-toml">[package]
 name = "notes"
-prelude = "std::web"
+prelude = "std::web::prelude"
 
 [entry.client]
 target = "browser"
@@ -216,7 +216,7 @@ target = "browser"
     app.html      the shell the server serves
 </code></pre>
 <p>One package, two entries (<a href="../tour/platforms.html">Platforms</a> introduced
-this layout). <code>prelude = "std::web"</code> is the other line worth reading: it
+this layout). <code>prelude = "std::web::prelude"</code> is the other line worth reading: it
 puts <code>Signal</code>, <code>SignalCell</code>, <code>view</code>, <code>View</code> and the modules <code>style</code> and
 <code>ui</code> in scope in every file below with no <code>import</code>, which is why the
 snippets that follow have such short import blocks (see <a href="../tour/projects.html#the-prelude-key">the prelude
@@ -371,7 +371,7 @@ question of whether you care about the document.</p>
 the whole wiring diagram:</p>
 <pre><code class="language-vilan fragment">async fun main() {
 	let token = Signal::new(storage::get("notes-token"));
-	let route = current_path().derive(|path| parse(path)).cell();
+	let route = current_path().derive(parse).cell();
 
 	match NotesClient::connect("/", json_codec()) {
 		Ok(let client) =&gt; {
@@ -440,7 +440,7 @@ entry.effect(|current: Option&lt;Note&gt;| {
 
 view("div")
 	.child(view("input").styled(field).attr("placeholder", "Title…").bind_draft(title))
-	.child(view("span").styled(muted).bind_text(title.state.derive(|state| state_text(state))))
+	.child(view("span").styled(muted).bind_text(title.state.derive(state_text)))
 	…
 </code></pre>
 <p>This is the local-first loop from <a href="reactive.html">Reactive state</a> closed
@@ -539,7 +539,7 @@ is the one above.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

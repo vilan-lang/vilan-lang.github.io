@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -236,8 +236,8 @@ Beside them, two families of words are matched by text in one position
 and are ordinary identifiers everywhere else: the ATTRIBUTE names in
 <code>[...]</code> position (<code>derive</code>, <code>service</code>, <code>client_service</code>, <code>extern</code>,
 <code>must_use</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code>,
-<code>deprecated</code>, <code>internal</code>, <code>resource</code>, <code>hint</code> — <code>resource</code> was a keyword
-until B413 made it the <code>[resource]</code> attribute), and the jump TARGETS <code>break</code> and
+<code>deprecated</code>, <code>internal</code>, <code>resource</code>, <code>hint</code>, <code>reactive</code> — <code>resource</code> was a
+keyword until B413 made it the <code>[resource]</code> attribute), and the jump TARGETS <code>break</code> and
 <code>continue</code> after <code>jump</code>. All remain usable as ordinary identifiers
 elsewhere, with one exception: <code>void</code> may not be a
 BINDER’s name (a <code>let</code>, a <code>for</code> binder, a function parameter, a match
@@ -246,6 +246,25 @@ that name could never be read back, and it is refused where it is
 written rather than where it is read (N113). A member — a struct
 field, a method — may still be called <code>void</code>: it is reached through a
 receiver, not through the atom production.</p>
+<p><strong>Which a new marker becomes</strong> (B485, RULED 2026-10-01). A word is a
+<strong>keyword</strong> when it changes what may be written after it (<code>export</code> takes
+<code>(in PATH)</code> or <code>*</code>, <code>external</code> licenses a <code>;</code> body, <code>macro</code> declares a
+compile-time function, <code>const</code> and <code>async</code> also prefix an expression), or
+when a reader of the signature line needs it to know how a use calls,
+passes, receives, awaits or evaluates the declaration (<code>async</code>, <code>const fun</code>, <code>lazy</code>, <code>own</code>, <code>&amp;</code>, <code>mut</code>, <code>borrows</code>, <code>context</code>, <code>sync</code>, <code>dyn</code>).
+Everything else about a declaration is an <strong>attribute</strong>: its labels, its
+generated companions, its host binding, its platform fence, the class of a
+declared type — on the proviso that skipping it while reading never
+misleads silently, so every effect it has on a use is a diagnostic at that
+use. Attributes stand above the signature, keywords in it, in one order
+(§3.2).</p>
+<p>Words other languages reserve for vilan’s constructs — <code>return</code>, <code>fn</code>,
+<code>function</code>, <code>func</code>, <code>def</code> — are ordinary identifiers. Where one stands in
+the place of <code>ret</code> or <code>fun</code> (<code>return value;</code>, <code>fn name(</code>), or <code>-&gt;</code> in the
+place of a return type’s <code>:</code>, the parser refuses it once with vilan’s
+spelling and reads on as if that had been written (B520). Where <code>return</code> can
+only be a name — <code>return;</code>, <code>return (x)</code>, <code>return -x</code>, a block’s tail <code>{ return }</code> — the same steer is given where the name fails to resolve, unless
+the program binds one (B523).</p>
 <h2 id="23-literals"><a class="header" href="#23-literals">2.3 Literals</a></h2>
 <h3 id="numbers"><a class="header" href="#numbers">Numbers</a></h3>
 <pre><code class="language-text">NUMBER = decimal | hex ;
@@ -418,7 +437,7 @@ because lexing finishes before any parser exists (§2.5). The consequence
 is stated rather than worked around and the diagnostic names the
 spelling: a block has no at-rules, so a media query is a breakpoint
 condition rule (<code>.md { … }</code>) and a declaration block under a selector of
-your own is <code>std::style::declare</code>.</p>
+your own is <code>std::web::style::declare</code>.</p>
 <p><strong><code>#</code> lexes, and a <code>css</code> block refuses it.</strong> The byte is a token — the
 import reach marker — so the lexer has nothing to say about it, and the
 question “is this a colour or a reach?” is answered where the answer
@@ -489,7 +508,7 @@ lexes as ordinary vilan tokens and admits not one byte more.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

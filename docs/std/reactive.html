@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,11 +174,13 @@
                     <main>
                         <h1 id="stdreactive-reference"><a class="header" href="#stdreactive-reference">std::reactive reference</a></h1>
 <p>Signals, effects, ownership, turns, and the higher-level cells. Concepts and
-usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
+usage patterns: the <a href="../guide/reactive.html">reactive guide</a>. The fine-grained
+version of a whole struct — a handle per field, generated from the type — is a
+<a href="store.html">store</a>.</p>
 <p>Import what you use:</p>
 <pre><code class="language-vilan fragment">import std::reactive::{
 	Signal, SignalCell, Source, Flow, Pipe, MemoCell, MaybeSignal, Subscriber, Subscription,
-	Disposable, combine, divorce, selector, Selector, derive, tracking,
+	Disposable, combine, divorce, zip_some, selector, Selector, derive, tracking,
 	Owner, owner_scope, get_owner, run_with_owner, comp,
 	Turn, FlushPolicy, turn_scope, turn, batch, flush, at_settle,
 	optimistic, Optimistic, WriteState,
@@ -199,9 +201,9 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <tr><td><code>Subscriber</code></td><td>struct</td><td>one observer’s record — its id (a turn’s dedup key), <code>notify</code>, liveness and class; what <code>on_settle</code> carries</td></tr>
 <tr><td><code>MemoCell&lt;T&gt;</code></td><td>struct</td><td>a sealed derivation’s read-only face — what <code>.memo()</code> returns</td></tr>
 <tr><td><code>Constant&lt;T&gt;</code></td><td>struct</td><td><code>Source::constant(v)</code>: a source that never changes</td></tr>
-<tr><td><code>Derive</code>, <code>Switch</code>, <code>SwitchSome</code>, <code>AndThen</code>, <code>ThenSome</code>, <code>Combine</code>, <code>Distinct</code>, <code>DistinctBy</code></td><td><code>[resource]</code> structs</td><td>the pipe stages: hold their upstream until a consumer starts them; what the combinators return</td></tr>
+<tr><td><code>Derive</code>, <code>Switch</code>, <code>SwitchSome</code>, <code>AndThen</code>, <code>ThenSome</code>, <code>Combine</code>, <code>ZipSome</code>, <code>Distinct</code>, <code>DistinctBy</code></td><td><code>[resource]</code> structs</td><td>the pipe stages: hold their upstream until a consumer starts them; what the combinators return</td></tr>
 <tr><td><code>Instance&lt;T&gt;</code></td><td>struct</td><td>a started flow — the one consumer’s <code>pull</code>/<code>attach</code>/<code>release</code> (for stage authors)</td></tr>
-<tr><td><code>TransientState</code>, <code>TransientSource</code>, <code>.transient()</code></td><td><code>std::transient</code></td><td>values that come and go — pending, ready, refreshing, failed with the stale value, absent; a flow of tasks sealed so the latest task wins (<a href="transient.html">std::transient</a>)</td></tr>
+<tr><td><code>TransientState</code>, <code>TransientSource</code>, <code>.transient()</code></td><td><code>std::reactive::transient</code></td><td>values that come and go — pending, ready, refreshing, failed with the stale value, absent; a flow of tasks sealed so the latest task wins (<a href="transient.html">std::reactive::transient</a>)</td></tr>
 <tr><td><code>track</code></td><td>method (every <code>Source</code>)</td><td>read AND make the source a dependency of the body that is running — tracked reads (A142 §7)</td></tr>
 <tr><td><code>derive</code> (free), <code>TrackedDerive&lt;T&gt;</code></td><td>fn / <code>[resource]</code> struct</td><td>a pipe whose only dependencies are the ones its body tracks</td></tr>
 <tr><td><code>tracking</code>, <code>TrackScope</code>, <code>Tracker</code></td><td>context / structs</td><td>the tracking scope a body’s run establishes; <code>tracking.clear(..)</code> is <code>untrack</code></td></tr>
@@ -212,6 +214,8 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <tr><td><code>Subscription</code></td><td>struct</td><td>an explicit subscription; <code>Disposable</code></td></tr>
 <tr><td><code>combine</code></td><td>fn</td><td>a pipe of the tuple of 2+ sources</td></tr>
 <tr><td><code>divorce</code></td><td>fn</td><td>the reverse: one derived pipe per position of a tuple-valued source</td></tr>
+<tr><td><code>zip_some</code></td><td>fn</td><td>wait for several maybes: <code>Some</code> of the tuple of payloads while every input is <code>Some</code></td></tr>
+<tr><td><code>unzip</code></td><td>method (<code>SignalCell&lt;T: (2..)&gt;</code>)</td><td>one cell per position of a tuple-valued cell, written in place</td></tr>
 <tr><td><code>selector</code>, <code>Selector&lt;T&gt;</code></td><td>fn/struct</td><td>per-key selection: one subscription, two writes per change</td></tr>
 <tr><td><code>Owner</code></td><td>struct</td><td>disposal bag; the lifetime unit</td></tr>
 <tr><td><code>on_cleanup</code></td><td>fn</td><td>run a cleanup when the ambient owner is released</td></tr>
@@ -231,6 +235,11 @@ usage patterns: the <a href="../guide/reactive.html">reactive guide</a>.</p>
 <tr><td><code>ListMemo&lt;T&gt;</code></td><td>struct</td><td>a sealed collection pipe: a read-only granular source</td></tr>
 <tr><td><code>RowFeed&lt;T&gt;</code></td><td>trait</td><td>what <code>each</code>/<code>each_by</code> read their rows from: a list source or a collection pipe</td></tr>
 <tr><td><code>coll</code>, <code>coll_by</code>, <code>Coll</code>, <code>CollBy</code>, <code>SameElement</code></td><td>methods/structs/trait</td><td>a flow of whole lists into a collection pipe: the positional diff (prefix/suffix trim) and the keyed one (<code>ReconcilePlan</code>, emits <code>Move</code>)</td></tr>
+<tr><td><code>HashMapCell&lt;K, V&gt;</code>, <code>HashMapEntry&lt;K, V&gt;</code>, <code>MapSignal</code>, <code>MapSource</code>, <code>TrackedHashMap</code></td><td>structs/traits</td><td>a <code>HashMap</code> cell whose writes ARE its <code>MapOp</code>s; <code>at(key)</code>, a handle that depends on ONE key</td></tr>
+<tr><td><code>HashSetCell&lt;T&gt;</code>, <code>HashSetEntry&lt;T&gt;</code>, <code>SetSignal</code>, <code>SetSource</code></td><td>structs/traits</td><td>the same for a <code>HashSet</code>; <code>contains(x)</code>, a <code>Source&lt;bool&gt;</code> for one member</td></tr>
+<tr><td><code>MapFlow</code>, <code>MapPipe</code>, <code>HashMapMemo</code>, <code>MemoEntry</code>, <code>SetFlow</code>, <code>SetPipe</code>, <code>HashSetMemo</code></td><td>traits/structs</td><td>the Map and Set shapes’ pipes: anything a map (set) pipeline starts from; a move-only map (set) pipe (<code>memo</code>/<code>memo_global</code>/<code>sample</code>); what it seals into</td></tr>
+<tr><td><code>keys</code>, <code>values</code>, <code>entries</code>, <code>map_values</code>, <code>filter</code>, <code>count</code>, <code>sum_by</code></td><td>methods</td><td>the map operators — a set pipe, collection pipes in insertion order (a Fenwick rank), map pipes, scalar pipes; each costs what the op names</td></tr>
+<tr><td><code>KeySlots</code></td><td>struct</td><td>the per-key slot table both stand on: a slot per WATCHED key, counted per subscription</td></tr>
 </tbody>
 </table>
 </div>
@@ -240,7 +249,7 @@ implements both. A component that only observes takes a <code>Source</code>, one
 writes back takes a <code>Signal</code>, and one that needs the cell’s own surface — an
 in-place <code>update</code> — names <code>SignalCell</code>.</p>
 <pre><code class="language-vilan fragment">trait Signal&lt;T&gt; with Source&lt;T&gt; {
-	fun new(value: T): SignalCell&lt;T&gt;             // default body: the canonical cell
+	fun new(own value: T): SignalCell&lt;T&gt;         // default body: the canonical cell
 	fun set(self, value: T)                      // required
 	fun notify(self)                             // required
 	fun set_with(self, transform: sync |T| T)    // default: set(transform(get()))
@@ -251,7 +260,7 @@ receiver to select an implementation from, so it resolves statically to the
 trait’s own default body and means the canonical cell in every file. The value
 it hands back is a <code>SignalCell&lt;T&gt;</code>.</p>
 <pre><code class="language-vilan fragment">impl SignalCell&lt;type T&gt; with Signal&lt;T&gt; {
-	fun new(value: T): SignalCell&lt;T&gt;
+	fun new(own value: T): SignalCell&lt;T&gt;
 	fun set(self, value: T)                 // write + notify
 	fun notify(self)                        // publish without changing
 	// from the trait default:
@@ -420,13 +429,16 @@ fun main() {
 [resource]
 trait Flow&lt;T&gt; {
 	[must_use]
-	fun start(own self): Instance&lt;T&gt;                                  // the stage author's member
+	fun start(own self): Instance&lt;T&gt;                                  // the stage author's member (required)
 	[must_use]
-	fun on_change(own self, observer: |T| void): Subscription         // no first call
+	fun on_change(own self, observer: (|T| void) context tracking): Subscription
+	                                                                  // no first call; a callback (cleared);
+	                                                                  // a default over `start`, a source's own
 	[must_use]
-	fun sub(own self, observer: |T| void): Subscription               // + one immediate call
-	fun effect_on_change(own self, body: (|T| void) context (owner_scope, ambient_nursery))
-	                                                                  // owner-registered; an owner per run
+	fun sub(own self, observer: (|T| void) context tracking): Subscription
+	                                                                  // + one immediate call; cleared; likewise
+	fun effect_on_change(own self, body: (|T| void) context (owner_scope, tracking, ambient_nursery))
+	                                                                  // owner-registered; an owner per run; cleared
 	fun effect(own self, body: (|T| void) context (owner_scope, tracking, ambient_nursery))
 	                                                                  // the same, eager; the body tracks
 	fun derive&lt;U&gt;(own self, transform: (sync |T| U) context (owner_scope, tracking, ambient_nursery)): Derive&lt;Self, T, U&gt;
@@ -452,7 +464,9 @@ trait Pipe&lt;T&gt; with Flow&lt;T&gt; {
 <code>and_then</code>, <code>then_some</code>, <code>flatten</code>, <code>distinct</code>, <code>distinct_by</code>, <code>combine</code> —
 a description with no <code>get</code>. It is consumed exactly once: sealed with
 <code>.memo()</code>, <code>.cell()</code>, the <code>_global</code> twins or <code>.sample()</code>, or handed to a
-consumer (an <code>effect</code>, a UI binding).</li>
+consumer (an <code>effect</code>, a UI binding). A pipe built as a bare statement runs nothing,
+and the compiler WARNS about it (<code>unused pipe</code>) — whichever function built it,
+std’s or your own; <code>let _ = …</code> says the drop is meant.</li>
 </ul>
 <p><strong><code>Flow</code></strong> is what both are: every <code>Source</code> through a blanket, and every pipe
 stage directly. The consumers and the combinators live there, and every one of
@@ -533,7 +547,7 @@ directly) or to keep a contract of its own — a mirror’s seeding frame arrive
 <em>inside</em> its lease over an in-process transport, so its eager form leases first
 and makes the one immediate call itself.</p>
 <p><strong>Anything that only reads takes a <code>Flow</code>, not a <code>Signal</code>.</strong> Every read-only
-binding in <a href="browser.html#view-methods"><code>std::ui</code></a> — <code>bind_text</code>, <code>bind_class</code>,
+binding in <a href="browser.html#view-methods"><code>std::web::ui</code></a> — <code>bind_text</code>, <code>bind_class</code>,
 <code>bind_attr</code>, <code>bind_styled</code>, <code>style_var</code>, <code>toggle_attr</code>, <code>when</code>, <code>when_some</code>,
 <code>show</code> and <code>swap</code> — is generic over <code>Flow&lt;T&gt;</code> and consumes it (<code>own</code>), so
 <code>Stored&lt;str&gt;</code> above, a cell and a pipe all drive them, on the browser layer and
@@ -670,7 +684,7 @@ fun main() {
 </code></pre>
 <h3 id="an-owner-per-run--every-body-a-pipe-runs"><a class="header" href="#an-owner-per-run--every-body-a-pipe-runs">An owner per run — every body a pipe runs</a></h3>
 <pre><code class="language-vilan fragment">fun effect(own self, body: (|T| void) context (owner_scope, tracking, ambient_nursery))
-fun effect_on_change(own self, body: (|T| void) context (owner_scope, ambient_nursery))
+fun effect_on_change(own self, body: (|T| void) context (owner_scope, tracking, ambient_nursery))
 fun derive&lt;U&gt;(own self, transform: (sync |T| U) context (owner_scope, tracking, ambient_nursery)): Derive&lt;Self, T, U&gt;
 fun switch&lt;U, I: Flow&lt;U&gt;&gt;(own self, select: (sync |T| I) context (owner_scope, tracking, ambient_nursery)): Switch&lt;Self, T, I, U&gt;
 fun on_cleanup(cleanup: || void)
@@ -683,15 +697,18 @@ an <code>owner.take</code>, a mirror’s lease — is released before the next r
 last run’s when the consumer is released (the enclosing boundary, for an
 <code>effect</code> or a <code>.memo()</code>; the call itself, for <code>.sample()</code>). A task the body
 starts runs in the run’s nursery and is <strong>cancelled</strong> when the run is released,
-so a superseded fetch stops rather than landing late. A pipe has exactly one
+so a superseded fetch stops rather than landing late. The task is OWNED by that
+nursery — spawned in the body or in anything the body calls — so its
+cancellation is absorbed, never reported as an unhandled task error. A pipe has exactly one
 consumer, so every body runs once per change inside one instance, and “a run”
 always means “one run per change”.</p>
 <p>The owner is allocated LAZILY: a stage keeps one owner cell for the life of its
 instance, each run is the next epoch of it, and the cleanup list is made at the
 run’s first registration — a body that registers nothing costs a read and a
-write, and allocates no owner. (A run’s nursery is created per run: the host’s
-spawn machinery registers a task at the <code>async</code> expression, so one has to
-exist before the body runs.) The bindings in <code>std::ui</code> do not pay even that:
+write, and allocates no owner. A run’s nursery has to exist before the body
+runs (the spawn machinery registers a task at the <code>async</code> expression), but a
+run that started no task hands its nursery on to the next run: a stage makes a
+nursery at its first run, and again only after a run that spawned. The bindings in <code>std::web::ui</code> do not pay even that:
 their bodies write the DOM and register nothing, so they attach plainly.</p>
 <pre><code class="language-vilan">import std::reactive::{ Owner, Signal, SignalCell, Source, on_cleanup, run_with_owner };
 
@@ -723,9 +740,12 @@ what it registered before throwing is released by the next run (or by the
 consumer’s release). A registration that arrives after its run was released —
 an <code>await</code> that resumed late — is released on the spot.</p>
 <p>The body’s owner and nursery are INJECTED (the <code>context</code> clause), which is what
-makes them the RUN’s rather than the boundary’s; the price is that a body is a
-closure literal or a local closure — a named function is refused at the call
-(<code>count.derive(|n| label(n))</code>, not <code>count.derive(label)</code>). <code>scoped_effect</code> and
+makes them the RUN’s rather than the boundary’s. A body is a closure literal, a
+local closure, or a named function or variant that reads none of the injected
+contexts — <code>count.derive(label)</code> and <code>count.derive(Some)</code> hand the call its
+body as directly as <code>count.derive(|n| label(n))</code> does; a function that reads
+one (a <code>.track()</code> inside it) is refused as a value and written as a literal
+at the call. <code>scoped_effect</code> and
 <code>scoped_effect_on_change</code> are <code>effect</code>’s and <code>effect_on_change</code>’s names before
 the two merged, kept one release as deprecated aliases.</p>
 <p><code>swap</code>, <code>when</code> and <code>each</code> are <strong>not</strong> built on this — they keep their own
@@ -758,7 +778,8 @@ the uncovered path traced. There is no run-time lookup.</li>
 its reads with the edges it holds, in order: an edge to a source read again is
 kept, a new read attaches one, an edge nothing read is detached. A source keeps
 its edge across runs when it can say what state it is — <code>Source::identity()</code>,
-answered by <code>SignalCell</code> and <code>MemoCell</code> (their cell); <code>None</code>, the default,
+answered by <code>SignalCell</code>, <code>MemoCell</code>, <code>ListCell</code>, <code>KeyedCell</code>, <code>RemoteSource</code>
+and <code>KeyedSource</code> (their value cell); <code>None</code>, the default,
 re-attaches each run and releases the old edge. A source that names its identity
 and is read twice in one run is one edge.</li>
 <li><strong>Glitch-free.</strong> An edge wakes through a DERIVATION relay (the turn’s first
@@ -794,8 +815,9 @@ fun main() {
 	owner.dispose();
 }
 </code></pre>
-<p><code>TrackScope</code>, <code>Tracker</code>, <code>Dependency</code> and <code>TrackedEdge</code> are the layer’s own
-records (a run’s scope, a stage’s dependencies across runs, one read, one edge);
+<p><code>TrackScope</code>, <code>Tracker</code>, <code>TrackRuns</code>, <code>TrackLists</code>, <code>Dependency</code> and <code>TrackedEdge</code>
+are the layer’s own records (a run’s scope, a stage’s dependencies across runs —
+its lists made at the stage’s first <code>track()</code> — one read, one edge);
 an application never builds them.</p>
 <h2 id="selector--per-key-selection"><a class="header" href="#selector--per-key-selection">selector — per-key selection</a></h2>
 <p>“Is this row the selected one?”, asked once per row and answered live. The
@@ -811,7 +833,7 @@ impl Selector&lt;type T: Hashable + PartialEq&gt; {
 }
 </code></pre>
 <pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell, selector };
-import std::ui::{ View, each, mount_root, view };
+import std::web::ui::{ View, each, mount_root, view };
 
 fun main() {
 	let rows: SignalCell&lt;List&lt;i32&gt;&gt; = Signal::new([1, 2, 3]);
@@ -959,6 +981,58 @@ of it — a change to another position, and a <code>set</code> that changes noth
 included. A consumer that wants its output to fire only when that position
 moved gates it: <code>divorce(pair).0.distinct()</code>, which asks <code>PartialEq</code> of that
 one element. <code>.memo()</code> an output where it is shared or read.</p>
+<h2 id="zip_some"><a class="header" href="#zip_some">zip_some</a></h2>
+<pre><code class="language-vilan fragment">fun zip_some&lt;T: (2..)&gt;(flows: (U in T: dyn Flow&lt;Option&lt;U&gt;&gt;)): ZipSome&lt;T&gt;
+</code></pre>
+<p>Wait for several maybes at once: a pipe that is <code>Some</code> of the tuple of the
+inputs’ payloads while EVERY input is <code>Some</code>, and <code>None</code> while any one is
+<code>None</code>. Over flows of <code>Option&lt;Message&gt;</code> and <code>Option&lt;User&gt;</code> it is a
+<code>Pipe&lt;Option&lt;(Message, User)&gt;&gt;</code>, so the negative states are handled in one
+place — where the zip is read — and nothing past it re-matches them. It is
+<code>combine</code> and <code>Option::zip</code> written once: variadic over the payload types,
+stateless, and needing no owner, so it composes like any stage. Each input is
+any flow of a maybe — a cell, a sealed memo, a pipe such as a mirror’s
+<code>.latest()</code> or a transient’s <code>.derive(|state| state.ready())</code> — and a pipe input
+is moved in:</p>
+<pre><code class="language-vilan">import std::reactive::{ Flow, Pipe, Signal, SignalCell, Source, zip_some };
+
+fun main() {
+	let name: SignalCell&lt;Option&lt;str&gt;&gt; = Signal::new(Some("Ada"));
+	let age: SignalCell&lt;Option&lt;i32&gt;&gt; = Signal::new(None);
+	let both = zip_some((name, age.derive(|value| value))).memo();
+	print(both.get().is_none());
+	age.set(Some(36));
+	if both.get() is Some((let who, let years)) {
+		print(i"{who} {years}");
+	}
+}
+</code></pre>
+<p>A dependent input needs nothing new — <code>message.and_then(|m| m.author.user())</code>
+sealed with <code>.memo()</code> beside <code>message</code> itself. A diamond like that one notifies
+the zip once per arm outside a turn, as any <code>combine</code> does; inside a <code>batch</code>
+or a turn it runs once, on settled values.</p>
+<p>What it does not do is hand back a flow per part: the parts of a zipped value
+are values. For a body that wants one live cell per part, <code>std::web::ui</code>’s
+<code>when_all_some((a, b), |(a, b)| ..)</code> is <code>when_some</code> over <code>zip_some</code> plus the
+split below.</p>
+<h3 id="unzip--a-tuple-cell-split"><a class="header" href="#unzip--a-tuple-cell-split">unzip — a tuple cell, split</a></h3>
+<pre><code class="language-vilan fragment">impl SignalCell&lt;type T: (2..)&gt; { fun unzip(self): (U in T: SignalCell&lt;U&gt;) }
+</code></pre>
+<p>One cell per position of a tuple-valued cell, each seeded with its part and
+written IN PLACE on every change of the whole, so a binding over a part updates
+where it stands. It is a materialising node, like <code>.cell()</code>: the follow
+registers with the ambient owner when there is one, and dies with it. Every
+part is written on every change of the whole (a cell never compares, so <code>T</code>
+needs no <code>PartialEq</code>), and a part’s own <code>set</code> does not write back:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, SignalCell, Source };
+
+fun main() {
+	let pair = Signal::new((1, "one"));
+	let (number, word) = pair.unzip();
+	pair.set((2, "two"));
+	print(i"{number.get()} {word.get()}");
+}
+</code></pre>
 <h2 id="subscription-disposable"><a class="header" href="#subscription-disposable">Subscription, Disposable</a></h2>
 <pre><code class="language-vilan fragment">trait Disposable { fun dispose(self); }
 struct Subscription { … }        // impl Disposable
@@ -974,7 +1048,7 @@ taken out of the queue, in a turn the disposer’s own extent cannot reach, or i
 the snapshot an inline notify is walking. (Until A110 a delivery queued in the
 currently-draining turn could still land once. It cannot now.)</p>
 <p><code>Subscription::teardown</code> is the registration shape for a source <strong>outside</strong> the
-signal graph: <code>dispose</code> runs the hook once and does nothing else. <code>std::dom</code>’s
+signal graph: <code>dispose</code> runs the hook once and does nothing else. <code>std::web::dom</code>’s
 <code>listen</code> is built on it — a DOM listener’s whole teardown is the call that
 unhooks it. The hook is one-shot, so disposing twice is safe.</p>
 <h2 id="owner"><a class="header" href="#owner">Owner</a></h2>
@@ -1397,11 +1471,13 @@ THE ELEMENT: its result is kept, so a <code>g</code> that reads another signal w
 re-run when that signal changes. That is <code>derive</code>’s contract already; here nothing
 re-runs it at all, which makes the contract sharper rather than different.</p>
 <h2 id="collection-pipes--operators-per-shape"><a class="header" href="#collection-pipes--operators-per-shape">Collection pipes — operators per shape</a></h2>
-<pre><code class="language-vilan fragment">[resource] trait CollFlow&lt;T&gt; {                 // anything a collection pipeline starts from
+<pre><code class="language-vilan fragment">[resource]
+trait CollFlow&lt;T&gt; {                            // anything a collection pipeline starts from
 	fun open(own self): CollInstance&lt;T&gt;;       // the node author's member
 }
 trait CollSource&lt;T&gt; with DeltaSource&lt;List&lt;T&gt;, SeqOp&lt;T&gt;&gt; {}   // ListCell, ListMemo
-[resource] trait CollPipe&lt;T&gt; with CollFlow&lt;T&gt; {
+[resource]
+trait CollPipe&lt;T&gt; with CollFlow&lt;T&gt; {
 	fun memo(own self): ListMemo&lt;T&gt;            // seal: a read-only CollSource
 	fun memo_global(own self): ListMemo&lt;T&gt;     // ... for the program (A130)
 	fun sample(own self): List&lt;T&gt;              // one read: start, take, release
@@ -1504,7 +1580,7 @@ common prefix and suffix and splices what is between, so an append, an
 insertion and a removal are each one op of one element.</li>
 </ul>
 <pre><code class="language-vilan">import std::option::Option::{ self, None, Some };
-import std::reactive::{ Signal, SignalCell, comp };
+import std::reactive::{ CollPipe, Signal, SignalCell, comp };
 
 fun main() {
 	let fetched: SignalCell&lt;List&lt;i32&gt;&gt; = Signal::new([1, 2, 3]);
@@ -1516,6 +1592,203 @@ fun main() {
 </code></pre>
 <p>The real fix is upstream — keep the source of truth granular (<code>ListCell</code>), and
 diff only at the boundaries: a fetch result, a wire snapshot.</p>
+<h2 id="hashmapcell-and-hashsetcell--maps-and-sets-whose-writes-are-their-deltas"><a class="header" href="#hashmapcell-and-hashsetcell--maps-and-sets-whose-writes-are-their-deltas">HashMapCell and HashSetCell — maps and sets whose writes are their deltas</a></h2>
+<pre><code class="language-vilan fragment">struct HashMapCell&lt;K: Hashable, V&gt; { … }   // the map, a DeltaLog&lt;MapOp&lt;K, V&gt;&gt;, one notification, per-key slots
+
+impl HashMapCell&lt;type K: Hashable, type V&gt; {
+	fun new(): HashMapCell&lt;K, V&gt;
+	fun of(own map: HashMap&lt;K, V&gt;): HashMapCell&lt;K, V&gt;
+	fun with_limit(own map: HashMap&lt;K, V&gt;, limit: usize): HashMapCell&lt;K, V&gt;
+	fun get(self, key: K): Option&lt;V&gt;                    // the per-key READ
+	fun contains_key(self, key: K): bool
+	fun len(self): usize
+	fun is_empty(self): bool
+	fun peek&lt;U&gt;(self, read: sync |&amp;HashMap&lt;K, V&gt;| U): U  // read IN PLACE
+	fun at(self, key: K): HashMapEntry&lt;K, V&gt;                 // the per-key HANDLE
+	fun edit(self, body: sync |&amp;mut TrackedHashMap&lt;K, V&gt;| void)  // many writes, ONE notification
+	fun logged(self): usize
+	fun watched(self): usize                             // keys with a live slot
+}
+impl HashMapCell&lt;type K: Hashable, type V: PartialEq&gt; { fun reconcile_to(self, own target: HashMap&lt;K, V&gt;) }
+
+trait MapSignal&lt;K: Hashable, V&gt; with Signal&lt;HashMap&lt;K, V&gt;&gt; {   // the writes
+	fun insert(self, key: K, value: V);                 // Put(key, what was there, value)
+	fun remove(self, key: K);                           // Delete(key, what left); absent: nothing
+	fun update(self, key: K, mutate: sync |&amp;mut V| void);   // Put(key, Some(before), after)
+	fun get_or_insert(self, key: K, make: || V): V;     // Put(key, None, made) on a miss
+	fun clear(self);                                    // ONE Reset; empty: nothing
+}
+trait MapSource&lt;K: Hashable, V&gt; with DeltaSource&lt;HashMap&lt;K, V&gt;, MapOp&lt;K, V&gt;&gt; {}
+// HashMapCell: Source&lt;HashMap&lt;K, V&gt;&gt;, Signal&lt;HashMap&lt;K, V&gt;&gt; (`set` is a Reset), MapSignal, MapSource
+// HashMapEntry&lt;K, V&gt;: Source&lt;Option&lt;V&gt;&gt; on its key's slot, Signal&lt;Option&lt;V&gt;&gt; (Some = insert, None = remove)
+
+struct HashSetCell&lt;T: Hashable&gt; { … }      // the set, a DeltaLog&lt;SetOp&lt;T&gt;&gt;, one notification, per-member slots
+impl HashSetCell&lt;type T: Hashable&gt; {
+	fun new(): HashSetCell&lt;T&gt;
+	fun of(own set: HashSet&lt;T&gt;): HashSetCell&lt;T&gt;
+	fun len(self): usize
+	fun peek&lt;U&gt;(self, read: sync |&amp;HashSet&lt;T&gt;| U): U
+	fun contains(self, value: T): HashSetEntry&lt;T&gt;           // a Source&lt;bool&gt; for one member
+	fun reconcile_to(self, own target: HashSet&lt;T&gt;)
+}
+trait SetSignal&lt;T: Hashable&gt; with Signal&lt;HashSet&lt;T&gt;&gt; {
+	fun insert(self, value: T): bool;                   // Add, and true, when it was new
+	fun remove(self, value: T): bool;                   // Remove, and true, when it was held
+	fun clear(self);                                    // ONE Reset
+}
+</code></pre>
+<p>A <code>HashMapCell&lt;K, V&gt;</code> is what <code>ListCell</code> is for a list: a <code>HashMap</code> whose writes are
+recorded as the Map shape’s ops (<code>MapOp</code>: <code>Put(key, what was there, what is there now)</code>, <code>Delete(key, what left)</code>, <code>Reset(map)</code>), so a delta consumer is told what
+each write did. What it adds is the reason a map wants a cell at all: most readers
+of a map read ONE KEY, and <code>at(key)</code> is a handle that depends on that key only.</p>
+<pre><code class="language-vilan">import std::hash_map::HashMap;
+import std::reactive::{ HashMapCell, comp };
+
+fun main() {
+	let scores: HashMapCell&lt;str, i32&gt; = HashMapCell::of([("ada", 1), ("bo", 2)].to_map());
+	mut runs = 0;
+	let (doubled, scope) = comp(|| scores.at("ada").derive(|score| {
+		runs += 1;
+		score.unwrap_or(0) * 2
+	}).memo());
+	scores.insert("bo", 20);       // another key: nothing runs
+	scores.insert("cy", 3);        // nor here
+	scores.insert("ada", 5);       // runs once
+	print(i"{doubled.get()} runs={runs}");   // 10 runs=2
+	scope.dispose();
+}
+</code></pre>
+<p><code>at(key)</code> is a <code>Source&lt;Option&lt;V&gt;&gt;</code> — <code>derive</code>, <code>effect</code>, <code>switch</code>, a tracked
+<code>.track()</code>, a UI binding all take it — and a <code>Signal&lt;Option&lt;V&gt;&gt;</code> whose
+<code>set(Some(v))</code> is <code>insert(key, v)</code> and <code>set(None)</code> is <code>remove(key)</code>. It is data,
+not a subscription: two consumers of one <code>at(key)</code> need no seal, and an <code>[rpc]</code>
+method may answer it — it crosses as a <code>RemoteSource&lt;Option&lt;V&gt;&gt;</code> mirror that the
+key’s writes alone update. Its
+subscriptions land on the key’s SLOT, a notification-only cell made by the first
+subscription and dropped with the last (<code>watched()</code> counts them), so the table is
+the size of what is watched and a write to a key nobody watches costs one hash
+probe. A thousand readers of a thousand keys and a thousand single-key writes are
+a thousand observer calls, where a <code>SignalCell&lt;HashMap&lt;..&gt;&gt;</code> with a
+<code>derive(|map| map.get(key))</code> per reader is a million projections, each of which
+copies the whole map.</p>
+<p>What wakes, per write:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>write</th><th>records</th><th>wakes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>insert</code>, <code>update</code>, <code>get_or_insert</code> (a miss), <code>remove</code> (held)</td><td>one <code>Put</code> or <code>Delete</code></td><td>that key’s slot, then the whole-map observers</td></tr>
+<tr><td><code>remove</code> of an absent key, <code>update</code> of an absent key, <code>get_or_insert</code> (a hit)</td><td>nothing</td><td>nothing</td></tr>
+<tr><td><code>set(map)</code>, <code>clear()</code></td><td>one <code>Reset</code></td><td>EVERY watched key — a <code>Reset</code> cannot say which keys changed without comparing, and a cell never compares</td></tr>
+<tr><td><code>reconcile_to(map)</code></td><td>a <code>Delete</code>/<code>Put</code> per key that left, arrived or changed</td><td>only those keys; an identical map, nothing</td></tr>
+<tr><td><code>edit(body)</code></td><td>one op per mutation</td><td>each key it named, once; one whole-map notification</td></tr>
+</tbody>
+</table>
+</div>
+<p>The per-key read is <code>get(key)</code>, and vilan has no overloading, so the WHOLE map is
+read through the <code>Source</code> bound — any generic consumer does that already — or as
+<code>Source::get(cell)</code> with the type written, or in place with <code>peek</code>:</p>
+<pre><code class="language-vilan">import std::hash_map::HashMap;
+import std::reactive::{ HashMapCell, Source };
+
+fun main() {
+	let ages: HashMapCell&lt;str, i32&gt; = HashMapCell::new();
+	ages.insert("ada", 36);
+	print(ages.get("ada").unwrap_or(0));                 // 36: one key
+	print(ages.peek(|map| map.len()));                   // 1: in place, no copy
+	let whole: HashMap&lt;str, i32&gt; = Source::get(ages);   // a copy of all of it
+	print(whole.keys());
+}
+</code></pre>
+<p>The map iterates in INSERTION order, as every <code>HashMap</code> does: an overwrite keeps
+its key’s place, and a key removed and inserted again goes to the end.
+<code>reconcile_to</code> keeps a held key’s place and appends an arriving one in the
+target’s order, so the cell equals the target (<code>==</code> is order-insensitive) without
+taking its order.</p>
+<p>A <code>HashSetCell&lt;T&gt;</code> is the same cell for the Set shape (<code>SetOp</code>: <code>Add</code>, <code>Remove</code>,
+<code>Reset</code>), over the same slot table. Its per-member handle is <code>contains(x)</code>, a
+<code>Source&lt;bool&gt;</code> that wakes for <code>x</code> alone; <code>insert</code> and <code>remove</code> answer whether they
+changed the set and record only when they did.</p>
+<pre><code class="language-vilan">import std::hash_set::HashSet;
+import std::reactive::{ Disposable, Flow, HashSetCell };
+
+fun main() {
+	let online: HashSetCell&lt;str&gt; = HashSetCell::new();
+	mut flips = 0;
+	let watch = online.contains("ada").on_change(|here| flips += 1);
+	print(online.insert("bo"));    // true — "ada" does not wake
+	print(online.insert("ada"));   // true — it does
+	print(online.insert("ada"));   // false: nothing recorded, nothing woken
+	print(flips);                  // 1
+	watch.dispose();
+}
+</code></pre>
+<p>Both are <code>DeltaSource</code>s (<code>MapSource</code>, <code>SetSource</code>), with <code>cursor</code>/<code>since</code>/<code>reader</code>
+as <code>ListCell</code> has them: a cursor that fell behind the log is told the whole
+collection as one <code>Reset</code>.</p>
+<h2 id="map-pipes--operators-for-maps-and-sets"><a class="header" href="#map-pipes--operators-for-maps-and-sets">Map pipes — operators for maps and sets</a></h2>
+<pre><code class="language-vilan fragment">[resource]
+trait MapFlow&lt;K: Hashable, V&gt; { fun open(own self): MapInstance&lt;K, V&gt;; }              // MapSource, every map pipe
+[resource]
+trait MapPipe&lt;K: Hashable, V&gt; with MapFlow&lt;K, V&gt; {
+	fun memo(own self): HashMapMemo&lt;K, V&gt;          // seal: a read-only MapSource with get(key)/at(key)
+	fun memo_global(own self): HashMapMemo&lt;K, V&gt;
+	fun sample(own self): HashMap&lt;K, V&gt;
+}
+impl type F: MapFlow&lt;type K, type V&gt; {
+	fun keys(own self): MapKeys&lt;F, K, V&gt;                       // a SetPipe&lt;K&gt;
+	fun values(own self): MapValues&lt;F, K, V&gt;                   // a CollPipe&lt;V&gt;, in insertion order
+	fun entries(own self): MapEntries&lt;F, K, V&gt;                 // a CollPipe&lt;(K, V)&gt;
+	fun map_values&lt;R&gt;(own self, transform: |V| R): MapMapValues&lt;F, K, V, R&gt;   // R: IntoElement&lt;U&gt;
+	fun filter&lt;R&gt;(own self, keep: |K, V| R): MapFilter&lt;F, K, V, R&gt;           // R: IntoFlow&lt;bool&gt;
+	fun count(own self): MapCount&lt;F, K, V&gt;                     // a Pipe&lt;usize&gt;
+	fun sum_by&lt;N: Add + Sub + Default, R: IntoFlow&lt;N&gt;&gt;(own self, measure: |V| R): MapSum&lt;F, K, V, R, N&gt;   // a Pipe&lt;N&gt;
+}
+// SetFlow&lt;T&gt;, SetPipe&lt;T&gt; (memo → HashSetMemo&lt;T&gt;, with contains(x)), the Set shape's twins
+</code></pre>
+<p>A map OPERATOR is a collection pipe for the Map shape: it is consumed once —
+sealed with <code>.memo()</code>, handed to a consumer, or read once with <code>.sample()</code> — and
+what travels between its stages is the <code>MapOp</code>, which names KEYS. So every
+operator costs what the op names: <code>map_values</code> runs its closure once per <code>Put</code> and
+never for a <code>Delete</code>, <code>filter</code> once per <code>Put</code>, <code>keys()</code> turns a new key’s <code>Put</code>
+into an <code>Add</code> and ignores an overwrite, and <code>count</code>/<code>sum_by</code> add what arrived and
+subtract what left.</p>
+<pre><code class="language-vilan">import std::hash_map::HashMap;
+import std::reactive::{ CollPipe, HashMapCell, SetPipe, comp };
+
+fun main() {
+	let stock: HashMapCell&lt;str, i32&gt; = HashMapCell::of([("pens", 3), ("ink", 0)].to_map());
+	let ((names, low, total), scope) = comp(|| (
+		stock.keys().memo(),                                  // a HashSetMemo
+		stock.filter(|item, count| count &lt; 2).values().memo(),   // a ListMemo
+		stock.sum_by(|count| count).memo()
+	));
+	stock.insert("pens", 1);       // one Put: the filter runs once
+	stock.insert("pads", 9);       // the key set gains one Add
+	print(names.get().len());      // 3
+	print(low.get());              // [ 0, 1 ]: "pens" joined the filter after "ink"
+	print(total.get());            // 10
+	scope.dispose();
+}
+</code></pre>
+<p><strong>The positional face is where order lives.</strong> <code>values()</code> and <code>entries()</code> are
+collection pipes in the map’s insertion order — what <code>each_by</code> and a <code>ListMemo</code>
+consume. A new key is a one-element <code>Splice</code> at its RANK, the number of live keys
+before it, which a Fenwick tree over the keys’ slots answers in O(log n); an
+overwrite is a <code>SetAt</code> there, a removal a one-element <code>Splice</code> out; a removed and
+re-inserted key goes to the end, as the map puts it. Every other operator is
+order-free — and a map PIPE’s order is the order its keys arrived in it: a key
+that flips into a <code>filter</code> joins its output at the end.</p>
+<p><strong>Following and owners</strong>, as for the collection operators: a <code>filter</code> predicate
+that answers a flow is FOLLOWED per key (a flip is a <code>Put</code> or a <code>Delete</code>
+downstream), a <code>map_values</code> closure that answers a pipe has it started per key
+and its value carried, and each key’s run gets an owner of its own — released
+when the key’s value is replaced or the key leaves. A <code>sum_by</code> measure that answers
+a flow is followed the same way: the sum moves by the difference.</p>
+<p>A sealed map pipe is a <code>HashMapMemo</code>: a read-only granular map source with <code>get(key)</code>,
+<code>len</code>, <code>peek</code>, and <code>at(key)</code> — a read-only per-key handle on the sealed map’s
+slots, so a key’s reader wakes only when the pipe changed that key.</p>
 <h2 id="reconcile-keyed-list-diffing"><a class="header" href="#reconcile-keyed-list-diffing">reconcile: keyed list diffing</a></h2>
 <pre><code class="language-vilan fragment">enum RowStep {
 	Keep(usize),     // reuse old row at index (moved into the new order)
@@ -1623,7 +1896,7 @@ hash, 400 with a coarse hash alone — are compared plan for plan.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

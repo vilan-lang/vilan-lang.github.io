@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -202,7 +202,15 @@ that runs on every read.</p>
 <p><code>connect</code> accepts a relative url (<code>"/"</code>) in the browser; it dials the same
 host over WebSocket, waits for the server’s announcement, and verifies the
 <strong>contract hash</strong>: a drifted server fails the connect with
-<code>RpcError::Contract</code>.</p>
+<code>RpcError::Contract</code>. The hash covers the surface’s RESOLVED types, so a
+respelling is not a drift: <code>HashMap&lt;str, i32&gt;</code> and a renaming import of it hash
+alike. It also covers each of your Wire types’ SHAPE — a struct’s fields in
+declaration order (name and type, recursively), an enum’s variants in order —
+because a codec reads the type itself: a field added, removed, renamed or
+reordered, or a variant moved, is a different contract under the same name,
+and a server redeployed with one refuses its old clients at connect instead of
+being mis-decoded by them. (std’s own types stand for themselves: they change
+only with the toolchain both sides are built by.)</p>
 <h2 id="mirrors-remotesourcet"><a class="header" href="#mirrors-remotesourcet">Mirrors: <code>RemoteSource&lt;T&gt;</code></a></h2>
 <pre><code class="language-vilan fragment">struct RemoteSource&lt;T&gt; { … }
 
@@ -221,12 +229,13 @@ impl RemoteSource&lt;type T&gt; {
 	fun status(self): SignalCell&lt;Status&gt;                      // passive: what the mirror was last told
 	fun or(self, initial: T): Derive&lt;RemoteSource&lt;T&gt;, Option&lt;T&gt;, T&gt;   // a pipe: `initial` until the first update
 	[must_use]
-	fun sub(self, observer: |T| void): Subscription       // counted, manual: present values; dispose to release
+	fun sub(self, observer: (|T| void) context tracking): Subscription  // counted, manual: present values; dispose to release
 }
 
-// A mirror is a transient source (std::transient): Status mapped arm for arm.
+// A mirror is a transient source (std::reactive::transient): Status mapped arm for arm.
 impl RemoteSource&lt;type T&gt; with TransientSource&lt;T, RpcError&gt; {
-	fun state(self): MemoCell&lt;TransientState&lt;T, RpcError&gt;&gt;   // passive, like `status`
+	fun state(self): MemoCell&lt;TransientState&lt;T, RpcError&gt;&gt;   // passive, like `status`: leases nothing
+	fun states(self): dyn Pipe&lt;TransientState&lt;T, RpcError&gt;&gt;  // leases while bound; the whole state
 	fun latest(self): dyn Pipe&lt;Option&lt;T&gt;&gt;                    // leases while bound; keeps the stale value
 	fun is_pending(self): dyn Pipe&lt;bool&gt;                     // leases while bound
 }
@@ -606,7 +615,7 @@ only sent to a client that named the protocol — a bare connect that offered
 nothing could not tell a 401 from an outage and paid the whole backoff to learn
 nothing. <code>connect_socket_with</code> offers exactly the list it is given, which is the
 seam for a peer that speaks something else.</p>
-<h2 id="server-plumbing-stdrpc_server-process-layer"><a class="header" href="#server-plumbing-stdrpc_server-process-layer">Server plumbing (<code>std::rpc_server</code>, process layer)</a></h2>
+<h2 id="server-plumbing-stdrpcserver-process-layer"><a class="header" href="#server-plumbing-stdrpcserver-process-layer">Server plumbing (<code>std::rpc::server</code>, process layer)</a></h2>
 <pre><code class="language-vilan fragment">impl Service {
 	fun new(protocol: RpcProtocol): Service   // mounted at "/"
 	fun at(own self, prefix: str): Service    // mount elsewhere, e.g. "/admin/"
@@ -643,7 +652,7 @@ attach). The <code>{mount}rpc</code> route is the server side of <code>std::rpc<
 usually; serving the build’s own artifacts is
 <code>ServerBuilder::serve_build</code>’s job, on the same builder. Details:
 <a href="../guide/services.html#growing-past-one-service">Services &amp; RPC</a> and the
-<a href="process.html#stdrpc_server">process reference</a>.</p>
+<a href="process.html#stdrpcserver">process reference</a>.</p>
 <p>One matching rule is worth knowing: a service claims a path <strong>segment</strong> —
 its route exactly, or its route followed by <code>?</code> — so <code>/rpc</code> does not
 shadow an application’s <code>/rpcs</code> or <code>/rpc-docs</code>.</p>
@@ -706,7 +715,7 @@ transport or protocol bridge.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

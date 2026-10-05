@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -221,6 +221,25 @@ the declaration as it is written, then the same signature under the
 bindings this call solved — <code>fun get_or_insert(self, key: K, make: || V): V</code>
 above <code>fun get_or_insert(self, key: UserId, make: || SignalCell&lt;Option&lt;User&gt;&gt;): SignalCell&lt;Option&lt;User&gt;&gt;</code>. A call that substitutes nothing, and a hover on
 the declaration itself, show the one line they always did.</p>
+<p>A METHOD’s hover names the block it is declared in, on its own line above
+the <code>fun</code> line and in real syntax: <code>impl Memo&lt;type K: Hashable, type V&gt;</code>
+for an inherent method, <code>impl MemoCell&lt;type T&gt; with Source&lt;T&gt;</code> for a
+trait’s implementation, <code>impl type S: Source&lt;type T&gt;</code> for a blanket’s, and
+<code>trait Flow&lt;T&gt;</code> for a trait’s own requirement or default. A completion
+item’s detail line carries the same header. Every signature prints each
+parameter’s convention — <code>own self</code>, <code>&amp;mut self</code>, <code>own item: T</code>,
+<code>xs: &amp;List&lt;i32&gt;</code> — because it is part of what a caller and an implementor
+write against.</p>
+<p><code>self</code> hovers like any other binding: the block that introduces it, then
+<code>self: User</code> in the receiver’s convention (<code>own self: User</code>), or
+<code>self: Self</code> inside a trait and <code>self: S</code> inside a blanket, whose header
+line spells the bound. A variable, a parameter, a field and <code>self</code> all show
+their type’s DEFINITION in a second block under the <code>name: Type</code> line —
+a struct’s fields or an enum’s variants, one level deep and with the
+instantiation’s arguments substituted (<code>let pair: Pair&lt;i32, str&gt;</code> shows
+<code>left: i32</code> and <code>right: str</code>), and for a trait-typed or <code>dyn</code> value the
+trait’s required members. A long definition lists twelve members and then
+<code>…</code>; a primitive or an opaque host type shows none.</p>
 <p><strong>Inlay hints</strong> — the inferred type of a binding you left unannotated
 (<code>let</code>/<code>mut</code>, a <code>for</code> binder, a comprehension binder). A parameter is not
 hinted: its type is written in the signature already. While you type, a
@@ -265,9 +284,37 @@ produce the same bytes.</p>
 follows.</p>
 <p><strong>Which platform, and why, before any error.</strong> The platform a file is
 analyzed under decides which <code>std</code> twin its types come from, so the status
-bar says it for the vilan file in front of you — <code>analyzed as: browser — declared</code>, <code>analyzed as: node — default-entry</code> — with the whole reason in
-its tooltip. A file can say it itself: <code>[platform("browser")] mod self;</code> as
-its first line — and at the top of a file, completion offers that line.</p>
+bar’s <code>vilan 0.43.0</code> item says it for the vilan file in front of you, in its
+tooltip — <code>This file is analyzed under browser: the client entry reaches it</code>.
+A file can say it itself: <code>[platform("browser")] mod self;</code> as its first line
+— and at the top of a file, completion offers that line.</p>
+<p><strong>The status bar menu.</strong> Click the <code>vilan</code> item for a menu: the platform the
+file is analyzed under and why, the entry whose world it is analyzed in, the
+server’s version and commit, and the last analysis’ size as counts (files,
+entities, impls — work, not milliseconds); a switch for each feature the
+server reads live (inlay hints, the <code>~Trait</code> abbreviation, semantic
+highlighting, the generic <code>&lt;</code> pairing, Organize Imports on save), which flips
+the workspace setting where one is set and the user setting otherwise; and
+restart, stop or start, the status page and the output channel. A stopped
+server reads <code>vilan (stopped)</code>.</p>
+<p><strong>A file is analyzed as its entry sees it, once two of them are open.</strong> A
+file open on its own keeps its own quick analysis for its squiggles; as soon
+as a second file of the same entry’s world is open, the editor analyzes the
+entry — <code>client.vl</code>, say — once per edit, and every open file it reaches is
+answered from that one analysis. Find References and rename always answer
+from the entry’s whole world, every file it reaches open or not: for a file
+open on its own, the first such request after an edit analyzes the entry,
+and the next one reuses it. Edit <code>model.vl</code> with
+<code>client.vl</code>, <code>views.vl</code> and <code>channel.vl</code> open and the four are re-analyzed
+together, not one after another; open a fifth file of the same world and
+it is answered at once, from the analysis already in hand. A module’s
+diagnostics are the ones its entry’s build would report (an error a caller
+provokes shows in the module), and hover, go-to-definition and completion
+read the entry’s program. The entry does not need to be open. A module
+both a browser and a node entry reach is answered from the browser
+entry’s world and reports the node entry’s diagnostics too; an entry, a
+module no entry reaches, and a file outside any package are each analyzed
+on their own, as before.</p>
 <p>A file holding platform-fenced <strong>twins</strong> (a function or a trait <code>impl</code>
 written once under <code>[platform("browser")]</code> and once under
 <code>[platform("@process")]</code>) is analyzed under each twin’s platform, and the
@@ -394,7 +441,7 @@ same level as its module, so <code>import std::json::{ Json, </code> keeps going
 (Imports are read as single-line items; a braced group’s later lines are
 not recognized.) Inside an impl SELECTOR the answer is not a name the
 module offers but a block it writes: after <code>impl </code> the module’s impl
-subjects (<code>import std::style::{ (impl </code> offers <code>Length</code>, <code>Color</code>, …), and
+subjects (<code>import std::web::style::{ (impl </code> offers <code>Length</code>, <code>Color</code>, …), and
 after <code>)::</code> that block’s members (<code>(impl Length)::</code> offers <code>rem</code>). Both
 come from the module’s parsed text, like every other answer here.</li>
 <li><strong>A name you have not imported</strong> is offered too, labeled with the module
@@ -409,14 +456,15 @@ turns that down to parentheses only, or off.</p>
 of values — from the server rather than from a JSON schema, so every editor
 sees it.</p>
 <h2 id="quick-fixes"><a class="header" href="#quick-fixes">Quick fixes</a></h2>
-<p>Eighteen, each attached to the diagnostic that earns it:</p>
+<p>Nineteen, each attached to the diagnostic that earns it:</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Action</th><th>Offered on</th></tr>
 </thead>
 <tbody>
-<tr><td><code>Import `X` from std::json</code></td><td><code>cannot find 'X'</code> where <code>X</code> is importable. One action per module when more than one exports the name — never a guess between them</td></tr>
+<tr><td><code>Import `X` from std::json</code></td><td><code>cannot find 'X'</code> where <code>X</code> is importable — in an expression, a type, a struct literal’s head, a pattern’s path head or an impl’s <code>with</code> trait. One action per module when more than one exports the name — never a guess between them</td></tr>
+<tr><td><code>Remove the duplicate import (Organize Imports)</code></td><td><code>Json is already imported on line 1</code> — the warning a repeated import leaf carries; the fix is Organize Imports’ own edit for that run, which merges the repeat away</td></tr>
 <tr><td><code>Change to `entries` </code></td><td>a <code>did you mean …?</code> note on a misspelled struct-initializer field</td></tr>
 <tr><td><code>Analyze this file under its platform: add `[platform("browser")] mod self;` </code></td><td>a member the OTHER <code>std</code> twin declares (<code>struct 'Region' has no field 'anchor'</code> in a file analyzed under node, whose note names the <code>browser</code> twin that has it). The edit is the file’s first line — the one place a file’s platform may be written — and the attribute is the one the note spells</td></tr>
 <tr><td><code>Insert `;` </code></td><td><code>expected `;` to end this statement</code>, at the gap the diagnostic points at</td></tr>
@@ -484,7 +532,7 @@ construct stops the conversion, because its attachment is not recoverable
 across the reshape — the same refusal <code>vilan fmt</code> makes when it declines to
 reorder a commented block. So does a declaration with <strong>several
 arguments</strong> (<code>margin(px(4), px(8))</code>): its chain twin needs
-<code>std::style::piece</code>, which is ambient inside a block and nowhere else, so
+<code>std::web::style::piece</code>, which is ambient inside a block and nowhere else, so
 the chain written out would name something the file does not import. The
 two directions are inverses on everything they accept.</p>
 <h2 id="what-it-does-while-you-type"><a class="header" href="#what-it-does-while-you-type">What it does while you type</a></h2>
@@ -541,7 +589,11 @@ plain go-to-definition, and no pull diagnostics — diagnostics are pushed.</p>
 </div>
 <p>Everything but the two paths applies live. <strong>Vilan: Restart Language
 Server</strong> is in the command palette when you want the blunt instrument, and
-the <strong>Vilan Language Server</strong> output channel carries the server’s own log.</p>
+the <strong>Vilan Language Server</strong> output channel carries the server’s own log.
+<strong>Vilan: Stop Language Server</strong> silences a server that is misbehaving or a
+file it cannot get through: its squiggles are cleared and nothing starts it
+again — not a settings change, not a crash policy — until <strong>Vilan: Start
+Language Server</strong> or a window reload.</p>
 <p><strong>Vilan: Show Language Server Status</strong> writes this session’s profile to that
 same channel: the extension’s request tally first — session age, server
 starts, per-request count / mean / max, slowest total first — and then the
@@ -604,7 +656,7 @@ to report prints <code>?</code> rather than a zero.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -205,14 +205,14 @@ one of them, since OS randomness is the one thing here that needs a
 dependency</li>
 <li><strong>servers</strong>: <code>std::http</code> — <code>Server::builder()</code> with <code>serve_build</code>,
 <code>cache_build</code> and its conditional GET, <code>on_request</code>, <code>on_start</code> — and
-<code>std::rpc_server</code>: a <code>[service]</code> mounted with <code>Service::new</code> or
+<code>std::rpc::server</code>: a <code>[service]</code> mounted with <code>Service::new</code> or
 <code>Service::factory</code>, the WebSocket upgrade with its handshake gate
 (<code>authorize</code>), and <code>[expose]</code>/<code>[expose(keyed)]</code> mirrors a vilan client
 subscribes to, byte-for-byte on the wire with the node build</li>
 </ul>
 <p>What it does <strong>not</strong> reach yet — each refused by name, with the construct in the
-message, rather than silently mis-compiled: the browser platform (<code>std::dom</code>,
-<code>std::ui</code>, <code>std::web</code>, <code>std::router</code>), a <code>resource</code> type with a <code>Drop</code> impl
+message, rather than silently mis-compiled: the browser platform (<code>std::web::dom</code>,
+<code>std::web::ui</code>, <code>std::web::prelude</code>, <code>std::web::router</code>), a <code>resource</code> type with a <code>Drop</code> impl
 (deterministic teardown natively is its own slice; a resource with no <code>Drop</code>,
 such as a pipe node, builds as an ordinary move-only type), a handful of host bindings (the <code>fs</code>
 calls that take an options object), and
@@ -344,7 +344,7 @@ being settled first.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

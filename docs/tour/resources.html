@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b00a80a5.js";
+            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-86876258.js"></script>
+        <script src="../toc-6a7b6de7.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,8 @@ deterministically at their owner’s <strong>last use</strong>.</p>
 <p>You mark one with <code>[resource]</code> and, if it needs cleanup, give it a <code>Drop</code>:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-[resource] struct Guard {
+[resource]
+struct Guard {
 	label: str,
 }
 
@@ -223,7 +224,8 @@ and keep it. Lend a <strong>loan</strong> (a view, <code>&amp;</code> or <code>&
 values:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-[resource] struct Guard { label: str }
+[resource]
+struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -258,7 +260,8 @@ the end of its scope. <strong>Declaring it counts as a use</strong>, so a resour
 nothing reads again is destroyed right where it was created:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 
-[resource] struct Guard { label: str }
+[resource]
+struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -296,7 +299,8 @@ it:</p>
 <pre><code class="language-vilan">import std::drop::Drop;
 import std::option::Option::{ self, Some, None };
 
-[resource] struct Guard { label: str }
+[resource]
+struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -322,7 +326,8 @@ or <code>slot is Some(let g)</code> — owns nothing, because nothing was consum
 compiler find it. Move the resource into <code>drop</code>:</p>
 <pre><code class="language-vilan">import std::drop::{ Drop, drop };
 
-[resource] struct Guard { label: str }
+[resource]
+struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -346,7 +351,8 @@ what “tear it down only if it’s there” needs:</p>
 <pre><code class="language-vilan">import std::drop::{ Drop, drop };
 import std::option::Option::{ self, Some, None };
 
-[resource] struct Guard { label: str }
+[resource]
+struct Guard { label: str }
 impl Guard with Drop {
 	fun drop(&amp;mut self) { print(i"dropped {self.label}"); }
 }
@@ -577,7 +583,7 @@ Cancel owned tasks through an <code>OwnedNursery</code> rather than awaiting the
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-9c73b872.js"></script>
+        <script src="../theme/vilan-0a81600c.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
