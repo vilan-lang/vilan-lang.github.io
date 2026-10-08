@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>§11 The platform model &amp; manifests - The Vilan documentation</title>
+        <title>Debugging - The Vilan documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -172,246 +172,86 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="spec-11--the-platform-model--manifests"><a class="header" href="#spec-11--the-platform-model--manifests">Spec §11 — The platform model &amp; manifests</a></h1>
-<p>A <strong>platform</strong> is a host a build targets: <code>node</code> (the default), <code>deno</code>,
-<code>bun</code>, or <code>browser</code>. The first three form the <strong><code>@process</code></strong> family.
-One package may build for several platforms at once (§11.4’s entries);
-the compiler proves, per entry, that no reachable code requires a
-capability its platform lacks.</p>
-<h2 id="111-layers"><a class="header" href="#111-layers">11.1 Layers</a></h2>
-<p>The standard library is layered:</p>
-<ul>
-<li>the <strong>base</strong> layer: platform-neutral, available everywhere;</li>
-<li>the <strong>browser</strong> layer (<code>std::web::dom</code>, <code>std::web::ui</code>, <code>std::web::router</code>,
-<code>std::web::storage</code>): browser builds only;</li>
-<li>the <strong>process</strong> layer (<code>std::fs</code>, <code>std::http</code>, <code>std::db</code>,
-<code>std::process</code>, <code>std::rpc::server</code>): <code>@process</code> builds only.</li>
-</ul>
-<p>A library may declare the same shape for itself (<code>[library.layer]</code>,
-§11.4): a neutral root plus per-platform overlay roots.</p>
-<h2 id="112-coloring-and-the-reachability-check"><a class="header" href="#112-coloring-and-the-reachability-check">11.2 Coloring and the reachability check</a></h2>
-<p>Every function is <strong>colored</strong> with the platform requirement it
-implies: seeded by the layer its externs and std calls live in, flowing
-callee-to-caller through the call graph (the same inference shape as
-asyncness, §7.3), including through generic instantiations: a generic
-function’s requirement is judged <strong>per instantiation</strong>, so <code>save&lt;T&gt;</code>
-colors process-only only for the <code>T</code>s whose code actually reaches a
-process capability.</p>
-<p>The check is on <strong>reachable code, not imports</strong>: importing a module is
-free; each entry is checked along the call paths that start at its
-<code>main</code> (and its reachable initializers). A path that crosses onto a
-platform the entry does not build for is a compile error naming the
-chain from the entry to the crossing. Module-level initializers obey
-the same rule: a binding’s initializer is analyzed, colored, and
-bundled only if something reachable references the binding. <code>const</code>
-initializers evaluate at build time (§9) and never color anything.</p>
-<h2 id="113-fences"><a class="header" href="#113-fences">11.3 Fences</a></h2>
-<p><code>[platform("browser")]</code> (one platform, a family like <code>"@process"</code>, or
-several) on a function declares the platforms it promises to run on.
-The promise is checked on <strong>every</strong> compile, whatever the build’s
-entries: if code the fenced function reaches requires a layer one of
-the fenced platforms lacks, the error lands <strong>at the fence</strong> with the
-offending chain, not at some distant entry in a dependent build.
-Fences add no runtime behavior; they are checked declarations.</p>
-<p>A fence is also the platform its body is <strong>analyzed under</strong>. One
-analysis types a file under one platform — and so under one <code>std</code>
-twin, which is what a body over <code>std::web::ui</code>’s <code>Region</code> reads its fields
-from — so a file is analyzed under a platform every fence and label in
-it admits, whenever the colour its package gives it (§11.2, the
-<code>default-entry</code>’s, inference’s) admits none of them. Declarations that
-share no platform make the file a pair of twins; the file’s colour
-stands.</p>
-<p><strong>A file’s own platform.</strong> <code>[platform("browser")] mod self;</code> — the
-attribute on <code>mod self;</code>, the file’s own module (§4.1), as the file’s
-first statement — declares the platform of the whole file. Everything the file declares requires that platform, exactly
-as a layer module’s items require their layer’s: a call into it from an
-entry of another platform is the chain error above
-(<code>`when_value` requires the `browser` platform its file declares and cannot run on `node`</code>, with the path from <code>main</code>). It is also a fence
-on each of the file’s functions, checked the same way. And it is the
-platform the file is analyzed under: it outranks inference and the
-<code>default-entry</code> colour outright, and of the entries that reach the file
-only those it admits type-check it — reaching it from another is the
-error. The same attribute on an <code>impl</code> block does this for the block’s
-members; on a struct, an enum or a trait it takes part in choosing the
-platform the file is analyzed under. A type has no platform of its own
-(§11.2’s requirement is on code), so a label on one requires nothing.</p>
-<p><strong>Twins.</strong> Two items of one identity — two module-level functions of one
-name, or two <code>impl</code>s of one trait for one subject — may stand in one file
-when both are fenced and their fences share no platform. They are
-<strong>twins</strong>, and each build compiles the one its platform admits:</p>
-<pre><code class="language-vilan">import std::io::print;
-
-[platform("browser")]
-fun where_am_i(): str {
-	"the browser"
-}
-
-[platform("@process")]
-fun where_am_i(): str {
-	"a server"
-}
-
-fun main() {
-	print(where_am_i());
+                        <h1 id="debugging-stddebug"><a class="header" href="#debugging-stddebug">Debugging (<code>std::debug</code>)</a></h1>
+<p>The reference for the guide’s <a href="../guide/debugging.html">Debugging</a> chapter.</p>
+<h2 id="dbg"><a class="header" href="#dbg"><code>dbg</code></a></h2>
+<pre><code class="language-vilan fragment">fun dbg(..)    // any number of arguments, any types; in the prelude
+</code></pre>
+<p><code>dbg(a, b, ..)</code> writes <code>[file:line:column] &lt;expression&gt; = &lt;value&gt;</code> per argument
+to stderr (<code>console.log</code> in the browser) and answers the argument, a tuple of
+them for several, or <code>()</code> for none. The compiler types and lowers every call:
+the declaration exists to be named, imported and documented. A statement
+(<code>dbg(x);</code>) reads its arguments in place; an expression moves them through.</p>
+<p>The value is written in vilan’s literal syntax by a printer the compiler
+generates for each type a <code>dbg</code> reaches, the same on both backends:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>value</th><th>prints</th></tr>
+</thead>
+<tbody>
+<tr><td>a struct</td><td><code>Point { x = 1, y = 2 }</code>, a field-less one by its name</td></tr>
+<tr><td>an enum variant</td><td><code>Shape::Circle(1.5)</code>, <code>Shape::Empty</code>; <code>Some(5)</code>, <code>None</code>, <code>Ok(1)</code>, <code>Err("no")</code></td></tr>
+<tr><td>a tuple, a list</td><td><code>(1, "two", 3.0)</code>, <code>[1, 2, 3]</code></td></tr>
+<tr><td>a string</td><td><code>"a \"quoted\" line\n"</code></td></tr>
+<tr><td>a float, an integer</td><td><code>3.0</code>, <code>0.25</code>, <code>1e+21</code>; <code>7</code>, <code>-3</code></td></tr>
+<tr><td>a closure</td><td>`&lt;closure</td></tr>
+<tr><td>a <code>HashMap</code>, a <code>HashSet</code></td><td><code>HashMap { "ada" =&gt; 36 }</code>, <code>HashSet { "a", "b" }</code>, in insertion order</td></tr>
+<tr><td>a <code>Shared</code>, a <code>SignalCell</code></td><td><code>Shared(Point { x = 7, y = 8 })</code>, <code>SignalCell(3)</code> (read without tracking)</td></tr>
+<tr><td>a pipe</td><td><code>&lt;pipe Derive&lt;SignalCell&lt;i32&gt;, i32, i32&gt;&gt;</code>: sampling one would run it</td></tr>
+<tr><td>a cycle</td><td><code>Shared(Link { next = Some(&lt;cycle&gt;) })</code>: a cell met again is not entered</td></tr>
+<tr><td>a trait object, a host handle</td><td><code>&lt;dyn Area&gt;</code>, <code>&lt;Task&gt;</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>A value that fits in 80 columns from where it starts stays on one line;
+otherwise each entry takes a line of its own, two spaces deeper, with a
+trailing comma. A list stops after 100 entries with <code>… N more</code>.</p>
+<p><code>[build] dbg</code> in <code>vilan.toml</code> decides what a call does in a build: the
+<code>debug</code> preset prints, the <code>release</code> preset refuses the build, <code>"strip"</code> makes
+each call its argument, <code>"keep"</code> prints in release too.</p>
+<h2 id="debug"><a class="header" href="#debug"><code>Debug</code></a></h2>
+<pre><code class="language-vilan fragment">trait Debug {
+	fun debug(self): str
 }
 </code></pre>
-<p>Each twin is analyzed only under a platform its fence admits, so a body
-reads its own platform’s <code>std</code> twin (a browser twin’s <code>View</code> has an
-<code>element</code>, a <code>@process</code> twin’s has <code>attributes</code>), and a build collects
-only its own: the other twin is not type-checked, registered or emitted
-by it. Twins whose fences overlap are refused, naming a platform both
-admit; so is an unfenced item beside a fenced one — there is no default
-with a platform override, the default is the complement fence written
-out. Twin functions agree on their written signature (parameters, return
-type, generics). A platform no twin admits simply has none: reaching the
-name from it is a miss that names the twins there are. A file whose
-<code>mod self;</code> declares a platform holds its twins to it — a twin that
-admits none of the file’s platforms is refused, since nothing could
-compile it. The twin trait impls and functions are the whole of it:
-nominals and inherent impls have no twins.</p>
-<p>This bends §11.2’s “unreachable code is still type-checked” for twins
-alone, and the rule that replaces it is: every item is type-checked under
-at least one platform it admits, and <code>vilan check</code> checks a file under
-each platform its twins name as well as under its colour — so a
-single-platform <code>vilan build</code> checks its own twins and no others, and
-<code>vilan check</code> is the answer for all of them.</p>
-<h2 id="114-manifests-vilantoml"><a class="header" href="#114-manifests-vilantoml">11.4 Manifests (<code>vilan.toml</code>)</a></h2>
-<p>The manifest declares what a directory builds. Sections:</p>
-<ul>
-<li><strong><code>[package]</code></strong>: an application or plain package: <code>name</code>,
-<code>description</code>, <code>root</code> (source root; default <code>src/</code>), <code>generated</code>
-(below), <code>entry</code> (the entry file, when there is exactly one),
-<code>target</code> (a platform; default <code>node</code>), and <code>dependencies</code> (name →
-<code>{ path = "…" }</code> for a local directory, or
-<code>{ git = "…", tag | rev = "…" }</code> for a <code>[library]</code> repository pinned
-to exactly one of a tag or a commit; registry dependencies are future
-work).</li>
-<li><strong>Generated sources</strong>: <code>[package] generated</code> (and <code>[library] generated</code>) names the directory holding the package’s <strong>generated</strong>
-sources, relative to the manifest. It must be a relative path inside
-the package, must not name the package directory, and must not be the
-source <code>root</code>; each is a manifest error naming the key. The directory
-need not exist. Its effect is on the <strong>formatter</strong>: <code>vilan fmt</code> — and
-any editor formatting that goes through the same toolchain — leaves
-every source file under it byte-identical, however that file is
-reached, and reports once per run that it did. A file the formatter
-rewrote would re-digest as changed and so re-stale the
-<code>[[build.hook]]</code> that declared it as an output, which would regenerate
-it unformatted; nothing else in the toolchain reads the key, and
-module resolution is unaffected by it.</li>
-<li><strong><code>[entry.&lt;name&gt;]</code></strong>: one build entry per table: <code>path</code> (default
-<code>&lt;root&gt;/&lt;name&gt;.vl</code>), <code>target</code> (default <code>node</code>), and <code>split</code> (default
-<code>false</code>; §11.5). A package with
-entries builds each for its own platform; reachability (§11.2) is
-what lets one source tree serve several. <code>[package] default-entry</code>
-names the entry <code>vilan run</code> executes when several are runnable.</li>
-<li><strong><code>[library]</code></strong>: a dependency-only package: <code>name</code>, <code>description</code>,
-<code>root</code>, <code>generated</code>, <code>dependencies</code>, and <strong><code>[library.layer.&lt;name&gt;]</code></strong>
-overlays (<code>root</code>, <code>platform = ["…"]</code>) for per-platform sources.</li>
-<li><strong><code>[project]</code></strong>: a workspace: <code>packages = ["member", …]</code> (paths);
-building the project builds every member against its own manifest.
-<code>default-entry</code> names the member <code>vilan run</code> executes when several
-are runnable.
-Its own <code>dependencies</code> are declared once for the members to share: a
-member writes <code>dep = { project = true }</code> to take that declaration
-(paths in it resolve against the <strong>project root</strong>). Inheritance is
-per dependency and opt-in (nothing is inherited implicitly), and
-<code>project = true</code> combines with no other key.</li>
-<li><strong><code>[build]</code></strong>: <code>run</code> and <code>[[build.hook]]</code>, plus codegen options:
-<code>preset</code> (<code>"debug"</code> | <code>"release"</code>) and the per-feature overrides
-<code>indent</code>, <code>spaces</code>, <code>debug-names</code>. The <strong>codegen options</strong> never
-change program semantics (§7.6), only the emitted text; the hooks are
-not among them. <code>dbg</code> (<code>"keep"</code> | <code>"strip"</code>) says what a <code>dbg(..)</code>
-call does: the <code>debug</code> preset keeps it (it prints), the <code>release</code>
-preset refuses the build at each call, <code>"strip"</code> makes the call its
-argument and prints nothing, and <code>"keep"</code> prints in release too. <code>run</code> is a command line (or a list of them) executed
-through the host shell <strong>before</strong> each build (each <code>--watch</code> round
-included), in the manifest’s directory, in order; a non-zero exit
-fails the build. It runs with the invoking user’s privileges and
-environment — no sandbox, no allowlist, no timeout, no prompt — and
-the implementation prints each command before spawning it. Only the
-manifest being built contributes hooks: a dependency’s are never
-executed, whatever they declare, and a dependency that declares one
-is reported rather than passed over in silence. <code>vilan check</code> builds
-nothing and runs none.
-<code>[[build.hook]]</code> is the same execution with a <code>name</code> and, optionally,
-declared <code>inputs</code> and <code>outputs</code>: file or directory paths, relative to
-the manifest, matched literally (there is no glob matching, and a
-pattern is an error). Such a hook is <strong>skipped</strong> when it has a
-recorded stamp and every declared input and output hashes, by
-content, to the value recorded when it last ran, with the command
-string unchanged; a declared input that was absent is recorded as
-absent, so its appearance invalidates. A hook declaring neither
-<code>inputs</code> nor <code>outputs</code> is never fresh and always runs. Skipping is a
-cost optimization over code already trusted to run, never a security
-property. Where the stamp is recorded, and its format, are
-implementation-defined; that it is inside the project — so deleting
-the build output directory re-runs every hook — is not.</li>
-<li><strong>Dependency trust</strong>: a dependency declaration takes <code>build-hooks</code>, a
-boolean granting <em>that one dependency</em> permission to run its own
-build hooks. Absent means no. Nothing runs a dependency’s hooks in
-this version, granted or not; the key records the grant so it is a
-reviewable line before there is a mechanism behind it.</li>
-<li><strong><code>[macro]</code></strong>: the compile-time interpreter budget: <code>fuel</code> (steps
-per macro/const run) and <code>depth</code> (nested expansion), §9.3/§10.4.</li>
-</ul>
-<p><code>std</code>, <code>pkg</code>, <code>macro_std</code>, and <code>vilan</code> are <strong>reserved package names</strong>.
-The first three name the import roots themselves (§4.2), so a
-<code>[package] name</code> or a key in any <code>dependencies</code> table claiming one is a
-manifest error — a dependency under such a key could only shadow the
-root or be unreachable behind it. <code>vilan</code> is the language’s own name,
-held for its official namespace; the same claim is refused in the same
-places. <code>[library] name</code> is exempt: the standard library itself is the
-<code>[library]</code> named <code>std</code> (likewise <code>macro_std</code>), and a library’s own
-name, unlike a dependency key, never binds an import root.</p>
-<h2 id="115-build-products"><a class="header" href="#115-build-products">11.5 Build products</a></h2>
-<p>Each entry emits <code>dist/&lt;name&gt;.&lt;ext&gt;</code> for its platform (browser entries
-first, so a server that ships bundles finds them fresh), plus
-<code>dist/&lt;name&gt;.css</code> when const evaluation emitted style assets (§9.2).
-The extension states the module kind to the host: <code>.mjs</code> on the process
-platforms, whose runtimes classify a file as ESM or CommonJS before
-running it, and <code>.js</code> on the browser, where the loading
-<code>&lt;script type="module"&gt;</code> tag classifies it instead.</p>
-<p>Any other emitted kind (§9.2’s channel takes an arbitrary kind) lands
-the same way: <code>dist/&lt;name&gt;.&lt;kind&gt;</code>, holding the kind’s deduplicated
-lines in a kind-specific deterministic order — <code>css</code> sorts in cascade
-order (base rules before <code>@media</code> blocks, media blocks by ascending
-min-width), and every other kind sorts lexically by line — so a kind’s
-bytes are a function of the set of contributions, never of the order
-const evaluation reached them. A kind that stops being emitted stops
-shipping: the build records which kind files each entry’s flush wrote
-(<code>dist/.vilan-asset-kinds</code>) and removes a recorded file when a later
-build emits nothing for its kind. Only recorded files are ever
-removed — a file the record does not name is never the build’s to
-touch.</p>
-<p>A <code>browser</code> entry declaring <strong><code>split = true</code></strong> emits <strong>route chunks</strong>
-instead of one file: <code>dist/&lt;name&gt;.js</code> carries every module-level binding
-(so §7.6’s initialization order is untouched) and every function two or
-more route arms can reach, and <code>dist/&lt;name&gt;.&lt;arm&gt;.js</code> carries the
-functions exactly one arm of the entry’s route <code>match</code> can reach. Every
-build of a <code>browser</code> entry writes <code>dist/&lt;name&gt;.chunks.json</code>, the leg’s
-<strong>build manifest</strong>: its bundle’s file name, the style sidecar’s file name
-or <code>null</code>, whether the bundle must be loaded as a classic script, and the
-chunks it emitted (empty unless it split). Chunks are fetched when a
-navigation first reaches their arm, and the route value does not advance
-until one arrives; which functions land where is implementation-defined
-beyond that rule. Overlapping navigations resolve by order of DEPARTURE,
-not of arrival: a chunk that lands after a later navigation began does not
-advance the route value. A fetch that fails leaves the route value where it
-was and is not remembered, so a later navigation to that arm fetches again. <code>split</code> on a non-<code>browser</code> entry is a manifest error.
-<code>vilan run</code> builds all entries and starts one <code>@process</code> entry: the
-only one, the designated <code>default-entry</code>, or the one <code>--entry</code> names;
-<code>vilan check</code> checks every entry, always. The emitted text beyond
-§7.6’s guarantees is implementation-defined.</p>
+<p><code>.debug()</code> renders a value in the same syntax <code>dbg</code> prints, on one line. std
+implements it for <code>str</code>, <code>bool</code>, every number (a float keeps its <code>.0</code>:
+<code>3.0.debug()</code> is <code>"3.0"</code>), and for <code>List</code>, <code>Option</code> and <code>Result</code> whose
+elements are <code>Debug</code>; <code>[derive(Debug)]</code> writes it for a struct or an enum from
+its fields, so a struct holding a <code>List&lt;i32&gt;</code> or an <code>Option&lt;f64&gt;</code> derives it.
+<code>dbg</code> needs none of this: it prints every type.</p>
+<h2 id="locations"><a class="header" href="#locations">Locations</a></h2>
+<pre><code class="language-vilan fragment">external struct Location;
+
+impl Location {
+	fun text(self): str      // "src/main.vl:12:5"
+	fun file(self): str      // relative to the package root; std's own as "std/src/.."
+	fun line(self): i32      // 1-based
+	fun column(self): i32    // 1-based, in characters
+}
+
+impl Location with Display  // `to_string()` is `text()`
+
+[track_caller]
+fun caller(): Location      // the caller's site inside a tracking function, else this call's
+</code></pre>
+<p>A <code>Location</code> is a call site. <code>[track_caller]</code> functions receive their caller’s
+as a hidden parameter, which <code>caller()</code> reads; anywhere else <code>caller()</code> answers
+the site of its own call. std’s <code>panic</code>, <code>assert</code>, <code>Option::unwrap</code>/<code>expect</code>,
+<code>Result::unwrap</code>/<code>unwrap_err</code>/<code>expect</code>/<code>expect_err</code> and <code>List::remove</code>/<code>insert</code>
+are tracking, and every subscript <code>xs[i]</code> reports its own site, so a panic
+names the line that reached it: <code>panicked at src/main.vl:12:5: &lt;message&gt;</code>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../spec/macros.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../std/browser.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../spec/appendix.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/dev.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -421,11 +261,11 @@ only one, the designated <code>default-entry</code>, or the one <code>--entry</c
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../spec/macros.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../std/browser.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../spec/appendix.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/dev.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

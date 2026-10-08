@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,7 +181,9 @@
 fun panic(message: str)                     // abort with a message
 fun assert(condition: bool, message: str)   // panic when false
 </code></pre>
-<p><code>print</code> lays a value out as node’s <code>console.log</code> does, under either
+<p><code>print</code> writes a number by the language’s own conversion, the one an
+i-string uses, so <code>print(0.0 * -1.0)</code> prints <code>0</code> on both backends. It lays
+any other value out as node’s <code>console.log</code> does, under either
 backend: a string at the top level is written bare and quoted inside a
 container, a struct or a tuple prints as the array it is at run time
 (<code>[ 1, 'two' ]</code>), a list of more than six entries is grouped into
@@ -611,7 +613,7 @@ over <code>entries()</code> binds each <code>(key, value)</code> the same way:</
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

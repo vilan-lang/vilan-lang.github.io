@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -833,18 +833,20 @@ impl Selector&lt;type T: Hashable + PartialEq&gt; {
 }
 </code></pre>
 <pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell, selector };
-import std::web::ui::{ View, each, mount_root, view };
+import std::web::ui::{ View, each, mount_root };
 
 fun main() {
 	let rows: SignalCell&lt;List&lt;i32&gt;&gt; = Signal::new([1, 2, 3]);
 	let current: SignalCell&lt;i32&gt; = Signal::new(1);
 	let selected = selector(current);
 	let _root = mount_root("app", || {
-		view("ul").child(each(rows, |id| id, |id| {
-			view("li").text(i"row {id}").bind_class(selected.of(id).derive(|on| {
-				if on { "row current" } else { "row" }
-			}))
-		}))
+		&lt;ul&gt;
+			{each(rows, |id| id, |id| {
+				&lt;li .bind_class(selected.of(id).derive(|on| if on { "row current" } else { "row" }))&gt;
+					i"row {id}"
+				&lt;/li&gt;
+			})}
+		&lt;/ul&gt;
 	});
 }
 </code></pre>
@@ -1382,6 +1384,10 @@ fun main() {
 }
 </code></pre>
 <p><code>peek</code> is for reading: its closure must not write the cell it is peeking at.</p>
+<p><code>push_many(items)</code> appends a whole run — another list, a set, any iterator —
+as ONE <code>Splice</code>, so a reader of the cell sees one change for the batch where a
+loop of <code>push</code> would record one op per element. <code>extend(values)</code> is the same
+write over a list alone.</p>
 <p>Its mutators are trait defaults over ONE primitive, so there is one place a
 write is recorded and no method can forget:</p>
 <pre><code class="language-vilan fragment">trait SequenceCell&lt;T&gt; {
@@ -1896,7 +1902,7 @@ hash, 400 with a coarse hash alone — are compared plan for plan.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

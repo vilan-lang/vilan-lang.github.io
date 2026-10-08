@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -603,7 +603,7 @@ takes:</p>
 <pre><code class="language-vilan browser">import std::option::Option::{ None, Some, self };
 import std::reactive::{ Signal, SignalCell };
 import std::web::router::{ chunk_error, current_path, pending, segments };
-import std::web::ui::{ View, mount_root, swap, view };
+import std::web::ui::{ View, mount_root, swap };
 
 [derive(PartialEq)]
 enum Route {
@@ -616,29 +616,32 @@ fun parse(path: str): Route {
 }
 
 fun home_page(): View {
-	view("h1").text("Home")
+	&lt;h1&gt;"Home"&lt;/h1&gt;
 }
 
 fun missing_page(): View {
-	view("h1").text("Nothing here")
+	&lt;h1&gt;"Nothing here"&lt;/h1&gt;
 }
 
 fun main() {
 	let _root = mount_root("app", || {
 		let route = current_path().derive(parse);
-		view("main")
+		&lt;main&gt;
 			// Visible only while a route chunk is in flight; the page behind
 			// it is the one you were already on.
-			.child(view("div").class("spinner").text("Loading…").show(pending()))
+			&lt;div class("spinner") .show(pending())&gt;"Loading…"&lt;/div&gt;
 			// …and if it never arrives, say so. The next click retries.
-			.child(view("div").class("error").bind_text(chunk_error().derive(|failure| match failure {
-				Some(let reason) =&gt; "Could not load that page: " + reason,
-				None =&gt; "",
-			})))
-			.child(swap(route, |current| match current {
+			&lt;div class("error")&gt;
+				{chunk_error().derive(|failure| match failure {
+					Some(let reason) =&gt; "Could not load that page: " + reason,
+					None =&gt; "",
+				})}
+			&lt;/div&gt;
+			{swap(route, |current| match current {
 				Route::Home =&gt; home_page(),
 				Route::NotFound =&gt; missing_page(),
-			}))
+			})}
+		&lt;/main&gt;
 	});
 }
 </code></pre>
@@ -706,7 +709,7 @@ of <a href="../std/dev.html"><code>std::web::dev</code></a>.</p>
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../guide/native.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../guide/debugging.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -720,7 +723,7 @@ of <a href="../std/dev.html"><code>std::web::dev</code></a>.</p>
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../guide/native.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../guide/debugging.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -749,7 +752,7 @@ of <a href="../std/dev.html"><code>std::web::dev</code></a>.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

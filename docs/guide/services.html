@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -473,7 +473,7 @@ import std::reactive::{ Signal, SignalCell };
 import std::result::Result::{ self, Ok, Err };
 import std::rpc::SocketTransport;
 import std::shared::Shared;
-import std::web::ui::{ View, each, mount_root, view };
+import std::web::ui::{ View, each, mount_root };
 
 [derive(Wire, PartialEq, Debug)]
 struct Note {
@@ -492,7 +492,7 @@ fun notes_panel(client: NotesClient&lt;SocketTransport&gt;): View {
 	// open while — and only while — the panel is showing. `[]` until the
 	// first sync; the empty list takes its element type from the mirror.
 	let entries = client.entries.or([]).memo();
-	view("ul").child(each(entries, |note| note.id, |note| view("li").text(note.text)))
+	&lt;ul&gt;{each(entries, |note| note.id, |note| &lt;li&gt;{note.text}&lt;/li&gt;)}&lt;/ul&gt;
 }
 
 async fun main() {
@@ -586,10 +586,12 @@ impl Chat {
 // At the client — no await, one mirror, read like any other:
 let ids = client.get_messages("general", 100)!;
 let body = client.get_message(ids[3]);
-view("p").bind_text(body.derive(|value| match value {
-	Some(let message) =&gt; message.body,
-	None =&gt; "loading…",
-}))
+&lt;p&gt;
+	{body.derive(|value| match value {
+		Some(let message) =&gt; message.body,
+		None =&gt; "loading…",
+	})}
+&lt;/p&gt;
 </code></pre>
 <p>Everything you already know about a mirror applies to this one: it is a
 <code>RemoteSource&lt;T&gt;</code>, you read it with <code>or</code> / <code>derive</code> / <code>sub</code> / <code>get</code> /
@@ -852,7 +854,7 @@ method whose return type is a <code>KeyedCell&lt;K, T&gt;</code> hands the clien
 
 // At the client — sync and unleased, exactly like a plain handle:
 let tasks: KeyedSource&lt;i32, Task&gt; = client.tasks_in("alpha");
-view("ul").child(each(tasks.or([]), |task| task.id, |task| view("li").text(task.title)))
+&lt;ul&gt;{each(tasks.or([]), |task| task.id, |task| &lt;li&gt;{task.title}&lt;/li&gt;)}&lt;/ul&gt;
 </code></pre>
 <p>Everything a plain handle does, this one does at the keyed type: no call
 until the first lease, <code>status()</code> for what that call was told, and demand
@@ -870,7 +872,7 @@ client subscribed to</strong>, in the server’s order. It reads two ways.</p>
 <code>List&lt;T&gt;</code> in place of <code>T</code>:</p>
 <pre><code class="language-vilan fragment">fun feed(client: ChatClient&lt;SocketTransport&gt;): View {
 	let messages = client.messages.or([]);
-	view("ul").child(each(messages, |message| message.id, |message| view("li").text(message.body)))
+	&lt;ul&gt;{each(messages, |message| message.id, |message| &lt;li&gt;{message.body}&lt;/li&gt;)}&lt;/ul&gt;
 }
 </code></pre>
 <p><strong>One key</strong> — the part a plain mirror has no spelling for:</p>
@@ -879,10 +881,12 @@ client subscribed to</strong>, in the server’s order. It reads two ways.</p>
 	// server forwards that message's changes and nothing else. Released
 	// when the row unmounts, like any other lease.
 	let message = client.messages.of(id);
-	view("li").bind_text(message.derive(|held| match held {
-		Some(let found) =&gt; found.body,
-		None =&gt; "…",
-	}))
+	&lt;li&gt;
+		{message.derive(|held| match held {
+			Some(let found) =&gt; found.body,
+			None =&gt; "…",
+		})}
+	&lt;/li&gt;
 }
 </code></pre>
 <p><code>of(key)</code> is the view seam (owner-released, like <code>or</code>/<code>map</code>);
@@ -963,8 +967,7 @@ re-verifies the contract, and re-attaches every mirror, so state resyncs
 on its own. Your code sees two things.</p>
 <p>First, a signal you can bind a banner to:</p>
 <pre><code class="language-vilan fragment">let state = client.transport.connection_state();
-view("p").text("reconnecting…")
-	.show(state.derive(|current| current == ConnectionState::Reconnecting))
+&lt;p .show(state.derive(|current| current == ConnectionState::Reconnecting))&gt;"reconnecting…"&lt;/p&gt;
 </code></pre>
 <p>Second, explicit call failures. A call in flight when the connection drops
 rejects with “connection lost”. A call made while down fails immediately
@@ -1599,7 +1602,7 @@ channel your method minted: the mirror is invalidated (<code>status</code> back 
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

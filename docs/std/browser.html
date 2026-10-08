@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -326,7 +326,7 @@ the element</strong>. An element that reaches its own listener and back is a cyc
 straddling the language/host boundary, where no disposal can see both halves,
 so <code>bind_value</code>/<code>bind_draft</code> are built on this — and a hand-written input
 handler should be too:</p>
-<pre><code class="language-vilan fragment">view("input").on_event("input", |event| query.set(event.target_value()))
+<pre><code class="language-vilan fragment">&lt;input on:input(|event| query.set(event.target_value())) /&gt;
 </code></pre>
 <p><strong>Measurement is a value, and it forces layout.</strong> <code>bounding_rect</code> returns a
 <code>DomRect</code> — four numbers copied out of the host box, so it compares, parks in a
@@ -458,7 +458,11 @@ submenu opened from inside a menu mounts beside its parent’s panel, not inside
 it. std holds the stack, the guard belongs to whichever <code>Contain</code> scope is
 topmost at event time, and a scope pops when the owner that installed it is
 disposed — restoring focus to whatever held it before, if focus is still inside
-the scope and the remembered element is still in the document.</p>
+the scope and the remembered element is still in the document. “Before” means
+before the scope’s CONTENT took focus, too: a panel whose content was built
+first, and whose <code>autofocus</code> therefore ran before the scope was installed,
+gives focus back to the element <code>autofocus</code> took it from (the opener), not to
+the field inside the panel.</p>
 <p><code>FocusScope::on_leave(handler: |Element| void)</code> hears focus LEAVING the scope,
 from a capture-phase <code>focusout</code>: the handler runs with <code>relatedTarget</code> — the
 element focus went to — when that element lies outside the scope and every
@@ -494,11 +498,12 @@ parent’s current end instead, hand it to <code>child</code>: <code>parent.chil
 <p>The <code>View</code> methods these replaced — <code>when</code>, <code>swap</code>, <code>swap_split</code>, <code>bind_each</code>,
 <code>bind_each_values</code>, <code>bind_each_by</code> — were retired; <code>parent.swap(s, r)</code> is now
 <code>parent.child(swap(s, r))</code> or <code>{swap(s, r)}</code> in a child hole:</p>
-<pre><code class="language-vilan fragment">view("ul")
-	.child(view("li").text("Header"))
-	.child(each_values(items, |item: str| view("li").text(item)))
-	.child(when(more, || view("li").text("and more")))
-	.child(view("li").text("Footer"))
+<pre><code class="language-vilan fragment">&lt;ul&gt;
+	&lt;li&gt;"Header"&lt;/li&gt;
+	{each_values(items, |item: str| &lt;li&gt;{item}&lt;/li&gt;)}
+	{when(more, || &lt;li&gt;"and more"&lt;/li&gt;)}
+	&lt;li&gt;"Footer"&lt;/li&gt;
+&lt;/ul&gt;
 </code></pre>
 <p>The run is named <code>each</code> rather than <code>bind_each</code>: the <code>bind_</code> prefix means “one
 property kept in sync” everywhere else in the module, and a value that IS a
@@ -525,10 +530,12 @@ the list once, so it has no change to follow).</p>
 <p><strong>A row, a body or a branch can be any <code>Slot</code>.</strong> A render closure returns
 <code>C: Slot</code>, not <code>View</code> — so a row may be a fragment, a text node, or another
 value form, and the run owns whatever the child placed:</p>
-<pre><code class="language-vilan fragment">view("ul").child(each_values(items, |item: str| [
-	view("li").text(item),
-	view("li").class("sep"),
-]))
+<pre><code class="language-vilan fragment">&lt;ul&gt;
+	{each_values(items, |item: str| &lt;&gt;
+		&lt;li&gt;{item}&lt;/li&gt;
+		&lt;li class("sep") /&gt;
+	&lt;/&gt;)}
+&lt;/ul&gt;
 </code></pre>
 <p>The reconciler moves and removes a row by its SPAN — an empty text marker is
 planted before each row’s content, and the row is everything between that
@@ -788,7 +795,7 @@ reach the browser rides the render or an rpc call.</p>
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../std/dev.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/debug.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -802,7 +809,7 @@ reach the browser rides the render or an rpc call.</p>
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../std/dev.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/debug.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -831,7 +838,7 @@ reach the browser rides the render or an rpc call.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

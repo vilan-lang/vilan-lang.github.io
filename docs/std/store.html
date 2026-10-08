@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -241,6 +241,37 @@ for both.</p>
 <p>The value lives in the root, in place. <code>get()</code> copies out only the value at the
 handle’s path — a read of <code>city</code> copies the city, never the whole user — and
 <code>set(v)</code> assigns in place through the root.</p>
+<p><strong>Field syntax.</strong> A field reads the way the value spells it: on a <code>Store&lt;T&gt;</code>
+(and on a <code>StoreSome&lt;T&gt;</code>, below) a member that names a field of <code>T</code> is that
+field’s projection, so <code>user.address.city</code> is <code>user.address().city()</code> — the
+same handle, written without the calls:</p>
+<pre><code class="language-vilan">import std::reactive::{ Signal, Source };
+import std::reactive::store::{ Storable, Store };
+
+[derive(Storable)]
+struct Address {
+	city: str,
+}
+
+[derive(Storable)]
+struct User {
+	name: str,
+	address: Address,
+}
+
+fun main() {
+	let user = Store::new(User { name = "Alice", address = Address { city = "Oslo" } });
+	user.address.city.set("Bergen");     // the handle `user.address().city()` is
+	print(user.address.city.get());      // Bergen
+}
+</code></pre>
+<p>A field read is a handle, so it is written through, never over:
+<code>user.name = "Bob"</code> is refused with the <code>.set(..)</code> that writes it. A field whose
+projection is renamed (<code>[reactive(name = "..")]</code>, below) is read by the
+projection’s name, as a call; a type that does not derive <code>Storable</code> has no
+projections, so its store reads no fields this way. The handle’s own fields
+are std’s <code>[internal]</code> machinery and are not members outside std, so a field
+of <code>T</code> named <code>path</code> or <code>root</code> reads <code>T</code>’s field.</p>
 <p>A handle is data: copying it allocates nothing, and it has no owner. It is a
 <code>Source&lt;T&gt;</code>, so every pipe, effect and binding takes one (<code>city.derive(..)</code>,
 <code>&lt;p&gt;{city}&lt;/p&gt;</code>), and a <code>Signal&lt;T&gt;</code>, so anything that writes a signal writes it
@@ -461,7 +492,8 @@ the flow is open.</p>
 read and write — and it allocates nothing until something subscribes.</li>
 <li><strong>A whole write costs one comparison per live slot.</strong> A handle write costs
 the comparisons under the handle.</li>
-<li><strong>Projections are methods</strong>: <code>user.address().city()</code>.</li>
+<li><strong>Projections are methods</strong>: <code>user.address().city()</code>, and field syntax
+(<code>user.address.city</code>) is the same call written without the parentheses.</li>
 <li><strong>A write through a variant lands in place</strong> for a single payload and an
 <code>Option</code>’s <code>Some</code> (a <code>match &amp;mut</code> capture is a writable view); a variant
 with several payloads copies its tuple out and back. A write under a map key
@@ -521,7 +553,7 @@ copies that key’s value out and back: a map lends no value in place.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

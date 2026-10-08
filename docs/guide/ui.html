@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -180,21 +180,28 @@ signals: when a signal changes, exactly that text node or attribute
 updates and nothing else runs.</p>
 <p>Available in browser builds (<code>target = "browser"</code> in <code>vilan.toml</code>, or
 <code>vilan build --target browser</code>).</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::mount_root;
 import std::reactive::{ Signal, SignalCell };
 
 fun main() {
 	let count = Signal::new(0);
 	let _root = mount_root("app", || {
-		view("div")
-			.child(view("p").bind_text(count.derive(|n: i32| i"clicked {n} times")))
-			.child(view("button").text("+1").on("click", || count.set_with(|n| n + 1)))
+		&lt;div&gt;
+			&lt;p&gt;{count.derive(|n: i32| i"clicked {n} times")}&lt;/p&gt;
+			&lt;button on:click(|| count.set_with(|n| n + 1))&gt;"+1"&lt;/button&gt;
+		&lt;/div&gt;
 	});
 }
 </code></pre>
 <p>Read that top to bottom: make a <code>div</code>, give it a paragraph whose text
 follows the counter, give it a button that bumps the counter. That’s the
 whole mental model.</p>
+<p>The markup is <a href="#element-syntax">element syntax</a>, and it is sugar: each
+element lowers to a chain of <code>View</code> methods — <code>view("div")</code>, then one
+<code>.child(..)</code> per child — before the compiler analyses anything. This
+guide writes markup wherever a tree’s shape is fixed, and the chain
+where it is not (<a href="#markup-or-chain">Markup or chain</a> says which is
+which).</p>
 <h2 id="views"><a class="header" href="#views">Views</a></h2>
 <p><code>view(tag)</code> makes a fresh element. Methods chain, and each returns the
 view so you can keep going:</p>
@@ -251,13 +258,14 @@ than moving surviving rows. <code>each</code> is the keyed form, and it is
 what a list of <em>data</em> wants.</p>
 <p>Text nodes make mixed content direct: prose around an inline element is
 a run of siblings, not a pile of wrapper spans.</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 
 fun tip(): View {
-	view("p")
-		.child("Update any time with ")
-		.child(view("code").text("vilan upgrade"))
-		.child(".")
+	&lt;p&gt;
+		"Update any time with "
+		&lt;code&gt;"vilan upgrade"&lt;/code&gt;
+		"."
+	&lt;/p&gt;
 }
 
 fun main() {
@@ -302,7 +310,7 @@ exactly as a cell does.</p>
 sugar that lowers, before analysis, to exactly the chain you would have
 written — the same methods, in the same order, emitting the same code:</p>
 <pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell };
-import std::web::ui::{ View, mount_root, view };
+import std::web::ui::{ View, mount_root };
 
 fun counter(): View {
 	let count = Signal::new(0);
@@ -345,7 +353,7 @@ that suggests the quoted form.</p>
 <p>An element is an ordinary expression: it nests in holes, sits in match
 arms, and takes postfix chains. The two forms mix freely —</p>
 <pre><code class="language-vilan browser">import std::reactive::{ Signal, SignalCell };
-import std::web::ui::{ View, each, mount_root, view };
+import std::web::ui::{ View, each, mount_root };
 
 fun panel(items: SignalCell&lt;List&lt;str&gt;&gt;, flag: SignalCell&lt;bool&gt;): View {
 	&lt;section class("panel")&gt;
@@ -364,7 +372,7 @@ fun main() {
 element. <code>&lt;&gt;…&lt;/&gt;</code> is the nameless head, and it lowers to a <strong>list
 literal</strong> of its children — so its type is <code>List&lt;View&gt;</code>, the arm <code>child</code>
 already places:</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root, view };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 
 fun labelled(name: str, value: str): List&lt;View&gt; {
 	&lt;&gt;
@@ -388,9 +396,11 @@ and it has no self-closing form; the empty fragment is <code>&lt;&gt;&lt;/&gt;</
 <p>Its type is where its uses are, and where its limits are. A fragment is
 a <code>List&lt;View&gt;</code>, so it fills a child position and every position a list
 fills, and a <code>Source&lt;List&lt;View&gt;&gt;</code> of fragments keeps its place like any
-other reactive child. It is <strong>not</strong> a <code>View</code>: a <code>fun …: View</code> return, a
-<code>when</code> body, a <code>swap</code> render and an <code>each</code> row all want one view,
-and a fragment there is a type error that says so. It also does not
+other reactive child. It is <strong>not</strong> a <code>View</code>: a <code>fun …: View</code> return
+wants one view, and a fragment there is a type error that says so. A
+<code>when</code> body, a <code>swap</code> render and an <code>each</code> row are not that position —
+each takes anything <a href="#a-row-a-body-or-a-branch-can-be-anything-slot"><code>Slot</code></a>,
+a fragment included. It also does not
 flatten — a fragment written directly inside another is a list inside a
 list, which the literal refuses; nest through a child position instead.</p>
 <p>Components stay what they are — functions returning <code>View</code> — and are
@@ -403,17 +413,45 @@ imported, so element syntax needs no <code>view</code> import of its own (a <cod
 you write as a TYPE still needs one, and the editor offers it), and
 everything this guide says about ownership, boundaries, and binding
 types applies unchanged.</p>
+<h3 id="markup-or-chain"><a class="header" href="#markup-or-chain">Markup or chain</a></h3>
+<p>Both forms build the same <code>View</code>, so the choice is about reading, and
+one rule settles it: <strong>write markup wherever the shape of the tree is
+fixed when you write it</strong>, which is nearly everywhere — and this book,
+the examples and the site all follow it:</p>
+<ul>
+<li><strong>Static text is a quoted child</strong> (<code>&lt;h2&gt;"Counter"&lt;/h2&gt;</code>); <strong>reactive
+text is a hole</strong> (<code>&lt;p&gt;{count.derive(..)}&lt;/p&gt;</code>); a component is a call
+in a hole (<code>{note_row(note)}</code>).</li>
+<li><strong>Attributes are undotted</strong> (<code>href("/")</code>, <code>aria-label("Close")</code>);
+everything else in the head is a dotted chain link, verbatim
+(<code>.styled(card)</code>, <code>.show(open)</code>, <code>.bind_value(draft)</code>).</li>
+<li><strong>A handler written as a closure is <code>on:event(..)</code></strong>; a handler held
+in a name stays a chain link (<code>.on("click", submit)</code>), because the
+head picks <code>.on</code> or <code>.on_event</code> from the closure’s parameter count,
+which a name does not show.</li>
+<li><strong>Give an element its class once.</strong> <code>.styled(..)</code>, <code>.class(..)</code> and an
+undotted <code>class(..)</code> each SET the class attribute, so on one element
+the last of them wins; compose styles with <code>+</code> instead.</li>
+</ul>
+<p>The chain is still the right spelling in three places: a <strong>tag chosen
+at run time</strong> (<code>view(tag)</code>), a <strong>view passed around or extended as a
+value</strong> (<code>base.child(extra)</code> on a view something else built), and a
+page <strong>about</strong> a <code>View</code> method itself, where the method is the subject.
+<code>vilan fmt</code> lays markup out and sorts each run of undotted attributes
+(<code>id</code>, <code>name</code>, <code>type</code>, <code>for</code>, <code>href</code>, <code>src</code> first); a dotted link is a
+barrier the sort does not cross.</p>
 <h2 id="components-are-just-functions"><a class="header" href="#components-are-just-functions">Components are just functions</a></h2>
 <p>A “component” is a function that returns a <code>View</code>. There is no
 registration, special types, or props system; the parameters are the
 props:</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 fun labelled_input(label: str, value: SignalCell&lt;str&gt;): View {
-	view("label")
-		.text(label)
-		.child(view("input").bind_value(value))
+	&lt;label&gt;
+		{label}
+		&lt;input .bind_value(value) /&gt;
+	&lt;/label&gt;
 }
 
 fun main() {
@@ -430,7 +468,7 @@ depth of function calls, registers with the nearest owner automatically
 <code>when</code>/<code>swap</code>/<code>each</code> — outside any root, you’ll get a compile
 error mentioning <code>owner_scope</code>. It means “wrap this in <code>mount_root</code>”
 (or <code>run_with_owner</code> in a test). Purely static structure needs no
-boundary: <code>mount("app", view("div").child(view("p").text("hi")))</code> is
+boundary: <code>mount("app", &lt;div&gt;&lt;p&gt;"hi"&lt;/p&gt;&lt;/div&gt;)</code> is
 fine, because nothing in it subscribes. That holds through your own
 generic helpers too — a <code>fun card&lt;T: Slot&gt;(content: T): View</code> called
 with static content needs no boundary, while the same helper called
@@ -441,10 +479,10 @@ actual instantiation.</p>
 signal writes one click causes are batched, and watchers see the final
 state once. Handlers die with their DOM node, so there is nothing to
 unsubscribe.</p>
-<pre><code class="language-vilan fragment">.on("click", || count.set_with(|n| n + 1))
-.on_event("keydown", |pressed| {
+<pre><code class="language-vilan fragment">&lt;button on:click(|| count.set_with(|n| n + 1))&gt;"+1"&lt;/button&gt;
+&lt;input on:keydown(|pressed| {
 	if pressed.key() == "Enter" { submit(); }
-})
+}) /&gt;
 </code></pre>
 <h2 id="inputs"><a class="header" href="#inputs">Inputs</a></h2>
 <p>Two ways to wire an <code>&lt;input&gt;</code>, for two different situations:</p>
@@ -457,7 +495,7 @@ commit is typically an rpc. Typing updates the input instantly and
 commits in the background. A remote update folds in without re-sending.
 An echo of your own edit never moves the caret. Use it for fields that
 edit <em>server</em> state as you type:</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::mount_root;
 import std::reactive::{ draft, Draft, DraftState };
 import std::option::Option::{ self, Some, None };
 
@@ -467,13 +505,16 @@ fun main() {
 		None
 	});
 	let _root = mount_root("app", || {
-		view("div")
-			.child(view("input").bind_draft(name))
-			.child(view("span").bind_text(name.state.derive(|state: DraftState| match state {
-				DraftState::Synced =&gt; "",
-				DraftState::Dirty =&gt; "saving…",
-				DraftState::Failed(let reason) =&gt; i"failed: {reason}",
-			})))
+		&lt;div&gt;
+			&lt;input .bind_draft(name) /&gt;
+			&lt;span&gt;
+				{name.state.derive(|state: DraftState| match state {
+					DraftState::Synced =&gt; "",
+					DraftState::Dirty =&gt; "saving…",
+					DraftState::Failed(let reason) =&gt; i"failed: {reason}",
+				})}
+			&lt;/span&gt;
+		&lt;/div&gt;
 	});
 }
 </code></pre>
@@ -491,7 +532,7 @@ that row (that’s why <code>T: PartialEq</code>).</li>
 <li>Removed rows are disposed: each row is its own owner, so a
 row’s bindings die with the row.</li>
 </ul>
-<pre><code class="language-vilan browser">import std::web::ui::{ each, view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ each, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 [derive(PartialEq)]
@@ -505,9 +546,7 @@ fun main() {
 		Todo { id = 1, title = "write docs" },
 	]);
 	let _root = mount_root("app", || {
-		view("ul").child(each(todos, |todo| todo.id, |todo| {
-			view("li").text(todo.title)
-		}))
+		&lt;ul&gt;{each(todos, |todo| todo.id, |todo| &lt;li&gt;{todo.title}&lt;/li&gt;)}&lt;/ul&gt;
 	});
 }
 </code></pre>
@@ -562,7 +601,7 @@ expensive to rebuild; reach for <code>each_by</code> when <code>T</code> can’t
 or when the row’s own bindings are the natural update path.</p>
 </li>
 </ul>
-<pre><code class="language-vilan browser">import std::web::ui::{ each_by, each_values, view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ each_by, each_values, mount_root };
 import std::reactive::{ Signal, SignalCell };
 
 struct Task {
@@ -576,23 +615,26 @@ fun main() {
 	]);
 	let names: SignalCell&lt;List&lt;str&gt;&gt; = Signal::new(["ada", "grace"]);
 	let _root = mount_root("app", || {
-		view("div")
+		&lt;div&gt;
 			// the item is the key
-			.child(view("ul").child(each_values(names, |name| view("li").text(name))))
+			&lt;ul&gt;{each_values(names, |name| &lt;li&gt;{name}&lt;/li&gt;)}&lt;/ul&gt;
 			// `Task` needs no PartialEq: the row updates through its cell
-			.child(view("ol").child(each_by(tasks, |task: Task| task.id, |task: SignalCell&lt;Task&gt;| {
-				view("li").bind_text(task.derive(|current| current.title))
-			})))
+			&lt;ol&gt;
+				{each_by(tasks, |task: Task| task.id, |task: SignalCell&lt;Task&gt;| {
+					&lt;li&gt;{task.derive(|current| current.title)}&lt;/li&gt;
+				})}
+			&lt;/ol&gt;
+		&lt;/div&gt;
 	});
 }
 </code></pre>
 <h2 id="after-the-element-lands-on_mount-autofocus"><a class="header" href="#after-the-element-lands-on_mount-autofocus">After the element lands: <code>on_mount</code>, <code>autofocus</code></a></h2>
-<p><code>view(..)</code> builds an element; it is not in the document until whatever
-appends it does. <code>.on_mount(action)</code> runs <code>action</code> with the element once
+<p>An element is built before it is placed; it is not in the document until
+whatever appends it does. <code>.on_mount(action)</code> runs <code>action</code> with the element once
 it <em>is</em> — at every attachment site, including a <code>when</code> body or an
 <code>each</code> row that appears in a later change.</p>
-<pre><code class="language-vilan fragment">view("input").attr("type", "text").on_mount(|element| element.focus())
-view("input").attr("type", "text").autofocus()          // and then some
+<pre><code class="language-vilan fragment">&lt;input type("text") .on_mount(|element| element.focus()) /&gt;
+&lt;input type("text") .autofocus() /&gt;          // and then some
 </code></pre>
 <p><code>autofocus</code> is the reason the hook exists. HTML’s <code>autofocus</code> attribute
 fires only on a document’s initial parse, so it does nothing for a modal
@@ -615,12 +657,12 @@ next animation frame and once more on the frame after, then stops. Three
 attempts on the platform’s own clock — no timer, no millisecond to tune.
 Written out, with <code>std::web::dom::request_animation_frame</code> as the clock and
 <code>matches(":focus")</code> as the read-back (<code>focus()</code> returns nothing):</p>
-<pre><code class="language-vilan fragment">view("input").on_mount(|element| {
+<pre><code class="language-vilan fragment">&lt;input .on_mount(|element| {
 	element.focus();
 	if !element.matches(":focus") {
 		request_animation_frame(|| element.focus());
 	}
-})
+}) /&gt;
 </code></pre>
 <p>Two things no retry fixes. iOS Safari ignores a programmatic <code>focus()</code>
 outside a user gesture whatever frame it runs on; and the sound shape for
@@ -648,10 +690,10 @@ initial parse is the one place it works, and it logs nothing there.</p>
 <p>An overlay usually wants more than one focused input: it wants Tab to
 stay inside it while it is open, and it wants focus back where it was
 when it closes. That is a <strong>focus scope</strong>.</p>
-<pre><code class="language-vilan fragment">view("div")
-	.focus_scope(FocusContainment::Wrap)
-	.child(view("input").autofocus())
-	.child(view("button").text("Close"))
+<pre><code class="language-vilan fragment">&lt;div .focus_scope(FocusContainment::Wrap)&gt;
+	&lt;input .autofocus() /&gt;
+	&lt;button&gt;"Close"&lt;/button&gt;
+&lt;/div&gt;
 </code></pre>
 <p><code>Wrap</code> is a menu: Tab cycles inside the subtree, and focus that leaves by
 any other route may leave. <code>Contain</code> is a modal: it also pulls focus back
@@ -814,12 +856,12 @@ binding registers with the <em>nearest</em> boundary above it, no matter how
 many plain function calls sit in between:</p>
 <pre><code class="language-text">◆ mount_root("app", …)                the root owner — lives forever
 │
-├── view("header")                     static: no boundary of its own
-│     └─ .bind_text(title)             → registers with the ROOT
+├── &lt;header&gt;                           static: no boundary of its own
+│     └─ {title}                       → registers with the ROOT
 │
 ├── ◆ {swap(route, |page| …)}         one owner PER PAGE shown
 │     └─ home_page()
-│           └─ .bind_text(…)           → registers with the PAGE
+│           └─ {…}                     → registers with the PAGE
 │
 └── ◆ {each(todos, key, |t| …)}        one owner PER ROW
       ├─ row(id = 1)
@@ -851,11 +893,11 @@ builds an HTML string instead of live DOM, and <code>render(view)</code>
 serializes it: first paint and SEO, before any JavaScript. A route
 handler calls your own <code>app()</code> and splices the markup into its HTML
 shell. The <a href="ssr.html">server-side rendering guide</a> walks the whole loop.</p>
-<pre><code class="language-vilan">import std::web::ui::{ view, View, render };
+<pre><code class="language-vilan">import std::web::ui::{ View, render };
 import std::reactive::{ Signal, SignalCell };
 
 fun greeting(name: SignalCell&lt;str&gt;): View {
-	view("p").class("greeting").bind_text(name)
+	&lt;p class("greeting")&gt;{name}&lt;/p&gt;
 }
 
 fun main() {
@@ -910,7 +952,7 @@ signals that should settle as one wave.</p>
 <ul>
 <li><code>show</code> keeps bindings live while hidden, and they keep firing. If the
 hidden content is expensive, use <code>when</code>.</li>
-<li>Inline SVG works: <code>view("svg").attr("viewBox", …).child(view("path")…)</code>
+<li>Inline SVG works: <code>&lt;svg viewBox(…)&gt;&lt;path … /&gt;&lt;/svg&gt;</code>
 creates real SVG-namespace elements, and the server render carries the
 <code>xmlns</code>. <code>show</code> works on an SVG subtree too — it writes the inline
 <code>display</code>, which SVG honours, not only the HTML-only <code>hidden</code>
@@ -975,7 +1017,7 @@ framework already puts them there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

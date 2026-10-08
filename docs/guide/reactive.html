@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -915,7 +915,7 @@ element: its result is kept, and nothing re-runs it.</p>
 a move-only description, consumed once, exactly like a <code>derive</code> pipe. Seal it
 with <code>.memo()</code> where two things read it, or hand it straight to <code>each</code>:</p>
 <pre><code class="language-vilan browser">import std::reactive::{ ListCell, Signal, SignalCell };
-import std::web::ui::{ each, mount_root, view };
+import std::web::ui::{ each, mount_root };
 
 [derive(PartialEq)]
 struct Task {
@@ -929,11 +929,15 @@ fun main() {
 		Task { id = 0, title = "write" },
 		Task { id = 1, title = "ship" },
 	]);
-	let _root = mount_root("app", || view("ul").child(each(
-		tasks.filter(|task| finished[task.id].derive(|done| !done)),
-		|task| task.id,
-		|task| view("li").text(task.title),
-	)));
+	let _root = mount_root("app", || {
+		&lt;ul&gt;
+			{each(
+				tasks.filter(|task| finished[task.id].derive(|done| !done)),
+				|task| task.id,
+				|task| &lt;li&gt;{task.title}&lt;/li&gt;,
+			)}
+		&lt;/ul&gt;
+	});
 }
 </code></pre>
 <p>The closure may return a plain value or a reactive one, and the operator
@@ -1015,7 +1019,7 @@ consumers is a compile error rather than silent duplicate work.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -268,6 +268,15 @@ measure a leg before opting it in
 (<a href="../guide/dev-loop.html#shipping-routes-separately">the dev loop</a>).</li>
 <li><code>--explain</code>: after the build, print where every output came from — see
 below.</li>
+</ul>
+<p>A <code>dbg(..)</code> call prints in a <code>debug</code> build, which is the default. A
+<code>release</code> build refuses one — “<code>dbg</code> left in a release build”, at the
+call — unless <code>vilan.toml</code> says what to do with it:</p>
+<pre><code class="language-toml">[build]
+preset = "release"
+dbg = "strip"    # dbg(x) is x and prints nothing; "keep" prints in release too
+</code></pre>
+<ul>
 <li><code>--backend &lt;js|rust&gt;</code>: which emitter runs. <code>js</code> is the default. <code>rust</code>
 emits the program as Rust, writes a cargo project under <code>dist/native/</code>
 and builds it with the host’s <code>cargo</code> — <strong>in debug</strong>, because rustc is
@@ -409,16 +418,18 @@ migration tool for one release:</p>
 namespaces): every <code>import std::dom::…</code> becomes <code>import std::web::dom::…</code>, a brace list keeps its names (<code>std::{ delta::SeqOp }</code>
 becomes <code>std::{ reactive::delta::SeqOp }</code>), and <code>prelude = "std::web"</code>
 in <code>vilan.toml</code> becomes <code>prelude = "std::web::prelude"</code> — only that
-value changes, the file’s comments and layout stay. One run migrates a
+value changes, the file’s comments and layout stay. A module imported
+as a module keeps the name it bound: <code>import std::web;</code> (the old web
+prelude, read as <code>web::Signal</code>) becomes <code>import std::web::prelude as web;</code>, and a <code>self</code> in a brace list under that path becomes <code>prelude as web</code>. One run migrates a
 package, even one whose old imports are its only errors. A file that
 <code>vilan fmt</code> left canonical is kept canonical (a moved import can sort
 to a new place). Two things are left, and named: a file under the
 package’s
 <a href="../guide/dev-loop.html#when-the-hook-generates-vilan"><code>generated</code></a>
 root, which the project regenerates — change what generates it — and
-a brace list
-under the old web-prelude path that names <code>self</code>
-(<code>std::web::{ self, Signal }</code>), which no one edit rewrites correctly.</p>
+a brace list under the old web-prelude path holding a reach marker,
+an impl selector or a nested group (<code>std::web::{ #Signal, .. }</code>),
+which no one edit rewrites correctly.</p>
 <pre><code class="language-sh">vilan check --fix
 </code></pre>
 </li>
@@ -1060,7 +1071,7 @@ younger than ten minutes, which a check running right now may be reading.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

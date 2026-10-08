@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,7 +185,7 @@ the <code>link</code> helper, and <code>parse_path</code> / <code>FromPath</code
 <h2 id="the-route-model"><a class="header" href="#the-route-model">The route model</a></h2>
 <p>Here’s a small two-level app: a home page, and workspace pages that have
 their own sub-pages.</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ swap, view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ swap, View, mount_root };
 import std::web::router::{ current_path, navigate, segments, link, Routable };
 import std::reactive::{ Signal, SignalCell };
 import std::option::Option::{ self, Some, None };
@@ -251,11 +251,13 @@ fun main() {
 		// Built where it is consumed: the route is a pipe, and `swap` is its one
 		// consumer.
 		let route = current_path().derive(parse);
-		view("div").child(swap(route, |current| match current {
-			Route::Home =&gt; view("h1").text("Home"),
-			Route::Workspace(let id, let _inner) =&gt; view("h1").text(i"Workspace {id}"),
-			Route::NotFound =&gt; view("h1").text("Nothing here"),
-		}))
+		&lt;div&gt;
+			{swap(route, |current| match current {
+				Route::Home =&gt; &lt;h1&gt;"Home"&lt;/h1&gt;,
+				Route::Workspace(let id, let _inner) =&gt; &lt;h1&gt;i"Workspace {id}"&lt;/h1&gt;,
+				Route::NotFound =&gt; &lt;h1&gt;"Nothing here"&lt;/h1&gt;,
+			})}
+		&lt;/div&gt;
 	});
 }
 </code></pre>
@@ -383,7 +385,7 @@ quick click’s navigation is still settling wedges the whole tab in Chrome (the
 <a href="../appendix/gotchas.html">gotchas</a> page has the mechanism) — the <code>href</code> stays,
 so nothing native is lost. If you build and style your own anchor, put
 <code>link_to</code> on it and you get the same three things:</p>
-<pre><code class="language-vilan fragment">view("a").class("nav-item").link_to(Route::Home).text("Home")
+<pre><code class="language-vilan fragment">&lt;a class("nav-item") .link_to(Route::Home)&gt;"Home"&lt;/a&gt;
 </code></pre>
 <p>For programmatic navigation (after a sign-out, after creating a thing):</p>
 <pre><code class="language-vilan fragment">navigate(href(Route::Home));
@@ -493,7 +495,7 @@ URL with <code>location_url()</code> when the query matters, on load and in a
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

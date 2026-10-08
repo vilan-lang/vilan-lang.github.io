@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -180,7 +180,7 @@ runtime the style is nothing but a set of class names on an element.</p>
 <p>If you’ve used Tailwind, the feel is similar (small composable pieces, a
 spacing scale, color ramps), except the pieces are typed function calls,
 so a typo is a compile error instead of a silently-ignored class.</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 import std::web::style::{ style, space, Style, Color, Length, Display, FlexDirection };
 
 let card = const style()
@@ -193,7 +193,9 @@ let card = const style()
 
 fun main() {
 	let _root = mount_root("app", || {
-		view("div").styled(card).child(view("p").text("hello"))
+		&lt;div .styled(card)&gt;
+			&lt;p&gt;"hello"&lt;/p&gt;
+		&lt;/div&gt;
 	});
 }
 </code></pre>
@@ -204,7 +206,8 @@ returns the new style, so you chain.</li>
 <li>Styles are built inside <code>const</code>, the compile-time evaluation
 prefix (see <a href="../tour/macros-and-const.html">Macros &amp; const</a>). The rules
 are emitted during the build.</li>
-<li><code>view.styled(card)</code> puts the style’s classes on the element.</li>
+<li><code>.styled(card)</code> in an element’s head (the <code>View</code> method <code>styled</code>)
+puts the style’s classes on the element.</li>
 <li>There is <strong>no reset unless you ask for one</strong>. Browser defaults are in
 force, so <code>body</code> keeps its 8px margin and
 <code>width(px(200)).padding(space(4))</code> measures 232px, not 200. Add
@@ -223,7 +226,7 @@ emit exactly the same stylesheet.</p>
 <p>Here is one style written both ways, in one program. <code>card</code> and
 <code>card_as_a_chain</code> mint the <em>same classes</em>: the block does not emit
 beside the chain, it becomes the chain.</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 import std::web::style::{ style, space, Style, Color };
 
 let card = css {
@@ -245,7 +248,9 @@ let card_as_a_chain = const style()
 
 fun main() {
 	let _root = mount_root("app", || {
-		view("div").styled(card).child(view("p").text("hello"))
+		&lt;div .styled(card)&gt;
+			&lt;p&gt;"hello"&lt;/p&gt;
+		&lt;/div&gt;
 	});
 }
 </code></pre>
@@ -509,7 +514,7 @@ carrying its CSS keyword (<code>AlignItems::Start</code> is <code>"flex-start"</
 variant <em>is</em> the keyword the browser reads — <code>.value()</code> hands it back and
 <code>Display::parse(text)</code> goes the other way, <code>None</code> outside the set.</li>
 </ul>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 import std::web::style::{ style, space, Style, Color, Gradient, Length, RadialExtent };
 
 let hero = const style()
@@ -532,7 +537,9 @@ let glow = const style().background_gradient(
 
 fun main() {
 	let _root = mount_root("app", || {
-		view("div").styled(hero).child(view("div").styled(glow))
+		&lt;div .styled(hero)&gt;
+			&lt;div .styled(glow) /&gt;
+		&lt;/div&gt;
 	});
 }
 </code></pre>
@@ -714,7 +721,7 @@ style, or write the set.</p>
 <p>Styles are static, so how does a progress bar grow? Through CSS custom
 properties. The style declares a variable, and the element binds the
 variable to a signal with <code>style_var</code>:</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 import std::web::style::{ style, Style, Length, Color };
 import std::reactive::Signal;
 
@@ -726,7 +733,7 @@ let bar = const style()
 fun main() {
 	let progress = Signal::new("40%");
 	let _root = mount_root("app", || {
-		view("div").styled(bar).style_var("--progress", progress)
+		&lt;div .styled(bar) .style_var("--progress", progress) /&gt;
 	});
 }
 </code></pre>
@@ -738,7 +745,7 @@ changes inside a rule.</p>
 turn into a small pile of rebinding. <code>when(condition, delta)</code> is that
 pile as a chain — <code>self + delta</code> when the condition holds, <code>self</code>
 untouched when it doesn’t:</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 import std::web::style::{ style, space, Style, Color };
 
 let base = const style().padding(space(2)).color(Color::gray(900));
@@ -746,11 +753,11 @@ let chosen = const style().background(Color::blue(100)).color(Color::blue(900));
 let muted = const style().color(Color::gray(400));
 
 fun row(is_chosen: bool, is_muted: bool): View {
-	view("li").styled(base.when(is_chosen, chosen).when(is_muted, muted))
+	&lt;li .styled(base.when(is_chosen, chosen).when(is_muted, muted)) /&gt;
 }
 
 fun main() {
-	let _root = mount_root("app", || view("ul").child(row(true, false)));
+	let _root = mount_root("app", || &lt;ul&gt;{row(true, false)}&lt;/ul&gt;);
 }
 </code></pre>
 <p><code>when</code> selects; it never builds. Both sides were constructed in <code>const</code>,
@@ -766,7 +773,7 @@ the tell.</p>
 <p>When what changes is <em>which</em> style applies, not a value inside one, put
 the style in a signal and bind it. <code>bind_styled</code> is to <code>styled</code> what
 <code>bind_class</code> is to <code>class</code>:</p>
-<pre><code class="language-vilan browser">import std::web::ui::{ view, View, mount_root };
+<pre><code class="language-vilan browser">import std::web::ui::{ View, mount_root };
 import std::web::style::{ style, space, Style, Color };
 import std::reactive::Signal;
 
@@ -776,9 +783,9 @@ let busy = const style().padding(space(2)).background(Color::blue(600));
 fun main() {
 	let state = Signal::new(idle);
 	let _root = mount_root("app", || {
-		view("div")
-			.bind_styled(state)
-			.child(view("button").text("start").on("click", || state.set(busy)))
+		&lt;div .bind_styled(state)&gt;
+			&lt;button on:click(|| state.set(busy))&gt;"start"&lt;/button&gt;
+		&lt;/div&gt;
 	});
 }
 </code></pre>
@@ -873,7 +880,7 @@ shorthand replaces the whole family. This holds per condition, so a
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

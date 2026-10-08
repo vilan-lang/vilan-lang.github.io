@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -246,7 +246,8 @@ export      = { lead-attribute }   (* the item's own prefix, in THE order below 
               statement   (* §4.8 *)
             | "export" "*" ";" ;          (* the whole-module marker *)
 lead-attribute = deprecated-label | internal-label | hint-label | platform-attr
-               | resource-attr | extern-attr | "[" "must_use" "]" | "[" "rpc" "]"
+               | resource-attr | extern-attr | "[" "must_use" "]"
+               | "[" "track_caller" "]" | "[" "rpc" "]"
                | "[" "trait_only" "]" | derive-attr | service-attr
                | client-service-attr | macro-attr ;
 </code></pre>
@@ -281,7 +282,8 @@ each on its own line:</p>
 macro attribute (among themselves, as written);</li>
 <li>the labels — <code>[deprecated(..)]</code>, then <code>[internal(..)]</code>, then <code>[hint(..)]</code>;</li>
 <li>the binding — <code>[extern(..)]</code>;</li>
-<li>the checks — <code>[must_use]</code>, then <code>[rpc]</code>, then <code>[trait_only]</code>;</li>
+<li>the checks — <code>[must_use]</code>, then <code>[track_caller]</code>, then <code>[rpc]</code>, then
+<code>[trait_only]</code>;</li>
 <li>the fence — <code>[platform(..)]</code>;</li>
 <li>the class — <code>[resource]</code>.</li>
 </ol>
@@ -290,8 +292,8 @@ macro attribute (among themselves, as written);</li>
 in this one, and reported:</p>
 <ul>
 <li><strong>attributes out of rank</strong>, and nothing else out of order —
-<code>[internal("why")]</code> ⏎ <code>[deprecated("use g")]</code> ⏎ <code>fun</code> — a <strong>warning</strong>
-that names the head in the order (<code>write `[deprecated(..)] [internal(..)] fun`</code>);</li>
+<code>[internal("why")]</code> ⏎ <code>[deprecated("use g")]</code> ⏎ <code>fun</code> — an <strong>error</strong> that
+names the head in the order (<code>write `[deprecated(..)] [internal(..)] fun`</code>): a warning in v0.44.0, refused from v0.45.0 (B536);</li>
 <li><strong>a keyword ahead of an attribute, or two keywords inverted</strong> — <code>async [platform("node")] fun</code>, <code>external async fun</code>, <code>lazy export let</code>, <code>macro async fun</code> — an <strong>error</strong>, with the head respelled in the order. That
 includes <code>export</code> and <code>macro</code> ahead of the attributes: <code>export [derive(Wire)] struct Handle</code>, the spelling before B485, read by v0.43.0
 and refused from v0.44.0 (B485 S3).</li>
@@ -342,8 +344,8 @@ together and leave a trailing separator where it was.</p>
 <h3 id="functions"><a class="header" href="#functions">Functions</a></h3>
 <pre><code class="language-text">function = [ "[" "deprecated" "(" STRING ")" "]" ]
            [ "[" "internal" "(" STRING ")" "]" ]
-           [ extern-attr ] [ "[" "must_use" "]" ] [ "[" "rpc" "]" ]
-           [ "[" "trait_only" "]" ]
+           [ extern-attr ] [ "[" "must_use" "]" ] [ "[" "track_caller" "]" ]
+           [ "[" "rpc" "]" ] [ "[" "trait_only" "]" ]
            [ "[" "platform" "(" STRING { "," STRING } [ "," ] ")" "]" ]
            [ "async" ] [ "external" ]
            "fun" MEMBER [ generic-params ]   (* IDENT unless an impl/trait member *)
@@ -443,7 +445,7 @@ semantic-token modifier) and leads its hover with the steer.</p>
 <p><code>[internal("reason")]</code> follows it, and answers a different question.
 Visibility says whether a module may <strong>name</strong> an item; this says whether
 a reader should <strong>reach for</strong> one that is named — an item exported on
-purpose and dangerous on purpose, like <code>std::web::ui</code>’s <code>Region.anchor</code>,
+purpose and dangerous on purpose, like <code>std::web::ui</code>’s <code>Region::cut_row</code>,
 which <code>each</code> and a hand-written <code>Slot</code> legitimately need and which
 corrupts the reconciler’s view when a row is moved through it without
 <code>hold_rows</code>. The one argument is the reason, and it is required: it is
@@ -457,6 +459,15 @@ declaration itself, carries a semantic-token <code>internal</code> modifier that
 theme dims; hover leads with the reason. A <strong>field</strong> is the case
 declaration visibility cannot serve at all, since vilan has no per-field
 visibility, and it is the case the attribute was asked for.</p>
+<p>One reach is refused, and it is std’s: a field <strong>std</strong> labels
+<code>[internal(..)]</code> is not a member outside std (A149 S4). It is std’s
+machinery — a store handle’s slot tree and path, a region’s end marker —
+and as a member it would shadow what a reader writes: field syntax on a
+store handle reads the handled struct’s fields (<code>app.user.name</code>), and a
+<code>path</code> there must be the struct’s <code>path</code>, not the handle’s. Reading one is
+refused with the reason; what a program legitimately needs is a method
+(<code>Region::end</code>). A field a package labels in its own code stays a member
+everywhere, as above.</p>
 <p>The same label rides every other declaration a reader may be steered
 away from: a <strong>struct</strong>, an <strong>enum</strong>, one enum <strong>variant</strong>, a <strong>trait</strong>
 and a <strong>module binding</strong> (<code>[internal("…")] let cache = …;</code>, the
@@ -612,8 +623,8 @@ macro-block      = "macro" block ;
 <p>A macro attribute’s arguments are captured as <strong>source spans</strong>: the
 macro receives their text, not their values (§10). The built-in
 attribute names (<code>derive</code>, <code>service</code>, <code>client_service</code>, <code>extern</code>,
-<code>must_use</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>, <code>platform</code>,
-<code>deprecated</code>, <code>internal</code>, <code>resource</code>, <code>hint</code>, <code>reactive</code>) are not
+<code>must_use</code>, <code>track_caller</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>,
+<code>platform</code>, <code>deprecated</code>, <code>internal</code>, <code>resource</code>, <code>hint</code>, <code>reactive</code>) are not
 available as user macro-attribute names.</p>
 <p><code>[reactive(..)]</code> is a field’s store knobs, read by <code>[derive(Storable)]</code>
 (<code>std::reactive::store</code>) and by nothing else: <code>coarse</code> makes the field one slot,
@@ -1098,7 +1109,7 @@ catch-all.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

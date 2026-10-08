@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -416,7 +416,7 @@ routed app <code>show</code>s once it isn’t. Signing in stores the token; sign
 out removes it and navigates home.</p>
 <p><strong>The list page.</strong> An add form bound to a local signal, and the list
 itself, one keyed <code>each</code> over the mirror:</p>
-<pre><code class="language-vilan fragment">.child(view("ul").child(each(notes, |note| note.id, |note| note_row(client, note, token))))
+<pre><code class="language-vilan fragment">&lt;ul&gt;{each(notes, |note| note.id, |note| note_row(client, note, token))}&lt;/ul&gt;
 </code></pre>
 <p>That single line is the live sync. When any client adds or deletes a
 note, the mirror updates and the keyed rows reconcile
@@ -438,9 +438,9 @@ entry.effect(|current: Option&lt;Note&gt;| {
 	}
 });
 
-view("div")
-	.child(view("input").styled(field).attr("placeholder", "Title…").bind_draft(title))
-	.child(view("span").styled(muted).bind_text(title.state.derive(state_text)))
+&lt;div .styled(shell)&gt;
+	&lt;input .styled(field) placeholder("Title…") .bind_draft(title) /&gt;
+	&lt;span .styled(muted)&gt;{title.state.derive(state_text)}&lt;/span&gt;
 	…
 </code></pre>
 <p>This is the local-first loop from <a href="reactive.html">Reactive state</a> closed
@@ -539,7 +539,7 @@ is the one above.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

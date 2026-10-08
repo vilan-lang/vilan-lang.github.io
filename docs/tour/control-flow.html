@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -537,6 +537,11 @@ container flattens instead of nesting, so <code>find(key)?.shelf()</code> on an
 that should be impossible, not for expected failures; those are
 <code>Result</code>s. <code>assert(condition, message)</code> panics when the condition is
 false, and it’s how <code>vilan test</code> decides a test failed.</p>
+<p>A panic names where it happened, on both backends and in release builds
+too: <code>panicked at src/main.vl:12:5: not a number: x</code>. <code>assert</code>, <code>unwrap</code>,
+<code>expect</code>, an index out of bounds and <code>List</code>’s <code>remove</code>/<code>insert</code> name the
+line that CALLED them, not a line inside std. Your own helpers can do the
+same with <code>[track_caller]</code> (<a href="../guide/debugging.html">Debugging</a>).</p>
 <p>A <code>panic</code> never returns, so it fits wherever a value is expected and owes
 nothing back: a function whose body ends in one needs no return value,
 and neither does one that ends in a <code>for { … }</code> nothing breaks out of.</p>
@@ -601,7 +606,7 @@ and neither does one that ends in a <code>for { … }</code> nothing breaks out 
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

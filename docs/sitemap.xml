@@ -6,6 +6,7 @@
   <url><loc>https://vilan-lang.org/docs/appendix/errors.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/appendix/glossary.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/appendix/gotchas.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/guide/debugging.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/dev-loop.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/native.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/persistence.html</loc></url>
@@ -32,6 +33,7 @@
   <url><loc>https://vilan-lang.org/docs/std/browser.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/cells.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/collections.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/std/debug.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/dev.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/encoding.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/markdown.html</loc></url>

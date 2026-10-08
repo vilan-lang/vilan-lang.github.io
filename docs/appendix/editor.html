@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -456,14 +456,14 @@ turns that down to parentheses only, or off.</p>
 of values — from the server rather than from a JSON schema, so every editor
 sees it.</p>
 <h2 id="quick-fixes"><a class="header" href="#quick-fixes">Quick fixes</a></h2>
-<p>Nineteen, each attached to the diagnostic that earns it:</p>
+<p>Twenty-three, each attached to the diagnostic that earns it:</p>
 <div class="table-wrapper">
 <table>
 <thead>
 <tr><th>Action</th><th>Offered on</th></tr>
 </thead>
 <tbody>
-<tr><td><code>Import `X` from std::json</code></td><td><code>cannot find 'X'</code> where <code>X</code> is importable — in an expression, a type, a struct literal’s head, a pattern’s path head or an impl’s <code>with</code> trait. One action per module when more than one exports the name — never a guess between them</td></tr>
+<tr><td><code>Import `X` from std::json</code></td><td><code>cannot find 'X'</code> where <code>X</code> is importable — in an expression, a type, a struct literal’s head, a pattern’s path head or an impl’s <code>with</code> trait. One action per module when more than one exports the name — never a guess between them. Also on a trait’s method called where the file does not import the trait: <code>…`to_string` is `Display`'s, and this file does not import `Display`…</code> (the call would resolve because another loaded module imports it; refused since v0.45.0) and <code>i32 has no method 'to_string'; import std::display::Display to use it …</code> (nothing loaded it) — the trait the message names, from the module it names when that module declares it</td></tr>
 <tr><td><code>Remove the duplicate import (Organize Imports)</code></td><td><code>Json is already imported on line 1</code> — the warning a repeated import leaf carries; the fix is Organize Imports’ own edit for that run, which merges the repeat away</td></tr>
 <tr><td><code>Change to `entries` </code></td><td>a <code>did you mean …?</code> note on a misspelled struct-initializer field</td></tr>
 <tr><td><code>Analyze this file under its platform: add `[platform("browser")] mod self;` </code></td><td>a member the OTHER <code>std</code> twin declares (<code>struct 'Region' has no field 'anchor'</code> in a file analyzed under node, whose note names the <code>browser</code> twin that has it). The edit is the file’s first line — the one place a file’s platform may be written — and the attribute is the one the note spells</td></tr>
@@ -482,6 +482,10 @@ sees it.</p>
 <tr><td><code>Convert with `.as_u53()` </code></td><td><code>Expected u53, but got i32 instead. There are no implicit numeric conversions; convert with `.as_u53()` </code> — a value of one numeric width where another is declared (an argument, a <code>let</code> annotation, a reassignment, a return, a field, a subscript’s index). The edit writes the conversion the message names after the value, parenthesizing it first unless it is already a name, a field path or a call chain, so <code>xs.len() + 1</code> becomes <code>(xs.len() + 1).as_u53()</code> — the whole value, not its last operand. Where the message names an index (<code>Expected usize (an index: a position, a length or a count), but got i32 instead. …</code>) it is the same edit, and it is also offered on an operator between a <code>usize</code> and another integer width (<code>`&lt;` compares two values of the same type, but the operands are `i32` and `usize`</code>), where nothing is declared: the non-index operand converts to <code>usize</code></td></tr>
 <tr><td><code>Declare `at` a `usize` </code></td><td>the same index mismatch, when the value is a counter bound by a bare literal earlier in the same function (<code>mut at = 0;</code>). The edit writes <code>: usize</code> after the counter’s name, because the counter IS an index — converting at each of its uses would leave <code>.as_usize()</code> on a value that should never have been anything else. Offered ahead of the conversion</td></tr>
 <tr><td><code>Convert all 2 indexes in this file</code></td><td>any index mismatch, when the file carries more than one — a file migrating to <code>usize</code> meets one per index, and this action takes each one’s first fix (the declaration where there is one, else the conversion) in ONE edit. It is the edit <code>vilan check --fix</code> makes, file by file, until nothing is left to fix</td></tr>
+<tr><td><code>Write all 2 declaration heads in the order</code></td><td>a declaration head written out of THE order — <code>a declaration's attributes are written in one order — …</code> or <code>a declaration's markers are written in one order — …</code> (a keyword ahead of an attribute, or two keywords inverted); both are refused — when the file carries more than one. Each head also carries its own fix, titled with the head in the order (<code>Write `[deprecated(..)] [must_use] fun` </code>); this action takes every head in the file in ONE edit. Each head’s attributes and keywords move exactly as written, and what stood between them — the blanks, a line break, a comment — stays where it stood</td></tr>
+<tr><td><code>Import all 2 traits this file calls</code></td><td>either trait-method diagnostic above, when the file needs more than one trait — every one of them imported in ONE edit, a trait called twice imported once. A trait more than one module declares is left to its own fix</td></tr>
+<tr><td><code>Take the parameter as `&amp;str` </code></td><td><code>this closure takes `str` by value where its type takes a view `&amp;str` …</code> — a closure LITERAL whose parameter is written in the other mode from the closure type it meets (a value closure and a view closure are different types, and no adapter is inserted). The edit rewrites that parameter’s type in the type’s mode — <code>&amp;</code>, <code>&amp;mut</code> or by value — and nothing else; a body that read the value may then want a <code>*</code></td></tr>
+<tr><td><code>Adapt it: `|c| g(*c)` </code></td><td>the same refusal on a NAMED one-parameter closure (<code>apply(g)</code>): the adapter the refusal names, written around it — <code>|c| g(*c)</code> copies a view’s value out for a value closure, <code>|c| g(&amp;c)</code> lends a view closure the value. Only around a plain name or path, since around any other expression the adapter would evaluate it on every call; a writable view meeting a value closure has none</td></tr>
 </tbody>
 </table>
 </div>
@@ -656,7 +660,7 @@ to report prints <code>?</code> rather than a zero.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

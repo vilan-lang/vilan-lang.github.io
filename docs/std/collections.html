@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-bb5a8f16.js";
+            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-6a7b6de7.js"></script>
+        <script src="../toc-41cea96b.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -232,8 +232,8 @@ stores the list in a slot that outlives the call, so it copies), which means a
 }
 </code></pre>
 <p>The methods that take <code>self</code> by value are pure — they return a new list and
-leave the receiver alone. The mutating ones take <code>&amp;mut self</code>: <code>push</code>, <code>pop</code>,
-<code>insert</code>, <code>remove</code>.</p>
+leave the receiver alone. The mutating ones take <code>&amp;mut self</code>: <code>push</code>,
+<code>push_many</code>, <code>pop</code>, <code>insert</code>, <code>remove</code>.</p>
 <p>“Leave the receiver alone” reaches the ELEMENTS, not just the spine: the list a
 pure method returns never shares element storage with the receiver, so writing
 through <code>xs.map(f)[0]</code> cannot show up in <code>xs[0]</code>. That is rule 1 (a value is
@@ -290,6 +290,22 @@ index, exactly as <code>list[i]</code> does — a bad index is a caller bug. Rea
 	print(xs[0]);          // 2
 }
 </code></pre>
+<h3 id="appending-a-run"><a class="header" href="#appending-a-run">Appending a run</a></h3>
+<p><code>push_many(items)</code> appends every item of a run, in order: another list, a
+<code>HashSet</code> (its members in insertion order) or any iterator — whatever is
+<code>Items&lt;T&gt;</code> (<code>std::iterator</code>). The run is taken whole first, so a list pushed
+onto itself appends a copy of itself as it stood.</p>
+<pre><code class="language-vilan">fun main() {
+	mut xs = [1, 2];
+	xs.push_many([3, 4]);
+	xs.push_many([5, 6].iter().map(|x| x * 10));
+	xs.push_many(xs);
+	print(xs.len());   // 12
+}
+</code></pre>
+<p>A reactive list takes the same call as ONE write: <code>ListCell::push_many</code> is a
+single <code>Splice</code> at the end, so its readers see one change for the batch
+(<a href="reactive.html"><code>std::reactive</code></a>).</p>
 <h3 id="joining"><a class="header" href="#joining">Joining</a></h3>
 <p><code>join</code> renders each element through <a href="traits.html"><code>Display</code></a> and puts
 <code>separator</code> between them. It lives in <code>std::display</code> beside the bound it
@@ -841,7 +857,7 @@ makes with <code>Display</code>. A repeated key in <code>to_map</code> keeps the
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-0a81600c.js"></script>
+        <script src="../theme/vilan-4bff52f7.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
