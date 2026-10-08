@@ -160,6 +160,27 @@ export class CompletionItem {
         }
     }
     /**
+     * E211: what to filter by, and the prefix accepting this candidate
+     * replaces — flat for the same reason the import edit is.
+     * @returns {string | undefined}
+     */
+    get filter_text() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.__wbg_get_completionitem_filter_text(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            let v1;
+            if (r0 !== 0) {
+                v1 = getStringFromWasm0(r0, r1).slice();
+                wasm.__wbindgen_export3(r0, r1 * 1, 1);
+            }
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
      * @returns {number | undefined}
      */
     get import_character() {
@@ -271,6 +292,34 @@ export class CompletionItem {
         }
     }
     /**
+     * @returns {number | undefined}
+     */
+    get replace_character() {
+        const ret = wasm.__wbg_get_completionitem_replace_character(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * @returns {number | undefined}
+     */
+    get replace_end_character() {
+        const ret = wasm.__wbg_get_completionitem_replace_end_character(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * @returns {number | undefined}
+     */
+    get replace_end_line() {
+        const ret = wasm.__wbg_get_completionitem_replace_end_line(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
+     * @returns {number | undefined}
+     */
+    get replace_line() {
+        const ret = wasm.__wbg_get_completionitem_replace_line(this.__wbg_ptr);
+        return ret === Number.MAX_SAFE_INTEGER ? undefined : ret;
+    }
+    /**
      * @param {number} arg0
      */
     set boost(arg0) {
@@ -291,6 +340,16 @@ export class CompletionItem {
         var ptr0 = isLikeNone(arg0) ? 0 : passStringToWasm0(arg0, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         var len0 = WASM_VECTOR_LEN;
         wasm.__wbg_set_completionitem_documentation(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
+     * E211: what to filter by, and the prefix accepting this candidate
+     * replaces — flat for the same reason the import edit is.
+     * @param {string | null} [arg0]
+     */
+    set filter_text(arg0) {
+        var ptr0 = isLikeNone(arg0) ? 0 : passStringToWasm0(arg0, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.__wbg_set_completionitem_filter_text(this.__wbg_ptr, ptr0, len0);
     }
     /**
      * @param {number | null} [arg0]
@@ -353,6 +412,30 @@ export class CompletionItem {
         const ptr0 = passStringToWasm0(arg0, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
         wasm.__wbg_set_completionitem_label(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
+     * @param {number | null} [arg0]
+     */
+    set replace_character(arg0) {
+        wasm.__wbg_set_completionitem_replace_character(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : (arg0) >>> 0);
+    }
+    /**
+     * @param {number | null} [arg0]
+     */
+    set replace_end_character(arg0) {
+        wasm.__wbg_set_completionitem_replace_end_character(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : (arg0) >>> 0);
+    }
+    /**
+     * @param {number | null} [arg0]
+     */
+    set replace_end_line(arg0) {
+        wasm.__wbg_set_completionitem_replace_end_line(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : (arg0) >>> 0);
+    }
+    /**
+     * @param {number | null} [arg0]
+     */
+    set replace_line(arg0) {
+        wasm.__wbg_set_completionitem_replace_line(this.__wbg_ptr, isLikeNone(arg0) ? Number.MAX_SAFE_INTEGER : (arg0) >>> 0);
     }
 }
 if (Symbol.dispose) CompletionItem.prototype[Symbol.dispose] = CompletionItem.prototype.free;
@@ -562,6 +645,89 @@ export class Diagnostic {
 if (Symbol.dispose) Diagnostic.prototype[Symbol.dispose] = Diagnostic.prototype.free;
 
 /**
+ * One formatting verdict, as the page consumes it (E197).
+ */
+export class FormatResult {
+    static __wrap(ptr) {
+        const obj = Object.create(FormatResult.prototype);
+        obj.__wbg_ptr = ptr;
+        FormatResultFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        FormatResultFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_formatresult_free(ptr, 0);
+    }
+    /**
+     * Why there is no new text — the formatter's own sentence, the same
+     * one `vilan fmt` prints and the language server toasts — or `null`.
+     * @returns {string | undefined}
+     */
+    get declined() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.__wbg_get_formatresult_declined(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            let v1;
+            if (r0 !== 0) {
+                v1 = getStringFromWasm0(r0, r1).slice();
+                wasm.__wbindgen_export3(r0, r1 * 1, 1);
+            }
+            return v1;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+     * The canonical text, or the original bytes when `declined` is set.
+     * @returns {string}
+     */
+    get text() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.__wbg_get_formatresult_text(retptr, this.__wbg_ptr);
+            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+            deferred1_0 = r0;
+            deferred1_1 = r1;
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_export3(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Why there is no new text — the formatter's own sentence, the same
+     * one `vilan fmt` prints and the language server toasts — or `null`.
+     * @param {string | null} [arg0]
+     */
+    set declined(arg0) {
+        var ptr0 = isLikeNone(arg0) ? 0 : passStringToWasm0(arg0, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.__wbg_set_formatresult_declined(this.__wbg_ptr, ptr0, len0);
+    }
+    /**
+     * The canonical text, or the original bytes when `declined` is set.
+     * @param {string} arg0
+     */
+    set text(arg0) {
+        const ptr0 = passStringToWasm0(arg0, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.__wbg_set_formatresult_text(this.__wbg_ptr, ptr0, len0);
+    }
+}
+if (Symbol.dispose) FormatResult.prototype[Symbol.dispose] = FormatResult.prototype.free;
+
+/**
  * One hop of a diagnostic's requirement trace (E80), as the page
  * consumes it: the same field names and units as `Diagnostic`'s own
  * position (zero-based line, UTF-16 column, the visitor-facing file).
@@ -710,6 +876,29 @@ export function compile_for(source, platform) {
 }
 
 /**
+ * [`compile_for`] plus the ambient scope (K14): `prelude` is `undefined`
+ * for the mode's recommended set (the toggle's ON position), the string
+ * `"off"` for none (its OFF position), or a module path to pin one. The
+ * page feature-detects this export, so a glue built before it existed
+ * simply hides the prelude toggle and keeps compiling through
+ * [`compile_for`] — which takes the same recommended default.
+ * @param {string} source
+ * @param {string} platform
+ * @param {string | null} [prelude]
+ * @returns {CompileResult}
+ */
+export function compile_with(source, platform, prelude) {
+    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passStringToWasm0(platform, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len1 = WASM_VECTOR_LEN;
+    var ptr2 = isLikeNone(prelude) ? 0 : passStringToWasm0(prelude, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    var len2 = WASM_VECTOR_LEN;
+    const ret = wasm.compile_with(ptr0, len0, ptr1, len1, ptr2, len2);
+    return CompileResult.__wrap(ret);
+}
+
+/**
  * Completion candidates at `line`/`character` (zero-based line, UTF-16
  * character) in `source`, from the analysis the last compile retained;
  * empty before any compile. The page feature-detects this export, so a
@@ -739,6 +928,12 @@ export function complete(source, line, character) {
  * Formats Vilan source; the input comes back unchanged when it cannot be
  * safely reformatted. The page feature-detects this export, so a glue
  * built before it existed simply hides its Format button.
+ *
+ * Kept `String`-shaped deliberately (E197): the deployed glue feature-
+ * detects the export by NAME and would insert whatever it is handed, so
+ * widening the return here would put an object into the editor of every
+ * page served before the next build. A page that wants the reason calls
+ * [`format_checked`] instead.
  * @param {string} source
  * @returns {string}
  */
@@ -759,6 +954,37 @@ export function format(source) {
         wasm.__wbindgen_add_to_stack_pointer(16);
         wasm.__wbindgen_export3(deferred2_0, deferred2_1, 1);
     }
+}
+
+/**
+ * Formats Vilan source and says whether it could. The honest half of
+ * [`format`]: a page showing a status note reads `declined`, which is
+ * `null` on success and a sentence naming the construct otherwise.
+ * @param {string} source
+ * @returns {FormatResult}
+ */
+export function format_checked(source) {
+    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.format_checked(ptr0, len0);
+    return FormatResult.__wrap(ret);
+}
+
+/**
+ * Formats Vilan source with `[fmt] wrap_comments` on or off (E216) — the
+ * page's own toggle, since a pasted buffer has no manifest to read it
+ * from. A separate export rather than a parameter on [`format_checked`]:
+ * the deployed glue calls that one with one argument, and a page served
+ * before this build must keep working against the next wasm module.
+ * @param {string} source
+ * @param {boolean} wrap_comments
+ * @returns {FormatResult}
+ */
+export function format_checked_with(source, wrap_comments) {
+    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.format_checked_with(ptr0, len0, wrap_comments);
+    return FormatResult.__wrap(ret);
 }
 
 /**
@@ -815,6 +1041,9 @@ const CompletionItemFinalization = (typeof FinalizationRegistry === 'undefined')
 const DiagnosticFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_diagnostic_free(ptr, 1));
+const FormatResultFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_formatresult_free(ptr, 1));
 const TraceEntryFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_traceentry_free(ptr, 1));
