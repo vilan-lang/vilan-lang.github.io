@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -815,12 +815,15 @@ runtime.</li>
 operand’s value replaces the left’s for the same property and
 condition.</li>
 <li><code>.class(name)</code>, <code>.styled(style)</code>, <code>.bind_class(..)</code>,
-<code>.bind_styled(..)</code> and an element head’s <code>class(..)</code> all set the class
-attribute, so the later call wins — and a reactive one keeps winning
-every time its signal changes. Where one element’s head or chain
-writes it twice the compiler warns, naming both writers (<code>&lt;div class("x") .styled(card) /&gt;</code> keeps only <code>card</code>’s classes). Use one
-mechanism per element: two styles compose with <code>+</code> into one
-<code>.styled(a + b)</code>, and custom classes can ride along via <code>.raw</code>.</li>
+<code>.bind_styled(..)</code>, <code>.bind_attr("class", ..)</code>, <code>.toggle_attr("class", ..)</code> and an element head’s <code>class(..)</code> all set the class attribute, so
+the later call wins — and a reactive one writes again every time its
+signal changes, so an earlier binding and a later writer take turns.
+Where one element’s head or chain writes it twice, the compiler
+refuses it, naming both writers (<code>&lt;div class("x") .styled(card) /&gt;</code>
+would keep only <code>card</code>’s classes). Use one mechanism per element: two
+styles compose with <code>+</code> into one <code>.styled(a + b)</code>, and custom classes
+can ride along via <code>.raw</code>. A writer reached through a function of your
+own (<code>boxed().class("x")</code>) is not seen, and keeps last-wins.</li>
 <li>A shorthand and its own longhands (<code>padding</code> with <code>padding_top</code>,
 <code>border</code> with <code>border_color</code>) resolve by the order you wrote them, not
 by specificity: a later longhand narrows the shorthand, a later

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -202,6 +202,9 @@ trait Ord with Eq + PartialOrd {
 <ul>
 <li><code>==</code>/<code>!=</code> dispatch through <code>PartialEq</code>; <code>&lt;</code>/<code>&lt;=</code>/<code>&gt;</code>/<code>&gt;=</code> through
 <code>PartialOrd</code>. Numbers, <code>str</code>, and <code>bool</code> implement them in std.</li>
+<li>A tuple is <code>PartialEq</code> when its elements are, compared position by
+position at any arity: <code>(1, "a") == (1, "a")</code>, and a <code>T: PartialEq</code>
+takes a pair. Ordering a tuple is not provided.</li>
 <li>For your own types, <code>[derive(PartialEq)]</code> gives structural equality,
 the usual path. Implement <code>PartialOrd</code>/<code>Ord</code> by hand when ordering is
 meaningful (<code>Instant</code> does this in std).</li>

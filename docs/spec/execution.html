@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -335,7 +335,8 @@ operand settles; yields <code>T</code>.</li>
 one: spawning a computation that produces a task yields <code>Task&lt;T&gt;</code>, not
 <code>Task&lt;Task&lt;T&gt;&gt;</code>, and one <code>await</code> reaches the value. This holds however the
 type arises — including a generic <code>T</code> that instantiates at a task — so
-<code>Task&lt;..&gt;</code> is idempotent: <code>Task&lt;Task&lt;T&gt;&gt;</code> is not a type any expression has.</p>
+<code>Task&lt;..&gt;</code> is idempotent: <code>Task&lt;Task&lt;T&gt;&gt;</code> is not a type any expression has,
+and written as an annotation it means <code>Task&lt;T&gt;</code>.</p>
 <pre><code class="language-vilan">import std::task::Task;
 
 fun wrap&lt;T&gt;(value: T): Task&lt;T&gt; {

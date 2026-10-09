@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -179,16 +179,25 @@ One package may build for several platforms at once (§11.4’s entries);
 the compiler proves, per entry, that no reachable code requires a
 capability its platform lacks.</p>
 <h2 id="111-layers"><a class="header" href="#111-layers">11.1 Layers</a></h2>
-<p>The standard library is layered:</p>
+<p>The standard library is one platform-neutral base in which a module that
+needs a platform declares it in its own file (§11.3):</p>
 <ul>
-<li>the <strong>base</strong> layer: platform-neutral, available everywhere;</li>
-<li>the <strong>browser</strong> layer (<code>std::web::dom</code>, <code>std::web::ui</code>, <code>std::web::router</code>,
-<code>std::web::storage</code>): browser builds only;</li>
-<li>the <strong>process</strong> layer (<code>std::fs</code>, <code>std::http</code>, <code>std::db</code>,
-<code>std::process</code>, <code>std::rpc::server</code>): <code>@process</code> builds only.</li>
+<li>the <strong>browser</strong> modules (<code>std::web::dom</code>, <code>std::web::router</code>,
+<code>std::web::storage</code>, <code>std::web::dev</code>) lead with
+<code>[platform("browser")] mod self;</code>: browser builds only;</li>
+<li>the <strong>process</strong> modules (<code>std::fs</code>, <code>std::http</code>, <code>std::db</code>,
+<code>std::process</code>, <code>std::build</code>, <code>std::watch</code>, <code>std::web::document</code>,
+<code>std::rpc::server</code>) lead with <code>[platform("@process")] mod self;</code>:
+<code>@process</code> builds only;</li>
+<li>one module, <code>std::web::ui</code>, is a <strong>twin</strong>: one import path served by a
+different file per platform — the browser <strong>layer</strong>’s (live DOM) and the
+process layer’s (an HTML string tree) — and each build resolves the file
+its platform admits.</li>
 </ul>
-<p>A library may declare the same shape for itself (<code>[library.layer]</code>,
-§11.4): a neutral root plus per-platform overlay roots.</p>
+<p>A library may declare the same shape for itself: a file’s own
+<code>[platform(..)] mod self;</code>, or, for a module that needs a different FILE
+per platform, per-platform overlay roots (<code>[library.layer]</code>, §11.4) beside
+a neutral root.</p>
 <h2 id="112-coloring-and-the-reachability-check"><a class="header" href="#112-coloring-and-the-reachability-check">11.2 Coloring and the reachability check</a></h2>
 <p>Every function is <strong>colored</strong> with the platform requirement it
 implies: seeded by the layer its externs and std calls live in, flowing
@@ -208,10 +217,13 @@ initializers evaluate at build time (§9) and never color anything.</p>
 <h2 id="113-fences"><a class="header" href="#113-fences">11.3 Fences</a></h2>
 <p><code>[platform("browser")]</code> (one platform, a family like <code>"@process"</code>, or
 several) on a function declares the platforms it promises to run on.
-The promise is checked on <strong>every</strong> compile, whatever the build’s
-entries: if code the fenced function reaches requires a layer one of
-the fenced platforms lacks, the error lands <strong>at the fence</strong> with the
-offending chain, not at some distant entry in a dependent build.
+The promise is checked on <strong>every</strong> compile of the package that
+declares it, whatever the build’s entries: if code the fenced function
+reaches requires a layer one of the fenced platforms lacks, the error
+lands <strong>at the fence</strong> with the offending chain, not at some distant
+entry in a dependent build. A package that only depends on the fenced
+code (std, or a dependency) does not re-check the promise; what its own
+entries reach is checked as always.
 Fences add no runtime behavior; they are checked declarations.</p>
 <p>A fence is also the platform its body is <strong>analyzed under</strong>. One
 analysis types a file under one platform — and so under one <code>std</code>
@@ -231,7 +243,13 @@ on each of the file’s functions, checked the same way. And it is the
 platform the file is analyzed under: it outranks inference and the
 <code>default-entry</code> colour outright, and of the entries that reach the file
 only those it admits type-check it — reaching it from another is the
-error. The same attribute on an <code>impl</code> block does this for the block’s
+error. A build its declaration excludes still loads the file, so an
+<code>import</code> of it is legal and a call into it is that one error at the
+caller, but reports nothing from inside it: one program has one platform,
+so a twin the file imports (<code>std::web::ui</code>) binds the BUILD’s side there,
+not the side the file was written against. A module a library layer
+serves to other platforms only is the same promise and is treated the
+same way. The same attribute on an <code>impl</code> block does this for the block’s
 members; on a struct, an enum or a trait it takes part in choosing the
 platform the file is analyzed under. A type has no platform of its own
 (§11.2’s requirement is on code), so a label on one requires nothing.</p>

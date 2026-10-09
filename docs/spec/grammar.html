@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -459,15 +459,18 @@ declaration itself, carries a semantic-token <code>internal</code> modifier that
 theme dims; hover leads with the reason. A <strong>field</strong> is the case
 declaration visibility cannot serve at all, since vilan has no per-field
 visibility, and it is the case the attribute was asked for.</p>
-<p>One reach is refused, and it is std’s: a field <strong>std</strong> labels
-<code>[internal(..)]</code> is not a member outside std (A149 S4). It is std’s
-machinery — a store handle’s slot tree and path, a region’s end marker —
-and as a member it would shadow what a reader writes: field syntax on a
-store handle reads the handled struct’s fields (<code>app.user.name</code>), and a
-<code>path</code> there must be the struct’s <code>path</code>, not the handle’s. Reading one is
+<p>Two reaches are refused, and both are std’s: a field <strong>std</strong> labels
+<code>[internal(..)]</code> is not a member outside std (A149 S4), and a struct literal
+outside std cannot write one (B568). It is std’s machinery — a
+store handle’s slot tree and path, a region’s end marker — and as a
+member it would shadow what a reader writes: field syntax on a store
+handle reads the handled struct’s fields (<code>app.user.name</code>), and a <code>path</code>
+there must be the struct’s <code>path</code>, not the handle’s. Reading one is
 refused with the reason; what a program legitimately needs is a method
-(<code>Region::end</code>). A field a package labels in its own code stays a member
-everywhere, as above.</p>
+(<code>Region::end</code>), and a value of such a struct comes from std’s own
+constructors (<code>Store::new(..)</code>), never a literal. No pattern reaches one
+either: a pattern names no field (§3.10). A field a package labels in its
+own code stays a member, and writable by a literal, everywhere, as above.</p>
 <p>The same label rides every other declaration a reader may be steered
 away from: a <strong>struct</strong>, an <strong>enum</strong>, one enum <strong>variant</strong>, a <strong>trait</strong>
 and a <strong>module binding</strong> (<code>[internal("…")] let cache = …;</code>, the

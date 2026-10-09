@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -405,7 +405,10 @@ branch of a value <code>if</code> handing either back — at a binding as at an
 assignment, so <code>let v = if c { &amp;a } else { &amp;b }</code> initializes no view
 binding, and as an argument or operand) is a compile error, never
 a silent coercion to the pointee (so the <code>(base, key)</code> representation of a
-scalar view can’t leak); write <code>*v</code> to copy the value out. A closure’s view
+scalar view can’t leak); write <code>*v</code> to copy the value out. A method call’s
+RECEIVER is not a value position: <code>v.method(..)</code> reads through the view to
+the referent place, a scalar’s as an aggregate’s (<code>n.abs()</code> with <code>n: &amp;i32</code>,
+<code>s.len()</code> with <code>s: &amp;str</code>). A closure’s view
 parameter is a view by the same rule, whether the literal spells it
 (<code>|&amp;mut list|</code>) or takes it from the closure type it is handed to: <code>|c|</code>
 passed where <code>|&amp;str| void</code> is expected receives a <code>&amp;str</code>, and reads it as
@@ -425,7 +428,10 @@ variant — and <code>match &amp;place</code> binds readonly views, while a bare
 <code>match place</code> copies, as it always has. A <code>mut</code> capture under a view
 subject is refused (it would be a copy that looks like a write). Rule 4
 guards the subject place, and every prefix of it, from the arm’s start to
-the capture’s LAST use. A binding inside a tuple sub-pattern stays a copy.
+the capture’s LAST use. A binding inside a payload’s tuple sub-pattern
+(<code>Some((let a, let b))</code>) is a view into its slot of the tuple when it is one
+slot of it; a binding of a whole sub-tuple spans several slots of the flat
+tuple and stays a copy (bind the tuple whole to write it).
 The parameter conventions:</p>
 <div class="table-wrapper">
 <table>
@@ -1139,6 +1145,27 @@ limit §6.7’s <code>Shared</code> cells already have, for the same reason: a c
 cell cannot collect a cycle through itself. The program’s output is the
 same on both backends; only the memory differs. The native leak census
 pins the shape as a row that is live by design.</p>
+<p><strong>Native note: a view of a captured binding.</strong> A read of a captured
+<code>mut</code> binding’s field, tuple slot or element reads through the binding’s
+cell in place and copies only what it reads. A <code>&amp;self</code> call on the binding,
+or any <code>&amp;</code> argument over it, takes a view of the cell for the length of
+the call, and the order is the source’s: the call’s by-value arguments are
+evaluated first, left to right, and the view is taken after them, once
+nothing but the call is left to run. So an argument that writes the
+binding (<code>w.measured(w.add("c"))</code>) is seen by the callee, exactly as it is
+on JavaScript, whose view is the binding’s object itself. The view ends
+when the call returns. A call that holds a view while another of its
+arguments carries a closure that writes the same binding hands its <code>&amp;</code>
+callee a copy taken at the call instead, the order every <code>&amp;</code> argument over
+a captured binding had before the view. A <code>&amp;mut</code> argument over a captured
+binding (a <code>&amp;mut self</code> receiver among them) holds the cell for the call
+the same way, and a closure that reaches the binding during that call is
+a second path to a place under a live <code>&amp;mut</code> view, the aliasing §6.4
+exists to refuse: the native backend refuses a call that hands such a
+closure beside the view (written in the call, bound by a <code>let</code>, or held by
+a value a <code>let</code> built), and a closure that arrives any other way stops the
+program with the runtime’s reentrancy sentence when it touches the
+binding. JavaScript answers the in-progress value in both cases.</p>
 <h2 id="610-lazy--a-binding-initialized-at-first-use"><a class="header" href="#610-lazy--a-binding-initialized-at-first-use">6.10 <code>lazy</code> — a binding initialized at first use</a></h2>
 <p><em>(Design: <a href="https://github.com/vilan-lang/proposals/blob/main/projects/vilan/proposal/lazy.md"><code>lazy</code></a> §2.)</em></p>
 <p>A <strong>module-level</strong> <code>let</code> may be written <code>lazy</code>, and then its initializer

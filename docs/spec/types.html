@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -1446,6 +1446,11 @@ over a <em>bound</em> the object satisfies: a blanket impl (<code>impl type S: T
 <code>S: Trait</code>, each with <code>S</code> bound to the object. Nothing else the erased value
 implements is reachable — not an inherent member, not another trait’s
 member, and not another trait’s bound: <code>dyn Shape</code> does not satisfy <code>T: Named</code> because the value it holds happens to.</p>
+<p>The ARGUMENTS an object provides a trait at follow the same lines. <code>dyn Trait&lt;A&gt;</code> provides <code>Trait</code> at <code>A</code>, and each supertrait at the arguments the
+<code>with</code> clauses pass down from <code>A</code> (<code>dyn Source&lt;i32&gt;</code> is a <code>Flow&lt;i32&gt;</code> under
+<code>trait Source&lt;T&gt; with Flow&lt;T&gt;</code>). Any other trait it provides only through a
+blanket, at what that blanket provides with its binder bound to the object;
+a concrete implementor of the trait says nothing about an object.</p>
 <p><strong>Copies.</strong> A trait object is a value, and copying one copies what it
 erased (§6.1, rule 1), exactly as the concrete value would be copied.</p>
 <p><strong>Asyncness.</strong> A call through an object is compiled once, against the

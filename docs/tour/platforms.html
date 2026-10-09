@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -186,11 +186,15 @@ runtime crash. That’s the whole idea of this chapter.</p>
 <code>Option</code>/<code>Result</code>, strings, numbers, <code>reactive</code>, <code>shared</code>, <code>time</code>,
 json/wire/binary, the rpc client machinery, <code>style</code>, <code>fetch</code>,
 <code>crypto</code>, and friends).</li>
-<li><strong>Browser layer</strong>: <code>std::web::dom</code>, <code>std::web::ui</code>, <code>std::web::router</code>,
+<li><strong>Browser modules</strong>: <code>std::web::dom</code>, <code>std::web::ui</code>, <code>std::web::router</code>,
 <code>std::web::storage</code>. Browser builds only.</li>
-<li><strong>Process layer</strong> (Node/Deno/Bun): <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
+<li><strong>Process modules</strong> (Node/Deno/Bun): <code>std::db</code>, <code>std::http</code>, <code>std::fs</code>,
 <code>std::process</code>, <code>std::rpc::server</code>. Server builds only.</li>
 </ul>
+<p>Each of these declares its platform in its own file, as yours can
+(<code>[platform("browser")] mod self;</code>, below). <code>std::web::ui</code> is the one
+module with a file per platform: the browser’s builds live DOM, the
+process one builds an HTML string, and each build takes its own.</p>
 <blockquote>
 <p><strong>Going deeper.</strong> The check is on <em>reachable code</em>, not on imports. A
 file may import <code>std::fs</code> and compile for the browser, as long as no
@@ -251,15 +255,15 @@ resources (see <a href="../guide/services.html">Services</a>).</p>
 <blockquote>
 <p><strong>Going deeper.</strong> Where a team wants an explicit boundary,
 <code>[platform("browser")]</code> on a function declares the platforms it
-promises to run on. The compiler checks the promise on every compile
-(entry or not, whatever the build target), and a violation lands at the
+promises to run on. The compiler checks the promise on every compile of
+your package (entry or not, whatever the build target), and a violation lands at the
 fence with its chain instead of at some distant entry in a dependent
 build. Patterns use the manifest layers’ vocabulary: <code>"node"</code>,
 <code>"browser"</code>, families like <code>"@process"</code>, or several at once for code
 that must stay neutral. The editor shows the same information as you
 write: violations appear as live diagnostics at the offending call, and
 hovering a function shows its inferred requirement and how it got it,
-e.g. <code>requires the `process` layer of `std` (via `save → write_file (std::fs)`)</code>.</p>
+e.g. <code>requires the `@process` platform its file declares (via `save → write_file (std::fs)`)</code>.</p>
 <p>When the SAME function (or the same trait <code>impl</code>) needs a different body
 per platform, write it twice, each under its own fence —
 <code>[platform("browser")]</code> and <code>[platform("@process")]</code> — and each build
@@ -341,8 +345,9 @@ evaluation; the input sibling
 same way. The styling
 system’s <code>const style()</code> chains call it to write CSS rules. Libraries
 can also declare platform overlays of their own (a base root plus
-per-platform roots in <code>[library.layer]</code>), which is how std itself is
-layered; most libraries never need this.</p>
+per-platform roots in <code>[library.layer]</code>), which is how std serves
+<code>std::web::ui</code> a file per platform; most libraries never need this —
+a file’s own <code>[platform(..)] mod self;</code> is the usual spelling.</p>
 </blockquote>
 
                     </main>

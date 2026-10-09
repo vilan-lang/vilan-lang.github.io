@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -322,7 +322,12 @@ editor keeps every one of those analyses: inside the twin the file’s own
 platform excludes, hover, completion, inlay hints and colour come from the
 analysis that admits it, as they do everywhere else. Go-to-definition on a
 call to a twin offers both twins, the one the file’s platform compiles
-first.</p>
+first. Such a file is served from the entries’ worlds like any other once
+two files of its world are open: the browser entry’s world answers it, and
+the twin that world excludes is answered from the world of the entry whose
+platform admits it. Only a twin no entry’s platform admits (a <code>deno</code> twin in
+a package whose entries are a browser and a node one) keeps the file on its
+own analyses.</p>
 <p><strong>A generic <code>&lt;</code> closes itself.</strong> <code>List&lt;</code>, <code>HashMap&lt;</code>, <code>fun pair&lt;</code> and a
 generic call’s own argument list each get their <code>&gt;</code> as you type the <code>&lt;</code>.
 The editor’s static bracket pairs cannot do this — <code>&lt;</code> is also the
@@ -485,7 +490,7 @@ sees it.</p>
 <tr><td><code>Write all 2 declaration heads in the order</code></td><td>a declaration head written out of THE order — <code>a declaration's attributes are written in one order — …</code> or <code>a declaration's markers are written in one order — …</code> (a keyword ahead of an attribute, or two keywords inverted); both are refused — when the file carries more than one. Each head also carries its own fix, titled with the head in the order (<code>Write `[deprecated(..)] [must_use] fun` </code>); this action takes every head in the file in ONE edit. Each head’s attributes and keywords move exactly as written, and what stood between them — the blanks, a line break, a comment — stays where it stood</td></tr>
 <tr><td><code>Import all 2 traits this file calls</code></td><td>either trait-method diagnostic above, when the file needs more than one trait — every one of them imported in ONE edit, a trait called twice imported once. A trait more than one module declares is left to its own fix</td></tr>
 <tr><td><code>Take the parameter as `&amp;str` </code></td><td><code>this closure takes `str` by value where its type takes a view `&amp;str` …</code> — a closure LITERAL whose parameter is written in the other mode from the closure type it meets (a value closure and a view closure are different types, and no adapter is inserted). The edit rewrites that parameter’s type in the type’s mode — <code>&amp;</code>, <code>&amp;mut</code> or by value — and nothing else; a body that read the value may then want a <code>*</code></td></tr>
-<tr><td><code>Adapt it: `|c| g(*c)` </code></td><td>the same refusal on a NAMED one-parameter closure (<code>apply(g)</code>): the adapter the refusal names, written around it — <code>|c| g(*c)</code> copies a view’s value out for a value closure, <code>|c| g(&amp;c)</code> lends a view closure the value. Only around a plain name or path, since around any other expression the adapter would evaluate it on every call; a writable view meeting a value closure has none</td></tr>
+<tr><td><code>Adapt it: `|c| g(*c)` </code></td><td>the same refusal on a NAMED one-parameter closure (<code>apply(g)</code>), or on a named one-parameter FUNCTION (<code>the function `count` takes …</code>), which a call cannot rewrite: the adapter the refusal names, written around it — <code>|c| g(*c)</code> copies a view’s value out for a value closure, <code>|c| g(&amp;c)</code> lends a view closure the value. Only around a plain name or path, since around any other expression the adapter would evaluate it on every call; a writable view meeting a value closure has none</td></tr>
 </tbody>
 </table>
 </div>
@@ -553,19 +558,25 @@ screen instead of vanishing for the two keystrokes it takes to type
 statement rather than being discarded whole. <code>vilan check</code> answers the same
 way; <code>vilan build</code> still stops, because a recovered file is not something
 to emit from.</p>
-<p><strong>Answers stay in the last-analyzed text’s coordinates</strong> until the next
-analysis lands, a few dozen milliseconds later. Hover, go-to-definition,
-references, rename, the outline, inlay hints, semantic tokens and
-completion’s lookups all convert the cursor through the analyzed text
-first. That is correct for the analyzed program, and therefore visually
-correct everywhere except the line you are actively editing; converting the
-same bytes through the live buffer would be correct for neither. Semantic
-highlighting additionally carries the unchanged tail of the file across an
-analysis, so the colours below your edit do not flash off and back.</p>
+<p><strong>Answers stick to their text</strong> between a keystroke and the analysis it
+schedules. Every answer the server holds is the last analysis’s, and every
+edit since is carried through it: a squiggle, a “see here” note, an inlay
+hint, a reference, a definition, an outline entry and a quick fix all move
+with the code they are about — a line typed above shifts them down, typing
+inside a flagged span stretches it, typing after it leaves it alone — and
+the squiggles are republished at once, without waiting for the analysis. An
+edit across one end of a span takes that span away until the analysis says
+again, and a caret inside text typed since the analysis gets no hover or
+definition: the analysis saw nothing there. Semantic highlighting keeps the
+colours of every unchanged line and paints the edited ones from syntax, and
+carries the unchanged tail of the file across an analysis, so the colours
+below your edit do not flash off and back.</p>
 <p>Two requests decline rather than answer wrong while the buffer is ahead of
-the analysis: <strong>rename</strong> (“still analyzing this file; retry in a moment”)
-and <strong>code actions</strong>, which refuse silently because editors ask for them
-automatically when a menu opens or a file saves.</p>
+the analysis: <strong>rename</strong> (“still analyzing this file; retry in a moment”),
+because text typed since may hold a reference it would miss, and <strong>Organize
+Imports</strong>, which declines silently because editors ask for it on save. A
+quick fix is offered from the last analysis only where you have not typed
+over the text it would rewrite.</p>
 <h2 id="what-it-does-not-have"><a class="header" href="#what-it-does-not-have">What it does not have</a></h2>
 <p>Named so you do not go looking: there is no signature-help popup (a
 signature reaches you through hover and a completion item’s detail line),

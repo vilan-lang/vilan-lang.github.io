@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -227,10 +227,13 @@ You wrote a qualified path like <code>std::math::min(1, 2)</code> inline. That
 spelling isn’t supported. Import the module, then qualify through its
 name: <code>import std::math;</code> and <code>math::min(1, 2)</code>.
 → <a href="../tour/hello-vilan.html">Hello Vilan</a></p>
-<p><strong>“<code>…</code> requires the <code>…</code> layer of <code>std</code> and cannot run on <code>…</code>”</strong>
+<p><strong>“<code>…</code> requires … and cannot run on <code>…</code>”</strong>
 Code reachable from this build’s entry calls into a module the platform
 doesn’t have: <code>std::fs</code> from a browser build, <code>std::web::dom</code> from a Node
-build. The error lists the call chain from <code>main</code> to the crossing.
+build. The requirement is named as “the <code>browser</code> platform its file
+declares” (a module says its platform in its own file,
+<code>[platform("browser")] mod self;</code>) or “the <code>process</code> layer of <code>…</code>” (a
+library serving the module from a platform layer). The error lists the call chain from <code>main</code> to the crossing.
 Importing the module is not the problem (imports are free); reaching it
 is. Move the call behind the right entry, or check the package’s
 <code>target</code>.
@@ -238,7 +241,8 @@ is. Move the call behind the right entry, or check the package’s
 <p><strong>“<code>…</code> requires … and cannot run on <code>…</code> / reachable from <code>…</code>, fenced <code>[platform(…)]</code>”</strong>
 A function declared a platform fence and something it (transitively)
 reaches requires a layer one of the fenced platforms doesn’t serve. The
-chain shows the path from the fence. Fences check on every compile.
+chain shows the path from the fence. Fences check on every compile of the
+package that declares them.
 Narrowing the fence, or moving the colored call out from behind it, are
 the two fixes.
 → <a href="../tour/platforms.html">Platforms</a></p>

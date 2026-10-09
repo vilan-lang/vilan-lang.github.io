@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -365,8 +365,9 @@ fun main() {
 </code></pre>
 <p>An <strong>unbacked</strong> enum (<code>enum Plain { A, B }</code>) is not a key on its own: without a
 backing value it lowers to an array, like a struct, so it needs the derive along
-with every other aggregate. A struct, an unbacked or payload-carrying enum, or a
-<code>List</code> key works as long as it is <code>Hashable</code>. Derive it:</p>
+with every other aggregate. A tuple of <code>Hashable</code> elements is a key as it
+stands (<code>HashMap&lt;(i32, str), V&gt;</code>). A struct, an unbacked or payload-carrying
+enum, or a <code>List</code> key works as long as it is <code>Hashable</code>. Derive it:</p>
 <pre><code class="language-vilan">import std::hash_map::HashMap;
 import std::hash::Hashable;
 import std::option::Option::{ self, Some, None };

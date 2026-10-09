@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -239,7 +239,10 @@ is the literal for one (see <a href="#fragments">Fragments</a>).</li>
 </ul>
 <p>That pairing is the whole contract: whatever may be a child statically
 may be a child reactively, and <code>{expr}</code> in element syntax means the same
-thing either way. The reactive arms register one subscription with the
+thing either way. A number or a <code>bool</code> is none of the three, so
+<code>&lt;p&gt;{count}&lt;/p&gt;</code> over a <code>Signal&lt;i32&gt;</code> is refused at the hole, with the
+text form written out: <code>{count.derive(|value| i"{value}")}</code>, or <code>{i"{5}"}</code>
+for a plain value. The reactive arms register one subscription with the
 nearest boundary, so a <code>{signal}</code> child inside an <code>each</code> row stops
 replacing anything when the row is disposed — but the views themselves
 arrive already built, so each one’s own bindings belong to the scope

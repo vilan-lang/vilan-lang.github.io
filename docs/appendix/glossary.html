@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-b21ae4e2.js";
+            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -247,9 +247,10 @@ anywhere a value is, which <a href="#view">views</a> are not.
 <a href="../tour/memory-model.html">The memory model</a>.</p>
 <p><a id="lang-item"></a><strong>lang item</strong>: a std declaration the language itself depends on, like
 <code>Option</code> for <code>?.</code> or <code>Add</code> for <code>+</code>. <a href="../spec/appendix.html">Spec appendix</a>.</p>
-<p><a id="layer"></a><strong>layer</strong>: the platform-specific part of the standard library. Base is
-everywhere; the browser layer is browser-only; the process layer is
-server-only. <a href="../tour/platforms.html">Platforms</a>.</p>
+<p><a id="layer"></a><strong>layer</strong>: a library’s per-platform source root, serving a module a
+different file per platform — how std serves <code>std::web::ui</code>. A module
+that only needs ONE platform declares it in its own file instead
+(<code>[platform("browser")] mod self;</code>). <a href="../tour/platforms.html">Platforms</a>.</p>
 <p><a id="local-first"></a><strong>local-first</strong>: updating local state immediately and syncing in the
 background, instead of waiting on the network. What <a href="#draft">drafts</a>
 implement. <a href="../guide/reactive.html">Reactive state</a>.</p>
