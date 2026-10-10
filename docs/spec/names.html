@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -511,6 +511,13 @@ file that never imported <code>Display</code> just because another loaded module
 Such a call is refused at the member’s name, naming the import that brings
 the trait (<code>Import it (`import std::display::Display;`)</code>) — a warning in
 v0.44.0, an error from v0.45.0 (B515, B535).</p>
+<p>std’s own files import nothing they call, so they reach every trait std
+declares and <strong>no package’s</strong>: a package’s trait — a blanket over every
+type included — is never a candidate at a call inside std. A module’s
+<code>impl type T with Describe { fun describe(self): str { … } }</code> leaves std’s
+own <code>describe</code> calls to std’s <code>Wire</code>, as the same blanket written in the
+entry always did. A package’s impl <em>of a std trait</em> (<code>impl Point with Display</code>) is an impl of a trait std names, and serves std like any other
+(B583).</p>
 <p><code>Trait::member(receiver, args…)</code> is the disambiguator: it names which
 provider to use, and works on a concrete receiver or a trait-bounded
 generic one. <code>Type::member(receiver, args…)</code> means the type’s own member
@@ -686,7 +693,7 @@ that reaches into std’s internals tells you so.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

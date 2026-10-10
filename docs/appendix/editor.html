@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -264,6 +264,19 @@ full type, and hover shows both: the full type in the declaration, and
 <code>.transient()</code>’s seal (<code>~TransientSource&lt;T, E&gt;</code>) and
 its iterator adapters (<code>~Iterator&lt;T&gt;</code>) carry the attribute, and a package’s
 own types can too. <code>vilan.inlayHints.abbreviate</code> turns it off.</p>
+<p>A chain written <strong>one stage per line</strong> is hinted per stage, in the
+spelling an ascription is written in: each line that ends a stage shows
+<code> as List&lt;usize&gt;</code> — or <code> as ~Pipe&lt;str&gt;</code> where the abbreviation applies —
+and so does the chain’s head when the first link breaks onto a new line.
+A stage you have already ascribed shows nothing, and neither does the
+last stage of a chain that lands in an annotated <code>let</code>. On a hinted line
+the refactor <strong>Ascribe this stage</strong> writes it into the file — the full
+type, or the bare trait for an abbreviated hint (<code>as Pipe&lt;str&gt;</code>, which is
+checked against the trait and keeps the concrete type, so nothing after
+it changes) — and <strong>Ascribe every stage of this chain</strong> writes them all.
+A type is written the shortest way the file can name it, through a module
+the file imports where needed; a type the file cannot name without a new
+import offers no action, because the action never adds one.</p>
 <p><strong>Semantic highlighting</strong> from the analyzer, over the TextMate grammar,
 which also highlights <code>vilan</code> fences inside Markdown.</p>
 <p><strong>Go to definition</strong> (including into <code>std</code>), <strong>find references</strong>,
@@ -461,7 +474,7 @@ turns that down to parentheses only, or off.</p>
 of values — from the server rather than from a JSON schema, so every editor
 sees it.</p>
 <h2 id="quick-fixes"><a class="header" href="#quick-fixes">Quick fixes</a></h2>
-<p>Twenty-three, each attached to the diagnostic that earns it:</p>
+<p>Twenty-five, each attached to the diagnostic that earns it:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -491,10 +504,12 @@ sees it.</p>
 <tr><td><code>Import all 2 traits this file calls</code></td><td>either trait-method diagnostic above, when the file needs more than one trait — every one of them imported in ONE edit, a trait called twice imported once. A trait more than one module declares is left to its own fix</td></tr>
 <tr><td><code>Take the parameter as `&amp;str` </code></td><td><code>this closure takes `str` by value where its type takes a view `&amp;str` …</code> — a closure LITERAL whose parameter is written in the other mode from the closure type it meets (a value closure and a view closure are different types, and no adapter is inserted). The edit rewrites that parameter’s type in the type’s mode — <code>&amp;</code>, <code>&amp;mut</code> or by value — and nothing else; a body that read the value may then want a <code>*</code></td></tr>
 <tr><td><code>Adapt it: `|c| g(*c)` </code></td><td>the same refusal on a NAMED one-parameter closure (<code>apply(g)</code>), or on a named one-parameter FUNCTION (<code>the function `count` takes …</code>), which a call cannot rewrite: the adapter the refusal names, written around it — <code>|c| g(*c)</code> copies a view’s value out for a value closure, <code>|c| g(&amp;c)</code> lends a view closure the value. Only around a plain name or path, since around any other expression the adapter would evaluate it on every call; a writable view meeting a value closure has none</td></tr>
+<tr><td><code>Write `auto str` </code></td><td>a stale <code>auto</code> (<code>stale `auto`: `load` now returns `str`, not the written `auto i32` …</code>) or a bare one’s warning (<code>unfilled `auto`: …</code>): the annotation the message ends with, written over it — the edit <code>vilan check --fix</code> makes</td></tr>
+<tr><td><code>Add `auto` type (`auto i32`)</code></td><td>not a diagnostic: the name of any unannotated function return or <code>let</code> binding whose type the file can name — <code>: auto T</code> after its parameter list or its name, never on a void return</td></tr>
 </tbody>
 </table>
 </div>
-<p>and two source actions:</p>
+<p>and three source actions:</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -503,6 +518,7 @@ sees it.</p>
 <tbody>
 <tr><td><strong>Organize Imports</strong></td><td>sorts each top-level import run into canonical order (the same key <code>vilan fmt</code> uses), prunes unused leaves (shrinking a brace set rather than deleting it), and strips imports the prelude already covers. A statement whose every leaf is unused is <em>rewritten</em> rather than deleted when the module’s file is where an <code>impl</code> the code calls a method from lives — <code>impl</code>s travel with any import that reaches the module, so deleting the statement would break the build. The rewrite is the narrowest statement that keeps it: an impl SELECTOR (<code>import pkg::a::b;</code> becomes <code>import pkg::a::{ (impl Style) };</code>) when everything the file uses from that module is one subject’s blocks, and the bare module import (<code>import pkg::a;</code>) when it is not. A selector is a leaf like any other: one whose implementation the file never calls a method from fades and prunes, one it does use stays. Visibility spellings are preserved verbatim, never rewritten: a reach marker (<code>#helper</code>) stays on its leaf, a trailing <code>only</code> stays on its statement, and a selector keeps the type it was written with. The module-level <code>export *;</code> is not an import and does not move — a NEW leading import is inserted above it, so the marker keeps the slot <code>vilan fmt</code> gives it, just below the file’s import run. Offered only when it would change something</td></tr>
 <tr><td><strong>Add All Missing Imports</strong></td><td>applies every unambiguous import quickfix in the file at once, skipping the ambiguous ones</td></tr>
+<tr><td><strong>Keep <code>auto</code> types current</strong></td><td>rewrites every stale <code>auto</code> in the file and fills every bare one (<code>source.fixAll.vilan.auto</code>, what <code>vilan.autoTypes.onSave</code> runs) — nothing while the file has any other error</td></tr>
 </tbody>
 </table>
 </div>
@@ -521,6 +537,18 @@ is kept.</p>
 save. It is the extension’s own hook rather than a line in your
 <code>editor.codeActionsOnSave</code>, and organizing is a fixed point, so turning
 both on is harmless.</p>
+<p><strong><code>auto</code> types</strong> (<a href="../spec/types.html#auto-types-the-toolchain-keeps"><code>auto</code> annotations</a>).
+<code>vilan.autoTypes.onSave</code> (off by default) runs the server’s <strong>Keep <code>auto</code>
+types current</strong> source action (<code>source.fixAll.vilan.auto</code>) on save: every
+stale <code>auto T</code> in the file is rewritten to what its item now infers and
+every bare <code>auto</code> is filled — the edits <code>vilan check --fix</code> makes, from the
+analysis the editor already holds. It writes nothing while the file has
+any other error, since a type filled from a broken program is noise. While
+you type, a stale <code>auto</code> shows the type it would become after it
+(<code>: auto i32</code> ⟶ <code>str</code>), and its diagnostic carries the rewrite as a quick
+fix. On any unannotated return or <code>let</code> binding, <strong>Add <code>auto</code> type</strong> writes
+<code>: auto T</code> after its parameter list or its name — never on a void return,
+and never for a type the file cannot name without a new import.</p>
 <h2 id="refactors"><a class="header" href="#refactors">Refactors</a></h2>
 <p>A refactor is offered on the construct your cursor is in, rather than on a
 diagnostic or on the file:</p>
@@ -599,6 +627,7 @@ plain go-to-definition, and no pull diagnostics — diagnostics are pushed.</p>
 <tr><td><code>vilan.completion.functionCall</code></td><td><code>full</code></td><td><code>parensOnly</code>, or <code>none</code></td></tr>
 <tr><td><code>vilan.autoClosing.generics</code></td><td><code>true</code></td><td>pair a generic <code>&lt;</code> and type over its <code>&gt;</code>; off for Vim emulation</td></tr>
 <tr><td><code>vilan.organizeImports.onSave</code></td><td><code>false</code></td><td></td></tr>
+<tr><td><code>vilan.autoTypes.onSave</code></td><td><code>false</code></td><td>rewrite stale and fill bare <code>auto</code> types on save</td></tr>
 </tbody>
 </table>
 </div>
@@ -671,7 +700,7 @@ to report prints <code>?</code> rather than a zero.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

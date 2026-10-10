@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -227,6 +227,58 @@ prints in release too.</li>
 </ul>
 <p>A function of your own named <code>dbg</code> takes precedence, as it would over any
 prelude name.</p>
+<h2 id="everything-in-scope-dbg_stack"><a class="header" href="#everything-in-scope-dbg_stack">Everything in scope: <code>dbg_stack</code></a></h2>
+<p><code>dbg_stack()</code> prints every binding in scope where you call it — a snapshot of
+the stack frame, without naming anything:</p>
+<pre><code class="language-vilan">[resource]
+struct Guard { id: i32 }
+
+fun consume(own guard: Guard) {
+	print(guard.id);
+}
+
+fun main() {
+	let guard = Guard { id = 7 };
+	consume(guard);
+	let x = 1;
+	mut rows = [Some(1), Some(2)];
+	match &amp;rows[0] {
+		Some(let first) =&gt; {
+			print(*first);
+			rows.push(None);
+			let x = "shadow";
+			dbg_stack();
+		},
+		None =&gt; {},
+	}
+}
+</code></pre>
+<pre><code class="language-text">[src/main.vl:18:4] dbg_stack() in main
+  x: str = "shadow"
+  x (shadowed at 17:8): i32 = 1
+  first: view i32 = &lt;view, invalidated by push at 16:4&gt;  (a view into rows)
+  guard: Guard = &lt;moved at 10:10&gt;
+  rows: List&lt;Option&lt;i32&gt;&gt; = [Some(1), Some(2), None]
+</code></pre>
+<ul>
+<li><strong>Which bindings.</strong> The function’s parameters and every local visible at the
+call, innermost scope first. A binding another one hides is listed under it,
+marked with where it was shadowed. Inside a closure: its own parameters and
+locals, then the bindings it captures, marked <code>(captured)</code>. Module-level
+bindings are not the stack and are not listed.</li>
+<li><strong>It reads nothing it must not.</strong> A resource that was moved prints <code>&lt;moved at L:C&gt;</code> (or <code>&lt;moved on some paths&gt;</code>); a view that a later <code>push</code> invalidated
+prints <code>&lt;view, invalidated by push at L:C&gt;</code>; a pipe prints <code>&lt;pipe, not sampled&gt;</code> and a <code>lazy</code> parameter <code>&lt;lazy, not forced&gt;</code>, since looking would run
+them. A cell prints its current value without subscribing, so a <code>dbg_stack()</code>
+inside an effect does not make it re-run.</li>
+<li><strong>Values print as <code>dbg</code> prints them</strong>, laid out from where they start, on the
+same stream, the same bytes on both backends. A view is marked <code>view</code> and
+says what it views.</li>
+<li><strong>Each listed binding counts as used at the call.</strong> That can keep a value
+alive to the <code>dbg_stack()</code> line; on the native backend the worst case is a
+copy where a move used to be.</li>
+<li><strong>Release builds refuse it</strong>, as they refuse <code>dbg</code>, and <code>[build] dbg</code> decides
+for both.</li>
+</ul>
 <h2 id="where-panics-name-their-line"><a class="header" href="#where-panics-name-their-line">Where: panics name their line</a></h2>
 <p>An uncaught panic prints the file, the line and the column that raised it, on
 both backends and in release builds too:</p>
@@ -333,7 +385,7 @@ value; wrap it in a closure.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -1512,10 +1512,10 @@ what changed:</p>
 fun main() {
 	let numbers: ListCell&lt;i32&gt; = ListCell::of([1, 2, 3, 4]);
 	let (big, scope) = comp(|| numbers.filter(|n| n &gt; 2).map(|n| n * 10).memo());
-	print(big.get());            // [ 30, 40 ]
+	print(big.get());            // [30, 40]
 	numbers.push(7);             // the closures run for 7 alone
 	numbers.remove_at(0);        // nothing runs
-	print(big.get());            // [ 30, 40, 70 ]
+	print(big.get());            // [30, 40, 70]
 	scope.dispose();
 }
 </code></pre>
@@ -1539,11 +1539,11 @@ fun main() {
 		people.filter(|at| online[at].derive(|on| on)).memo(),
 		people.any(|at| online[at].derive(|on| on)).memo()
 	));
-	print(here.get());           // [ 0 ]
+	print(here.get());           // [0]
 	online[0].set(false);        // one splice out
 	print(anyone.get());         // false
 	online[1].set(true);         // one splice in; the counter moves once
-	print(here.get());           // [ 1 ]
+	print(here.get());           // [1]
 	scope.dispose();
 }
 </code></pre>
@@ -1592,7 +1592,7 @@ fun main() {
 	let fetched: SignalCell&lt;List&lt;i32&gt;&gt; = Signal::new([1, 2, 3]);
 	let (evens, scope) = comp(|| fetched.coll().filter(|n| n % 2 == 0).memo());
 	fetched.set([1, 2, 3, 4]);   // one splice of one element: 4 arrived
-	print(evens.get());          // [ 2, 4 ]
+	print(evens.get());          // [2, 4]
 	scope.dispose();
 }
 </code></pre>
@@ -1773,7 +1773,7 @@ fun main() {
 	stock.insert("pens", 1);       // one Put: the filter runs once
 	stock.insert("pads", 9);       // the key set gains one Add
 	print(names.get().len());      // 3
-	print(low.get());              // [ 0, 1 ]: "pens" joined the filter after "ink"
+	print(low.get());              // [0, 1]: "pens" joined the filter after "ink"
 	print(total.get());            // 10
 	scope.dispose();
 }
@@ -1902,7 +1902,7 @@ hash, 400 with a coarse hash alone — are compared plan for plan.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

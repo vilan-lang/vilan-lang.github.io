@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -185,7 +185,9 @@ equal. There is no structural typing of nominals.</li>
 distinct (no implicit numeric conversions, §5.8).</li>
 <li><strong>Tuples</strong>: <code>(T, U, …)</code>; structural: equal iff element-wise equal.
 <code>()</code> and one-element tuples do not exist as distinct types (<code>(T)</code> is
-<code>T</code>; the unit is <code>void</code>).</li>
+<code>T</code>; the unit is <code>void</code>) — save the one-slot LABELLED tuple <code>(x: T)</code>,
+whose label makes it one. A tuple’s slots may carry labels, <code>(x: f64, y: f64)</code>; labels name positions and are never part of the type’s identity
+(§5.9, labelled tuples).</li>
 <li><strong>Closure types</strong>: <code>|T, U| R</code>, <code>|| R</code>, <code>|| void</code>; structural in their
 parameter and return types. An <code>async</code> closure type (§7.4) is distinct
 from its plain counterpart. A <code>context</code> clause (§8.5) is carried by the
@@ -986,6 +988,7 @@ fun check&lt;T: PartialEq&gt;(x: T, y: T) { if x == y { … } }  // the test pro
 "p=" + point.to_string()     // the fix the error names
 count + "n="                 // error: only a `str` LEFT operand concatenates
 1.5 + count                  // error: f64 and i32; no implicit conversions
+index - count                // error: usize and i32 — `-`, `*`, `/`, `%` as `+`
 count * true                 // error: `*` computes on two numbers, and `bool` is not one
 count * "2"                  // error: the same, for `str`
 </code></pre>
@@ -1167,6 +1170,58 @@ anywhere else is refused (call it, <code>Some(x)</code>). A unit variant (<code>
 already a value and never coerces.</p>
 <p><code>any</code> unifies with every type in both directions (it is produced by
 <code>panic</code> and host boundaries; it absorbs rather than converts).</p>
+<h3 id="ascription-exp-as-t"><a class="header" href="#ascription-exp-as-t">Ascription: <code>EXP as T</code></a></h3>
+<p><code>EXP as T</code> names the type a value has, in place, where no <code>let</code> is at
+hand. It is typed exactly as the initializer of <code>let tmp: T = EXP</code> is:
+the type flows into <code>EXP</code> (an unsuffixed literal, an empty list, a bare
+<code>None</code> and a generic call’s result take it), every coercion an annotated
+binding performs is performed (a value erased to <code>dyn T</code>, §5.12; a named
+function or a tuple variant re-typed as a closure, above; a closure
+literal’s parameters adopting the type’s modes; <code>Never</code> yielding), a bare
+trait is checked and the value keeps its concrete type (§5.5, as at a
+binding), and a mismatch is refused. The result has type <code>T</code> — or the
+concrete type, under a bare trait.</p>
+<pre><code class="language-vilan fragment">SignalCell::new([1, 2, 3] as List&lt;usize&gt;)
+make() as List&lt;str&gt;
+match pick { true =&gt; Source::constant(1), false =&gt; cell.derive(f) } as dyn Flow&lt;i32&gt;
+</code></pre>
+<p>It is <strong>not a binding</strong>: nothing is copied that the unascribed value
+would not copy (<code>f(xs as List&lt;i32&gt;)</code> passes <code>xs</code> exactly as <code>f(xs)</code>
+does, and <code>let ys = xs as List&lt;i32&gt;</code> copies as <code>let ys = xs</code> does), it
+has no drop point and no name, and a resource moves exactly when the
+unascribed expression would. It is a <strong>value, never a place</strong>: an
+assignment through one, a <code>&amp;mut</code> view of one and a mutating method called
+on one are refused (<code>(p as Point).x = 1</code> — write <code>p.x = 1</code>).</p>
+<p><strong>The method converts, the keyword constrains.</strong> <code>n.as_f64()</code> makes an
+<code>f64</code>; <code>n as f64</code> says <code>n</code> already is one, and with <code>n: i32</code> it is
+refused with the conversion that exists. vilan has no cast: a <code>dyn</code>
+value never narrows back (§5.12), so <code>as</code> cannot downcast either.</p>
+<h3 id="auto-types-the-toolchain-keeps"><a class="header" href="#auto-types-the-toolchain-keeps"><code>auto</code>: types the toolchain keeps</a></h3>
+<p><code>auto T</code> on a function’s return, a <code>let</code>/<code>mut</code> binding (a module’s or a
+local), or an ascription (<code>as auto T</code>) is a type the toolchain writes and
+keeps current. It is a <strong>signature, not a constraint</strong>: the body — a
+function’s, a binding’s initializer, an ascription’s value — is inferred
+exactly as if nothing were written, so <code>T</code> never directs it (<code>fun f(): auto f64 { 5 }</code> infers <code>i32</code>); everything outside reads <code>T</code> — a
+function’s callers, a binding’s uses, hover; and <code>vilan check</code> (and
+<code>build</code>, <code>run</code>, <code>test</code>) compares the two and refuses a difference as
+<strong>stale</strong>, naming how many callers were checked against the written type
+in the meantime. <code>vilan check --fix</code> rewrites it, and a bare <code>auto</code>,
+which promised nothing yet, is a warning the same command fills. In a
+program that checks, deleting every <code>auto</code> changes nothing it does.</p>
+<pre><code class="language-vilan fragment">fun load(): auto List&lt;str&gt; { … }         // callers read List&lt;str&gt;
+mut names: auto List&lt;str&gt; = [];           // a use elsewhere cannot widen it
+fun doubled(cell): auto Pipe&lt;i32&gt; { … }   // a stage type, by its trait
+</code></pre>
+<p>Two types agree when their resolved forms are equal, except that a bare
+trait anywhere in the written type is met by any type that implements it
+(§5.5, as at a binding) — which is how a long pipe-stage type is written:
+as the inlay hint shows it, <code>~Pipe&lt;T&gt;</code> written as the bare trait
+<code>Pipe&lt;T&gt;</code>. Such an item is no firewall: its callers still hold the
+concrete type. A labelled tuple is written with its labels, and labels
+agree as §5.9 reconciles them — except one label at two different
+slots, which callers would read from the wrong slot. <code>fmt</code> prints an <code>auto</code> canonically and never fills one;
+<code>auto</code> stands nowhere a type is not inferred — a parameter, a field, a
+generic argument, a trait member’s return is refused.</p>
 <h2 id="59-variadic-tuples"><a class="header" href="#59-variadic-tuples">5.9 Variadic tuples</a></h2>
 <p>A generic parameter with a <strong>tuple bound</strong> ranges over tuples:
 <code>T: (2..)</code> (arity ≥ 2), <code>T: (..: Display)</code> (every element <code>Display</code>).
@@ -1208,10 +1263,19 @@ element bound. A generic parameter forwarded into a tuple-bounded
 position satisfies it only through its own declared tuple bound: a
 contained arity range whose element bound names the same trait or a
 subtrait.</p>
+<p>A tuple bound also <strong>declares</strong> the trait of a blanket written over a
+tuple bound that contains it — by the same containment, a range inside
+the blanket’s and an element bound naming its trait or a subtrait. Over
+std’s <code>impl type T: (2..: PartialEq) with PartialEq</code>, a parameter <code>T: (2..: PartialEq)</code> is <code>PartialEq</code>: two <code>T</code>s compare with <code>==</code>, and a
+callee bounded <code>U: PartialEq</code> takes one. The containment is a proof about
+every instantiation, not an impl search, so an abstract value’s declared
+bounds stay its only answer (§5.4); and the dispatch stays per instance —
+at <code>T = (i32, i32)</code> a program’s own <code>impl (i32, i32) with PartialEq</code>
+outranks the blanket (B588).</p>
 <p>A <strong>spread parameter</strong> <code>...items: T</code> is a <em>call convention</em> over an
 ordinary tuple parameter — the call site writes the pack’s elements out
 flat, and they are collected into that one tuple argument:</p>
-<pre><code class="language-vilan fragment">fun log&lt;T: (..: Display)&gt;(...items: T)      //  log(1, "hi")  ==  log((1, "hi"))
+<pre><code class="language-vilan fragment">fun log&lt;T: (..: Display)&gt;(...items: T)      //  log(1, "hi") collects the pack (1, "hi")
 fun gather&lt;T: (2..)&gt;(...sources: (U in T: SignalCell&lt;U&gt;)): SignalCell&lt;T&gt;
 </code></pre>
 <p><code>T</code> is the <strong>pack</strong> — the tuple of the collected arguments’ types — not
@@ -1224,6 +1288,12 @@ what makes 0- and 1-arity tuple <em>values</em> reachable; tuple types already
 admit them. Since the convention lives on the declaration, a spread
 function used as a <strong>value</strong> has its tuple type, and is called with a
 tuple.</p>
+<p>A direct call by name always <strong>collects</strong>, whatever its arguments’ types:
+<code>log((1, "hi"))</code> passes ONE argument, so its pack is the one-slot
+<code>((1, "hi"))</code>, and against <code>fun draw(...at: (f64, f64))</code> the call
+<code>draw((3, 4))</code> is refused. A tuple already built is passed AS the pack
+with a tuple-value spread (below): <code>draw(..pair)</code>, <code>log(..(1, "hi"))</code>
+(B581).</p>
 <p>Grammar and the positions where <code>...</code> is rejected: §3.3.</p>
 <p>A <strong>tuple-value spread</strong> <code>..e</code> is an entry of a tuple construction that
 contributes the <em>elements</em> of <code>e</code>’s tuple type rather than <code>e</code> itself, so
@@ -1277,6 +1347,56 @@ yields its region as a value (destructuring reads the same layout).
 Positional access and destructuring are the element-wise spellings a
 tuple has: a tuple is <strong>not iterable</strong>, and <code>for x in t</code> is refused
 because the binder would have no single type to take (§3.5).</p>
+<h3 id="labelled-tuples"><a class="header" href="#labelled-tuples">Labelled tuples</a></h3>
+<p>A tuple’s positions may carry <strong>labels</strong> (B569, <code>named-tuple-fields.md</code>):
+<code>let p: (x: f64, y: f64) = (x = 5, y = 7);</code> — every slot labelled, or
+none. A label is a name for a POSITION, read as <code>p.x</code> (the slot <code>p.0</code> is,
+and <code>p.0</code> keeps working) and written through a <code>mut</code> binding as <code>p.x = 3;</code>.
+Labels are carried by the type and never compared: two tuple types are
+compatible when their elements are, whatever their labels, with ONE
+exception below. So:</p>
+<ul>
+<li>a <strong>labelled literal</strong> against a labelled type of its arity matches BY
+NAME — <code>let q: (x: f64, y: f64) = (y = 7, x = 5);</code> is <code>(5, 7)</code> — and must
+name exactly that type’s labels; its entries are evaluated as WRITTEN,
+then stored in the type’s order. Against an unlabelled type, or with no
+expected type, it is positional (<code>(y = 7, x = 5)</code> alone is <code>(y: i32, x: i32)</code>).</li>
+<li>an <strong>unlabelled</strong> value into a labelled position takes the position’s
+labels; a labelled one into an unlabelled position drops them; two
+DIFFERENTLY named label sets reconcile by position — <code>(w: f64, h: f64)</code>
+into <code>(x: f64, y: f64)</code> — and a binding, parameter, field or return takes
+the labels of its declared type.</li>
+<li><strong>The contradiction is refused</strong>: two tuple types where some label sits at
+DIFFERENT positions — <code>(x: f64, y: f64)</code> into <code>(y: f64, x: f64)</code>, and the
+one-rename twin <code>(x: f64, y: f64)</code> into <code>(y: f64, z: f64)</code>. The two
+readings (by name, by position) give different values, so neither is
+picked; the refusal spells both rewrites for a value that is a place:
+<code>(y = p.y, x = p.x)</code> by name, <code>(p.0, p.1)</code> by position.</li>
+<li>a <strong>join</strong> types a later arm against a labelled first arm, so labelled
+literal arms and list elements match it by name.</li>
+</ul>
+<p>A tuple PATTERN may name its elements too — <code>let (y = top, x = left) = p;</code>, <code>match q { (x = 0, y = let v) =&gt; … }</code> — and is placed by the labels
+of the value it matches, which it names exactly; a positional pattern
+ignores them. <code>dbg</code> prints a labelled tuple as its literal, <code>p = (x = 5.0, y = 7.0)</code>; a tuple a generic body prints through its parameter prints
+positionally, since labels erase at the instance (below). <code>Debug</code>’s
+<code>debug()</code> is positional.</p>
+<p>A <strong>spread parameter over a labelled tuple</strong> takes NAMED arguments: the
+call collects its arguments into one tuple literal (§5.9’s desugar), so
+<code>draw(x = 1, y = 2)</code> and <code>draw(y = 2, x = 1)</code> against <code>fun draw(...at: (x: f64, y: f64))</code> both collect a literal that matches the pack by name, and
+<code>draw(1, 2)</code> still collects one positionally. A fixed parameter before the
+pack is passed by position; the collected arguments are all named or none;
+a name nothing collects is refused; and a slot cannot be left out — there
+are no defaults (a struct with field defaults is the shape for those).</p>
+<p>Labels flow through generics as part of the type a parameter binds
+(<code>id(p).x</code>), and a <strong>mapped tuple</strong> keeps its source’s labels position by
+position — <code>combine((x = a, y = b))</code> derives over <code>(x: i32, y: i32)</code>. They
+are <strong>erased</strong> at monomorphization (<code>f&lt;(x: i32, y: i32)&gt;</code> and <code>f&lt;(i32, i32)&gt;</code> are one instance), in both emitters (a label is the slot offset), and
+in a service’s contract hash. A tuple’s future <code>Wire</code> or <code>Json</code> encoding is
+positional. <code>keys()</code> is unchanged: a key is a position. An <code>impl</code> cannot
+name a labelled tuple — labels are not an identity, so it would answer for
+every tuple of its slot types — and a shape with methods, derives, an
+identity across signatures or a wire format is a struct. <code>(x = 5)</code> is a
+one-slot labelled tuple (<code>(x: i32)</code>, arity 1, so it does not meet <code>T: (2..)</code>); <code>(5)</code> stays a group.</p>
 <h2 id="510---and-"><a class="header" href="#510---and-">5.10 <code>!</code>, <code>?.</code> and <code>?</code></a></h2>
 <p>All three dispatch through lang-item traits and desugar per expression:</p>
 <ul>
@@ -1348,7 +1468,12 @@ reported where the value lands.</li>
 just with its neighbour. Diverging legs and arms (<code>ret</code>, <code>panic</code>,
 <code>jump</code>) are <code>Never</code> and don’t participate (§5.1).</li>
 <li>An <code>i53</code>/<code>i32</code> operand mix (no implicit widening; suffix the
-literal).</li>
+literal) — two different integer types as the operands of <code>+</code>, <code>-</code>,
+<code>*</code>, <code>/</code>, <code>%</code>, a comparison or <code>==</code> (B579).</li>
+<li>A binding whose type still holds a part nothing determines once
+inference is done — <code>let xs = []</code> read only through <code>len()</code>, <code>let o = None</code> — is refused at its initializer, naming where to write the type
+(<code>xs: List&lt;…&gt;</code>); a later use that states it (<code>xs.push(1)</code>) is what
+inference reads, and only an annotation can stand in for one (B580).</li>
 <li>A value written into a struct field it does not match, through either
 door: the literal <code>S { field = v }</code> and the assignment <code>s.field = v</code>
 are governed by ONE rule, and a place chain of any depth (<code>a.b.c = v</code>,
@@ -1511,7 +1636,7 @@ cannot be coerced into an object whose trait declares that member sync; an
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

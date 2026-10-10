@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -269,12 +269,12 @@ measure a leg before opting it in
 <li><code>--explain</code>: after the build, print where every output came from — see
 below.</li>
 </ul>
-<p>A <code>dbg(..)</code> call prints in a <code>debug</code> build, which is the default. A
-<code>release</code> build refuses one — “<code>dbg</code> left in a release build”, at the
-call — unless <code>vilan.toml</code> says what to do with it:</p>
+<p>A <code>dbg(..)</code> or <code>dbg_stack()</code> call prints in a <code>debug</code> build, which is the
+default. A <code>release</code> build refuses one — “<code>dbg</code> left in a release build”, at
+the call — unless <code>vilan.toml</code> says what to do with it:</p>
 <pre><code class="language-toml">[build]
 preset = "release"
-dbg = "strip"    # dbg(x) is x and prints nothing; "keep" prints in release too
+dbg = "strip"    # dbg(x) is x and dbg_stack() nothing; "keep" prints in release too
 </code></pre>
 <ul>
 <li><code>--backend &lt;js|rust&gt;</code>: which emitter runs. <code>js</code> is the default. <code>rust</code>
@@ -410,8 +410,7 @@ the package’s own files (never to std or a dependency), analyzes again,
 and repeats until a round finds nothing more to fix; then it checks as
 usual and reports what is left. The edits are the editor’s quick fixes,
 computed by the same functions, so the two never disagree. It cannot be
-combined with <code>--watch</code>. It fixes two kinds of diagnostic, each the
-migration tool for one release:</p>
+combined with <code>--watch</code>. It fixes four kinds of diagnostic:</p>
 <ul>
 <li>
 <p><strong>A moved std path</strong> (v0.44.0, where std’s modules were grouped under
@@ -440,12 +439,25 @@ conversion the message names, or <code>: usize</code> on a counter bound by a ba
 literal (<strong>Convert with <code>.as_usize()</code></strong>, <strong>Declare <code>at</code> a <code>usize</code></strong>).
 What it cannot decide — a <code>-1</code> “not found”, a <code>for i &gt;= 0</code> loop, signed
 arithmetic that should convert once at its end — stays a diagnostic,
-for a person.</p>
+for a person. An ascription to another width (<code>n as f64</code>, which names
+a type and never converts) is rewritten to the conversion in its place,
+<code>n.as_f64()</code>.</p>
+</li>
+<li>
+<p><strong>A stale or unfilled <code>auto</code></strong> (<a href="../spec/types.html#auto-types-the-toolchain-keeps"><code>auto</code> annotations</a>):
+the written type is rewritten to what the item now infers, and a bare
+<code>auto</code> is filled, spelled the shortest way the file can name the type —
+by name, or through a module it imports. It never adds an import: a
+type the file cannot name is left, with the import that would let it.
+A rewrite that changes what callers read re-checks them in the next
+round, so a caller’s own <code>auto</code>, or a conversion a caller now needs,
+follows it.</p>
 </li>
 </ul>
 <p>It prints what it did before the check’s own report: for moved paths, a
 total and then one line per file with its count, and a line for each
-path it left; then, always, the numeric line.</p>
+path it left; then, always, the numeric line; then, when it wrote any,
+a line counting the <code>auto</code> annotations.</p>
 <pre><code class="language-text">fixed 4 moved std paths in 3 files
   src/main.vl: 2
   src/views.vl: 1
@@ -477,6 +489,19 @@ key. Each lint is <code>"allow"</code> (the default) or <code>"warn"</code>, and
 level the section does not have is a manifest error rather than a silent
 no-op. The section is read from the entry package’s manifest; std’s own uses,
 and a dependency’s, are their authors’ and never warn.</p>
+<p><strong>Keeping <code>auto</code> types: <code>[check] auto</code>.</strong> A package can ask <code>vilan check</code> to
+keep its inferred types written as <a href="../spec/types.html#auto-types-the-toolchain-keeps"><code>auto</code> annotations</a>:</p>
+<pre><code class="language-toml">[check]
+auto = "exported"
+</code></pre>
+<p>Under <code>"exported"</code> each return and module binding reachable from outside
+its module — <code>export</code>-marked, in an <code>export *;</code> file, or an inherent method
+of an exported type — whose type is inferred gets a warning carrying its
+<code>: auto T</code>, which <code>vilan check --fix</code> (and the editor’s on-save action)
+writes; <code>"all"</code> covers every return and module binding; <code>"off"</code> is the
+default. A void return and a local binding are never asked for, and a type
+the file cannot name without a new import is left for a person. Like
+<code>[lints]</code>, the section is read from the entry package’s manifest.</p>
 <h2 id="vilan-run-file-args"><a class="header" href="#vilan-run-file-args"><code>vilan run [file] [args…]</code></a></h2>
 <p>Builds and runs. Anything after the file is forwarded to the program.
 Reach it with <code>import std::process;</code> and <code>process::args()</code> — both lines:
@@ -550,6 +575,13 @@ thing with a layout of its own, so that is where the break goes, at the
 lowest-precedence operator and operator-leading. The permission stops at the
 head: a loop body is a fresh statement list and a <code>match</code>’s legs earn their
 own breaks from their own lines.</li>
+<li>A chain with a type ascription on MORE than one stage splits regardless
+of width, one stage per line, each <code>as T</code> closing its stage’s line:
+<code>let n = words as List&lt;str&gt;</code> on the first line, then <code>.map(f) as List&lt;usize&gt;</code> and <code>.len() as usize</code> below it. A single ascription follows
+the ordinary chain rule. A closure type after <code>as</code> is printed
+parenthesized — <code>f as (|i32| i32)</code> — so its greedy return type never has
+to be found by eye, and a spaced generic list after <code>as</code> is written tight
+(<code>as List&lt;i32&gt;</code>), the spelling the grammar reads as one.</li>
 <li>Parenthesized groups you wrote are kept, even where the grammar
 doesn’t need them: a redundant paren is usually there for clarity.</li>
 <li>A call’s <em>argument</em> list is never wrapped, but the split reaches the
@@ -1071,7 +1103,7 @@ younger than ten minutes, which a check running right now may be reading.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

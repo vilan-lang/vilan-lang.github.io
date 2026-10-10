@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -187,6 +187,22 @@ Types are inferred, and you can annotate when you want to pin one down:</p>
 	print(i"{name} {count} {wide}");
 }
 </code></pre>
+<p>Where there is no <code>let</code> to annotate, <code>as</code> names a type in place. It
+directs inference exactly as an annotation would, and it never converts
+anything:</p>
+<pre><code class="language-vilan">import std::reactive::SignalCell;
+
+fun main() {
+	let ratio = 7 as f64 / 2.0;
+	let sizes = SignalCell::new([] as List&lt;usize&gt;);
+	print(i"{ratio} {sizes.get().len()}");
+}
+</code></pre>
+<p><code>7 as f64</code> makes the literal an <code>f64</code> the way <code>let seven: f64 = 7</code> would,
+and the empty list is a <code>List&lt;usize&gt;</code> because the ascription says so. A
+value that already has another type is refused rather than converted:
+with <code>n: i32</code>, <code>n as f64</code> is an error that points you at <code>n.as_f64()</code>.
+The method converts; the keyword constrains.</p>
 <p>One thing to know up front: everything in Vilan is a <strong>value</strong>. Assigning
 a value to a new binding gives you a copy, not a second name for the same
 thing. If that sounds strange coming from JavaScript, start with
@@ -204,7 +220,7 @@ trait    true     type     use
 identifiers everywhere else: <code>own</code> (a parameter that takes ownership —
 see <a href="memory-model.html">the memory model</a>), <code>jump</code> (the prefix on <code>break</code>
 and <code>continue</code>), <code>lazy</code>, <code>dyn</code>, <code>with</code>, <code>borrows</code>, <code>self</code>, <code>Self</code>, <code>void</code>,
-<code>context</code>, <code>sync</code>, <code>as</code>, and the attribute names in <code>[...]</code>. So <code>let own = owner();</code>, a field called <code>with</code> and a method called <code>jump</code> are all fine,
+<code>context</code>, <code>sync</code>, <code>as</code>, <code>auto</code>, and the attribute names in <code>[...]</code>. So <code>let own = owner();</code>, a field called <code>with</code> and a method called <code>jump</code> are all fine,
 beside the keyword readings in the same file. Even a reserved word names a
 MEMBER — a field <code>type</code>, a method <code>match</code>, read as <code>event.type</code> and called
 as <code>shape.match()</code> — because a member is reached through a receiver or a
@@ -365,6 +381,40 @@ position, as many as you like, mixed with ordinary entries:</p>
 elements, so an element that is itself a tuple stays one. And <code>..</code> only
 means this at the start of an entry — <code>a..b</code> after an expression is not
 a spread, and vilan has no range operator for it to be confused with.</p>
+<h3 id="naming-the-positions"><a class="header" href="#naming-the-positions">Naming the positions</a></h3>
+<p>A tuple’s positions can carry <strong>labels</strong>, so a reader does not have to
+remember which slot is which. Write them in the type with <code>:</code> and in the
+value with <code>=</code>, the way a struct literal names its fields:</p>
+<pre><code class="language-vilan">fun bounds(xs: List&lt;i32&gt;): (min: i32, max: i32) {
+	mut low = xs[0];
+	mut high = xs[0];
+	for x in xs {
+		x &lt; low then low = x;
+		x &gt; high then high = x;
+	}
+	(min = low, max = high)
+}
+
+fun main() {
+	let b = bounds([3, 1, 4, 1, 5]);
+	print(i"{b.min}..{b.max}");
+	let (max = top, min = bottom) = b;            // destructure by name
+	print(top - bottom);
+	let point: (x: f64, y: f64) = (y = 7, x = 5); // by name: (5, 7)
+	print(point.x);
+	print(point.0);                               // positions still work
+}
+</code></pre>
+<p>A labelled value goes anywhere its unlabelled shape goes, and back:
+labels are names for positions, not part of the type. The one thing
+refused is a label that would land at a <em>different</em> position —
+<code>(x: f64, y: f64)</code> into <code>(y: f64, x: f64)</code> — because nobody can tell
+whether that was a reorder or a swap; the error offers both rewrites.
+Every slot is labelled or none, and <code>(x = 5)</code> is a one-slot tuple whose
+label makes it one. <code>dbg</code> prints the labels too: <code>b = (min = 1, max = 5)</code>.</p>
+<p>Reach for a <strong>struct</strong> instead once the shape has an identity: it is named
+in more than one signature, it needs methods or derives, it crosses the
+wire, or it has more than three fields.</p>
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <p><code>List&lt;T&gt;</code> is built in and has literal syntax. <code>HashMap&lt;K, V&gt;</code> and <code>HashSet&lt;T&gt;</code>
 come from std:</p>
@@ -484,7 +534,7 @@ null, but ordinary Vilan code never sees it.)</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

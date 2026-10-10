@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -226,7 +226,7 @@ any source you implement <code>get</code>/<code>on_settle</code> on — and it c
 bindings that write back (<code>bind_value</code>, <code>bind_draft</code>) need a real signal.</p>
 <h2 id="text-children-and-mixed-content"><a class="header" href="#text-children-and-mixed-content">Text children and mixed content</a></h2>
 <p><code>child</code> takes more than a <code>View</code>. Anything that can fill a child
-position works — the value’s type decides what lands in the DOM. Three
+position works — the value’s type decides what lands in the DOM. Four
 static arms, and a reactive twin for each:</p>
 <ul>
 <li>a <code>View</code> appends as an element; a <code>Source&lt;View&gt;</code> appends the view it
@@ -235,11 +235,16 @@ holds and <strong>replaces</strong> it whenever the source changes;</li>
 node kept in sync;</li>
 <li>a <code>List&lt;View&gt;</code> appends every view, in order; a <code>Source&lt;List&lt;View&gt;&gt;</code>
 appends the run and replaces the whole run on every change. <code>&lt;&gt;…&lt;/&gt;</code>
-is the literal for one (see <a href="#fragments">Fragments</a>).</li>
+is the literal for one (see <a href="#fragments">Fragments</a>);</li>
+<li>an <code>Option</code> of any of them places its payload when it is <code>Some</code> and
+nothing when it is <code>None</code> — the static twin of <code>when</code>, so
+<code>&lt;p&gt;"item"{badge}&lt;/p&gt;</code> over a <code>badge: Option&lt;View&gt;</code> needs no <code>match</code>;
+a <code>Source&lt;Option&lt;View&gt;&gt;</code> places the view it holds, replaces it, and
+takes it out when the source turns <code>None</code>.</li>
 </ul>
 <p>That pairing is the whole contract: whatever may be a child statically
 may be a child reactively, and <code>{expr}</code> in element syntax means the same
-thing either way. A number or a <code>bool</code> is none of the three, so
+thing either way. A number or a <code>bool</code> is none of these, so
 <code>&lt;p&gt;{count}&lt;/p&gt;</code> over a <code>Signal&lt;i32&gt;</code> is refused at the hole, with the
 text form written out: <code>{count.derive(|value| i"{value}")}</code>, or <code>{i"{5}"}</code>
 for a plain value. The reactive arms register one subscription with the
@@ -1020,7 +1025,7 @@ framework already puts them there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

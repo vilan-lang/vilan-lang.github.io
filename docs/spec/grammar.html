@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -357,7 +357,9 @@ parameter  = [ "lazy" ] [ "mut" | convention ] [ "..." ] binder [ ":" type ] ;
 convention = "own" | "&amp;" [ "mut" ] ;
 binder     = IDENT
            | "(" binder "," binder { "," binder } [ "," ] ")"
+           | "(" named-binder { "," named-binder } [ "," ] ")"  (* by name, B569 *)
            | "[" binder { "," binder } [ "," ] "]" ;
+named-binder = MEMBER "=" binder ;
 
 extern-attr = "[" "extern" "(" extern-args [ "," "retains" ] [ "," ] ")" "]" ;
 extern-args = STRING [ "," STRING ]              (* global, or module and symbol *)
@@ -665,6 +667,16 @@ there, so a left side that denotes no location — <code>-x</code>, <code>!b</co
 <code>await p</code>, a literal, a value-returning call, a variant constructor — is
 refused by the checker, once per assignment. <code>jump break</code> / <code>jump continue</code> control the
 innermost enclosing loop.</p>
+<p>An assignment is a statement: its value is <code>void</code>, and it stands only where
+a value is <strong>discarded</strong> — an expression statement (<code>x = 5;</code>), a block’s
+trailing expression (<code>{ x = 5 }</code>), a <code>match</code> arm’s body (<code>A =&gt; x = 5,</code>), a
+closure’s expression body (<code>|v| total += v</code>), and a <code>then</code>/<code>else</code> branch of a
+conditional that itself stands in one of these (<code>c then x = 5;</code>). Anywhere
+its value would be USED — inside parentheses, as an argument, a tuple or list
+entry, a <code>let</code> initializer, the right of another <code>=</code>, an operand — it is
+refused, naming the statement to write before it (B569,
+<code>named-tuple-fields.md</code> §3.2). Inside parentheses <code>name = value</code> is a
+tuple’s label (§3.6), never an assignment.</p>
 <h2 id="35-blocks-and-control-expressions"><a class="header" href="#35-blocks-and-control-expressions">3.5 Blocks and control expressions</a></h2>
 <pre><code class="language-text">block      = "{" { statement } [ expression ] "}" ;
 if-expr    = "if" condition-expr block [ "else" ( block | if-expr ) ] ;
@@ -710,6 +722,7 @@ path    = ( IDENT generic-args ␣"::"  (* generic static head *)
           | atom )
           { "::" MEMBER } ;
 call-suffix = [ generic-args ] "(" [ entry { "," entry } [ "," ] ] ")" ;
+                                          (* an argument: its `entry` may be NAMED *)
 member  = NUMBER                          (* tuple index: .0 *)
         | MEMBER [ call-suffix ] ;        (* field / ONE fused method call *)
 MEMBER  = IDENT | RESERVED ;              (* any word, B414 S4 (§2.2) *)
@@ -719,15 +732,19 @@ postfix = "." member                     (* span-adjacent: `.` then the member *
         | "(" [ entry { "," entry } [ "," ] ] ")"
                                           (* direct call on the chain result *)
         | "?." member                    (* lift link, §5.10 *)
-        | "?" ;                           (* expression lift, §5.10 *)
+        | "?"                            (* expression lift, §5.10 *)
+        | "as" ascribed-type ;           (* ascription, §5.8 *)
+ascribed-type = type ;   (* every generic list in it span-adjacent, below *)
 
 atom    = literal | IDENT | IDENT generic-args | struct-init
         | "(" expression ")" | tuple | list
         | tuple-comprehension | macro-invocation | macro-block
         | element | css-block ;
 literal = NUMBER | STRING | "true" | "false" | "null" | "void" ;
-tuple   = "(" ( spread | expression "," entry { "," entry } [ "," ] ) ")" ;
-entry   = spread | expression ;
+tuple   = "(" ( spread | entry "," entry { "," entry } [ "," ] ) ")"
+        | "(" labelled-entry ")" ;        (* the one-slot labelled tuple, B569 *)
+entry   = spread | labelled-entry | expression ;
+labelled-entry = MEMBER "=" expression ;  (* a label / a named argument, B569 *)
 spread  = ".." expression ;
 list    = "[" [ expression { "," expression } [ "," ] ] "]" ;
 tuple-comprehension = "(" comprehension-binding { "," comprehension-binding }
@@ -785,6 +802,38 @@ result (§5.10). A bare <code>?</code> — a <code>?</code> with no <code>.</cod
 SLOT rather than a continuation, so the slot receives the container
 (§5.10). It has been in the language since 2026-07-16 and had no
 production here until now.</p>
+<p><code>EXP as T</code> is a <strong>type ascription</strong> (§5.8): a postfix of this tier, so
+<code>a + b as f64</code> is <code>a + (b as f64)</code>, <code>-x as T</code> is <code>-(x as T)</code>, <code>await p as T</code> ascribes the promise, and the chain goes on after the type —
+<code>a() as A .b() as B</code> is <code>((a() as A).b()) as B</code>. A type never holds a
+<code>.</code>, so a <code>.</code> after it is the next link; a <code>[</code> is an index, a <code>(</code> a direct
+call, and <code>?</code>/<code>!</code> the lift and the try-assert of the ascribed value. An
+ascription is not absorbed into a <code>?.</code> link’s continuation: what stands
+left of <code>as</code> is the whole chain so far. <code>as</code> is a contextual word (§2.2):
+it is read here only after a complete operand and only when a type can
+begin after it, so <code>let as = 5;</code>, <code>as(2)</code> and <code>import a::{b as c}</code> keep
+their meanings.</p>
+<p>The type after <code>as</code> ends where the type grammar (§3.9) ends it, with ONE
+rule of its own, the <strong>whitespace rule</strong>: inside an ascribed type a <code>&lt;</code>
+opens a generic list only when it is span-adjacent to the name before it.
+So <code>n as usize &lt; limit</code> is a comparison, <code>xs as List&lt;usize&gt;</code> an ascription
+to a generic type, and <code>x as List&lt;i32&gt; &gt; y</code> a comparison after a complete
+list; <code>as (T)</code> is the escape, <code>n as (usize) &lt; limit</code>. A spaced list no
+comparison could be — inside another generic list, or one whose <code>&gt;</code> is
+followed by <code>;</code>, <code>,</code>, a closer or <code>.</code> (<code>xs as List &lt;i32&gt;;</code>) — is refused
+with the tight spelling, read as written tight, and <code>vilan fmt</code> writes it
+so. The rule binds in ascribed types only; elsewhere a spaced generic list
+parses as before (and the formatter tightens it). A closure type after
+<code>as</code> is read greedily, as everywhere — <code>f as |i32| i32</code> — and <code>vilan fmt</code>
+prints it parenthesized, <code>f as (|i32| i32)</code>.</p>
+<p><code>value as auto T</code> (and the bare <code>value as auto</code>) is an ascription the
+toolchain writes and keeps (§5.8): it never directs the value, and <code>vilan check --fix</code> rewrites it when the stage’s type moves — a stage hint frozen
+into the file.</p>
+<p>A <code>match</code>, <code>if</code>, <code>for</code> or <code>{</code> form is complete at its closing brace (the
+block-like rule, §3.8), with one continuation it admits: <code>as</code>. <code>match k { .. } as dyn Flow&lt;i32&gt;</code> ascribes the whole form, in a value position and
+at a statement’s head alike — where the <code>as</code> must stand on the brace’s
+own line, because on a later line it is a name beginning the next
+statement. After the type the form is an ordinary operand: the chain and
+the operators go on.</p>
 <p>A leading <code>..</code> marks a <strong>tuple-value spread</strong> (§5.9). It is recognized
 only where an <em>entry</em> begins — a tuple construction’s entry, or a call
 argument — so <code>..</code> after an expression is unaffected and remains the
@@ -793,6 +842,27 @@ tuple construction whose only entry is a spread is still a tuple, not a
 parenthesized group: <code>(..a)</code> is the concatenation of one, and <code>(e)</code> is a
 group as before. There is no type-level spread; <code>(..T, U)</code> does not
 parse.</p>
+<p>A tuple entry may carry a <strong>label</strong> (B569, <code>named-tuple-fields.md</code> §2):
+<code>(x = 5, y = 7)</code>, the struct literal’s <code>name = value</code> spelling, which
+inside parentheses is free because an assignment has left value position
+(§3.4). The label is a MEMBER, so <code>(type = "a", if = true)</code> is legal. A
+tuple labels every written entry or none, and names each label once; a
+spread brings its operand’s slots with their labels, so <code>(..p, z = 3)</code>
+over a labelled <code>p</code> is labelled and over an unlabelled one is refused.
+<code>MEMBER "="</code> decides it at the second token — <code>==</code> and <code>=&gt;</code> are tokens of
+their own — and an i-string’s interpolation hole holds an expression,
+never an entry. <code>(x = 5)</code> is the <strong>one-slot labelled tuple</strong> <code>(x: i32)</code>:
+the label is what makes it a tuple, where <code>(5)</code> stays a group. There is
+no shorthand: <code>(x, y)</code> is positional and never means <code>(x = x, y = y)</code>.
+<code>(x = 5);</code> as a statement builds a tuple and discards it, and is refused
+with the assignment it was meant to be.</p>
+<p>The same entry in an argument list is a <strong>named argument</strong> (B569 S4,
+<code>named-tuple-fields.md</code> §8): a spread parameter collects its arguments
+into one tuple literal, so <code>draw(x = 1, y = 2)</code> against <code>fun draw(...at: (x: f64, y: f64))</code> collects <code>(x = 1, y = 2)</code> and matches it by name (types
+§5.9). The collected arguments are named or none; a name no spread
+parameter collects — a callee without one, a fixed parameter before it — is
+refused, naming the assignment the author may have meant. There are no
+default arguments.</p>
 <p>An <strong>element</strong> appears only in atom position, where <code>&lt;</code> begins no other
 expression; after an operand, <code>&lt;</code> remains a comparison (<code>x &lt; &lt;div/&gt;</code> is
 a comparison whose right operand is an element). <code>/&gt;</code>, the closing
@@ -860,7 +930,7 @@ begins no expression, so there are no hex literals either.</p>
 <tr><th>Level</th><th>Operators</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td>1</td><td><code>::</code> paths, calls, <code>.</code> <code>[]</code> <code>!</code> <code>?.</code> <code>?</code></td><td>§3.6</td></tr>
+<tr><td>1</td><td><code>::</code> paths, calls, <code>.</code> <code>[]</code> <code>!</code> <code>?.</code> <code>?</code>, <code>as T</code></td><td>§3.6; <code>as</code> ascribes (§5.8)</td></tr>
 <tr><td>2</td><td>prefix <code>!</code> <code>-</code> <code>await</code> <code>async</code> <code>&amp;</code> <code>&amp;mut</code> <code>*</code></td><td>unary; <code>async</code> also takes a block</td></tr>
 <tr><td>3</td><td><code>*</code> <code>/</code> <code>%</code></td><td></td></tr>
 <tr><td>4</td><td><code>+</code> <code>-</code></td><td></td></tr>
@@ -960,10 +1030,12 @@ complete operand, where no name can stand, so <code>let then = 1;</code> and
                                                  (* impl-subject binder *)
      | [ "async" | "sync" ] closure-type [ context-clause ]
      | "dyn" type-path                           (* trait object, §5.12 *)
+     | "auto" [ type ]                           (* toolchain-kept, §5.8 *)
      | type-path                                 (* nominal *)
      | "(" IDENT "in" type ":" type ")"          (* mapped tuple, §5.9 *)
-     | "(" [ type { "," type } [ "," ] ] ")"     (* tuple type *)
+     | "(" [ tuple-slot { "," tuple-slot } [ "," ] ] ")"  (* tuple type *)
      ;
+tuple-slot     = [ MEMBER ":" ] type ;     (* labelled: every slot, or none (B569) *)
 type-path      = IDENT { "::" IDENT } [ generic-args ] ;
 closure-type   = ( "||" | "|" [ [IDENT ":"] type { "," [IDENT ":"] type } "|" )
                  [ type ] ;
@@ -986,6 +1058,19 @@ With no return type at all the clause is read by the function
 production above instead. Written after the return type it precedes a
 <code>borrows</code> clause, and written without one it follows it; the formatter
 prints it where it was written.</p>
+<p>A tuple type’s slots may carry <strong>labels</strong> (B569): <code>(x: f64, y: f64)</code>.
+<code>MEMBER ":"</code> at a slot’s head is a label (decided at the second token, so
+<code>a::B</code> stays a path and <code>(U in T: …)</code> a mapped tuple); every slot is
+labelled or none, each label once. A labelled one-slot type <code>(x: i32)</code> is a
+tuple, where <code>(T)</code> stays a group. Labels name positions and are no part of
+the type’s identity (types §5.9).</p>
+<p><code>auto</code> is contextual by <code>dyn</code>’s rule — the marker at a type’s head,
+except <code>auto::</code>, a path into a module named <code>auto</code>. It stands at a
+function’s return, a <code>let</code> or <code>mut</code> annotation and after <code>as</code>, and is
+refused everywhere else (a parameter, a field, a generic argument, a
+trait member’s return); the type after it is optional, and with none the
+annotation ends at the <code>=</code>, the <code>{</code>, the <code>;</code> or a <code>context</code>/<code>borrows</code>
+clause — the bare <code>auto</code>, which <code>vilan check --fix</code> fills (§5.8).</p>
 <p><code>dyn</code> takes a <code>type-path</code> and nothing else: the keyword erases a TRAIT’s
 implementation, so a closure type, a tuple, an array or a view after it names
 nothing that could be erased and is a parse error. A <code>dyn</code> type stands
@@ -1010,11 +1095,19 @@ form.</p>
 <h2 id="310-patterns-match"><a class="header" href="#310-patterns-match">3.10 Patterns (match)</a></h2>
 <pre><code class="language-text">pattern = ("let" | "mut") binder                (* binding *)
         | "(" pattern "," pattern { "," pattern } [ "," ] ")"
+        | "(" named-pattern { "," named-pattern } [ "," ] ")"  (* by name *)
         | STRING | MULTILINE_STRING | NUMBER    (* equality literal *)
         | "_"                                   (* wildcard *)
         | NAME { "::" IDENT }
           [ "(" [ pattern { "," pattern } [ "," ] ] ")" ] ;  (* variant *)
+named-pattern = MEMBER "=" pattern ;
 </code></pre>
+<p>A tuple pattern may be written <strong>by name</strong> (B569): <code>let (y = top, x = left) = p;</code>, <code>(x = 0, y = let v)</code> — the label, then what its slot meets,
+the literal’s spelling. It names exactly the matched value’s labels, in
+any order (the value must be a labelled tuple), and is placed slot by slot
+once the value’s type is known; every element is named or none, and a
+one-element by-name pattern <code>(x = a)</code> is a tuple pattern. A positional
+pattern ignores labels.</p>
 <p>Bindings inside patterns are written explicitly (<code>Some(let x)</code>), so a
 bare name is always a <strong>variant</strong> reference, never a fresh binding: the
 classic mistyped-variant trap is a resolution error instead of a silent
@@ -1112,7 +1205,7 @@ catch-all.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

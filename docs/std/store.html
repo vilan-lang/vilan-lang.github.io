@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6c4c6018.js";
+            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -485,6 +485,95 @@ a <code>MapOp</code> per changed key, a <code>SetOp</code> per member, a <code>S
 for an element changed in place) — never handed a copy to diff. A push builds
 one row. Each flow keeps its own op log at the collection, recorded only while
 the flow is open.</p>
+<h2 id="over-the-wire"><a class="header" href="#over-the-wire">Over the wire</a></h2>
+<p>A store is MIRRORED over a service’s socket by path (<code>std::rpc::mirror</code>): the
+server describes the value at a path below a handle it handed out, and the
+client applies what arrives at the same path of its replica. <code>[derive(Storable)]</code>
+writes what that needs beside the diff — <code>StoreWire</code>: describe the value a path
+reaches, apply a frame at a path, and read a subscription path off a frame at
+the types it walks through. <code>Option</code>, <code>HashMap</code>, <code>HashSet</code> and <code>List</code> answer by
+their shape, and every other type crosses whole through its <code>Wire</code> impl.</p>
+<p>What crosses is <code>Wire</code>’s own format, call for call, with one exception: a
+keyed collection inside a described value — a <code>HashMap</code> or a <code>HashSet</code> field —
+is described EMPTY. Its keys are boundaries of their own, each subscribed and
+seeded on its own (<code>at(k)</code>, <code>contains(x)</code>), so a root that holds a database
+never ships it whole.</p>
+<pre><code class="language-vilan">import std::display::Display;
+import std::hash::Hashable;
+import std::hash_map::HashMap;
+import std::json::json_codec;
+import std::reactive::store::{ Storable, StoreStep, StoreWire };
+import std::wire::{ Frame, Wire };
+
+[derive(Storable, Wire)]
+struct Message {
+	author: str,
+	content: str,
+}
+
+[derive(Storable, Wire)]
+struct Global {
+	motd: str,
+	messages: HashMap&lt;u53, Message&gt;,
+}
+
+fun described(global: Global, path: List&lt;StoreStep&gt;): str {
+	let codec = json_codec();
+	let (record, finish) = (codec.writer)();
+	mut serializer = record;
+	let _reach = global.store_describe_at(&amp;path, 0, &amp;mut serializer, true);
+	match finish() {
+		Frame::Text(let written) =&gt; written,
+		Frame::Binary(let _bytes) =&gt; "",
+	}
+}
+
+fun main() {
+	mut messages: HashMap&lt;u53, Message&gt; = HashMap::new();
+	messages.insert(7, Message { author = "bob", content = "hello" });
+	let id: u53 = 7;
+	let global = Global { motd = "hi", messages };
+	print(described(global, []));                       // {"motd":"hi","messages":[]}
+	print(described(global, [StoreStep::Field(1), StoreStep::Key(id.hash())]));
+	// {"author":"bob","content":"hello"} — key 7's value, its own boundary
+}
+</code></pre>
+<p>On the server, a reply into a store opens one channel per store root per
+connection and adds a GRANT for the handle’s path; the reply carries the
+grant’s base slot and its seed. The client subscribes the boundaries it
+watches under a grant, and each turn’s writes reach it as ONE patch: a write
+inside a boundary as a <code>Set</code> at the writer’s own path, a write at or above it as
+a fresh <code>Seed</code>, an unreachable boundary as <code>Gone</code>. A store nobody mirrors
+records nothing for the wire.</p>
+<p>The client holds a REPLICA of what it was seeded with and reads it through a
+read-only face — <code>RemoteStore&lt;T&gt;</code>, <code>RemoteStoreSome&lt;P&gt;</code> and <code>RemoteStoreFlag</code>,
+the three handle shapes of a local store, with the same projections (the derive
+writes both). A subscription on a face holds its nearest BOUNDARY: the grant’s
+base, or a map key reached with <code>at(k)</code>. The first hold on a key puts that key’s
+slot on the wire with the turn’s one <code>Subscribe</code>; the last one takes it off, and
+the key leaves the replica. A frame lands in the replica as an ordinary
+comparing write, so a client observer wakes only when its own value changed.</p>
+<p>A service method returning a store hands the client a <code>RemoteStoreSome&lt;T&gt;</code>
+minted UNLEASED, as every handle stub is: nothing is asked until something
+holds it, the first hold issues the call, and the root reads <code>None</code> until its
+seed lands — it is a maybe at the client, whatever the server wrote.</p>
+<pre><code class="language-vilan fragment">[service(BoardClient)]
+struct Board {}
+
+impl Board {
+	[rpc]
+	fun global(self): Store&lt;Global&gt; {
+		shared
+	}
+}
+
+// at the client
+let global: RemoteStoreSome&lt;Global&gt; = client.global();
+global.messages().at(7).some().content().effect(|content| print(content.unwrap_or("")));
+</code></pre>
+<p>The <code>[rpc]</code> spelling waits on the compiler reading <code>Store&lt;T&gt;</code> and <code>StoreSome&lt;P&gt;</code>
+as handle returns (tracker A153); std’s half — the repliers, the stub, the
+replica — is in place.</p>
 <h2 id="what-it-costs"><a class="header" href="#what-it-costs">What it costs</a></h2>
 <ul>
 <li><strong>A derive line per type</strong>, and a knob per coarse field.</li>
@@ -553,7 +642,7 @@ copies that key’s value out and back: a map lends no value in place.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-4bff52f7.js"></script>
+        <script src="../theme/vilan-695bf958.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
