@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
+            window.path_to_searchindex_js = "../searchindex-127f6222.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -196,6 +196,7 @@ implements: <a href="reactive.html">std::reactive</a>.</p>
 <tr><td><code>[reactive(coarse)]</code></td><td>field attribute</td><td>the field is one slot, compared whole</td></tr>
 <tr><td><code>[reactive(name = "..")]</code></td><td>field attribute</td><td>the name the field’s projection is generated under</td></tr>
 <tr><td><code>when_live(handle, body)</code></td><td><code>std::web::ui</code></td><td>a variant as content: rebuilt only when the variant changes, the payload’s <code>Store&lt;P&gt;</code> in hand</td></tr>
+<tr><td><code>when_remote_live(handle, body)</code></td><td><code>std::web::remote</code></td><td><code>when_live</code> for a mirrored store’s handle (<code>RemoteStoreSome&lt;P&gt;</code>), the payload’s <code>RemoteStore&lt;P&gt;</code> in hand</td></tr>
 <tr><td><code>.at(key)</code></td><td>on a <code>HashMap</code> field</td><td>one key’s value as a <code>Store&lt;Option&lt;V&gt;&gt;</code> that wakes for that key only</td></tr>
 <tr><td><code>.contains(x)</code></td><td>on a <code>HashSet</code> field</td><td>one member’s presence as a <code>Store&lt;bool&gt;</code></td></tr>
 <tr><td><code>.by_key(k)</code></td><td>on a keyed <code>List</code> field</td><td>one element, found by its <code>Keyed</code> key, as a <code>Store&lt;Option&lt;T&gt;&gt;</code></td></tr>
@@ -551,7 +552,8 @@ the three handle shapes of a local store, with the same projections (the derive
 writes both). A subscription on a face holds its nearest BOUNDARY: the grant’s
 base, or a map key reached with <code>at(k)</code>. The first hold on a key puts that key’s
 slot on the wire with the turn’s one <code>Subscribe</code>; the last one takes it off, and
-the key leaves the replica. A frame lands in the replica as an ordinary
+the key leaves the replica (the server answers the release with the slot’s
+<code>Gone</code>, after which nothing names it). A frame lands in the replica as an ordinary
 comparing write, so a client observer wakes only when its own value changed.</p>
 <p>A service method returning a store hands the client a <code>RemoteStoreSome&lt;T&gt;</code>
 minted UNLEASED, as every handle stub is: nothing is asked until something
@@ -571,9 +573,32 @@ impl Board {
 let global: RemoteStoreSome&lt;Global&gt; = client.global();
 global.messages().at(7).some().content().effect(|content| print(content.unwrap_or("")));
 </code></pre>
-<p>The <code>[rpc]</code> spelling waits on the compiler reading <code>Store&lt;T&gt;</code> and <code>StoreSome&lt;P&gt;</code>
-as handle returns (tracker A153); std’s half — the repliers, the stub, the
-replica — is in place.</p>
+<p>A list field crosses by its splices — a push is the one element and a count,
+never the list again — and a map’s or a set’s KEY SET is a boundary of its own:
+<code>keys()</code> on a remote map or set is a <code>RemoteStoreKeys&lt;K&gt;</code>, a <code>Source&lt;List&lt;K&gt;&gt;</code>
+told its keys when one comes or goes. <code>each</code> over it, each row on its own key,
+is the map leased as a collection:</p>
+<pre><code class="language-vilan fragment">&lt;ul&gt;{each(global.channels().keys(), |id| id, |id| {
+	&lt;li&gt;{when_remote_live(global.channels().at(id).some(), |channel| &lt;b&gt;{channel.name()}&lt;/b&gt;)}&lt;/li&gt;
+})}&lt;/ul&gt;
+</code></pre>
+<p>A frame’s ops land in ONE client turn, so an observer never sees half a patch.</p>
+<p>A reconnect keeps the replica. While the socket is down every handle holds its
+last value; the replay asks each held root’s method again, once, re-subscribes
+every boundary still held in one <code>Subscribe</code>, and lands the re-seeds as
+comparing writes — only what changed while the connection was down wakes.</p>
+<p>A handle through a variant or a key is a transient, as a <code>RemoteSource</code> is: its
+value is <code>None</code> both before its boundary’s seed lands and after the server says
+there is nothing there, and <code>states()</code> tells the two apart — <code>Pending</code>, then
+<code>Ready(value)</code> or <code>Absent</code>; <code>Refreshing(value)</code> while a fresher value is owed
+(a re-mint, a re-subscribe); <code>Failed(error, last)</code> when the minting call failed
+(<code>TransientSource&lt;P, RpcError&gt;</code>). A boundary’s value as content is
+<code>std::web::remote::when_remote_live</code> — <code>when_live</code>’s twin for a remote handle,
+whose body gets the payload’s <code>RemoteStore&lt;P&gt;</code>, its fields plain and seeded:</p>
+<pre><code class="language-vilan fragment">import std::web::remote::when_remote_live;
+
+&lt;li&gt;{when_remote_live(global.messages().at(id).some(), |message| &lt;span&gt;{message.content()}&lt;/span&gt;)}&lt;/li&gt;
+</code></pre>
 <h2 id="what-it-costs"><a class="header" href="#what-it-costs">What it costs</a></h2>
 <ul>
 <li><strong>A derive line per type</strong>, and a knob per coarse field.</li>

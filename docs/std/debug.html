@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
+            window.path_to_searchindex_js = "../searchindex-127f6222.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -245,15 +245,16 @@ as it does to <code>dbg</code>.</p>
 implements it for <code>str</code> (quoted and escaped as <code>dbg</code> writes it), <code>bool</code>, every
 number (a float keeps its <code>.0</code>: <code>3.0.debug()</code> is <code>"3.0"</code>, and negative zero is
 <code>"-0.0"</code>), and for <code>List</code>, <code>Option</code>, <code>Result</code> and tuples whose elements are
-<code>Debug</code> (<code>(1, "two").debug()</code> is <code>(1, "two")</code>), and for std’s handles as
+<code>Debug</code> (<code>(1, "two").debug()</code> is <code>(1, "two")</code>), a fixed array <code>[T; n]</code> of any
+length as a <code>List</code> (<code>[1, 2, 3].debug()</code>), and for std’s handles as
 <code>dbg</code> prints them: <code>HashMap { "ada" =&gt; 36 }</code> and <code>HashSet { 1, 2 }</code> in insertion
 order, <code>Shared(..)</code> (a cell met again inside its own rendering is <code>&lt;cycle&gt;</code>),
 <code>SignalCell(3)</code> (read without subscribing) and a <code>BigInt</code>’s digits.
 <code>[derive(Debug)]</code> writes it for a struct or an enum from its fields
 (<code>Point { x = 1, y = 2 }</code>, <code>Shape::Circle(1.5)</code>), so a struct holding a
 <code>List&lt;i32&gt;</code>, an <code>Option&lt;f64&gt;</code> or a <code>HashMap</code> derives it. A closure field prints
-its type (<code>&lt;closure |i32| i32&gt;</code>) and a fixed-array field of a literal length
-its elements (<code>[1, 2]</code>), since neither has an impl of its own. <code>.debug()</code> is opt-in: a type has
+its type (<code>&lt;closure |i32| i32&gt;</code>), as does each closure of a fixed-array field,
+since a closure has no impl of its own. <code>.debug()</code> is opt-in: a type has
 it only through the derive or an impl of its own.</p>
 <p><code>dbg</code> needs none of this: it prints every type. A <code>Debug</code> impl you WRITE decides
 how <code>dbg</code> prints that type, wherever the value sits (a field, a list element,

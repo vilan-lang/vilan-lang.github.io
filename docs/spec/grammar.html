@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
+            window.path_to_searchindex_js = "../searchindex-127f6222.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -599,18 +599,31 @@ exactly as a generic parameter’s may (§5.9): <code>impl type T: (2..) with Tu
 impl selection admits a receiver the way a tuple-bounded parameter admits
 an argument — arity inside the range, every element satisfying the element
 bound.
+An array’s LENGTH binds the same way (types §5.1, <em>Fixed arrays</em>): <code>_</code> or
+<code>const N</code> in a subject’s length position (<code>impl [type T; _]</code>, <code>impl [type T; const N]</code>) is a length parameter, <code>_</code> the one the head declines to name;
+at a <code>const</code> parameter’s argument position (<code>impl Ring&lt;type T, const N&gt;</code>)
+the binder is <code>const N</code> or <code>_</code>. A literal length outranks a length binder by
+the specificity order (<code>impl [i32; 3]</code> over <code>impl [type T; _]</code>).
 <code>with</code> lists the implemented trait(s). An impl without <code>with</code> provides
 inherent members. A trait’s <code>with</code> lists supertraits.</p>
 <h3 id="generic-parameters-and-arguments"><a class="header" href="#generic-parameters-and-arguments">Generic parameters and arguments</a></h3>
 <pre><code class="language-text">generic-params = "&lt;" generic-param { "," generic-param } [ "," ] "&gt;" ;
 generic-param  = [ "type" ] IDENT [ ":" ( bound-list | tuple-bound ) ]
-                 [ "=" type ] ;
+                 [ "=" type ]
+               | "const" IDENT ;                (* a length parameter *)
 bound-list  = type { "+" type } ;
 tuple-bound = "(" [ NUMBER ] ".." [ NUMBER ] [ ":" type ] ")" ;
-generic-args = "&lt;" type { "," type } [ "," ] "&gt;" ;
+generic-args = "&lt;" generic-arg { "," generic-arg } [ "," ] "&gt;" ;
+generic-arg  = type | NUMBER | "const" IDENT ;  (* a length; a binder in an impl subject *)
 </code></pre>
 <p>A tuple bound constrains a variadic tuple parameter’s arity and,
 optionally, each element (<code>T: (2..)</code>, <code>T: (..: Display)</code>); see §5.9.</p>
+<p><code>const N</code> declares a <strong>length parameter</strong> (types §5.6, <em>Length
+parameters</em>): <code>fun total&lt;const N&gt;(values: [i32; N])</code>, <code>struct Ring&lt;T, const N&gt; { slots: [T; N] }</code>. It takes no bound and no default. A NUMBER as a
+generic argument is the length a <code>const</code> parameter takes (<code>zeros&lt;4&gt;()</code>,
+<code>Ring&lt;i32, 4&gt;</code>); a name there is read as the type path it is spelled as, and
+the parameter’s kind decides what it must name — a length parameter at a
+<code>const</code> position, a type at any other.</p>
 <h3 id="attributes-and-macro-items"><a class="header" href="#attributes-and-macro-items">Attributes and macro items</a></h3>
 <pre><code class="language-text">derived-item   = derive-attr ( struct | enum ) ;
 derive-attr    = "[" "derive" "(" IDENT { "," IDENT } [ "," ] ")" "]" ;
@@ -746,7 +759,8 @@ tuple   = "(" ( spread | entry "," entry { "," entry } [ "," ] ) ")"
 entry   = spread | labelled-entry | expression ;
 labelled-entry = MEMBER "=" expression ;  (* a label / a named argument, B569 *)
 spread  = ".." expression ;
-list    = "[" [ expression { "," expression } [ "," ] ] "]" ;
+list    = "[" [ expression { "," expression } [ "," ] ] "]"
+        | "[" expression ";" array-length "]" ;   (* repeat: the value per slot *)
 tuple-comprehension = "(" comprehension-binding { "," comprehension-binding }
                       "=&gt;" expression ")" ;
 comprehension-binding = IDENT "in" secondary-expr ;
@@ -1034,7 +1048,11 @@ complete operand, where no name can stand, so <code>let then = 1;</code> and
      | type-path                                 (* nominal *)
      | "(" IDENT "in" type ":" type ")"          (* mapped tuple, §5.9 *)
      | "(" [ tuple-slot { "," tuple-slot } [ "," ] ] ")"  (* tuple type *)
+     | "[" type ";" array-length "]"            (* fixed array, §5.1 *)
      ;
+array-length   = NUMBER                         (* unsuffixed or `usize` *)
+               | IDENT                          (* a length parameter, or a named length *)
+               | "_" | "const" IDENT ;          (* impl-subject binders *)
 tuple-slot     = [ MEMBER ":" ] type ;     (* labelled: every slot, or none (B569) *)
 type-path      = IDENT { "::" IDENT } [ generic-args ] ;
 closure-type   = ( "||" | "|" [ [IDENT ":"] type { "," [IDENT ":"] type } "|" )
@@ -1058,6 +1076,18 @@ With no return type at all the clause is read by the function
 production above instead. Written after the return type it precedes a
 <code>borrows</code> clause, and written without one it follows it; the formatter
 prints it where it was written.</p>
+<p>A <strong>fixed array</strong> <code>[T; n]</code> holds <code>n</code> values of <code>T</code>, the length part of the
+type (types §5.1). Its length is a whole number (unsuffixed or <code>usize</code>), the
+name of a length parameter in scope (<code>[i32; N]</code> under <code>&lt;const N&gt;</code>), a NAMED
+length — an immutable binding, <code>let</code> or <code>const let</code>, at any scope the name
+resolves in (imports included), whose initializer is such a number or another
+named length (<code>const let SIZE = 16;</code>, <code>[u8; SIZE]</code>) — or, in an <code>impl</code>
+subject only, a length binder, <code>_</code> or <code>const N</code>. A binder written anywhere
+else is refused, as <code>_</code> is in an annotation. The same <code>array-length</code> follows
+the <code>;</code> of a repeat literal <code>[value; n]</code> (§3.6). A length that needs
+evaluating (<code>2 * K</code>, a call, a <code>mut</code>, a parameter) is refused, and the
+message says why: lengths are known before the program is typed, and <code>const</code>
+evaluation runs after.</p>
 <p>A tuple type’s slots may carry <strong>labels</strong> (B569): <code>(x: f64, y: f64)</code>.
 <code>MEMBER ":"</code> at a slot’s head is a label (decided at the second token, so
 <code>a::B</code> stays a path and <code>(U in T: …)</code> a mapped tuple); every slot is

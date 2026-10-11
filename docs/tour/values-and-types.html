@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
+            window.path_to_searchindex_js = "../searchindex-127f6222.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -468,6 +468,36 @@ in the type, so the compiler folds it to the constant. And because the
 length is known, <code>let [r, g, b] = rgb;</code> destructures one irrefutably,
 with the element count checked against the type (works in parameter
 position too).</p>
+<p>Arrays compare with <code>==</code>, key a <code>HashMap</code>, print through <code>Debug</code>, and
+convert with <code>to_list()</code> and <code>iter()</code> at any length. Code of your own can
+work over every length too: <code>const N</code> names a length parameter, read in the
+body as a <code>usize</code>, and an <code>impl</code> head can bind one (<code>_</code> when the body never
+names it):</p>
+<pre><code class="language-vilan">trait Count {
+	fun count(self): usize;
+}
+
+impl [type T; _] with Count {
+	fun count(self): usize {
+		self.len()
+	}
+}
+
+fun total&lt;const N&gt;(values: [i32; N]): i32 {
+	mut sum = 0;
+	for value in values {
+		sum = sum + value;
+	}
+	sum
+}
+
+fun main() {
+	let pair: [str; 2] = ["a", "b"];
+	print(pair.count());           // 2
+	print(total([1, 2, 3]));       // 6 — N is 3 here
+	print(pair == ["a", "b"]);     // true
+}
+</code></pre>
 <blockquote>
 <p><strong>Going deeper.</strong> <code>HashMap</code> and <code>HashSet</code> key <strong>by value</strong>. Scalar keys (<code>i32</code>,
 <code>str</code>) and backed enums (<code>enum Align { Start = "flex-start" }</code> — the enum

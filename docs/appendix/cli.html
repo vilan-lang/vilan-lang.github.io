@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
+            window.path_to_searchindex_js = "../searchindex-127f6222.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -242,7 +242,22 @@ exactly as addressing the directory would — so <code>vilan check src/main.vl</
 answers about that file what <code>vilan check .</code> answers. What it does <em>not</em> do is
 run the package’s <code>[build]</code> hooks: naming one file asks for that file, not for
 the package’s build pipeline. A file with no <code>vilan.toml</code> above it compiles on
-its own, with the default prelude and no dependencies.</p>
+its own, with the default prelude and no dependencies. A file of a <code>[library]</code>
+is a <em>module</em> of it (no <code>main</code> is asked for), rooted at the library’s layer
+for <code>pkg::</code> paths, and imports the library’s <code>[library.dependencies]</code> as the
+editor does.</p>
+<p><strong>std is not checked as an entry.</strong> Address a file inside the toolchain’s own
+<code>std/src/</code> and about one in six of them (twelve of seventy-one at v0.47.0)
+reports errors that a program importing std never sees: the files that
+declare compiler intrinsics as bodyless <code>external fun</code>s (<code>context.vl</code>,
+<code>process.vl</code>, <code>random.vl</code>, <code>shared.vl</code>, <code>web/dom.vl</code>) are refused for naming
+no <code>[extern(..)]</code> binding, the platform-layer files (<code>browser/web/ui.vl</code>,
+<code>process/web/ui.vl</code>, <code>web/document.vl</code>, <code>web/prelude.vl</code>, <code>web/router.vl</code>)
+cannot reach their base layer’s modules through <code>pkg::</code>, which has one root in
+file mode, and <code>reactive/store.vl</code> and <code>rpc/mirror.vl</code> read an <code>[internal]</code>
+field that only std’s own code may. None of those is a defect in std. Std is
+checked through the programs and tests that import it (<code>vilan check .</code> in any
+package, <code>vilan test</code>), never one file at a time.</p>
 <ul>
 <li><code>--stdout</code>: print the JavaScript instead of writing a file.</li>
 <li><code>--rerun-hooks</code>: run every <code>[[build.hook]]</code> even if it is fresh — the

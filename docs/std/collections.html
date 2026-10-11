@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-e0e7a2b4.js";
+            window.path_to_searchindex_js = "../searchindex-127f6222.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -292,7 +292,8 @@ index, exactly as <code>list[i]</code> does — a bad index is a caller bug. Rea
 </code></pre>
 <h3 id="appending-a-run"><a class="header" href="#appending-a-run">Appending a run</a></h3>
 <p><code>push_many(items)</code> appends every item of a run, in order: another list, a
-<code>HashSet</code> (its members in insertion order) or any iterator — whatever is
+fixed array <code>[T; n]</code>, a <code>HashSet</code> (its members in insertion order) or any
+iterator — whatever is
 <code>Items&lt;T&gt;</code> (<code>std::iterator</code>). The run is taken whole first, so a list pushed
 onto itself appends a copy of itself as it stood.</p>
 <pre><code class="language-vilan">fun main() {
@@ -318,6 +319,46 @@ fun main() {
 	print([1, 2, 3].join("-"));                    // 1-2-3
 }
 </code></pre>
+<h2 id="fixed-arrays-t-n"><a class="header" href="#fixed-arrays-t-n">Fixed arrays <code>[T; n]</code></a></h2>
+<p>A fixed array (the <a href="../tour/values-and-types.html">tour</a> introduces it) is a
+value whose length is part of its type. std implements its traits once for
+every length, so <code>[u8; 4]</code> and <code>[str; 100]</code> get the same surface:</p>
+<ul>
+<li><strong><code>==</code> / <code>!=</code></strong> when the element is <code>PartialEq</code> — equal when every position
+is. Two arrays of different lengths are different types, so <code>==</code> never
+meets them; a <code>[derive(PartialEq)]</code> struct with an array field derives.</li>
+<li><strong><code>Hashable</code></strong> when the element is — an array keys a <code>HashMap</code> or joins a
+<code>HashSet</code>.</li>
+<li><strong><code>Debug</code></strong> when the element is — <code>T: Debug</code> takes an array, and it prints
+as a <code>List</code> does.</li>
+<li><strong><code>Items&lt;T&gt;</code></strong> — <code>xs.push_many(fixed)</code> appends one.</li>
+<li><strong><code>to_list()</code></strong>, a <code>List</code> copy of the elements, and <strong><code>iter()</code></strong>, a cursor
+over a snapshot of them that opens the <a href="#adapters">adapter chain</a>. An
+array never coerces to a <code>List</code>; these are the conversions.</li>
+</ul>
+<pre><code class="language-vilan">import std::{ hash_map::HashMap, iterator::Iterator };
+
+fun main() {
+	let rgb: [u8; 3] = [255, 128, 0];
+	print(rgb == [255, 128, 0]);             // true
+
+	mut names: HashMap&lt;[u8; 3], str&gt; = HashMap::new();
+	names.insert(rgb, "orange");
+	print(names.get([255, 128, 0]).unwrap_or("?"));  // orange
+
+	mut xs = [1];
+	let more: [i32; 2] = [2, 3];
+	xs.push_many(more);
+	print(xs.len());                           // 3
+	let doubled = rgb.iter().map(|c| c.as_i32() * 2).to_list();
+	print(doubled[0]);                         // 510
+	print(rgb.to_list().len());                // 3
+}
+</code></pre>
+<p>The same door is open to your own traits: an impl head may bind the length
+(<code>impl [type T; _] with Count</code>, or <code>impl [type T; const N]</code> to read it as <code>N</code>),
+and a function may take one (<code>fun total&lt;const N&gt;(values: [i32; N])</code>). The
+<a href="../spec/types.html">types chapter</a> states the rules.</p>
 <h2 id="hashmapk-v"><a class="header" href="#hashmapk-v"><code>HashMap&lt;K, V&gt;</code></a></h2>
 <pre><code class="language-vilan fragment">impl HashMap&lt;type K: Hashable, type V&gt; {
 	fun new(): HashMap&lt;K, V&gt;
@@ -437,11 +478,15 @@ fun main() {
 impl List&lt;type T: Hashable&gt; { fun to_set(self): HashSet&lt;T&gt; }
 impl HashSet&lt;type T: Hashable&gt; with Default { fun default(): HashSet&lt;T&gt; }  // the empty set
 impl HashSet&lt;type T: Hashable&gt; with PartialEq                             // same members; order ignored
+impl HashSet&lt;type T: Hashable + Wire&gt; with Wire                          // the list of its members
 </code></pre>
 <p>Value-keyed like <code>HashMap</code> (element <code>T</code> must be <code>Hashable</code>); <code>for x in set</code>
 iterates the elements in insertion order (a duplicate insert keeps its value’s
 place; a value removed and inserted again goes to the end). <code>std::set::Set</code> was its
 name before v0.42, removed in v0.44 as <code>Map</code> was.</p>
+<p>A set of <code>Wire</code> members is <code>Wire</code>: it crosses as the list of its members, in
+insertion order, so a struct with a set field derives <code>Wire</code> (and a mirrored
+store carries one, each member a boundary of its own — <code>contains(x)</code>).</p>
 <p><code>union</code>/<code>intersection</code>/<code>difference</code> are the standard set operations, each
 returning a new <code>HashSet</code> and leaving both receivers untouched:</p>
 <pre><code class="language-vilan">import std::hash_set::HashSet;
@@ -518,8 +563,8 @@ unshared form is <code>HashMap::get_or_insert(key, make)</code> on a map you hol
 <p>A key’s value is turned into a <code>Hash</code> (a canonical key) by <code>key.hash()</code>. Three
 routes reach it:</p>
 <ul>
-<li><strong>Scalars</strong> (<code>str</code>, <code>bool</code>, every sized numeric) and <code>List</code>/<code>Option</code> of a
-<code>Hashable</code> — implemented by std.</li>
+<li><strong>Scalars</strong> (<code>str</code>, <code>bool</code>, every sized numeric), a fixed array <code>[T; n]</code>
+and <code>List</code>/<code>Option</code> of a <code>Hashable</code> — implemented by std.</li>
 <li><strong>A backed enum</strong> — implemented by the compiler beside its <code>value()</code>/<code>parse()</code>
 (see the types chapter), off the same opt-in: writing <code>= "flex-start"</code> is what
 makes the enum that value, and the value is the key. So <code>Align::Start.hash()</code>
