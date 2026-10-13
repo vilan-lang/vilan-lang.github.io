@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-127f6222.js";
+            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -195,6 +195,12 @@ position the block folds to the value of the returned expression
 (for plain values, prefer <code>const</code>, §9).</li>
 <li>Macros may call other macros as ordinary functions during expansion.</li>
 </ul>
+<p>A macro’s name is in scope where it is declared: at a file’s top level,
+throughout the file; inside an inline <code>mod { … }</code>, throughout that
+<code>mod</code> and the <code>mod</code>s nested in it, but not beside or outside it. Another
+file reaches a top-level macro by importing it by name; std’s macros are
+in scope everywhere. A file’s macros compile together, so each name is
+declared once per file, whichever <code>mod</code> declares it.</p>
 <h2 id="102-the-macro-environment"><a class="header" href="#102-the-macro-environment">10.2 The macro environment</a></h2>
 <p>A macro’s body is ordinary Vilan, but it compiles against
 <strong><code>macro_std</code></strong>, the compile-time standard library (<code>source</code>, the

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-127f6222.js";
+            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -362,7 +362,11 @@ server must agree.</li>
 </ul>
 <p><code>[derive(Wire)]</code> requires every field to be Wire, recursively, checked at
 the derive site. You implement <code>Serialize</code>/<code>Deserialize</code> by hand only for
-types with a custom encoding.</p>
+types with a custom encoding. Neither <code>[derive(Wire)]</code> nor <code>[derive(Json)]</code>
+takes a trait object among a type’s members (<code>source: dyn Src</code>, a
+<code>List&lt;dyn Src&gt;</code>, a variant’s <code>dyn</code> payload): the decoder rebuilds every
+member by its type, and a <code>dyn</code> names none — hold the concrete type, or
+an enum of the concrete types, there instead.</p>
 <p><strong>A reader ENFORCES the type it is asked for.</strong> The frame is text a
 stranger chose, so a read whose value is of the wrong JSON kind poisons the
 reader with a reason naming what was expected and what was found —

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-127f6222.js";
+            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -1028,6 +1028,9 @@ count + "n="                 // error: only a `str` LEFT operand concatenates
 index - count                // error: usize and i32 — `-`, `*`, `/`, `%` as `+`
 count * true                 // error: `*` computes on two numbers, and `bool` is not one
 count * "2"                  // error: the same, for `str`
+flags &amp; index                // error: i32 and usize — `&amp;`, `|`, `^` take one integer type
+count &lt;&lt; index               // a shift: the right operand is a count, any integer type
+ratio &amp; 1                    // error: a bitwise operator over a float
 </code></pre>
 <pre><code class="language-vilan fragment">fun show&lt;T&gt;(value: T): str { "v=" + value }           // error: `T` is unbounded
 fun show&lt;T: Add&gt;(value: T): str { "v=" + value }      // error: no bound provides `to_string`
@@ -1180,7 +1183,11 @@ match to where the parameter is concrete. A bound does not change this:
 a trait bound cannot make a parameter be one particular enum.</p>
 <h2 id="58-conversions-and-coercions"><a class="header" href="#58-conversions-and-coercions">5.8 Conversions and coercions</a></h2>
 <p>There are <strong>no implicit conversions</strong> between numeric types; use the
-<code>as_*</code> methods (value-converting, Rust-<code>as</code> semantics). There is <strong>one
+<code>as_*</code> methods (value-converting, Rust-<code>as</code> semantics). Every binary
+operator over two numbers takes one type on both sides, with one
+exception taken from Rust: a shift’s right operand (<code>&lt;&lt;</code>, <code>&gt;&gt;</code>) is a
+count and may be any integer type. A bitwise operator never takes a
+float. There is <strong>one
 implicit coercion</strong>: a reference to a plain named function coerces to a
 matching closure type:</p>
 <pre><code class="language-vilan fragment">let transform: |str| i32 = measure;    // fun measure(text: str): i32

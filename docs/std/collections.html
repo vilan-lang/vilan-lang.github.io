@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-127f6222.js";
+            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -326,7 +326,8 @@ every length, so <code>[u8; 4]</code> and <code>[str; 100]</code> get the same s
 <ul>
 <li><strong><code>==</code> / <code>!=</code></strong> when the element is <code>PartialEq</code> — equal when every position
 is. Two arrays of different lengths are different types, so <code>==</code> never
-meets them; a <code>[derive(PartialEq)]</code> struct with an array field derives.</li>
+meets them; a <code>[derive(PartialEq)]</code> struct with an array field derives.
+The array is <code>Eq</code> when the element is, so a <code>T: Eq</code> takes an <code>[i32; 4]</code>.</li>
 <li><strong><code>Hashable</code></strong> when the element is — an array keys a <code>HashMap</code> or joins a
 <code>HashSet</code>.</li>
 <li><strong><code>Debug</code></strong> when the element is — <code>T: Debug</code> takes an array, and it prints

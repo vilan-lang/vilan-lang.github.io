@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-127f6222.js";
+            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -341,7 +341,10 @@ change program semantics (§7.6), only the emitted text; the hooks are
 not among them. <code>dbg</code> (<code>"keep"</code> | <code>"strip"</code>) says what a <code>dbg(..)</code>
 or <code>dbg_stack()</code> call does: the <code>debug</code> preset keeps it (it prints), the <code>release</code>
 preset refuses the build at each call, <code>"strip"</code> makes the call its
-argument and prints nothing, and <code>"keep"</code> prints in release too. <code>run</code> is a command line (or a list of them) executed
+argument and prints nothing, and <code>"keep"</code> prints in release too.
+<code>source-maps</code> (a bool) writes a source map beside each script: on under
+<code>debug</code>, off under <code>release</code>; it changes no byte of the script but the
+comment that names the map. <code>run</code> is a command line (or a list of them) executed
 through the host shell <strong>before</strong> each build (each <code>--watch</code> round
 included), in the manifest’s directory, in order; a non-zero exit
 fails the build. It runs with the invoking user’s privileges and

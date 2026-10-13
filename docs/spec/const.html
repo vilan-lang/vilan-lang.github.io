@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-127f6222.js";
+            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -327,6 +327,12 @@ type: numbers, strings, booleans, lists, tuples, structs and enums of
 const-evaluable contents. The expression’s <em>type</em> is checked exactly
 as if it ran at runtime; <code>const</code> never changes typing, only when the
 computation happens.</p>
+<p>A trait object may be built and called <em>during</em> the evaluation — a
+<code>let source: dyn Src = ..</code> inside a <code>const fun</code> dispatches as it would at
+runtime — but a result that is or holds one (<code>const let C: dyn Src</code>, a
+struct with a <code>dyn</code> field) is refused: its method table is code the
+program builds, not data a build can write down. Keep the concrete type
+at the <code>const</code> and let the value meet the <code>dyn</code> type where it is used.</p>
 <h2 id="95-inferred-const"><a class="header" href="#95-inferred-const">9.5 Inferred <code>const</code></a></h2>
 <p>A <strong>release</strong> build additionally folds <code>let</code> and <code>mut</code> initializers
 that were never marked <code>const</code>, where it can settle them under §9.2’s

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-127f6222.js";
+            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -835,8 +835,13 @@ list; <code>as (T)</code> is the escape, <code>n as (usize) &lt; limit</code>. A
 comparison could be — inside another generic list, or one whose <code>&gt;</code> is
 followed by <code>;</code>, <code>,</code>, a closer or <code>.</code> (<code>xs as List &lt;i32&gt;;</code>) — is refused
 with the tight spelling, read as written tight, and <code>vilan fmt</code> writes it
-so. The rule binds in ascribed types only; elsewhere a spaced generic list
-parses as before (and the formatter tightens it). A closure type after
+so. The rule binds in expression position too (E291): after a name — a
+callee, a member call, a <code>::</code> path head, a struct literal’s head — a <code>&lt;</code>
+opens a generic list only when it touches the name, so <code>a &lt; b &gt; (c)</code> is two
+comparisons and <code>f&lt;T&gt;(x)</code> a generic call; a spaced list no comparison could
+be, one whose <code>&gt;</code> is followed by <code>::</code> or <code>{</code> (<code>List &lt;i32&gt;::new()</code>), is
+refused with the tight spelling and read tight. In a type annotation a
+spaced generic list parses as before (and the formatter tightens it). A closure type after
 <code>as</code> is read greedily, as everywhere — <code>f as |i32| i32</code> — and <code>vilan fmt</code>
 prints it parenthesized, <code>f as (|i32| i32)</code>.</p>
 <p><code>value as auto T</code> (and the bare <code>value as auto</code>) is an ascription the

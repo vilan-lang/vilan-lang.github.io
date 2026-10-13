@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-127f6222.js";
+            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -300,7 +300,9 @@ fun main() {
 	print(values.get(5).is_none());
 }
 </code></pre>
-<p>On node the line is the header of the uncaught <code>Error</code>, so a stack follows it;
+<p>On node the line is the header of the uncaught <code>Error</code>, so a stack follows it,
+and under <code>vilan run</code> that stack is in <code>.vl</code> files and lines too (see
+<a href="#in-a-debugger">In a debugger</a> below);
 the native binary prints the line alone and exits with status 1. A panic that
 is caught (<code>std::reactive::guarded</code>, a failing task) carries its message alone.</p>
 <h3 id="track_caller"><a class="header" href="#track_caller"><code>[track_caller]</code></a></h3>
@@ -333,6 +335,38 @@ inside one is not tracking: its panic names its own line. The attribute is
 refused on a trait method (a call through a trait is dispatched, and no call
 site knows to pass a location), and a tracking function cannot be passed as a
 value; wrap it in a closure.</p>
+<h2 id="in-a-debugger"><a class="header" href="#in-a-debugger">In a debugger</a></h2>
+<p>A <code>debug</code> build (the default) writes a <strong>source map</strong> beside each script:
+<code>main.mjs.map</code> next to <code>main.mjs</code>, <code>dist/server.mjs.map</code> next to
+<code>dist/server.mjs</code>, named by a <code>//# sourceMappingURL=</code> comment on the script’s
+last line. A debugger reads it to show your <code>.vl</code> files where the JavaScript
+would be, and node reads it to report a stack in them:</p>
+<pre><code class="language-text">panicked at main.vl:4:5: index out of bounds: the length is 2 but the index is 5
+    at __at (file:///tmp/vilan-run-4242.mjs:3:8)
+    at pick (/srv/app/main.vl:4:5)
+    at &lt;anonymous&gt; (/srv/app/main.vl:9:11)
+</code></pre>
+<p>(<code>__at</code> is the runtime’s own bounds check, which has no <code>.vl</code> line; <code>main</code>’s
+body runs at the module’s top level, hence <code>&lt;anonymous&gt;</code>.)</p>
+<p><code>vilan run</code> passes node <code>--enable-source-maps</code> whenever there is a map, which
+is where that stack comes from. The map points at statements, calls, closures
+and function heads, and its <code>names</code> carry each function’s source name. It
+carries your files’ text; std’s files are named by their path in the std
+cache and marked to be skipped, so “step into” stays in your code.</p>
+<p><code>vilan run --inspect</code> starts the program under node’s inspector, with the map:</p>
+<pre><code class="language-text">$ vilan run --inspect-brk src/main.vl
+Debugger listening on ws://127.0.0.1:9229/…
+</code></pre>
+<p>Attach a debugger to it — <code>chrome://inspect</code> in Chrome, or VS Code’s
+“Attach to Node Process” — and set breakpoints in the <code>.vl</code> files.
+<code>--inspect-brk</code> holds the program before its first line until the debugger
+resumes it; both take an address (<code>--inspect=127.0.0.1:9230</code>). Values are
+shown as JavaScript holds them: a struct is its field array, <code>[1, 2]</code>.</p>
+<p>A <code>release</code> build writes no map. Ask for one with <code>[build] source-maps = true</code>,
+or for a single build with <code>vilan build --source-maps</code>; <code>--inspect</code> writes one
+whatever the preset says. <code>source-maps = false</code> turns the <code>debug</code> preset’s off.
+A map changes no byte of the program it describes: the script is the same with
+it and without it, but for the comment that names it.</p>
 
                     </main>
 
