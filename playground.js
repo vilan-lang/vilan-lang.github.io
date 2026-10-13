@@ -223,41 +223,6 @@ function hash(self) {
 function hash2(self) {
 	return __hash(self);
 }
-function clamp_delay(ms) {
-	let $u = null;
-	if (ms < 0) {
-		$u = 0;
-	} else {
-		$u = ms;
-	}
-	return $u;
-}
-function after(ms) {
-	return [ __timer(clamp_delay(ms)) ];
-}
-async function wait(self, $v) {
-	return await (self[0].wait(ambient_signal($v)));
-}
-function cancel(self) {
-	self[0].cancel();
-}
-function has_spawned(self) {
-	return __nursery_has_spawned(self);
-}
-function ambient_signal($w) {
-	const $x = $w;
-	let $y = null;
-	if ($x[0] === 0) {
-		const n = $x[1];
-		$y = [ 0, n.signal_of() ];
-	} else {
-		$y = [ 1 ];
-	}
-	return $y;
-}
-function detached_nursery() {
-	return __nursery_new_detached();
-}
 function fresh_id() {
 	const id = next_subscriber_id.v;
 	next_subscriber_id.v = id + 1;
@@ -773,6 +738,46 @@ function also_releasing(handle, release) {
 		return $br;
 	} ];
 }
+function has_spawned(self) {
+	return __nursery_has_spawned(self);
+}
+function ambient_signal($w) {
+	const $x = $w;
+	let $y = null;
+	if ($x[0] === 0) {
+		const n = $x[1];
+		$y = [ 0, n.signal_of() ];
+	} else {
+		$y = [ 1 ];
+	}
+	return $y;
+}
+function detached_nursery() {
+	return __nursery_new_detached();
+}
+function clamp_delay(ms) {
+	let $u = null;
+	if (ms < 0) {
+		$u = 0;
+	} else {
+		$u = ms;
+	}
+	return $u;
+}
+function after(ms) {
+	return [ __timer(clamp_delay(ms)) ];
+}
+async function wait(self, $v) {
+	return await (self[0].wait(ambient_signal($v)));
+}
+function cancel(self) {
+	self[0].cancel();
+}
+function on_teardown(cleanup) {
+	if (__hmr_active()) {
+		__hmr_register_teardown(cleanup);
+	}
+}
 function slot_of(key) {
 	const parts = key.split(":");
 	if (parts.length !== 3) {
@@ -1134,11 +1139,6 @@ function mount_root(id, body) {
 	}
 	return root;
 }
-function on_teardown(cleanup) {
-	if (__hmr_active()) {
-		__hmr_register_teardown(cleanup);
-	}
-}
 function template_option(value, label, $bB, $bC) {
 	return child2(attr(view("option"), "value", value, $bB, $bC), label, $bB, $bC);
 }
@@ -1421,7 +1421,7 @@ function run_body(runs, body) {
 		const nursery2 = $aG[1];
 		$aH = (($aI) => {
 			return (($aJ) => {
-				return body($aJ, $aI);
+				return body($aI, $aJ);
 			})(nursery2);
 		})(run2);
 	} else {
@@ -1435,7 +1435,7 @@ function run_once(runs, tracker, body) {
 	const scope = open_run(tracker);
 	const value = run_body(runs, ($ap, $aq) => {
 		return (($ar) => {
-			return body($ap, $aq, $ar);
+			return body($ap, $ar, $aq);
 		})(scope);
 	});
 	close_run(tracker);
@@ -1619,7 +1619,7 @@ function run_body2(runs, body) {
 		const nursery2 = $bT[1];
 		$bU = (($aI) => {
 			return (($aJ) => {
-				return body($aJ, $aI);
+				return body($aI, $aJ);
 			})(nursery2);
 		})(run2);
 	} else {
@@ -1633,7 +1633,7 @@ function run_once2(runs, tracker, body) {
 	const scope = open_run(tracker);
 	const value = run_body2(runs, ($ap, $aq) => {
 		return (($ar) => {
-			return body($ap, $aq, $ar);
+			return body($ap, $ar, $aq);
 		})(scope);
 	});
 	close_run(tracker);
@@ -2993,3 +2993,4 @@ window.addEventListener("message", (host_event) => {
 	}
 	return;
 });
+//# sourceMappingURL=playground.js.map
