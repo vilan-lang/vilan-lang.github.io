@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
+            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -202,6 +202,10 @@ trait Ord with Eq + PartialOrd {
 <ul>
 <li><code>==</code>/<code>!=</code> dispatch through <code>PartialEq</code>; <code>&lt;</code>/<code>&lt;=</code>/<code>&gt;</code>/<code>&gt;=</code> through
 <code>PartialOrd</code>. Numbers, <code>str</code>, and <code>bool</code> implement them in std.</li>
+<li><code>Eq</code> marks an equality that is total. The integers, <code>str</code> and <code>bool</code>
+are <code>Eq</code> (the floats are not: NaN), and <code>List&lt;T&gt;</code>, <code>Option&lt;T&gt;</code>,
+<code>Result&lt;T, E&gt;</code>, <code>HashSet&lt;T&gt;</code> and <code>HashMap&lt;K, V&gt;</code> are <code>Eq</code> when what
+they hold is, so a <code>T: Eq</code> takes <code>[1, 2]</code>, <code>Some(true)</code> and <code>Ok(1)</code>.</li>
 <li>A tuple is <code>PartialEq</code> when its elements are, compared position by
 position at any arity: <code>(1, "a") == (1, "a")</code>, and a <code>T: PartialEq</code>
 takes a pair; it is <code>Eq</code> when its elements are. Ordering a tuple is not
@@ -218,8 +222,10 @@ rarely need it.</li>
 }
 </code></pre>
 <p>Zero for numbers, <code>""</code> for <code>str</code>, <code>false</code> for <code>bool</code>, <code>None</code> for
-<code>Option&lt;T&gt;</code>, and the empty container for <code>List&lt;T&gt;</code>, <code>HashMap&lt;K, V&gt;</code> and
-<code>HashSet&lt;T&gt;</code>. <code>[derive(Default)]</code> composes fields’ defaults — so a struct
+<code>Option&lt;T&gt;</code>, the empty container for <code>List&lt;T&gt;</code>, <code>HashMap&lt;K, V&gt;</code> and
+<code>HashSet&lt;T&gt;</code>, and the element’s default at every position for a fixed
+array <code>[T; n]</code>. <code>default_of&lt;T&gt;()</code> is <code>T::default()</code> spelled for a type
+that cannot head a path: <code>default_of&lt;[i32; 4]&gt;()</code>. <code>[derive(Default)]</code> composes fields’ defaults — so a struct
 holding a container derives one. Used as a bound by helpers like
 <code>unwrap_or_default</code> and <code>List.sum</code>.</p>
 <p>Each impl lives in its own type’s module (<code>Option</code>’s in <code>std::option</code>,

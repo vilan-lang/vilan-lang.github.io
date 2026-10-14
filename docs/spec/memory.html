@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
+            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -567,6 +567,20 @@ same event set as rule 4: a reassignment, geometry change, or death of the
 cell under another live view traps, while overlapping writes through the
 cell do not (the reconciled trap law of §6.0; a <code>write</code> view is <em>not</em>
 exclusive). See <a href="../std/cells.html">cells</a>.</p>
+<p><strong><code>read()</code> copies where it is evaluated, on both backends.</strong> A <code>read()</code> is a
+value, not a view: an argument read out of a cell — <code>cell.read()</code>, or a
+field, tuple slot or element of one — is what the cell held when that
+argument was evaluated. A LATER argument of the same call that writes the
+cell, in place (<code>cell.write().items.push(9)</code>) or by replacing the field
+(<code>cell.write().items = [..]</code>), is therefore not seen by the callee:
+<code>has(cell.read().items, grow(cell))</code> answers from the items before <code>grow</code>.
+A program that wants the written value reads after the write
+(<code>let added = grow(cell); has(cell.read().items, added)</code>). The JavaScript
+backend, whose read would otherwise hand on the cell’s own storage, copies
+such an argument (and one whose callee writes the cell); the native backend
+copies every read out of the cell’s borrow where it stands. This is not
+§6.9’s view of a captured binding, which is taken after the call’s other
+arguments.</p>
 <h2 id="68-resources-and-destruction"><a class="header" href="#68-resources-and-destruction">6.8 Resources and destruction</a></h2>
 <p><em>(Design: <a href="https://github.com/vilan-lang/proposals/blob/main/proposal/destruction.md">destruction</a>.)</em> Rule 1 copies values, and a
 droppable value cannot survive copying: a copied file handle double-closes,

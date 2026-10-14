@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
+            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -840,7 +840,12 @@ callee, a member call, a <code>::</code> path head, a struct literal’s head �
 opens a generic list only when it touches the name, so <code>a &lt; b &gt; (c)</code> is two
 comparisons and <code>f&lt;T&gt;(x)</code> a generic call; a spaced list no comparison could
 be, one whose <code>&gt;</code> is followed by <code>::</code> or <code>{</code> (<code>List &lt;i32&gt;::new()</code>), is
-refused with the tight spelling and read tight. In a type annotation a
+refused with the tight spelling and read tight. A spaced CALL keeps the
+comparison reading — <code>pick &lt;f64&gt;(1, 2)</code> is <code>(pick &lt; f64) &gt; (1, 2)</code> — but
+when its name is a generic function or a generic type that reading cannot
+be what was meant, and the checker refuses it once, naming the spacing and
+the tight call (<code>pick&lt;f64&gt;(1, 2)</code>), in place of the comparisons’ own
+refusals (E309). In a type annotation a
 spaced generic list parses as before (and the formatter tightens it). A closure type after
 <code>as</code> is read greedily, as everywhere — <code>f as |i32| i32</code> — and <code>vilan fmt</code>
 prints it parenthesized, <code>f as (|i32| i32)</code>.</p>
@@ -896,6 +901,18 @@ an ordinary expression: it desugars before analysis to the <code>std::web::ui</c
 view chain (<code>view("tag")</code> with one method call per head item and a
 <code>.child(…)</code> per child), and postfix suffixes apply to it
 (<code>&lt;div /&gt;.show(flag)</code>).</p>
+<p>A head’s chain link must <strong>hand the element back</strong> (B620): the method it
+calls returns the element’s own type — <code>View</code>, as every one of std’s
+attribute and binding methods does, or <code>Self</code> from a trait — so the
+head stays a description of the element it opens. Any other method is
+refused at the link’s name, naming the method and where it comes from:
+<code>&lt;div .len() /&gt;</code> is “<code>len</code> is a method of <code>View</code>, but an element head
+takes only methods that hand the element back (<code>View</code>); call it on the
+element instead: <code>&lt;div /&gt;.len()</code>”. The rule is about the HEAD alone: the
+same call written after the element, <code>&lt;div /&gt;.len()</code>, is an ordinary
+postfix call on a <code>View</code> value and takes any method, whatever it
+returns. A name no method answers keeps the ordinary member error. The
+lowering of an admitted link is unchanged.</p>
 <p>A <strong>fragment</strong> <code>&lt;&gt;…&lt;/&gt;</code> is the nameless head, and it is a different
 lowering rather than an element with no tag: it desugars to a LIST
 LITERAL of its children, so its type is <code>List&lt;View&gt;</code>. <code>&lt;&gt;</code> and <code>&lt;/&gt;</code>

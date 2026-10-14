@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
+            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -327,7 +327,9 @@ marker instead (§7.4).</li>
 <li><code>async expr</code> (<strong>spawn</strong>): evaluate <code>expr</code>’s suspending computation
 concurrently; the spawn expression itself does not suspend and yields
 <code>Task&lt;T&gt;</code> where <code>T</code> is <code>expr</code>’s type (the task handle is opaque, and
-copying it refers to the same task). <code>async { … }</code> spawns a block.</li>
+copying it refers to the same task) — in every program, whether or not
+it imports <code>std::task</code>: an <code>async</code> loads the module, and <code>Task</code> is then
+in scope as a type name without an import. <code>async { … }</code> spawns a block.</li>
 <li><code>await expr</code>: suspend until the <code>Task&lt;T&gt;</code> (or raw host <code>Promise&lt;T&gt;</code>)
 operand settles; yields <code>T</code>.</li>
 </ul>

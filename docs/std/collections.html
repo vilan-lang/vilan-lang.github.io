@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
+            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -332,6 +332,12 @@ The array is <code>Eq</code> when the element is, so a <code>T: Eq</code> takes 
 <code>HashSet</code>.</li>
 <li><strong><code>Debug</code></strong> when the element is — <code>T: Debug</code> takes an array, and it prints
 as a <code>List</code> does.</li>
+<li><strong><code>Default</code></strong> when the element is — the element’s default at every
+position, so a <code>[derive(Default)]</code> struct with an array field derives. An
+array type cannot head a path, so the direct spelling is
+<code>default_of&lt;[i32; 4]&gt;()</code> (<code>std::default</code>).</li>
+<li><strong><code>Json</code>/<code>FromJson</code></strong> when the element is — a JSON array, decoded only at
+its own length (see <a href="encoding.html#json">encoding</a>).</li>
 <li><strong><code>Items&lt;T&gt;</code></strong> — <code>xs.push_many(fixed)</code> appends one.</li>
 <li><strong><code>to_list()</code></strong>, a <code>List</code> copy of the elements, and <strong><code>iter()</code></strong>, a cursor
 over a snapshot of them that opens the <a href="#adapters">adapter chain</a>. An
@@ -430,6 +436,10 @@ fun main() {
 	}
 }
 </code></pre>
+<p>A generic struct derives too: the derive binds each parameter a field
+reaches under <code>Hashable</code>, so <code>struct Tagged&lt;T&gt; { item: T, tags: List&lt;T&gt; }</code>
+is a key at <code>Tagged&lt;str&gt;</code>, and an argument that is not <code>Hashable</code> is
+refused where it is used.</p>
 <p><code>keys()</code> returns the real <code>K</code>s (in insertion order), and the key is snapshot
 on insert, so mutating the original afterward can’t desync the map.</p>
 <p><code>entries()</code> pairs <code>keys()</code>/<code>values()</code> into one <code>List&lt;(K, V)&gt;</code> snapshot, so

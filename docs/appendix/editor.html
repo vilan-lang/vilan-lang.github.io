@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
+            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -221,6 +221,14 @@ the declaration as it is written, then the same signature under the
 bindings this call solved — <code>fun get_or_insert(self, key: K, make: || V): V</code>
 above <code>fun get_or_insert(self, key: UserId, make: || SignalCell&lt;Option&lt;User&gt;&gt;): SignalCell&lt;Option&lt;User&gt;&gt;</code>. A call that substitutes nothing, and a hover on
 the declaration itself, show the one line they always did.</p>
+<p>Every function’s hover opens with WHERE it lives — <code>mod pkg::lib::overlay</code>,
+<code>mod std::list</code> — and every function states a return type, <code>: void</code> where
+none is written. A module segment of a path (<code>overlay</code> in <code>import pkg::lib::overlay::{ .. }</code>, <code>model</code> in <code>model::global()</code>) hovers as that
+module: its <code>mod</code> line, the <code>///</code> that opens its file, what it exports and
+where it lives. A field names the struct it belongs to (<code>struct Ring&lt;T&gt;</code> above
+<code>items: List&lt;T&gt;</code>); a <code>match</code> leg names what it matches over and the bindings it
+introduces; a trait named in a parameter’s type lists what can be passed
+there; a <code>[derive(..)]</code> shows the impls it writes for the item.</p>
 <p>A METHOD’s hover names the block it is declared in, on its own line above
 the <code>fun</code> line and in real syntax: <code>impl Memo&lt;type K: Hashable, type V&gt;</code>
 for an inherent method, <code>impl MemoCell&lt;type T&gt; with Source&lt;T&gt;</code> for a
@@ -268,6 +276,12 @@ own types can too. <code>vilan.inlayHints.abbreviate</code> turns it off.</p>
 spelling an ascription is written in: each line that ends a stage shows
 <code> as List&lt;usize&gt;</code> — or <code> as ~Pipe&lt;str&gt;</code> where the abbreviation applies —
 and so does the chain’s head when the first link breaks onto a new line.
+<code>vilan.inlayHints.chains = "changes"</code> hints a stage only where its type, as
+the hint prints it, differs from the stage before it (the first stage
+always); <strong>Ascribe every stage of this chain</strong> still writes every stage. An
+element’s tag and its head’s items are not a chain you wrote, and carry no
+stage hints. Hovering a hint shows what its binding’s name hovers, and a
+click on its type’s name goes to that type.
 A stage you have already ascribed shows nothing, and neither does the
 last stage of a chain that lands in an annotated <code>let</code>. On a hinted line
 the refactor <strong>Ascribe this stage</strong> writes it into the file — the full
@@ -623,6 +637,7 @@ plain go-to-definition, and no pull diagnostics — diagnostics are pushed.</p>
 <tr><td><code>vilan.stdPath</code></td><td>—</td><td>an explicit <code>std</code> root, overriding discovery</td></tr>
 <tr><td><code>vilan.inlayHints.enabled</code></td><td><code>true</code></td><td></td></tr>
 <tr><td><code>vilan.inlayHints.abbreviate</code></td><td><code>true</code></td><td>show a <code>[hint]</code>ed type by its trait, <code>~Source&lt;T&gt;</code>; off shows every full type</td></tr>
+<tr><td><code>vilan.inlayHints.chains</code></td><td><code>every</code></td><td><code>changes</code>: hint a chain’s stage only where its type changes</td></tr>
 <tr><td><code>vilan.semanticTokens.enabled</code></td><td><code>true</code></td><td>off falls back to the TextMate grammar</td></tr>
 <tr><td><code>vilan.completion.functionCall</code></td><td><code>full</code></td><td><code>parensOnly</code>, or <code>none</code></td></tr>
 <tr><td><code>vilan.autoClosing.generics</code></td><td><code>true</code></td><td>pair a generic <code>&lt;</code> and type over its <code>&gt;</code>; off for Vim emulation</td></tr>

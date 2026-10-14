@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
+            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -203,7 +203,10 @@ fun main() {
 </code></pre>
 <ul>
 <li><code>read()</code> copies: mutating the result is lost
-(<code>shared.read().push(x)</code>, the classic trap). Mutate through <code>write()</code>.</li>
+(<code>shared.read().push(x)</code>, the classic trap). Mutate through <code>write()</code>.
+The copy is taken where the <code>read()</code> is evaluated: in
+<code>has(cell.read().items, grow(cell))</code> the callee gets the items from
+before <code>grow</code> writes the cell. To see the write, read after it.</li>
 <li><code>write()</code> returns a view. Use it within the same statement
 (<code>cell.write() = v</code>, <code>cell.write().push(item)</code>); it obeys the usual view
 rules (no storing, no holding across <code>await</code>).</li>

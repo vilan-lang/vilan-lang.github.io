@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-fc155f21.js";
+            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -188,7 +188,13 @@ trait FromJson {                                           // decode
 }
 </code></pre>
 <p><code>[derive(Json)]</code> implements both from a struct/enum’s shape; scalars,
-<code>List</code>, <code>Option</code> and <code>Result</code> nest.</p>
+<code>List</code>, <code>Option</code>, <code>Result</code> and fixed arrays nest.</p>
+<p>A fixed array <code>[T; n]</code> is a JSON array, as a <code>List</code> is, and decoding it
+checks the count: <code>[1]</code> read as an <code>[i32; 2]</code> is the error “expected an
+array of 2 elements, found 1”. An array type cannot head a path
+(<code>[i32; 2]::from_json(..)</code> is no expression), so a direct decode goes
+through <code>from_json_value_of&lt;[i32; 2]&gt;(value)</code>, the call the derive
+writes for an array field.</p>
 <p><code>Result&lt;T, E&gt;</code> is Json when both arms are, and it is spelled the way the
 codecs spell it: externally tagged by variant NAME, <code>Ok(7)</code> as
 <code>{"Ok":7}</code> and <code>Err("nope")</code> as <code>{"Err":"nope"}</code>. That is the same text
