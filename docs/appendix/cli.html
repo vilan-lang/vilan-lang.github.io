@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
+            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -284,8 +284,10 @@ measure a leg before opting it in
 <li><code>--explain</code>: after the build, print where every output came from — see
 below.</li>
 <li><code>--source-maps</code>: write a source map beside each script whatever the preset
-says (<code>main.mjs.map</code>, named by the script’s last line). The <code>debug</code> preset
-writes one already; this is <code>[build] source-maps = true</code> for one build. See
+says (<code>main.mjs.map</code>, named by the script’s last line), and the debugger’s
+sidecar with it (<code>main.mjs.vdbg.json</code>: each function’s bindings by vilan name
+and type). The <code>debug</code> preset writes both already; this is
+<code>[build] source-maps = true</code> for one build. See
 <a href="../guide/debugging.html#in-a-debugger">debugging</a>.</li>
 </ul>
 <p>A <code>dbg(..)</code> or <code>dbg_stack()</code> call prints in a <code>debug</code> build, which is the
@@ -1068,12 +1070,32 @@ nothing can keep memory without writing into your tree. Deleting a table
 costs a recompile of that package’s macro worlds and nothing else; the
 same seven-day guard applies, because a check running right now is holding
 its own table open.</p>
+<p>A fourth root is <code>~/.vilan/cache/worlds/</code> (or the directory
+<code>VILAN_WORLD_CACHE</code> names): the persisted std prefix — std analyzed once,
+and a program’s dependencies with it, written by the language server and by
+<code>vilan check</code> under <code>VILAN_STD_PREFIX=on</code>, and loaded by every later
+process. Each file’s header names the build of the analyzer that wrote it,
+so <code>prune</code> takes a file another build wrote (past the seven-day guard, or
+all of them with <code>--all</code>) and never one this build wrote. The root also
+holds itself to 256 MiB as it is written (<code>VILAN_WORLD_CACHE_BYTES</code> sets
+another budget), the least recently used file first.</p>
 <h2 id="vilan-cache-clean"><a class="header" href="#vilan-cache-clean"><code>vilan cache clean</code></a></h2>
 <p>Deletes every macro expansion table <code>vilan check</code> keeps in
-<code>~/.vilan/check-cache/</code>, whatever its age. Each one is re-created by the
-next check of its package, so nothing is lost but the warm start.</p>
-<pre><code class="language-sh">vilan cache clean            # every check table
+<code>~/.vilan/check-cache/</code> and every persisted std prefix in
+<code>~/.vilan/cache/worlds/</code>, whatever their age. Each one is re-created by the
+next check of its package — or the next analysis that looks for its prefix —
+so nothing is lost but the warm start.</p>
+<pre><code class="language-sh">vilan cache clean            # every check table and every persisted prefix
 vilan cache clean --dry-run  # print what would go, with sizes; delete nothing
+</code></pre>
+<h2 id="vilan-cache-warm"><a class="header" href="#vilan-cache-warm"><code>vilan cache warm</code></a></h2>
+<p>Writes the persisted std prefix for a program — checks it once with the
+prefix on — so the next process (a CI step, an editor opening the project)
+loads std, and the program’s dependencies, instead of analyzing them again.
+It takes what <code>vilan check</code> takes: a file, a project directory, or nothing for
+the nearest <code>vilan.toml</code>.</p>
+<pre><code class="language-sh">vilan cache warm             # the project here
+vilan cache warm src/main.vl # one program
 </code></pre>
 <p>A check also holds that root to a bound by itself, at most once a day:
 every table untouched for thirty days goes, and past 256 tables or 256 MiB

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
+            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -852,6 +852,7 @@ value that lets a server stop restating <code>"dist/client.js"</code> from memor
 	bundle: str,            // `client.js`
 	styles: Option&lt;str&gt;,    // `client.css`, or None if the leg compiled no styles
 	chunks: List&lt;str&gt;,      // route chunks, empty unless the leg splits
+	maps: List&lt;str&gt;,        // source maps beside the bundle and chunks, if written
 	classic_script: bool,   // true exactly when it splits
 	assets: List&lt;str&gt;,      // resources the const asset channel carried in
 }
@@ -876,6 +877,12 @@ instead — the url spelled at the call, minus its leading <code>/</code> — an
 and read exactly the same way, which is why a fingerprinted or path-pinned
 name needs nothing here. A build written before bundling existed carries no
 <code>assets</code> field and reads as a build with none, which is what it was.</p>
+<p><code>maps</code> are the source maps the build wrote beside the bundle and each chunk
+(<code>client.js.map</code>), so a served page’s DevTools finds the <code>.vl</code> sources: a
+built bundle names its map on its last line, and <code>serve_build</code> answers it
+at <code>/client.js.map</code> instead of leaving the request to the app’s catch-all.
+The <code>debug</code> preset writes them; a <code>release</code> build writes one only when
+<code>[build] source-maps = true</code> asks, and lists exactly what it wrote.</p>
 <h2 id="stdwebdocument"><a class="header" href="#stdwebdocument">std::web::document</a></h2>
 <p>The HTML document a browser leg is loaded by, held against what that leg’s
 build emitted — so the <code>&lt;script&gt;</code>, the <code>&lt;link&gt;</code> and the mount element

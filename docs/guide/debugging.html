@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
+            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -360,9 +360,47 @@ Debugger listening on ws://127.0.0.1:9229/…
 <p>Attach a debugger to it — <code>chrome://inspect</code> in Chrome, or VS Code’s
 “Attach to Node Process” — and set breakpoints in the <code>.vl</code> files.
 <code>--inspect-brk</code> holds the program before its first line until the debugger
-resumes it; both take an address (<code>--inspect=127.0.0.1:9230</code>). Values are
-shown as JavaScript holds them: a struct is its field array, <code>[1, 2]</code>.</p>
-<p>A <code>release</code> build writes no map. Ask for one with <code>[build] source-maps = true</code>,
+resumes it; both take an address (<code>--inspect=127.0.0.1:9230</code>). A plain
+JavaScript debugger shows values as JavaScript holds them: a struct is its
+field array, <code>[1, 2]</code>.</p>
+<h3 id="in-vs-code"><a class="header" href="#in-vs-code">In VS Code</a></h3>
+<p>The extension debugs a program itself: press F5 on a <code>.vl</code> file, click
+<strong>Debug</strong> above a <code>fun main</code>, or add a <code>vilan</code> configuration to
+<code>launch.json</code>:</p>
+<pre><code class="language-json">{
+  "type": "vilan",
+  "request": "launch",
+  "name": "Debug vilan program",
+  "program": "${file}"
+}
+</code></pre>
+<p>Breakpoints, stepping and the call stack are in your <code>.vl</code> files, and the
+Variables pane prints each binding the way <code>dbg</code> prints it — by its type,
+not its JavaScript representation:</p>
+<pre><code class="language-text">point: Point = Point { x = 1, y = 2 }
+shape: Shape = Shape::Rect(Point { x = 0, y = 0 }, Point { x = 5, y = 6 })
+ages: HashMap&lt;str, i32&gt; = HashMap { "ada" =&gt; 36, "alan" =&gt; 41 }
+count: SignalCell&lt;i32&gt; = SignalCell(3)
+first: view i32 = 1
+</code></pre>
+<p>A struct expands into its fields, a list into its elements, a map into its
+entries. A closure’s frame lists what it captured from the function around it
+apart from its own bindings. The Watch pane takes a path into a binding —
+<code>segment.to</code>, <code>rows[0]</code>, <code>pair.1</code> — and prints it the same way; anything else
+you type there is evaluated as JavaScript. A hover lays a long value out over
+lines, as <code>dbg</code> does.</p>
+<p><code>"watch": true</code> debugs a <code>vilan run --watch</code> session: each round’s program is
+held at its first line until the debugger has attached to it again, so a
+breakpoint binds in every round. <code>"stopOnEntry": true</code> stops at <code>main</code>’s first
+line; <code>"console": "internalConsole"</code> shows the program’s output in the Debug
+Console instead of a terminal (a terminal keeps stdin, for <code>scan()</code>). A
+breakpoint’s condition is a JavaScript expression.</p>
+<p>The extension reads what the build writes beside the map: <code>main.mjs.vdbg.json</code>,
+each function’s bindings with their vilan names and types. A value it cannot
+describe — a binding of a generic function whose instances share one body, so
+its type differs between them — shows as JavaScript. <code>"adapter": "js-debug"</code>
+debugs with VS Code’s JavaScript debugger instead, every value JavaScript-shaped.</p>
+<p>A <code>release</code> build writes no map (and no <code>.vdbg.json</code>). Ask for one with <code>[build] source-maps = true</code>,
 or for a single build with <code>vilan build --source-maps</code>; <code>--inspect</code> writes one
 whatever the preset says. <code>source-maps = false</code> turns the <code>debug</code> preset’s off.
 A map changes no byte of the program it describes: the script is the same with

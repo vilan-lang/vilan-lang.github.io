@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
+            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -191,10 +191,10 @@ trait FromJson {                                           // decode
 <code>List</code>, <code>Option</code>, <code>Result</code> and fixed arrays nest.</p>
 <p>A fixed array <code>[T; n]</code> is a JSON array, as a <code>List</code> is, and decoding it
 checks the count: <code>[1]</code> read as an <code>[i32; 2]</code> is the error “expected an
-array of 2 elements, found 1”. An array type cannot head a path
-(<code>[i32; 2]::from_json(..)</code> is no expression), so a direct decode goes
-through <code>from_json_value_of&lt;[i32; 2]&gt;(value)</code>, the call the derive
-writes for an array field.</p>
+array of 2 elements, found 1”. The array type heads the decode’s path
+as any type does — <code>[i32; 2]::from_json(text)</code>, and the derive writes
+<code>[i32; 2]::from_json_value(..)</code> for an array field — and
+<code>from_json_value_of&lt;[i32; 2]&gt;(value)</code> is the same call spelled generically.</p>
 <p><code>Result&lt;T, E&gt;</code> is Json when both arms are, and it is spelled the way the
 codecs spell it: externally tagged by variant NAME, <code>Ok(7)</code> as
 <code>{"Ok":7}</code> and <code>Err("nope")</code> as <code>{"Err":"nope"}</code>. That is the same text
@@ -440,6 +440,32 @@ Wire’s.</p>
 definition. A conditional impl’s own binder bounds are what recurse into
 the arguments, so <code>impl Pair&lt;type A: Wire, type B: Wire&gt; with Wire</code>
 demands both and <code>impl Handle&lt;type T&gt; with Wire</code> demands neither.</p>
+<p>A GENERIC <code>[derive(Wire)]</code> type gets that same shape from the derive: every
+parameter a field or payload reaches is bound under <code>Wire</code>, and a parameter
+no member mentions (<code>Handle&lt;T&gt;</code>’s <code>T</code>, which names an arena and never
+travels) is left bare. So <code>Page&lt;T&gt;</code> below derives <code>impl Page&lt;type T: Wire&gt; with Wire</code>: <code>Page&lt;i32&gt;</code> is Wire, <code>Page&lt;|| i32&gt;</code> is refused wherever a Wire
+type is asked for, and a generic function that sends a <code>Page&lt;T&gt;</code> declares
+<code>T: Wire</code> itself (the refusal names the bound to add).</p>
+<pre><code class="language-vilan">import std::io::print;
+import std::json::{ encode_json, decode_json };
+import std::result::Result::{ self, Ok, Err };
+import std::option::Option::{ self, Some, None };
+import std::wire::Wire;
+
+[derive(Wire)]
+struct Page&lt;T&gt; { items: List&lt;T&gt;, next: Option&lt;T&gt; }
+
+fun resend&lt;T: Wire&gt;(page: Page&lt;T&gt;): Result&lt;Page&lt;T&gt;, str&gt; {
+	decode_json(encode_json(page))
+}
+
+fun main() {
+	match resend(Page { items = [1, 2], next = Some(3) }) {
+		Ok(let page) =&gt; print(page.items.len()),
+		Err(let reason) =&gt; print(reason),
+	}
+}
+</code></pre>
 <p><code>Result&lt;T, E&gt;</code> is Wire when both arms are, and narrates in <code>Option</code>’s
 vocabulary: an externally-tagged <code>{"Ok": …}</code> / <code>{"Err": …}</code> over JSON, a
 tagged variant over the binary codec. That makes a fallible reply an

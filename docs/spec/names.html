@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
+            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -417,10 +417,13 @@ values. The preference above does not apply to a qualified path: it
 addresses exactly what that one namespace declares, so a member that is
 not a type is an error there rather than a reason to keep looking.</p>
 <h2 id="46-statics-and-members"><a class="header" href="#46-statics-and-members">4.6 Statics and members</a></h2>
-<p><code>Type::member</code> (§3.6) resolves <code>member</code> in <code>Type</code>’s namespace: enum
+<p><code>Type::member</code> (§3.6) resolves <code>member</code> in <code>Type</code>‘s namespace: enum
 variants, the static functions of the type’s impls (those without <code>self</code>),
 and the type’s own <code>self</code>-methods. Generic statics take their arguments at
-the path head: <code>List&lt;str&gt;::new()</code>.</p>
+the path head: <code>List&lt;str&gt;::new()</code>. A fixed array’s statics are its impls’
+(<code>impl [type T: Default; const N] with Default</code>), reached through the array
+type written whole at the head — <code>[i32; 3]::default()</code> binds the impl’s <code>T</code>
+and <code>N</code> as <code>List&lt;str&gt;</code> binds <code>List</code>’s <code>T</code>.</p>
 <p>A type has <strong>one namespace per importing file</strong>, and receiver position is
 not part of a name. The namespace is the union of the <code>impl</code> blocks that
 file’s own import statements admit (§4.3): a plain <code>import a::b;</code> admits

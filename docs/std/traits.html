@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
+            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -224,8 +224,8 @@ rarely need it.</li>
 <p>Zero for numbers, <code>""</code> for <code>str</code>, <code>false</code> for <code>bool</code>, <code>None</code> for
 <code>Option&lt;T&gt;</code>, the empty container for <code>List&lt;T&gt;</code>, <code>HashMap&lt;K, V&gt;</code> and
 <code>HashSet&lt;T&gt;</code>, and the element’s default at every position for a fixed
-array <code>[T; n]</code>. <code>default_of&lt;T&gt;()</code> is <code>T::default()</code> spelled for a type
-that cannot head a path: <code>default_of&lt;[i32; 4]&gt;()</code>. <code>[derive(Default)]</code> composes fields’ defaults — so a struct
+array <code>[T; n]</code> (<code>[i32; 4]::default()</code>). <code>default_of&lt;T&gt;()</code> is <code>T::default()</code>
+spelled as a generic call, <code>default_of&lt;[i32; 4]&gt;()</code>. <code>[derive(Default)]</code> composes fields’ defaults — so a struct
 holding a container derives one. Used as a bound by helpers like
 <code>unwrap_or_default</code> and <code>List.sum</code>.</p>
 <p>Each impl lives in its own type’s module (<code>Option</code>’s in <code>std::option</code>,

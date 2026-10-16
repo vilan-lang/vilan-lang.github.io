@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
+            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -199,6 +199,7 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun for_each(self, fn: |T| void)
 	fun reverse(self): List&lt;T&gt;
 	fun sort_by(own self, compare: |T, T| Ordering): List&lt;T&gt;   // stable
+	fun to_array&lt;const N&gt;(self): Option&lt;[T; N]&gt;   // None unless len() == N
 }
 impl List&lt;type T: Add + Default&gt; { fun sum(self): T }
 impl List&lt;type T: Mul + Default&gt; { fun product(self): T }
@@ -333,15 +334,18 @@ The array is <code>Eq</code> when the element is, so a <code>T: Eq</code> takes 
 <li><strong><code>Debug</code></strong> when the element is — <code>T: Debug</code> takes an array, and it prints
 as a <code>List</code> does.</li>
 <li><strong><code>Default</code></strong> when the element is — the element’s default at every
-position, so a <code>[derive(Default)]</code> struct with an array field derives. An
-array type cannot head a path, so the direct spelling is
-<code>default_of&lt;[i32; 4]&gt;()</code> (<code>std::default</code>).</li>
+position, so a <code>[derive(Default)]</code> struct with an array field derives.
+The array type heads the path: <code>[i32; 4]::default()</code> (<code>default_of&lt;[i32; 4]&gt;()</code> in <code>std::default</code> is the same call spelled generically).</li>
 <li><strong><code>Json</code>/<code>FromJson</code></strong> when the element is — a JSON array, decoded only at
 its own length (see <a href="encoding.html#json">encoding</a>).</li>
 <li><strong><code>Items&lt;T&gt;</code></strong> — <code>xs.push_many(fixed)</code> appends one.</li>
 <li><strong><code>to_list()</code></strong>, a <code>List</code> copy of the elements, and <strong><code>iter()</code></strong>, a cursor
 over a snapshot of them that opens the <a href="#adapters">adapter chain</a>. An
 array never coerces to a <code>List</code>; these are the conversions.</li>
+<li>The way back is the list’s: <strong><code>list.to_array()</code></strong> answers
+<code>Option&lt;[T; N]&gt;</code>, a copy when the list holds exactly <code>N</code> elements and
+<code>None</code> otherwise. <code>N</code> comes from the type the result lands in or is
+written, <code>xs.to_array&lt;3&gt;()</code>.</li>
 </ul>
 <pre><code class="language-vilan">import std::{ hash_map::HashMap, iterator::Iterator };
 
@@ -360,6 +364,10 @@ fun main() {
 	let doubled = rgb.iter().map(|c| c.as_i32() * 2).to_list();
 	print(doubled[0]);                         // 510
 	print(rgb.to_list().len());                // 3
+
+	let back: Option&lt;[i32; 3]&gt; = xs.to_array();
+	print(back.unwrap()[2]);                   // 3
+	print(xs.to_array&lt;2&gt;().is_none());         // true
 }
 </code></pre>
 <p>The same door is open to your own traits: an impl head may bind the length

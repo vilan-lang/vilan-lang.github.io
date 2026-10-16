@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-8b63ef1b.js";
+            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -732,6 +732,7 @@ forward-compatible with it.</em></p>
 <p>The tightest expression tier, <code>chain</code>:</p>
 <pre><code class="language-text">chain   = path { call-suffix | postfix } ;
 path    = ( IDENT generic-args ␣"::"  (* generic static head *)
+          | "[" type ";" array-length "]" ␣"::"   (* array static head *)
           | atom )
           { "::" MEMBER } ;
 call-suffix = [ generic-args ] "(" [ entry { "," entry } [ "," ] ] ")" ;
@@ -805,7 +806,12 @@ the rule leaves exactly as it was. A space on the dot’s own line is refused
 with the member still read; a line break after the dot takes nothing from
 the next line.</p>
 <p><code>Name&lt;Args&gt;</code> is read as a generic path head only when <code>::</code> immediately
-follows (<code>List&lt;str&gt;::new()</code>); otherwise <code>&lt;</code> is a comparison. A member
+follows (<code>List&lt;str&gt;::new()</code>); otherwise <code>&lt;</code> is a comparison. A fixed-array
+type heads a path the same way (A171): <code>[i32; 3]::default()</code>,
+<code>[str; 2]::from_json(text)</code> — <code>[T; n]</code> is read as the array TYPE only when
+<code>::</code> immediately follows and its element parses as a type, and otherwise
+<code>[</code> opens a list or repeat literal. A literal before <code>::</code> (<code>[1, 2]::len()</code>,
+<code>[0; 3]::default()</code>) names no type and is refused. A member
 fuses at most ONE call; a further <code>(args)</code> is a <strong>direct call</strong> on the
 chain’s result, calling a closure-typed value
 (<code>self.hook.read()(a, b)</code>). A <code>?.</code> link’s <strong>continuation</strong> extends
