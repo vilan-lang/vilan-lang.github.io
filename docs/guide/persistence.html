@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
+            window.path_to_searchindex_js = "../searchindex-901b013f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -586,10 +586,12 @@ so the boot reads and the content-type table that used to live here are
 gone — including for binary artifacts, which it reads and serves byte for
 byte under a content type generated from the <code>mime-db</code> registry data.</p>
 <h2 id="the-process-stdprocess"><a class="header" href="#the-process-stdprocess">The process: <code>std::process</code></a></h2>
-<pre><code class="language-vilan fragment">fun args(): List&lt;str&gt;          // CLI arguments (vilan run app.vl -- …)
-fun env(key: str): Option&lt;str&gt; // an environment variable
-fun exit(code: i32)            // end the process
-fun scan(): str                // a line from stdin
+<pre><code class="language-vilan fragment">fun args(): List&lt;str&gt;               // CLI arguments (vilan run app.vl -- …)
+fun env(key: str): Option&lt;str&gt;      // an environment variable
+fun exit(code: i32)                 // end the process
+fun read_line(): Option&lt;str&gt;        // the next line of stdin, awaited; None at its end
+fun scan(): str                     // read_line(), "" at the end
+fun prompt(text: str): Option&lt;str&gt;  // write `text` with no newline, then read a line
 </code></pre>
 <p>One behavior to plan around: <strong>the process exits when <code>main</code> finishes.</strong>
 A server stays alive because <code>start()</code> holds the event loop open. A

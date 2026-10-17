@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
+            window.path_to_searchindex_js = "../searchindex-901b013f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -221,6 +221,7 @@ version of a whole struct — a handle per field, generated from the type — is
 <tr><td><code>on_cleanup</code></td><td>fn</td><td>run a cleanup when the ambient owner is released</td></tr>
 <tr><td><code>run_with_owner</code>, <code>comp</code>, <code>get_owner</code>, <code>owner_scope</code></td><td>fns/context</td><td>establish/read the ambient owner</td></tr>
 <tr><td><code>turn</code>, <code>batch</code>, <code>flush</code>, <code>at_settle</code>, <code>FlushPolicy</code>, <code>turn_scope</code></td><td>fns/context</td><td>write batching</td></tr>
+<tr><td><code>trace::trace</code></td><td>fn</td><td>the reactive trace (<code>std::reactive::trace</code>): a line per wake, naming what woke it (debugging)</td></tr>
 <tr><td><code>optimistic</code></td><td>fn</td><td>paint → commit → confirm-or-rollback (one shot)</td></tr>
 <tr><td><code>Optimistic&lt;T&gt;</code>, <code>WriteState</code></td><td>struct/enum</td><td>the same lifecycle, observable and overlap-safe</td></tr>
 <tr><td><code>draft</code>, <code>Draft&lt;T&gt;</code>, <code>DraftState</code></td><td>fn/struct/enum</td><td>local-first editing cell</td></tr>
@@ -1129,6 +1130,38 @@ leave the scheduler broken: the draining flags are restored on the way out, so
 the next write settles normally, this turn included. (Before this, one throwing
 observer left its turn draining forever, and every later write in the program
 queued into it and was never flushed.)</p>
+<h2 id="trace--who-woke-what"><a class="header" href="#trace--who-woke-what">trace — who woke what</a></h2>
+<pre><code class="language-vilan fragment">// std::reactive::trace
+fun trace(on: bool)
+</code></pre>
+<p><code>trace(true)</code> (<code>import std::reactive::trace::trace;</code>) writes a line to stderr
+(the browser’s console) for every <strong>wake</strong> a write causes — each subscriber the
+write reached, as it runs — naming what woke it:</p>
+<pre><code class="language-text">[reactive] effect #4 woken by cell #1 (made at src/main.vl:6:14), set at src/main.vl:12:2
+[reactive] derivation #2 woken by cell #1, set at src/main.vl:9:7
+[reactive] effect #5 woken by cell #3, set by derivation #2
+[reactive] effect #6 woken by derivation #2
+</code></pre>
+<p>A subscriber is an <code>effect</code> (it acts on a value) or a <code>derivation</code> (a pipe’s
+stage, a <code>.memo()</code>, a relay), numbered by its id; a cell by its identity,
+which is the same number on every line. The places are <code>[track_caller]</code>
+locations: where the cell was made by <code>SignalCell::new</code>, and the <code>set</code> or
+<code>update</code> that wrote it — each named only when it is your code’s, never std’s.
+A write std makes inside a traced wake (a <code>.memo()</code> publishing its value)
+says <code>set by</code> that wake instead, and a relay’s wake (<code>distinct</code>, <code>switch</code>)
+names the relay. A cell made by <code>Signal::new</code>, and a write through a
+<code>S: Signal&lt;T&gt;</code> bound or a <code>dyn Signal</code>, carry no place: a trait member cannot
+track its caller.</p>
+<p>The lines are the same bytes on both backends. Turn the trace on before the
+cells you want named are made (a cell remembers where it was made only while
+the trace is on), and off with <code>trace(false)</code>. The scheduler reaches the trace
+through hooks <code>trace(true)</code> installs, so a program that never imports it
+carries none of it.</p>
+<p>Under the <code>vilan</code> debugger (VS Code) the lines also appear in the Debug
+Console, and a wake that waited in a turn’s queue — run when the turn settles,
+on a stack without the write — shows the write’s stack under the woken frame,
+below a label naming the cause (node’s async stack tagging,
+<code>console.createTask</code>; the native backend has no host task to tag).</p>
 <h2 id="optimistic"><a class="header" href="#optimistic">optimistic</a></h2>
 <pre><code class="language-vilan fragment">fun optimistic&lt;T, E, S: Signal&lt;T&gt;&gt;(signal: S, value: T, commit: async || Result&lt;T, E&gt;): Result&lt;T, E&gt;
 </code></pre>

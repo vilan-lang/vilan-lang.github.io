@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-713c97d4.js";
+            window.path_to_searchindex_js = "../searchindex-901b013f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -383,12 +383,16 @@ ages: HashMap&lt;str, i32&gt; = HashMap { "ada" =&gt; 36, "alan" =&gt; 41 }
 count: SignalCell&lt;i32&gt; = SignalCell(3)
 first: view i32 = 1
 </code></pre>
-<p>A struct expands into its fields, a list into its elements, a map into its
-entries. A closure’s frame lists what it captured from the function around it
+<p>A type with its own <code>Debug</code> impl shows what the impl prints, as <code>dbg</code> does,
+and a <code>dyn</code> value shows the value it holds by that value’s own type. A struct
+expands into its fields, a list into its elements, a map into its entries. A closure’s frame lists what it captured from the function around it
 apart from its own bindings. The Watch pane takes a path into a binding —
 <code>segment.to</code>, <code>rows[0]</code>, <code>pair.1</code> — and prints it the same way; anything else
 you type there is evaluated as JavaScript. A hover lays a long value out over
 lines, as <code>dbg</code> does.</p>
+<p>A stop in a function that has awaited lists the functions waiting on it below
+an <code>await</code> label in the Call Stack: they are where the program comes back to,
+not where it stands, so they show no variables.</p>
 <p><code>"watch": true</code> debugs a <code>vilan run --watch</code> session: each round’s program is
 held at its first line until the debugger has attached to it again, so a
 breakpoint binds in every round. <code>"stopOnEntry": true</code> stops at <code>main</code>’s first
@@ -405,6 +409,15 @@ or for a single build with <code>vilan build --source-maps</code>; <code>--inspe
 whatever the preset says. <code>source-maps = false</code> turns the <code>debug</code> preset’s off.
 A map changes no byte of the program it describes: the script is the same with
 it and without it, but for the comment that names it.</p>
+<h2 id="who-woke-this-effect-the-reactive-trace"><a class="header" href="#who-woke-this-effect-the-reactive-trace">Who woke this effect: the reactive trace</a></h2>
+<p><code>trace(true)</code> (<code>std::reactive::trace::trace</code>) writes a line to stderr for every subscriber a
+write wakes, naming the write and the cell:</p>
+<pre><code class="language-text">[reactive] effect #4 woken by cell #1 (made at src/main.vl:6:14), set at src/main.vl:12:2
+</code></pre>
+<p>In the VS Code debugger the lines are in the Debug Console too, and a stop in
+an effect a turn ran later — at the end of a <code>batch</code>, or on a microtask — has
+the write that woke it below a label naming the cause in the Call Stack. The
+<a href="../std/reactive.html#trace--who-woke-what"><code>trace</code> reference</a> has the details.</p>
 
                     </main>
 
