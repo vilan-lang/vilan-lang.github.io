@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-368c1357.js";
+            window.path_to_searchindex_js = "../searchindex-3381610f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -680,6 +680,39 @@ first declaration.</li>
 </ul>
 <p><code>--check</code> reports the files that would change and exits 1 if any (the
 CI spelling). Nothing is rewritten.</p>
+<p><strong><code>// vilan-fmt: skip</code> keeps one statement or item exactly as written.</strong> Put
+the comment on the line immediately above the node — a statement in a body (a
+block’s final expression included) or an item at module level or inside an
+<code>impl</code>, <code>trait</code> or <code>mod</code> — and <code>vilan fmt</code> prints that one node as you wrote
+it: its first line at the surrounding indentation, every later line byte for
+byte, its own indentation included. The comment stays where it is, and text
+after it, past a space, is yours (<code>// vilan-fmt: skip - E352</code>, the bug it
+works around). It is an escape hatch for a layout the formatter gets wrong,
+so it is deliberately narrow:</p>
+<ul>
+<li>It reaches ONE node: the next statement or item, and nothing after it.</li>
+<li>It must be on the line <em>immediately</em> above. With a blank line or another
+comment in between, or code before it on its own line, it is an ordinary
+comment, left where it is, and the node is formatted.</li>
+<li>A top-level <code>import</code> belongs to the file’s canonical import block and is
+always formatted; the comment above one is an ordinary comment. An <code>import</code>
+inside a body is skipped like any other statement.</li>
+<li>A match leg, a field or an argument is not a statement: the comment above one
+is an ordinary comment.</li>
+</ul>
+<pre><code class="language-vilan">fun main() {
+	// vilan-fmt: skip - a matrix reads as rows
+	let grid = [
+		1, 0, 0,
+		0, 1, 0,
+		0, 0, 1,
+	];
+	print(grid.len());
+}
+</code></pre>
+<p>A skipped node never makes <code>--check</code> fail, and <code>--check</code> lists every one it
+honored, as <code>path:line: vilan-fmt: skip</code> at the comment’s line, so a
+workaround does not quietly outlive the bug it works around.</p>
 <p><strong>Comments are left exactly as you typed them, unless you ask.</strong> The formatter
 lays code out to a width and leaves prose alone, so a <code>//</code> line runs as far as
 its author took it and a paragraph edited in the middle keeps its ragged
