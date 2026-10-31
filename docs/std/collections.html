@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -195,6 +195,7 @@ annotation (<code>let xs: List&lt;str&gt; = [];</code>).</p>
 	fun filter(self, predicate: |T| bool): List&lt;T&gt;
 	fun filter_map&lt;U&gt;(self, fn: |T| Option&lt;U&gt;): List&lt;U&gt;   // both, one pass
 	fun find(self, predicate: |T| bool): Option&lt;T&gt;
+	fun position(self, predicate: |T| bool): Option&lt;usize&gt;   // index of the first match
 	fun fold&lt;B&gt;(self, init: B, fn: |B, T| B): B
 	fun for_each(self, fn: |T| void)
 	fun reverse(self): List&lt;T&gt;
@@ -249,8 +250,9 @@ a <em>place</em>, and a value with no other owner moves in.</p>
 }
 </code></pre>
 <h3 id="searching--equality"><a class="header" href="#searching--equality">Searching &amp; equality</a></h3>
-<p><code>find</code> takes a predicate and short-circuits; <code>contains</code> and <code>index_of</code> take a
-value and need <code>T: PartialEq</code>. Missing answers are <code>None</code>, never a panic.</p>
+<p><code>find</code> and <code>position</code> take a predicate and short-circuit: <code>find</code> answers the
+element, <code>position</code> its index. <code>contains</code> and <code>index_of</code> take a value and need
+<code>T: PartialEq</code>. Missing answers are <code>None</code>, never a panic.</p>
 <p>A <code>List&lt;T: PartialEq&gt;</code> is itself <code>PartialEq</code>: <code>==</code> compares element-wise,
 length first. Because the impl is conditional, lists nest
 (<code>List&lt;List&lt;i32&gt;&gt;</code> compares through its elements) and a struct holding a
@@ -261,6 +263,7 @@ length first. Because the impl is conditional, lists nest
 	print(scores.contains(65));                   // true
 	print(scores.index_of(65).unwrap_or(0));      // 2
 	print(scores.index_of(7).is_none());          // true
+	print(scores.position(|n| n &gt; 50).unwrap_or(0));  // 1
 	print(scores == [40, 91, 65]);                // true
 	print(scores == [40, 91]);                    // false — length first
 }
@@ -819,6 +822,7 @@ fun fold&lt;B&gt;(mut self, init: B, fn: |B, T| B): B
 fun for_each(mut self, fn: |T| void)
 fun count(mut self): i32
 fun any(mut self, predicate: |T| bool): bool     // short-circuits on the first hit
+fun position(mut self, predicate: |T| bool): Option&lt;usize&gt;   // index of the first hit
 fun all(mut self, predicate: |T| bool): bool     // short-circuits on the first miss
 fun rev(mut self): ListIterator&lt;T&gt;               // a BARRIER — see below
 </code></pre>

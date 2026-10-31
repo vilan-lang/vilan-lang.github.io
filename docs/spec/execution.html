@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -265,9 +265,14 @@ its own site, or, from inside another tracking function’s own body, that
 function’s location, so a chain of tracking functions reports the outermost
 caller. A closure is a boundary: a closure written inside a tracking
 function reports its own sites. <code>std::debug::caller()</code> reads the location.
-The attribute is refused on a trait method (a call through a trait is
-dispatched, so no call site knows to pass a location), and a tracking
-function cannot be taken as a value. std’s <code>panic</code>, <code>assert</code>, <code>unwrap</code>,
+A tracking function cannot be taken as a value, and a <code>for .. in</code> loop
+cannot call a tracking <code>next</code> (the iterator protocol has no site to pass).
+On a trait member the attribute is part of the trait’s contract: declared on
+the trait’s member, every implementation of it takes the hidden parameter
+whether or not it writes the attribute, and every call naming the member
+passes a location — a static call, a call through a generic bound and a call
+through a <code>dyn</code> object’s table alike. An implementation that marks a member
+its trait does not declare tracking is refused. std’s <code>panic</code>, <code>assert</code>, <code>unwrap</code>,
 <code>unwrap_err</code>, <code>expect</code>, <code>expect_err</code> and <code>List::remove</code>/<code>insert</code> are
 tracking, and so is every subscript: <code>xs[i]</code> out of bounds reports the
 subscript’s own site.</p>

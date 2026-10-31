@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -178,6 +178,7 @@
 <code>std::web::asset</code>, <code>std::tuple</code>.</p>
 <h2 id="stdio"><a class="header" href="#stdio">std::io</a></h2>
 <pre><code class="language-vilan fragment">fun print(message: any)                     // console.log
+fun write(text: str)                        // stdout, no newline, flushed (process platforms)
 fun panic(message: str)                     // abort with a message
 fun assert(condition: bool, message: str)   // panic when false
 </code></pre>
@@ -193,6 +194,25 @@ float keeps its <code>.0</code> and a string is quoted; a backed enum prints its
 or inside a value, prints its written type, <code>&lt;closure |i32| i32&gt;</code> (a named
 function <code>&lt;closure fun double&gt;</code>). A host value the printer could
 only name (a <code>Location</code>, a DOM node) is handed to the host’s console as it is.</p>
+<p><code>write</code> puts <code>text</code> on standard output with <strong>no newline</strong>, flushed so it is
+on the screen before the program waits: a prompt that leaves the cursor on its
+line, a progress line rewritten in place with <code>\r</code>, a key-driven program’s
+redraw. <code>print</code> always ends the line; a <code>write</code> ends one only where its text
+has a <code>\n</code>. The two write the same stream, in order. <code>write</code> exists on the
+process platforms only (node, deno, bun and the native backend) — a browser
+has no standard output, so a browser build that reaches <code>write</code> is refused
+with the chain to it, while <code>print</code> stays universal.</p>
+<pre><code class="language-vilan norun">import std::io::{ print, write };
+import std::time;
+
+fun main() {
+	for step in [1, 2, 3] {
+		write(i"\rstep {step} of 3");
+		time::sleep(100);
+	}
+	print("");
+}
+</code></pre>
 <p><code>panic</code> is for unreachable states (expected failures are <code>Result</code>). A
 <code>panic</code> arm in a <code>match</code> diverges: the other arms decide the match’s
 type. <code>assert</code> is the <code>vilan test</code> failure mechanism.</p>

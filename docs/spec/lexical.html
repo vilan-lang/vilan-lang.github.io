@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -324,9 +324,31 @@ string_char      = "\" any_char_except_line_terminator
                  | any_char_except_quote_backslash_or_line_terminator ;
 MULTILINE_STRING = '"""' , raw_text , '"""' ;
 </code></pre>
-<p>In a plain string a backslash escapes the next character; escape sequences
-are preserved in the token and interpreted at code generation with
-JavaScript string-escape semantics (<code>\n</code>, <code>\"</code>, <code>\\</code>, …). A multiline
+<p>In a plain string a backslash begins an escape, and each escape denotes one
+character of the value, with JavaScript’s string-escape semantics:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Escape</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td><code>\n</code> <code>\r</code> <code>\t</code></td><td>line feed, carriage return, tab</td></tr>
+<tr><td><code>\b</code> <code>\f</code> <code>\v</code> <code>\0</code></td><td>backspace, form feed, vertical tab, NUL</td></tr>
+<tr><td><code>\"</code> <code>\'</code> <code>\\</code></td><td>the quote, the apostrophe, the backslash</td></tr>
+<tr><td><code>\{</code> <code>\}</code></td><td>a literal brace (the <code>i"…"</code> escapes, written alike here)</td></tr>
+<tr><td><code>\xHH</code></td><td>the code point of exactly two hex digits: <code>\x41</code> is <code>A</code></td></tr>
+<tr><td><code>\uHHHH</code></td><td>the code point of exactly four hex digits: <code>\u0301</code>; a high surrogate followed at once by a low one, <code>\uD83D\uDE00</code>, is their one character</td></tr>
+<tr><td><code>\u{H…}</code></td><td>the code point in braces, up to <code>\u{10FFFF}</code>: <code>\u{1F600}</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>Any other backslash sequence is an error at the lexer, spanned on the
+sequence — <code>\q</code>, <code>\d</code>, the octal <code>\1</code>, a <code>\x</code> or <code>\u</code> short of its
+digits, a code point past <code>\u{10FFFF}</code>, and a surrogate that is not the
+high half of a written pair — because keeping it verbatim is the one
+reading nobody writing it can mean; a backslash itself is <code>\\</code>. The token
+keeps the literal’s source text (what the formatter prints); its value is
+the decoded text, the same value on every backend. A multiline
 string is <strong>raw</strong> (a backslash is a backslash) and runs to the first
 <code>"""</code>; the whitespace prefix of the line containing the closing delimiter
 is stripped from every line of the content.</p>
@@ -348,9 +370,9 @@ istring_char     = "\" any_char_except_line_terminator
                  | any_char_except_brace_quote_backslash_or_line_terminator ;
 </code></pre>
 <p><code>i"…"</code> is an interpolated string: <code>{expr}</code> holes embed expressions; <code>\{</code>
-and <code>\}</code> are literal braces. Every other escape is carried through as the
-plain twin carries it — <code>\</code> and the character it precedes, interpreted at
-code generation — and an unescaped <code>}</code> outside a hole is an error. The
+and <code>\}</code> are literal braces. Every other escape is the plain twin’s, with
+the plain twin’s value and the same refusal of a sequence that is not one,
+and an unescaped <code>}</code> outside a hole is an error. The
 construct is defined by desugaring. An interpolated string is exactly
 equivalent to a parenthesized concatenation:</p>
 <pre><code class="language-text">i"Hello, {name}!"   ≡   ("" + "Hello, " + (name) + "!")

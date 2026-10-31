@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -179,8 +179,12 @@ Grown as findings land.</p>
 organized by message instead of by topic.</p>
 <h2 id="language"><a class="header" href="#language">Language</a></h2>
 <ul>
-<li><strong><code>match</code> can’t be an operator operand.</strong>
-<code>(match x { … }) + 1</code> → bind the match to a local first.</li>
+<li><strong>A <code>match</code> that begins a statement ends at its closing brace.</strong>
+<code>match x { … } + 1</code> as a function’s last line is two statements, and
+the compiler refuses it; write <code>(match x { … }) + 1</code>. Anywhere else a
+<code>match</code> is an ordinary operand: <code>flag &amp;&amp; match x { … }</code> and
+<code>let n = 1 + match x { … };</code> work as written. The same goes for <code>if</code>,
+<code>for</code> and a <code>{ … }</code> block.</li>
 <li><strong>A bare integer literal adapts to its peer; two typed variables
 don’t.</strong> <code>stamp + 1000</code> and <code>stamp &lt; 1000</code> are fine on an <code>i53</code> (the
 literal takes the peer’s type), but mixing two differently-typed

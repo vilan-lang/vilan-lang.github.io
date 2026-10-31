@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -348,8 +348,35 @@ start(task);                                               // fine: it matched
 <p>It needs all three parts. The then-branch has to actually leave (a branch
 that can fall through reaches the continuation on a miss), the <code>if</code> has to
 have no <code>else</code>, and the test has to be negated — <code>if slot is Some(let task) { ret; }</code> continues exactly where the pattern <em>didn’t</em> match.</p>
-<p>One edge to know: a <code>match</code> can’t sit directly inside a larger operator
-expression. Bind it to a local first.</p>
+<p>A <code>match</code> is an ordinary operand: <code>flag &amp;&amp; match slot { .. }</code> and
+<code>1 + match slot { .. }</code> both work, and so does a method call on one in
+parentheses. The one edge is a <code>match</code> that <strong>begins a statement</strong>. Like
+<code>if</code>, <code>for</code> and a <code>{ .. }</code> block, it is complete at its closing brace, so in
+statement position an operator after it starts a new statement instead of
+continuing it. Parenthesize the <code>match</code> there (or bind it to a local), and
+the compiler’s message says so if you forget:</p>
+<pre><code class="language-vilan">fun ready(flag: bool, slot: Option&lt;i32&gt;): bool {
+	flag &amp;&amp; match slot {              // an operand: fine anywhere
+		Some(let count) =&gt; count &gt; 0,
+		None =&gt; false,
+	}
+}
+
+fun next(slot: Option&lt;i32&gt;): i32 {
+	(match slot {                     // begins the statement: parenthesize it
+		Some(let count) =&gt; count,
+		None =&gt; 0,
+	}) + 1
+}
+
+fun main() {
+	let total = 1 + match Some(2) {   // an operand: fine
+		Some(let count) =&gt; count,
+		None =&gt; 0,
+	};
+	print(i"{ready(true, Some(3))} {next(None)} {total}");   // true 1 3
+}
+</code></pre>
 <p>Arms that never produce a value (a <code>ret</code>, a <code>panic</code>, a
 <code>jump break</code>/<code>continue</code>) don’t participate in the match’s type. The
 other arms decide it:</p>

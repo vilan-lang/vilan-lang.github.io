@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -1181,6 +1181,25 @@ error — in a generic function’s body, and in a trait default over the
 trait’s own parameter. Match a value of the enum’s own type, or move the
 match to where the parameter is concrete. A bound does not change this:
 a trait bound cannot make a parameter be one particular enum.</p>
+<h3 id="which-impls-a-librarys-own-code-sees"><a class="header" href="#which-impls-a-librarys-own-code-sees">Which impls a library’s own code sees</a></h3>
+<p>The standard library’s declarations, and each dependency package’s, are
+resolved <strong>before the entry package’s declarations exist</strong>. An impl that the
+program’s own package declares — in the entry file or in any of its
+modules — never answers a question that std’s or a dependency’s own
+resolution asks: the methods std’s bodies call, the traits std’s bodies ask
+of their own values, are decided by std and the dependencies alone. Your impl
+answers the questions your package asks, and the questions asked where your
+types are used.</p>
+<p>Nothing about dispatch at a USE is affected. A std generic instantiated with
+one of your types (<code>list.sort()</code> over your <code>Ord</code> impl), your <code>Display</code> printed
+through std’s <code>print</code>, your <code>Wire</code> impl serialized by a std channel — each of
+those is a question your code asks at its call site, after std has resolved,
+and your impl answers it. What the rule settles is that adding an impl to
+your package cannot change how std’s own code was typed — an inherent
+<code>impl type T { fun len(self): i32 }</code> in a package module is a member of every
+type for that package’s calls, and std’s <code>xs.len()</code> inside its own list code
+still means std’s <code>len</code>. A program builds the same, to the byte, whether or
+not the toolchain reuses a std it resolved for another program.</p>
 <h2 id="58-conversions-and-coercions"><a class="header" href="#58-conversions-and-coercions">5.8 Conversions and coercions</a></h2>
 <p>There are <strong>no implicit conversions</strong> between numeric types; use the
 <code>as_*</code> methods (value-converting, Rust-<code>as</code> semantics). Every binary

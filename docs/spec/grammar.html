@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -363,10 +363,16 @@ named-binder = MEMBER "=" binder ;
 
 extern-attr = "[" "extern" "(" extern-args [ "," "retains" ] [ "," ] ")" "]" ;
 extern-args = STRING [ "," STRING ]              (* global, or module and symbol *)
+            | MULTILINE_STRING                   (* a host expression over lines *)
             | "method" [ "," STRING ]            (* method on the receiver *)
             | ( "get" | "set" ) "," STRING       (* property read / write *)
             | "new" "," STRING [ "," STRING ] ;  (* construction *)
 </code></pre>
+<p>A triple-quoted string is the first arm’s host expression when it does not
+fit on a line: <code>[extern("""…""")]</code>, raw and laid out by the multiline rule
+(lexical.md §2), stands alone and is called parenthesized, <code>(…)(args)</code>. Every
+other string argument of every attribute is a one-line <code>STRING</code>; a
+triple-quoted one there is refused at the literal.</p>
 <p>The four arms are the four host bindings. <code>"method"</code> is the only form
 word that stands alone: <code>[extern(method)]</code> binds the receiver method of
 the same name as the vilan function, and <code>[extern(method, "on")]</code> names a
@@ -581,7 +587,7 @@ ahead of a trait, a labelled <code>let</code> and an <code>impl</code>, where it
 none of them is a type to abbreviate.</p>
 <h3 id="impls-and-traits"><a class="header" href="#impls-and-traits">Impls and traits</a></h3>
 <pre><code class="language-text">impl  = [ internal-label ] [ platform-attr ] "impl" type [ "with" type { "+" type } ]
-        "{" { statement } "}" ;
+        "{" { function | import ";" | use ";" } "}" ;
 trait = [ deprecated-label ] [ internal-label ] [ platform-attr ]
         [ "[" "resource" "]" ] "trait" IDENT
         [ generic-params ]
@@ -605,7 +611,11 @@ at a <code>const</code> parameter’s argument position (<code>impl Ring&lt;type
 the binder is <code>const N</code> or <code>_</code>. A literal length outranks a length binder by
 the specificity order (<code>impl [i32; 3]</code> over <code>impl [type T; _]</code>).
 <code>with</code> lists the implemented trait(s). An impl without <code>with</code> provides
-inherent members. A trait’s <code>with</code> lists supertraits.</p>
+inherent members. A trait’s <code>with</code> lists supertraits. An impl body declares
+methods (and may import names for them): a <code>struct</code>, <code>enum</code>, <code>trait</code>,
+<code>impl</code>, <code>mod</code>, a binding or a statement written there is refused at its
+keyword (the declaration belongs at the module’s top level, a statement in a
+<code>fun</code>).</p>
 <h3 id="generic-parameters-and-arguments"><a class="header" href="#generic-parameters-and-arguments">Generic parameters and arguments</a></h3>
 <pre><code class="language-text">generic-params = "&lt;" generic-param { "," generic-param } [ "," ] "&gt;" ;
 generic-param  = [ "type" ] IDENT [ ":" ( bound-list | tuple-bound ) ]

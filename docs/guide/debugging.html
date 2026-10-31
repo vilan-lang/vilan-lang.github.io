@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -331,10 +331,37 @@ fun main() {
 }
 </code></pre>
 <p>A chain of tracking functions reports the outermost caller. A closure written
-inside one is not tracking: its panic names its own line. The attribute is
-refused on a trait method (a call through a trait is dispatched, and no call
-site knows to pass a location), and a tracking function cannot be passed as a
-value; wrap it in a closure.</p>
+inside one is not tracking: its panic names its own line. A tracking function
+cannot be passed as a value; wrap it in a closure.</p>
+<p>On a trait method, the attribute belongs to the TRAIT: declared on the trait’s
+member, every implementation takes the call site (whether it writes the
+attribute or not), and every call passes it — through a generic bound and a
+<code>dyn</code> object too. An implementation cannot mark a member its trait does not,
+since a call through the trait would have no site to pass.</p>
+<pre><code class="language-vilan">import std::debug::caller;
+
+trait Check {
+	[track_caller]
+	fun check(self): str;
+}
+
+struct Always {}
+
+impl Always with Check {
+	fun check(self): str {
+		caller().text()   // the line that called `check`, however it was reached
+	}
+}
+
+fun through&lt;T: Check&gt;(value: T): str {
+	value.check()   // this line
+}
+
+fun main() {
+	print(Always {}.check());
+	print(through(Always {}));
+}
+</code></pre>
 <h2 id="in-a-debugger"><a class="header" href="#in-a-debugger">In a debugger</a></h2>
 <p>A <code>debug</code> build (the default) writes a <strong>source map</strong> beside each script:
 <code>main.mjs.map</code> next to <code>main.mjs</code>, <code>dist/server.mjs.map</code> next to

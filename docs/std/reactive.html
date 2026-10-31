@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -1137,7 +1137,7 @@ fun trace(on: bool)
 <p><code>trace(true)</code> (<code>import std::reactive::trace::trace;</code>) writes a line to stderr
 (the browser’s console) for every <strong>wake</strong> a write causes — each subscriber the
 write reached, as it runs — naming what woke it:</p>
-<pre><code class="language-text">[reactive] effect #4 woken by cell #1 (made at src/main.vl:6:14), set at src/main.vl:12:2
+<pre><code class="language-text">[reactive] effect #4 at src/views.vl:30:8 woken by cell #1 (made at src/main.vl:6:14), set at src/main.vl:12:2
 [reactive] derivation #2 woken by cell #1, set at src/main.vl:9:7
 [reactive] effect #5 woken by cell #3, set by derivation #2
 [reactive] effect #6 woken by derivation #2
@@ -1145,13 +1145,14 @@ write reached, as it runs — naming what woke it:</p>
 <p>A subscriber is an <code>effect</code> (it acts on a value) or a <code>derivation</code> (a pipe’s
 stage, a <code>.memo()</code>, a relay), numbered by its id; a cell by its identity,
 which is the same number on every line. The places are <code>[track_caller]</code>
-locations: where the cell was made by <code>SignalCell::new</code>, and the <code>set</code> or
-<code>update</code> that wrote it — each named only when it is your code’s, never std’s.
-A write std makes inside a traced wake (a <code>.memo()</code> publishing its value)
-says <code>set by</code> that wake instead, and a relay’s wake (<code>distinct</code>, <code>switch</code>)
-names the relay. A cell made by <code>Signal::new</code>, and a write through a
-<code>S: Signal&lt;T&gt;</code> bound or a <code>dyn Signal</code>, carry no place: a trait member cannot
-track its caller.</p>
+locations: where the effect was made (<code>effect</code>, <code>sub</code>, <code>on_change</code>), where the
+cell was made (<code>Signal::new</code>, <code>SignalCell::new</code>), and the <code>set</code> or <code>update</code>
+that wrote it — each named only when it is your code’s, never std’s. The
+<code>Signal</code> and <code>Flow</code> members track their caller on the trait itself, so a
+write through a <code>S: Signal&lt;T&gt;</code> bound or a <code>dyn Signal</code> names its place as a
+concrete cell’s does. A write std makes inside a traced wake (a <code>.memo()</code>
+publishing its value) says <code>set by</code> that wake instead, and a relay’s wake
+(<code>distinct</code>, <code>switch</code>) names the relay.</p>
 <p>The lines are the same bytes on both backends. Turn the trace on before the
 cells you want named are made (a cell remembers where it was made only while
 the trace is on), and off with <code>trace(false)</code>. The scheduler reaches the trace

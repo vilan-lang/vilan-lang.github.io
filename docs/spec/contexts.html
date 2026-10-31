@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -423,6 +423,20 @@ The <code>sync</code> marker itself stays a <strong>parameter</strong> contract:
 async argument is refused here”, and a parameter is the only position
 that could otherwise accept one — a plain closure type already refuses
 an async store everywhere else.</p>
+<p><strong>A closure parameter without the clause keeps the context it was made
+with.</strong> <code>fun while_on(provide: || void)</code> cannot hand <code>provide</code> to
+<code>run_with_owner(owner, provide)</code> — the refusal names the fix, “type it
+<code>(sync || void) context owner_scope</code>” — and the wrap <code>|| provide()</code> is
+accepted but is the trap: the literal is injected, <code>provide</code> is not, so
+what <code>provide</code> registers belongs to the owner <code>while_on</code>’s caller was
+made with, and disposing <code>owner</code> takes nothing back. The checker warns
+when such a parameter — one whose type carries no <code>owner_scope</code>, answering
+a <code>View</code> or nothing — is called inside a body that establishes an owner
+(<code>swap</code>, <code>when</code>, <code>each</code>, <code>run_with_owner</code>, an overlay’s <code>attach</code>, a
+clause-typed field): “<code>probes</code> is a closure parameter called inside
+<code>swap</code>’s body, which establishes an owner … type it
+<code>(sync |…| View) context owner_scope</code> so it takes the owner at the call”.
+The clause on the parameter is the fix in every case.</p>
 <h2 id="86-declared-requirements-the-context-clause-on-a-fun"><a class="header" href="#86-declared-requirements-the-context-clause-on-a-fun">8.6 Declared requirements: the <code>context</code> clause on a <code>fun</code></a></h2>
 <p>A function’s requirement is <strong>inferred</strong> from its body by default (§8.3):
 it is whatever its body transitively reads, and it flows to every caller.

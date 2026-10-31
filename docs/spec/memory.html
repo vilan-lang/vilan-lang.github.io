@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -403,7 +403,8 @@ value type — <code>out = v</code> as much as <code>let out: T = v</code>, and 
 alike: <code>out = &amp;a</code>, <code>out = inner(&amp;holder)</code> of a <code>borrows</code> function, or a
 branch of a value <code>if</code> handing either back — at a binding as at an
 assignment, so <code>let v = if c { &amp;a } else { &amp;b }</code> initializes no view
-binding, and as an argument or operand) is a compile error, never
+binding, and as an argument or operand — <code>same(2, &amp;2)</code> at a by-value
+parameter is refused with “drop the <code>&amp;</code>”) is a compile error, never
 a silent coercion to the pointee (so the <code>(base, key)</code> representation of a
 scalar view can’t leak); write <code>*v</code> to copy the value out. A method call’s
 RECEIVER is not a value position: <code>v.method(..)</code> reads through the view to
@@ -1225,6 +1226,14 @@ thread-local cell, and the argument is a copy out of that cell taken after
 the later arguments, never a view held for the call, because the callee
 itself can reach the binding. A scalar, <code>str</code>, <code>Option</code>, tuple or enum by
 value is still the value the binding held where the argument stands.</p>
+<p>The callee’s own body is a second path to the binding too. LENDING a
+module-level <code>mut</code> binding — a <code>&amp;</code> or <code>&amp;mut</code> of it or of a place under it,
+or a <code>&amp;self</code>/<code>&amp;mut self</code> receiver over one — to a callee whose body (or any
+call it makes, a closure it is handed included) writes that binding is a
+write under a live view (rule 4) and is refused at the argument: copy it
+first (<code>let items = module_items; lent_and_grow(&amp;items)</code>). Handed BY VALUE
+to such a callee, the binding is copied (rule 1) — the callee’s parameter
+never sees the callee’s own write.</p>
 <h2 id="610-lazy--a-binding-initialized-at-first-use"><a class="header" href="#610-lazy--a-binding-initialized-at-first-use">6.10 <code>lazy</code> — a binding initialized at first use</a></h2>
 <p><em>(Design: <a href="https://github.com/vilan-lang/proposals/blob/main/projects/vilan/proposal/lazy.md"><code>lazy</code></a> §2.)</em></p>
 <p>A <strong>module-level</strong> <code>let</code> may be written <code>lazy</code>, and then its initializer

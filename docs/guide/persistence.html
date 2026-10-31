@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-901b013f.js";
+            window.path_to_searchindex_js = "../searchindex-368c1357.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-41cea96b.js"></script>
@@ -226,7 +226,8 @@ and returns the last insert id, <code>.first(params)</code> fetches an
 <p>Two habits to keep:</p>
 <ul>
 <li>Values always go through <code>?</code> placeholders. Never interpolate them into
-the SQL string.</li>
+the SQL string. A nullable column takes an <code>Option</code> (<code>None</code> binds NULL)
+and a flag column takes a <code>bool</code> (0 or 1).</li>
 <li>Don’t name a column with an SQL keyword. <code>desc</code> is the one that bites
 in practice: spell it <code>description</code>.</li>
 </ul>
