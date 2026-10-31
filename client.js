@@ -542,7 +542,7 @@ function advance(self, carried) {
 			if ($bA[0] === 0) {
 				const message2 = $bA[1];
 				$bB = (() => {
-					throw __panic(message2, "std/src/reactive.vl:1291:27");
+					throw __panic(message2, "std/src/reactive.vl:1294:27");
 				})();
 			} else {
 				$bB = undefined;
@@ -627,8 +627,8 @@ function reconnect(tracker, lists, target2) {
 		let $bS = null;
 		if ($bR[0] === 0) {
 			const index = $bR[1];
-			__at_put(kept, index, true, "std/src/reactive.vl:1708:5");
-			next.push(__clone(__at(held, index, "std/src/reactive.vl:1709:15")));
+			__at_put(kept, index, true, "std/src/reactive.vl:1711:5");
+			next.push(__clone(__at(held, index, "std/src/reactive.vl:1712:15")));
 			$bS = undefined;
 		} else {
 			next.push([ dependency[0], dependency[1](relay_for(tracker, target2)) ]);
@@ -640,7 +640,7 @@ function reconnect(tracker, lists, target2) {
 	lists.v[2] = next;
 	let index2 = 0;
 	for (const edge of held) {
-		if (!(__at(kept, index2, "std/src/reactive.vl:1723:7"))) {
+		if (!(__at(kept, index2, "std/src/reactive.vl:1726:7"))) {
 			detach(edge[1]);
 		}
 		index2 = index2 + 1;
@@ -652,12 +652,12 @@ function reusable(held, kept, identity, position) {
 	let $bO = null;
 	if ($bN[0] === 0) {
 		const wanted = $bN[1];
-		if (position < held.length && !(__at(kept, position, "std/src/reactive.vl:1746:9")) && same_identity(__at(held, position, "std/src/reactive.vl:1747:22")[0], wanted)) {
+		if (position < held.length && !(__at(kept, position, "std/src/reactive.vl:1749:9")) && same_identity(__at(held, position, "std/src/reactive.vl:1750:22")[0], wanted)) {
 			return [ 0, position ];
 		}
 		let index = 0;
 		while (index < held.length) {
-			if (!(__at(kept, index, "std/src/reactive.vl:1752:9")) && same_identity(__at(held, index, "std/src/reactive.vl:1752:38")[0], wanted)) {
+			if (!(__at(kept, index, "std/src/reactive.vl:1755:9")) && same_identity(__at(held, index, "std/src/reactive.vl:1755:38")[0], wanted)) {
 				return [ 0, index ];
 			}
 			index = index + 1;
@@ -750,6 +750,12 @@ function forget_reads(tracker) {
 function detach_tracker(tracker) {
 	tracker[0].v[5] = [ 1 ];
 	forget_reads(tracker);
+}
+function place_subscription(subscription, site) {
+	if (tracing.v) {
+		trace_hooks.v[8](subscription[1], site);
+	}
+	return subscription;
 }
 function also_releasing(handle, release) {
 	const previous = handle[3].v;
@@ -1006,7 +1012,7 @@ function mount_target(id) {
 	const element = document.getElementById(id);
 	if (__is_null(element)) {
 		(() => {
-			throw __panic("mount: no element with id \'" + id + "\'", "std/src/browser/web/ui.vl:2332:3");
+			throw __panic("mount: no element with id \'" + id + "\'", "std/src/browser/web/ui.vl:2386:3");
 		})();
 	}
 	return element;
@@ -1110,7 +1116,7 @@ function page(scroll_fade2, copy, $b, $c, $d) {
 	return child(child(child(child(child(child(child(child(child(child(child(child(child(child(child(child(child(child(styled(view("div"), shell), bloom($b, $c), $b, $c), top_bar(scroll_fade2, $b, $c), $b, $c), masthead($b, $c), $b, $c), divider($b, $c), $b, $c), install_section(copy, $b, $c, $d), $b, $c), divider($b, $c), $b, $c), showcase_reactive($b, $c), $b, $c), divider($b, $c), $b, $c), showcase_fullstack($b, $c), $b, $c), divider($b, $c), $b, $c), showcase_compiler($b, $c), $b, $c), divider($b, $c), $b, $c), editor_band($b, $c), $b, $c), divider($b, $c), $b, $c), feature_grid($b, $c), $b, $c), divider($b, $c), $b, $c), dogfood($b, $c), $b, $c), page_footer($b, $c), $b, $c);
 }
 function install_row(label, command, copy, $ad, $ae, $af) {
-	const icon = new5("" + assets + "/icons/copy.svg");
+	const icon = new5("" + assets + "/icons/copy.svg", "src/page.vl:180:21");
 	const pending = __shared_new([ 1 ]);
 	return child(child(view("div"), child2(styled(view("p"), install_label), label, $ad, $ae), $ad, $ae), child(child(styled(view("div"), install_command), child2(styled(view("span"), install_command_text), command, $ad, $ae), $ad, $ae), child(on(attr(styled(view("button"), copy_button), "aria-label", "Copy command", $ad, $ae), "click", ($ag, $ah) => {
 		copy(command);
@@ -1145,7 +1151,7 @@ function showcase_flipped(code, prose, $dd, $de) {
 	return child(child(styled(view("div"), showcase_grid_flipped), __clone(code), $dd, $de), __clone(prose), $dd, $de);
 }
 function counter_demo($aM, $aN) {
-	const count = new6(0);
+	const count = new6(0, "src/page.vl:310:22");
 	return child(child(styled(view("div"), demo_box), child2(on(styled(view("button"), demo_button), "click", ($aO, $aP) => {
 		return set_with(count, (n) => {
 			return n + 1;
@@ -1217,8 +1223,8 @@ function new4(value, caller) {
 	}
 	return cell;
 }
-function new5(value) {
-	return new4(value, "std/src/reactive.vl:2448:15");
+function new5(value, caller) {
+	return new4(value, caller);
 }
 function values(self) {
 	let result = [  ];
@@ -1260,12 +1266,12 @@ function attach_observer(self, observer, immediately) {
 	}
 	return subscription;
 }
-function sub(self, observer) {
-	return attach_observer(self, (value) => {
+function sub(self, observer, caller) {
+	return place_subscription(attach_observer(self, (value) => {
 		return (() => {
 			return observer(value, [ 1 ]);
 		})();
-	}, true);
+	}, true), caller);
 }
 function is_empty(self) {
 	return self.length === 0;
@@ -1287,7 +1293,7 @@ function take(self, item, $w) {
 	return __clone(item);
 }
 function follow(flow, observer, $r, $s) {
-	take(get_owner($s), sub(flow, observer), $r);
+	take(get_owner($s), sub(flow, observer, "std/src/browser/web/ui.vl:87:24"), $r);
 }
 function style_var(self, name, source, $o, $p) {
 	const element = __clone(self[0]);
@@ -1396,8 +1402,8 @@ function bind_attr(self, name, source, $az, $aA) {
 	bind_attribute(source, self, name, $az, $aA);
 	return __clone(self);
 }
-function new6(value) {
-	return new4(value, "std/src/reactive.vl:2448:15");
+function new6(value, caller) {
+	return new4(value, caller);
 }
 function set2(self, value, $ai, caller) {
 	if (tracing.v) {
@@ -1406,11 +1412,11 @@ function set2(self, value, $ai, caller) {
 	self[0].v = __clone(value);
 	notify(self, $ai);
 }
-function set3(self, value, $aR) {
-	set2(self, value, $aR, "std/src/reactive.vl:2602:8");
+function set3(self, value, $aR, caller) {
+	set2(self, value, $aR, caller);
 }
 function set_with(self, transform, $aQ) {
-	set3(self, transform(get(self)), $aQ);
+	set3(self, transform(get(self)), $aQ, "std/src/reactive.vl:2510:8");
 }
 function derive(self, transform) {
 	return [ self, transform ];
@@ -1444,7 +1450,7 @@ function run_body(runs, body) {
 		})(run);
 	} else {
 		$bG = (() => {
-			throw __panic("a renewed run carries its nursery", "std/src/reactive.vl:1402:11");
+			throw __panic("a renewed run carries its nursery", "std/src/reactive.vl:1405:11");
 		})();
 	}
 	return $bG;
@@ -1508,30 +1514,34 @@ function start2(self) {
 		return;
 	} ];
 }
-function observe_flow(flow, observer, immediately) {
+function observe_flow(flow, observer, immediately, caller) {
 	const instance = start2(flow);
 	const pull = instance[0];
 	if (!(immediately)) {
 		pull();
 	}
-	const subscription = instance[1](mint_subscriber(() => {
+	const subscriber = mint_subscriber(() => {
 		return observer(pull());
-	}));
+	});
+	if (tracing.v) {
+		trace_hooks.v[8](subscriber[0], caller);
+	}
+	const subscription = instance[1](subscriber);
 	also_releasing(subscription, instance[2]);
 	if (immediately) {
 		observer(pull());
 	}
 	return subscription;
 }
-function sub2(self, observer) {
+function sub2(self, observer, caller) {
 	return observe_flow(self, (value) => {
 		return (() => {
 			return observer(value, [ 1 ]);
 		})();
-	}, true);
+	}, true, caller);
 }
 function follow2(flow, observer, $r, $s) {
-	take(get_owner($s), sub2(flow, observer), $r);
+	take(get_owner($s), sub2(flow, observer, "std/src/browser/web/ui.vl:87:24"), $r);
 }
 function place_text_flow(flow, parent, $bd, $be) {
 	const node = document.createTextNode("");
@@ -1580,6 +1590,8 @@ const trace_hooks = __shared_new([ (_identity, _site) => {
 }, (_subscriber, _draining) => {
 	return false;
 }, (_turn, _id) => {
+	return;
+}, (_id, _site) => {
 	return;
 } ]);
 const waking = __shared_new([ 1 ]);
@@ -1734,7 +1746,7 @@ const nav_brand = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "displa
 const nav_mark = [ [ new Map([ [ "::display", [ "::display", "sowfjmu", "display:block" ] ], [ "::width", [ "::width", "s178hbq8", "width:36px" ] ], [ "::height", [ "::height", "s22x9bm", "height:18px" ] ], [ "::background-color", [ "::background-color", "syz58y5", "background-color:var(--up-bright)" ] ], [ "::-webkit-mask", [ "::-webkit-mask", "scqkrg6", "-webkit-mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ], [ "::mask", [ "::mask", "s11mtiwm", "mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ] ]) ] ];
 const nav_links = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::gap", [ "::gap", "s8myyte", "gap:var(--space-6)" ] ] ]) ] ];
 const nav_link = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::text-decoration", [ "::text-decoration", "svrgm1f", "text-decoration:none" ] ], [ "::transition", [ "::transition", "sbcnc8a", "transition:color 80ms ease" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ] ]) ] ];
-const scroll_fade = new5("0");
+const scroll_fade = new5("0", "src/client.vl:117:28");
 mount_root("app", ($a) => {
 	return page(scroll_fade, (text) => {
 		return navigator.clipboard.writeText(text);
