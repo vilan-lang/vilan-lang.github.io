@@ -12,6 +12,33 @@ function __clone(value) {
 	if (value instanceof Map) return new Map([ ...value ].map(([ k, v ]) => [ __clone(k), __clone(v) ]));
 	return value;
 }
+function __dom_cut_run(after, before) {
+	const fragment = document.createDocumentFragment();
+	for (let node = after.nextSibling; node !== null && node !== before; ) {
+		const next = node.nextSibling;
+		fragment.appendChild(node);
+		node = next;
+	}
+	return fragment;
+}
+function __dom_remove_run(from, before) {
+	for (let node = from; node !== null && node !== before; ) {
+		const next = node.nextSibling;
+		node.remove();
+		node = next;
+	}
+}
+function __dom_run_holds(nodes, node) {
+	for (let walk = node; walk !== null; walk = walk.parentNode) {
+		if (nodes.has(walk)) return true;
+	}
+	return false;
+}
+function __dom_run_nodes(from, before) {
+	const nodes = new Set();
+	for (let node = from; node !== null && node !== before; node = node.nextSibling) nodes.add(node);
+	return nodes;
+}
 function __guarded(body) {
 	try {
 		body();
@@ -43,8 +70,39 @@ function __list_pop(list) {
 function __map_get(map, key) {
 	return map.has(key) ? [ 0, __clone(map.get(key)) ] : [ 1 ];
 }
-function __map_values(map) {
-	return [ ...map.values() ].map(__clone);
+function __nmap_get(table, hash) {
+	const entry = table[0].get(hash);
+	return entry !== undefined && entry[1][0] === 0 ? [ 0, __clone(entry[1][1]) ] : [ 1 ];
+}
+function __nmap_insert(table, hash, key, value) {
+	__nmap_settle(table);
+	const entry = table[0].get(hash);
+	if (entry === undefined) table[0].set(hash, [ key, [ 0, value ] ]);
+	else {
+		entry[0] = key;
+		if (entry[1][0] !== 0 || entry[1][1] !== value) entry[1] = [ 0, value ];
+	}
+}
+function __nmap_keys(table) {
+	const out = [];
+	for (const entry of table[0].values()) if (entry[1][0] === 0) out.push(entry[0]);
+	return out.map(__clone);
+}
+function __nmap_remove(table, hash) {
+	__nmap_settle(table);
+	table[0].delete(hash);
+}
+function __nmap_settle(table) {
+	const hash = table[1];
+	if (hash === undefined) return;
+	table[1] = undefined;
+	const entry = table[0].get(hash);
+	if (entry !== undefined && entry[1][0] === 1) table[0].delete(hash);
+}
+function __nmap_values(table) {
+	const out = [];
+	for (const entry of table[0].values()) if (entry[1][0] === 0) out.push(entry[1][1]);
+	return out.map(__clone);
 }
 function __nursery_has_spawned(n) {
 	return n.children.length > 0;
@@ -322,26 +380,26 @@ function drain(turn2) {
 	}
 }
 function defer_subscriber(turn2, subscriber) {
-	const $ba = turn2;
-	let $bb = null;
-	if ($ba[0] === 0) {
-		const ambient = $ba[1];
-		$bb = enqueue(ambient, [ reissued(subscriber) ]);
+	const $aY = turn2;
+	let $aZ = null;
+	if ($aY[0] === 0) {
+		const ambient = $aY[1];
+		$aZ = enqueue(ambient, [ reissued(subscriber) ]);
 	} else {
-		const $bc = last(draining_turns.v);
-		let $bd = null;
-		if ($bc[0] === 0) {
-			const draining = $bc[1];
-			$bd = enqueue(draining, [ reissued(subscriber) ]);
+		const $ba = last(draining_turns.v);
+		let $bb = null;
+		if ($ba[0] === 0) {
+			const draining = $ba[1];
+			$bb = enqueue(draining, [ reissued(subscriber) ]);
 		} else {
 			if (subscriber[2].v) {
 				subscriber[1]();
 			}
-			$bd = undefined;
+			$bb = undefined;
 		}
-		$bb = $bd;
+		$aZ = $bb;
 	}
-	return $bb;
+	return $aZ;
 }
 function reissued(subscriber) {
 	return [ subscriber[0], subscriber[1], subscriber[2], subscriber[3] ];
@@ -436,7 +494,7 @@ function release_under(handle, ambient) {
 	if ($bl[0] === 0) {
 		const release = $bl[1];
 		handle[3].v = [ 1 ];
-		releasing_turns.v.push(ambient);
+		releasing_turns.v.push(__clone(ambient));
 		__with_finally(release, () => {
 			__list_pop(releasing_turns.v);
 			return;
@@ -454,7 +512,7 @@ function is_disposed(self) {
 	return self[0].v[0] !== self[1];
 }
 function defer(self, cleanup) {
-	let $aj = null;
+	let $ah = null;
 	if (is_disposed(self)) {
 		cleanup();
 	} else {
@@ -465,26 +523,26 @@ function defer(self, cleanup) {
 			self[0].v[1] = __shared_new([ cleanup ]);
 			self[0].v[2] = true;
 		}
-		$aj = undefined;
+		$ah = undefined;
 	}
-	return $aj;
+	return $ah;
 }
 function renew(self) {
-	const $ay = self[0].v[3];
-	let $az = null;
-	if ($ay[0] === 0) {
-		const nursery2 = __clone($ay[1]);
-		let $aA = null;
+	const $aw = self[0].v[3];
+	let $ax = null;
+	if ($aw[0] === 0) {
+		const nursery2 = __clone($aw[1]);
+		let $ay = null;
 		if (has_spawned(nursery2)) {
-			$aA = [ 1 ];
+			$ay = [ 1 ];
 		} else {
-			$aA = [ 0, nursery2 ];
+			$ay = [ 0, nursery2 ];
 		}
-		$az = $aA;
+		$ax = $ay;
 	} else {
-		$az = [ 1 ];
+		$ax = [ 1 ];
 	}
-	const carried = $az;
+	const carried = $ax;
 	advance([ self[0], self[0].v[0] ], carried);
 	if (is_none(self[0].v[3])) {
 		run_nurseries_allocated_count.v = run_nurseries_allocated_count.v + 1;
@@ -493,119 +551,119 @@ function renew(self) {
 	return [ self[0], self[0].v[0] ];
 }
 function nursery(self) {
-	let $aL = null;
+	let $aJ = null;
 	if (is_disposed(self)) {
-		$aL = [ 1 ];
+		$aJ = [ 1 ];
 	} else {
-		$aL = self[0].v[3];
+		$aJ = self[0].v[3];
 	}
-	return $aL;
+	return $aJ;
 }
 function dispose2(self) {
 	advance(self, [ 1 ]);
 }
 function advance(self, carried) {
-	let $aK = null;
+	let $aI = null;
 	if (!(is_disposed(self))) {
 		const held = self[0].v;
-		self[0].v = [ self[1] + 1, no_cleanups, false, carried ];
-		const $aB = held[3];
-		let $aC = null;
-		if ($aB[0] === 0) {
-			const nursery2 = $aB[1];
+		self[0].v = [ self[1] + 1, no_cleanups, false, __clone(carried) ];
+		const $az = held[3];
+		let $aA = null;
+		if ($az[0] === 0) {
+			const nursery2 = $az[1];
 			if (is_none(carried)) {
 				nursery2.cancel();
 			}
-			$aC = undefined;
+			$aA = undefined;
 		} else {
-			$aC = undefined;
+			$aA = undefined;
 		}
-		$aC;
-		let $aJ = null;
+		$aA;
+		let $aH = null;
 		if (held[2]) {
 			let failure = [ 1 ];
 			for (const cleanup of held[1].v) {
-				const $aE = __guarded(cleanup);
-				let $aF = null;
-				if ($aE[0] === 0) {
-					const message = $aE[1];
+				const $aC = __guarded(cleanup);
+				let $aD = null;
+				if ($aC[0] === 0) {
+					const message = $aC[1];
 					if (is_none(failure)) {
 						failure = [ 0, message ];
 					}
-					$aF = undefined;
+					$aD = undefined;
 				} else {
-					$aF = undefined;
+					$aD = undefined;
 				}
-				$aF;
+				$aD;
 			}
-			const $aH = failure;
-			let $aI = null;
-			if ($aH[0] === 0) {
-				const message2 = $aH[1];
-				$aI = (() => {
+			const $aF = failure;
+			let $aG = null;
+			if ($aF[0] === 0) {
+				const message2 = $aF[1];
+				$aG = (() => {
 					throw __panic(message2, "std/src/reactive.vl:1294:27");
 				})();
 			} else {
-				$aI = undefined;
+				$aG = undefined;
 			}
-			$aJ = $aI;
+			$aH = $aG;
 		}
-		$aK = $aJ;
+		$aI = $aH;
 	}
-	return $aK;
+	return $aI;
 }
-function get_owner($ai) {
-	return $ai;
+function get_owner($ag) {
+	return $ag;
 }
 function release_runs(runs) {
 	dispose2([ runs[0], runs[0].v[0] ]);
 }
-function new_tracker() {
-	return [ __shared_new([ 0, false, false, false, false, [ 1 ], [ 1 ] ]) ];
+function new_tracker(site) {
+	return [ __shared_new([ 0, false, false, false, false, [ 1 ], [ 1 ], site ]) ];
 }
 function open_run(tracker) {
 	const epoch = tracker[0].v[0] + 1;
 	tracker[0].v[0] = epoch;
 	tracker[0].v[1] = true;
 	tracker[0].v[2] = false;
-	const $at = tracker[0].v[6];
-	let $au = null;
-	if ($at[0] === 0) {
-		const lists = $at[1];
+	const $ar = tracker[0].v[6];
+	let $as = null;
+	if ($ar[0] === 0) {
+		const lists = $ar[1];
 		if (!(is_empty(lists.v[0]))) {
 			lists.v[0] = [  ];
 		}
-		$au = undefined;
+		$as = undefined;
 	} else {
-		$au = undefined;
+		$as = undefined;
 	}
-	$au;
+	$as;
 	return [ __clone(tracker), epoch ];
 }
 function close_run(tracker) {
 	tracker[0].v[1] = false;
-	const $aQ = tracker[0].v[6];
-	let $aR = null;
-	if ($aQ[0] === 0) {
-		const lists = $aQ[1];
-		$aR = lists;
+	const $aO = tracker[0].v[6];
+	let $aP = null;
+	if ($aO[0] === 0) {
+		const lists = $aO[1];
+		$aP = lists;
 	} else {
 		return;
-		$aR = undefined;
+		$aP = undefined;
 	}
-	const lists2 = $aR;
-	const $aS = tracker[0].v[5];
-	let $aT = null;
-	if ($aS[0] === 0) {
-		const target = __clone($aS[1]);
-		$aT = reconnect(tracker, lists2, target);
+	const lists2 = $aP;
+	const $aQ = tracker[0].v[5];
+	let $aR = null;
+	if ($aQ[0] === 0) {
+		const target = __clone($aQ[1]);
+		$aR = reconnect(tracker, lists2, target);
 	} else {
 		if (!(is_empty(lists2.v[0])) || !(is_empty(lists2.v[1]))) {
 			lists2.v[1] = __clone(lists2.v[0]);
 		}
-		$aT = undefined;
+		$aR = undefined;
 	}
-	$aT;
+	$aR;
 	if (!(is_empty(lists2.v[0]))) {
 		lists2.v[0] = [  ];
 	}
@@ -624,24 +682,24 @@ function reconnect(tracker, lists, target) {
 	tracker[0].v[3] = true;
 	let position = 0;
 	for (const dependency of reading) {
-		const $aY = reusable(held, kept, dependency[0], position);
-		let $aZ = null;
-		if ($aY[0] === 0) {
-			const index = $aY[1];
-			__at_put(kept, index, true, "std/src/reactive.vl:1711:5");
-			next.push(__clone(__at(held, index, "std/src/reactive.vl:1712:15")));
-			$aZ = undefined;
+		const $aW = reusable(held, kept, dependency[0], position);
+		let $aX = null;
+		if ($aW[0] === 0) {
+			const index = $aW[1];
+			__at_put(kept, index, true, "std/src/reactive.vl:1715:5");
+			next.push(__clone(__at(held, index, "std/src/reactive.vl:1716:15")));
+			$aX = undefined;
 		} else {
-			next.push([ dependency[0], dependency[1](relay_for(tracker, target)) ]);
-			$aZ = undefined;
+			next.push([ __clone(dependency[0]), dependency[1](relay_for(tracker, target)) ]);
+			$aX = undefined;
 		}
-		$aZ;
+		$aX;
 		position = position + 1;
 	}
 	lists.v[2] = next;
 	let index2 = 0;
 	for (const edge of held) {
-		if (!(__at(kept, index2, "std/src/reactive.vl:1726:7"))) {
+		if (!(__at(kept, index2, "std/src/reactive.vl:1730:7"))) {
 			detach(edge[1]);
 		}
 		index2 = index2 + 1;
@@ -649,39 +707,39 @@ function reconnect(tracker, lists, target) {
 	tracker[0].v[3] = false;
 }
 function reusable(held, kept, identity, position) {
-	const $aU = identity;
-	let $aV = null;
-	if ($aU[0] === 0) {
-		const wanted = $aU[1];
-		if (position < held.length && !(__at(kept, position, "std/src/reactive.vl:1749:9")) && same_identity(__at(held, position, "std/src/reactive.vl:1750:22")[0], wanted)) {
+	const $aS = identity;
+	let $aT = null;
+	if ($aS[0] === 0) {
+		const wanted = $aS[1];
+		if (position < held.length && !(__at(kept, position, "std/src/reactive.vl:1753:9")) && same_identity(__at(held, position, "std/src/reactive.vl:1754:22")[0], wanted)) {
 			return [ 0, position ];
 		}
 		let index = 0;
 		while (index < held.length) {
-			if (!(__at(kept, index, "std/src/reactive.vl:1755:9")) && same_identity(__at(held, index, "std/src/reactive.vl:1755:38")[0], wanted)) {
+			if (!(__at(kept, index, "std/src/reactive.vl:1759:9")) && same_identity(__at(held, index, "std/src/reactive.vl:1759:38")[0], wanted)) {
 				return [ 0, index ];
 			}
 			index = index + 1;
 		}
-		$aV = [ 1 ];
+		$aT = [ 1 ];
 	} else {
-		$aV = [ 1 ];
+		$aT = [ 1 ];
+	}
+	return $aT;
+}
+function same_identity(identity, wanted) {
+	const $aU = identity;
+	let $aV = null;
+	if ($aU[0] === 0) {
+		const held = $aU[1];
+		$aV = held === wanted;
+	} else {
+		$aV = false;
 	}
 	return $aV;
 }
-function same_identity(identity, wanted) {
-	const $aW = identity;
-	let $aX = null;
-	if ($aW[0] === 0) {
-		const held = $aW[1];
-		$aX = held === wanted;
-	} else {
-		$aX = false;
-	}
-	return $aX;
-}
 function relay_for(tracker, target) {
-	return subscriber_of(() => {
+	const relay = subscriber_of(() => {
 		const connecting = tracker[0].v[3];
 		tracker[0].v[2] = true;
 		if (connecting) {
@@ -691,6 +749,16 @@ function relay_for(tracker, target) {
 		}
 		return;
 	}, true);
+	const $bc = tracker[0].v[7];
+	let $bd = null;
+	if ($bc[0] === 0) {
+		const site = __clone($bc[1]);
+		$bd = place_subscriber(relay[0], site);
+	} else {
+		$bd = undefined;
+	}
+	$bd;
+	return relay;
 }
 function attach_tracker(tracker, target) {
 	tracker[0].v[5] = [ 0, __clone(target) ];
@@ -711,7 +779,7 @@ function attach_tracker(tracker, target) {
 		tracker[0].v[3] = true;
 		let edges = [  ];
 		for (const dependency of read) {
-			edges.push([ dependency[0], dependency[1](relay_for(tracker, target)) ]);
+			edges.push([ __clone(dependency[0]), dependency[1](relay_for(tracker, target)) ]);
 		}
 		lists2.v[2] = edges;
 		tracker[0].v[3] = false;
@@ -752,6 +820,11 @@ function detach_tracker(tracker) {
 	tracker[0].v[5] = [ 1 ];
 	forget_reads(tracker);
 }
+function place_subscriber(id, site) {
+	if (tracing.v) {
+		trace_hooks.v[8](id, site);
+	}
+}
 function place_subscription(subscription, site) {
 	if (tracing.v) {
 		trace_hooks.v[8](subscription[1], site);
@@ -759,7 +832,7 @@ function place_subscription(subscription, site) {
 	return subscription;
 }
 function also_releasing(handle, release) {
-	const previous = handle[3].v;
+	const previous = __clone(handle[3].v);
 	handle[3].v = [ 0, () => {
 		release();
 		const $bw = previous;
@@ -817,30 +890,30 @@ function slot_of(key) {
 	const parts = key.split(":");
 	if (parts.length !== 3) {
 		(() => {
-			throw __panic("this style\'s slot key is not one media:condition:property triple (got \"" + key + "\"" + ") \u{2014} every field that reaches a key is fenced against \':\' where it is written, so a key holding another one means a condition token was minted carrying the key\'s own separator; that is the bug, not this read", "std/src/web/style.vl:877:3");
+			throw __panic("this style\'s slot key is not one media:condition:property triple (got \"" + key + "\"" + ") \u{2014} every field that reaches a key is fenced against \':\' where it is written, so a key holding another one means a condition token was minted carrying the key\'s own separator; that is the bug, not this read", "std/src/web/style.vl:1305:3");
 		})();
 	}
-	return [ __at(parts, 0, "std/src/web/style.vl:879:17"), __at(parts, 1, "std/src/web/style.vl:879:39"), __at(parts, 2, "std/src/web/style.vl:879:60") ];
+	return [ __at(parts, 0, "std/src/web/style.vl:1307:17"), __at(parts, 1, "std/src/web/style.vl:1307:39"), __at(parts, 2, "std/src/web/style.vl:1307:60") ];
 }
 function family_longhands(property) {
-	const $P = property;
-	let $Q = null;
-	if ($P === "padding") {
-		$Q = ";padding-top;padding-right;padding-bottom;padding-left;";
-	} else if ($P === "margin") {
-		$Q = ";margin-top;margin-right;margin-bottom;margin-left;";
-	} else if ($P === "inset") {
-		$Q = ";top;right;bottom;left;";
-	} else if ($P === "flex") {
-		$Q = ";flex-grow;flex-shrink;flex-basis;";
-	} else if ($P === "background") {
-		$Q = ";background-color;background-image;background-position;background-size;background-repeat;background-attachment;background-origin;background-clip;";
-	} else if ($P === "border") {
-		$Q = border_longhands();
+	const $N = property;
+	let $O = null;
+	if ($N === "padding") {
+		$O = ";padding-top;padding-right;padding-bottom;padding-left;";
+	} else if ($N === "margin") {
+		$O = ";margin-top;margin-right;margin-bottom;margin-left;";
+	} else if ($N === "inset") {
+		$O = ";top;right;bottom;left;";
+	} else if ($N === "flex") {
+		$O = ";flex-grow;flex-shrink;flex-basis;";
+	} else if ($N === "background") {
+		$O = ";background-color;background-image;background-position;background-size;background-repeat;background-attachment;background-origin;background-clip;";
+	} else if ($N === "border") {
+		$O = border_longhands();
 	} else {
-		$Q = "";
+		$O = "";
 	}
-	return $Q;
+	return $O;
 }
 function border_longhands() {
 	let out = ";border-width;border-style;border-color;";
@@ -869,9 +942,9 @@ function without_covered(rules, media, condition, property) {
 function class_list(self) {
 	let out = "";
 	for (const entry of values(self[0])) {
-		const $R = entry;
-		const class2 = $R[0];
-		const _declaration = $R[1];
+		const $P = entry;
+		const class2 = $P[0];
+		const _declaration = $P[1];
 		if (out === "") {
 			out = class2;
 		} else {
@@ -883,18 +956,18 @@ function class_list(self) {
 function add(self, b) {
 	let rules = __clone(self[0]);
 	for (const key of keys(b[0])) {
-		const $N = get2(b[0], key);
-		let $O = null;
-		if ($N[0] === 0) {
-			const entry = $N[1];
+		const $L = get2(b[0], key);
+		let $M = null;
+		if ($L[0] === 0) {
+			const entry = $L[1];
 			const slot = slot_of(key);
 			rules = without_covered(rules, slot[0], slot[1], slot[2]);
 			insert(rules, key, entry);
-			$O = undefined;
+			$M = undefined;
 		} else {
-			$O = undefined;
+			$M = undefined;
 		}
-		$O;
+		$M;
 	}
 	return [ rules ];
 }
@@ -987,9 +1060,9 @@ function styled(self, style) {
 }
 function on(self, event, handler) {
 	self[0].addEventListener(event, () => {
-		return turn([ 1 ], ($Y) => {
+		return turn([ 1 ], ($W) => {
 			return (() => {
-				return handler($Y, [ 1 ]);
+				return handler($W, [ 1 ]);
 			})();
 		});
 	});
@@ -1004,50 +1077,79 @@ function host(self) {
 	return self[0].parentNode;
 }
 function cut_row(self, row, end) {
-	const range = document.createRange();
-	range.setStartAfter(row[0]);
-	range.setEndBefore(end);
-	return range.extractContents();
+	return __dom_cut_run(row[0], end);
+}
+function retire_row(self, row, end, disposal) {
+	while_leaving(row[0], end, disposal);
+	__dom_remove_run(row[0], end);
 }
 function insert_row(self, row, content, end) {
 	host(self).insertBefore(row[0], end);
 	host(self).insertBefore(content, end);
 }
-function drop_row(self, row) {
-	row[0].remove();
-}
 function hold_rows(self, rows) {
 	self[2].v = __clone(rows);
 }
 function close(self) {
-	for (const view2 of self[1].v) {
-		view2[0].remove();
+	if (!(is_leaving(self[0]))) {
+		for (const view2 of self[1].v) {
+			view2[0].remove();
+		}
+		const $cD = first(self[2].v);
+		let $cE = null;
+		if ($cD[0] === 0) {
+			const first2 = $cD[1];
+			$cE = __dom_remove_run(first2[0], self[0]);
+		} else {
+			$cE = undefined;
+		}
+		$cE;
+		self[0].remove();
 	}
 	self[1].v = [  ];
-	const rows = __clone(self[2].v);
-	let at = 0;
-	for (const row of rows) {
-		let $cB = null;
-		if (at + 1 < rows.length) {
-			$cB = __at(rows, at + 1, "std/src/browser/web/ui.vl:866:39")[0];
+	self[2].v = [  ];
+}
+function close_with(self, disposal) {
+	const $cB = first(self[2].v);
+	let $cC = null;
+	if ($cB[0] === 0) {
+		const first2 = $cB[1];
+		if (is_leaving(self[0])) {
+			disposal();
 		} else {
-			$cB = self[0];
+			while_leaving(first2[0], self[0], disposal);
 		}
-		const end = __clone($cB);
-		cut_row(self, row, end);
-		drop_row(self, row);
+		$cC = undefined;
+	} else {
+		$cC = disposal();
+	}
+	$cC;
+	close(self);
+}
+function is_leaving(node) {
+	let at = 0;
+	while (at < leaving_runs.v.length) {
+		if (__dom_run_holds(__at(leaving_runs.v, at, "std/src/browser/web/ui.vl:975:16"), node)) {
+			return true;
+		}
 		at = at + 1;
 	}
-	self[2].v = [  ];
-	self[0].remove();
+	return false;
 }
-function place(self, parent) {
+function while_leaving(from, before, disposal) {
+	leaving_runs.v.push(__dom_run_nodes(from, before));
+	__with_finally(disposal, () => {
+		__list_pop(leaving_runs.v);
+		return;
+	});
+}
+function place(self, parent, caller) {
 	parent[0].appendChild(self[0]);
 }
-function place2(self, parent) {
+function place2(self, parent, caller) {
 	parent[0].appendChild(document.createTextNode(self));
 }
-function place3(self, parent) {
+function place3(self, parent, caller) {
 	for (const item of self) {
 		parent[0].appendChild(item[0]);
 	}
@@ -1057,19 +1159,19 @@ function settled_steps(steps) {
 	let forward_count = 0;
 	let highest = [ 1 ];
 	for (const step of steps) {
-		const $cM = step;
-		let $cN = null;
-		if ($cM[0] === 0) {
-			const index = $cM[1];
-			const $cO = highest;
-			let $cP = null;
-			if ($cO[0] === 0) {
-				const top = $cO[1];
-				$cP = index > top;
+		const $cP = step;
+		let $cQ = null;
+		if ($cP[0] === 0) {
+			const index = $cP[1];
+			const $cR = highest;
+			let $cS = null;
+			if ($cR[0] === 0) {
+				const top = $cR[1];
+				$cS = index > top;
 			} else {
-				$cP = true;
+				$cS = true;
 			}
-			const rises = $cP;
+			const rises = $cS;
 			if (rises) {
 				highest = [ 0, index ];
 				forward_count = forward_count + 1;
@@ -1077,12 +1179,12 @@ function settled_steps(steps) {
 			} else {
 				forward.push(false);
 			}
-			$cN = undefined;
+			$cQ = undefined;
 		} else {
 			forward.push(false);
-			$cN = undefined;
+			$cQ = undefined;
 		}
-		$cN;
+		$cQ;
 	}
 	let backward = [  ];
 	let backward_count = 0;
@@ -1090,10 +1192,10 @@ function settled_steps(steps) {
 	let at = steps.length;
 	while (at > 0) {
 		at = at - 1;
-		const $cQ = __at(steps, at, "std/src/browser/web/ui.vl:1529:9");
-		let $cR = null;
-		if ($cQ[0] === 0) {
-			const index2 = $cQ[1];
+		const $cT = __at(steps, at, "std/src/browser/web/ui.vl:1659:9");
+		let $cU = null;
+		if ($cT[0] === 0) {
+			const index2 = $cT[1];
 			if (index2 < lowest) {
 				lowest = index2;
 				backward_count = backward_count + 1;
@@ -1101,20 +1203,20 @@ function settled_steps(steps) {
 			} else {
 				backward.push(false);
 			}
-			$cR = undefined;
+			$cU = undefined;
 		} else {
 			backward.push(false);
-			$cR = undefined;
+			$cU = undefined;
 		}
-		$cR;
+		$cU;
 	}
-	let $cS = null;
+	let $cV = null;
 	if (forward_count >= backward_count) {
-		$cS = forward;
+		$cV = forward;
 	} else {
-		$cS = reverse(backward);
+		$cV = reverse(backward);
 	}
-	return $cS;
+	return $cV;
 }
 function row_references(steps, rows, settled, anchor) {
 	let references = [  ];
@@ -1123,31 +1225,31 @@ function row_references(steps, rows, settled, anchor) {
 	while (at > 0) {
 		at = at - 1;
 		references.push(__clone(reference));
-		let $cV = null;
-		if (__at(settled, at, "std/src/browser/web/ui.vl:1621:6")) {
-			const $cT = __at(steps, at, "std/src/browser/web/ui.vl:1622:10");
-			let $cU = null;
-			if ($cT[0] === 0) {
-				const index = $cT[1];
-				reference = __clone(__at(rows, index, "std/src/browser/web/ui.vl:1624:18")[0]);
-				$cU = undefined;
+		let $cY = null;
+		if (__at(settled, at, "std/src/browser/web/ui.vl:1751:6")) {
+			const $cW = __at(steps, at, "std/src/browser/web/ui.vl:1752:10");
+			let $cX = null;
+			if ($cW[0] === 0) {
+				const index = $cW[1];
+				reference = __clone(__at(rows, index, "std/src/browser/web/ui.vl:1754:18")[0]);
+				$cX = undefined;
 			} else {
-				$cU = undefined;
+				$cX = undefined;
 			}
-			$cV = $cU;
+			$cY = $cX;
 		}
-		$cV;
+		$cY;
 	}
 	return reverse(references);
 }
-function apply(self, parent, name) {
+function apply(self, parent, name, caller) {
 	parent[0].setAttribute(name, self);
 }
 function mount_target(id) {
 	const element = document.getElementById(id);
 	if (__is_null(element)) {
 		(() => {
-			throw __panic("mount: no element with id \'" + id + "\'", "std/src/browser/web/ui.vl:2386:3");
+			throw __panic("mount: no element with id \'" + id + "\'", "std/src/browser/web/ui.vl:2553:3");
 		})();
 	}
 	return element;
@@ -1158,11 +1260,11 @@ function mount(id, view2) {
 	element.appendChild(view2[0]);
 }
 function mount_root(id, body) {
-	const $eF = turn([ 1 ], ($eE) => {
+	const $eK = turn([ 1 ], ($eJ) => {
 		return comp(body);
 	});
-	const built = $eF[0];
-	const root = $eF[1];
+	const built = $eK[0];
+	const root = $eK[1];
 	mount(id, built);
 	if (__hmr_active()) {
 		const element = document.getElementById(id);
@@ -1175,7 +1277,7 @@ function mount_root(id, body) {
 	return root;
 }
 function template_option(value, label, $bH, $bI) {
-	return child2(attr(view("option"), "value", value, $bH, $bI), label, $bH, $bI);
+	return child2(attr(view("option"), "value", value, $bH, $bI, "src/playground_page.vl:320:2"), label, $bH, $bI, "src/playground_page.vl:320:2");
 }
 function template_title(name) {
 	const $bU = name;
@@ -1197,9 +1299,9 @@ function severity_tag(row, $co, $cp) {
 	const $cq = row[1];
 	let $cr = null;
 	if ($cq === "error") {
-		$cr = child2(styled(view("span"), diag_error), "error", $co, $cp);
+		$cr = child2(styled(view("span"), diag_error), "error", $co, $cp, "src/playground_page.vl:409:14");
 	} else {
-		$cr = child2(styled(view("span"), diag_warning), "warning", $co, $cp);
+		$cr = child2(styled(view("span"), diag_warning), "warning", $co, $cp, "src/playground_page.vl:410:8");
 	}
 	return $cr;
 }
@@ -1211,54 +1313,54 @@ function trace_row(hop, $cs, $ct) {
 		$cu = "  " + hop[3];
 	}
 	const text = $cu;
-	return child2(styled(view("div"), diag_trace), text, $cs, $ct);
+	return child2(styled(view("div"), diag_trace), text, $cs, $ct, "src/playground_page.vl:422:2");
 }
 function diagnostic_row(row, $cm, $cn) {
-	const head = child(child(child(view("div"), severity_tag(row, $cm, $cn), $cm, $cn), child2(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " ", $cm, $cn), $cm, $cn), child2(view("span"), row[5], $cm, $cn), $cm, $cn);
+	const head = child(child(child(view("div"), severity_tag(row, $cm, $cn), $cm, $cn, "src/playground_page.vl:429:13"), child2(styled(view("span"), diag_site), " " + row[2] + ":" + row[3] + ":" + row[4] + " ", $cm, $cn, "src/playground_page.vl:431:3"), $cm, $cn, "src/playground_page.vl:429:13"), child2(view("span"), row[5], $cm, $cn, "src/playground_page.vl:432:3"), $cm, $cn, "src/playground_page.vl:429:13");
 	let lines = [ head ];
 	for (const hop of row[7]) {
 		lines.push(trace_row(hop, $cm, $cn));
 	}
 	if (row[6] !== "") {
-		lines.push(child2(styled(view("div"), diag_note), "  note: " + row[6], $cm, $cn));
+		lines.push(child2(styled(view("div"), diag_note), "  note: " + row[6], $cm, $cn, "src/playground_page.vl:439:14"));
 	}
-	const body = child5(view("div"), lines, $cm, $cn);
+	const body = child5(view("div"), lines, $cm, $cn, "src/playground_page.vl:441:13");
 	const $cv = row[1];
 	let $cw = null;
 	if ($cv === "error") {
-		$cw = child(styled(view("div"), diag_row_error), body, $cm, $cn);
+		$cw = child(styled(view("div"), diag_row_error), body, $cm, $cn, "src/playground_page.vl:443:14");
 	} else {
-		$cw = child(styled(view("div"), diag_row_warning), body, $cm, $cn);
+		$cw = child(styled(view("div"), diag_row_warning), body, $cm, $cn, "src/playground_page.vl:444:8");
 	}
 	return $cw;
 }
-function console_row(row, $dK, $dL) {
-	const $dM = row[1];
-	let $dN = null;
-	if ($dM === "error") {
-		$dN = child2(styled(view("div"), console_error), row[2], $dK, $dL);
+function console_row(row, $dO, $dP) {
+	const $dQ = row[1];
+	let $dR = null;
+	if ($dQ === "error") {
+		$dR = child2(styled(view("div"), console_error), row[2], $dO, $dP, "src/playground_page.vl:450:14");
 	} else {
-		$dN = child2(styled(view("div"), console_line), row[2], $dK, $dL);
+		$dR = child2(styled(view("div"), console_line), row[2], $dO, $dP, "src/playground_page.vl:451:8");
 	}
-	return $dN;
+	return $dR;
 }
 function playground_page(status2, diagnostics2, console_lines2, can_format2, can_platform2, can_prelude2, share_label2, mode2, modified_from2, confirm_target2, run2, format2, share2, confirm_replace2, cancel_replace2, $G, $H) {
-	return child(child(styled(view("div"), add(add(shell, app_fill), code_palette)), child(child(child(child(child(child(child(child(child(child(child(child(styled(view("header"), app_bar), child(child(attr(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $G, $H), attr(styled(view("span"), add(nav_mark, no_drag)), "aria-hidden", "true", $G, $H), $G, $H), child2(view("span"), "VILAN", $G, $H), $G, $H), $G, $H), child2(styled(view("h1"), page_title), "Playground", $G, $H), $G, $H), styled(view("div"), rail_divider), $G, $H), child3(on(styled(view("button"), primary_button), "click", ($W, $X) => {
+	return child(child(styled(view("div"), add(add(shell, app_fill), code_palette)), child(child(child(child(child(child(child(child(child(child(child(child(styled(view("header"), app_bar), child(child(attr(styled(view("a"), add(nav_brand, nav_link)), "href", "/", $G, $H, "src/playground_page.vl:476:4"), attr(styled(view("span"), add(nav_mark, no_drag)), "aria-hidden", "true", $G, $H, "src/playground_page.vl:477:5"), $G, $H, "src/playground_page.vl:476:4"), child2(view("span"), "VILAN", $G, $H, "src/playground_page.vl:478:5"), $G, $H, "src/playground_page.vl:476:4"), $G, $H, "src/playground_page.vl:475:3"), child2(styled(view("h1"), page_title), "Playground", $G, $H, "src/playground_page.vl:480:4"), $G, $H, "src/playground_page.vl:475:3"), styled(view("div"), rail_divider), $G, $H, "src/playground_page.vl:475:3"), child3(on(styled(view("button"), primary_button), "click", ($U, $V) => {
 		return run2();
-	}), derive(__clone(mode2), (current, $Z, $aa, $ab) => {
-		const $ac = current;
-		let $ad = null;
-		if ($ac === "node") {
-			$ad = "Check";
+	}), derive(__clone(mode2), (current, $X, $Y, $Z) => {
+		const $aa = current;
+		let $ab = null;
+		if ($aa === "node") {
+			$ab = "Check";
 		} else {
-			$ad = "Run";
+			$ab = "Run";
 		}
-		return $ad;
-	}), $G, $H), $G, $H), child(child(show(attr(attr(styled(view("select"), select_box), "id", "mode", $G, $H), "aria-label", "Compile mode", $G, $H), __clone(can_platform2), $G, $H), template_option("browser", "Browser: compile and run", $G, $H), $G, $H), template_option("node", "Server: check the process leg", $G, $H), $G, $H), $G, $H), child(child(child(show(attr(attr(styled(view("select"), select_box), "id", "prelude", $G, $H), "aria-label", "Ambient scope", $G, $H), __clone(can_prelude2), $G, $H), template_option("on", "Prelude: on", $G, $H), $G, $H), template_option("web", "Prelude: web", $G, $H), $G, $H), template_option("off", "Prelude: off", $G, $H), $G, $H), $G, $H), child2(show(on(styled(view("button"), ghost_button), "click", ($bJ, $bK) => {
+		return $ab;
+	}, "src/playground_page.vl:483:11"), $G, $H, "src/playground_page.vl:482:4"), $G, $H, "src/playground_page.vl:475:3"), child(child(show(attr(attr(styled(view("select"), select_box), "id", "mode", $G, $H, "src/playground_page.vl:488:4"), "aria-label", "Compile mode", $G, $H, "src/playground_page.vl:488:4"), __clone(can_platform2), $G, $H, "src/playground_page.vl:488:71"), template_option("browser", "Browser: compile and run", $G, $H), $G, $H, "src/playground_page.vl:488:4"), template_option("node", "Server: check the process leg", $G, $H), $G, $H, "src/playground_page.vl:488:4"), $G, $H, "src/playground_page.vl:475:3"), child(child(child(show(attr(attr(styled(view("select"), select_box), "id", "prelude", $G, $H, "src/playground_page.vl:492:4"), "aria-label", "Ambient scope", $G, $H, "src/playground_page.vl:492:4"), __clone(can_prelude2), $G, $H, "src/playground_page.vl:492:75"), template_option("on", "Prelude: on", $G, $H), $G, $H, "src/playground_page.vl:492:4"), template_option("web", "Prelude: web", $G, $H), $G, $H, "src/playground_page.vl:492:4"), template_option("off", "Prelude: off", $G, $H), $G, $H, "src/playground_page.vl:492:4"), $G, $H, "src/playground_page.vl:475:3"), child2(show(on(styled(view("button"), ghost_button), "click", ($bJ, $bK) => {
 		return format2();
-	}), __clone(can_format2), $G, $H), "Format", $G, $H), $G, $H), child4(on(styled(view("button"), ghost_button), "click", ($bL, $bM) => {
+	}), __clone(can_format2), $G, $H, "src/playground_page.vl:497:57"), "Format", $G, $H, "src/playground_page.vl:497:4"), $G, $H, "src/playground_page.vl:475:3"), child4(on(styled(view("button"), ghost_button), "click", ($bL, $bM) => {
 		return share2();
-	}), __clone(share_label2), $G, $H), $G, $H), child4(attr(styled(view("p"), status_line), "role", "status", $G, $H), __clone(status2), $G, $H), $G, $H), attr(attr(styled(view("select"), version_select), "id", "version", $G, $H), "aria-label", "Compiler version", $G, $H), $G, $H), styled(view("div"), rail_divider), $G, $H), child2(attr(styled(view("a"), nav_link), "href", "/docs/", $G, $H), "Docs", $G, $H), $G, $H), $G, $H), child(child(child(child(styled(view("main"), quad_grid), child(child(child(styled(view("div"), panel), child(child(styled(view("div"), panel_head), child2(styled(view("p"), panel_title), "Program", $G, $H), $G, $H), child(child(child(child(child(attr(attr(styled(view("select"), select_box), "id", "template", $G, $H), "aria-label", "Load an example", $G, $H), child3(attr(attr(attr(view("option"), "disabled", "true", $G, $H), "hidden", "true", $G, $H), "value", "", $G, $H), derive(__clone(modified_from2), (name, $bP, $bQ, $bR) => {
+	}), __clone(share_label2), $G, $H, "src/playground_page.vl:498:4"), $G, $H, "src/playground_page.vl:475:3"), child4(attr(styled(view("p"), status_line), "role", "status", $G, $H, "src/playground_page.vl:499:4"), __clone(status2), $G, $H, "src/playground_page.vl:499:4"), $G, $H, "src/playground_page.vl:475:3"), attr(attr(styled(view("select"), version_select), "id", "version", $G, $H, "src/playground_page.vl:500:4"), "aria-label", "Compiler version", $G, $H, "src/playground_page.vl:500:4"), $G, $H, "src/playground_page.vl:475:3"), styled(view("div"), rail_divider), $G, $H, "src/playground_page.vl:475:3"), child2(attr(styled(view("a"), nav_link), "href", "/docs/", $G, $H, "src/playground_page.vl:502:4"), "Docs", $G, $H, "src/playground_page.vl:502:4"), $G, $H, "src/playground_page.vl:475:3"), $G, $H, "src/playground_page.vl:474:2"), child(child(child(child(styled(view("main"), quad_grid), child(child(child(styled(view("div"), panel), child(child(styled(view("div"), panel_head), child2(styled(view("p"), panel_title), "Program", $G, $H, "src/playground_page.vl:507:6"), $G, $H, "src/playground_page.vl:506:5"), child(child(child(child(child(attr(attr(styled(view("select"), select_box), "id", "template", $G, $H, "src/playground_page.vl:508:6"), "aria-label", "Load an example", $G, $H, "src/playground_page.vl:508:6"), child3(attr(attr(attr(view("option"), "disabled", "true", $G, $H, "src/playground_page.vl:509:7"), "hidden", "true", $G, $H, "src/playground_page.vl:509:7"), "value", "", $G, $H, "src/playground_page.vl:509:7"), derive(__clone(modified_from2), (name, $bP, $bQ, $bR) => {
 		const $bS = name;
 		let $bT = null;
 		if ($bS === "") {
@@ -1267,27 +1369,27 @@ function playground_page(status2, diagnostics2, console_lines2, can_format2, can
 			$bT = "Modified \u{2014} " + template_title(name);
 		}
 		return $bT;
-	}), $G, $H), $G, $H), template_option("counter", "Counter: reactive state", $G, $H), $G, $H), template_option("hello", "Hello: mount and print", $G, $H), $G, $H), template_option("styles", "Styles: compile-time CSS", $G, $H), $G, $H), show(template_option("server", "Server: typed HTTP, checked", $G, $H), __clone(can_platform2), $G, $H), $G, $H), $G, $H), $G, $H), child(show2(attr(view("div"), "role", "alert", $G, $H), derive(__clone(confirm_target2), (name, $bW, $bX, $bY) => {
+	}, "src/playground_page.vl:510:23"), $G, $H, "src/playground_page.vl:509:7"), $G, $H, "src/playground_page.vl:508:6"), template_option("counter", "Counter: reactive state", $G, $H), $G, $H, "src/playground_page.vl:508:6"), template_option("hello", "Hello: mount and print", $G, $H), $G, $H, "src/playground_page.vl:508:6"), template_option("styles", "Styles: compile-time CSS", $G, $H), $G, $H, "src/playground_page.vl:508:6"), show(template_option("server", "Server: typed HTTP, checked", $G, $H), __clone(can_platform2), $G, $H, "src/playground_page.vl:518:65"), $G, $H, "src/playground_page.vl:508:6"), $G, $H, "src/playground_page.vl:506:5"), $G, $H, "src/playground_page.vl:505:4"), child(show2(attr(view("div"), "role", "alert", $G, $H, "src/playground_page.vl:521:5"), derive(__clone(confirm_target2), (name, $bW, $bX, $bY) => {
 		return name !== "";
-	}), $G, $H), child(child(child(styled(view("div"), confirm_bar), child3(styled(view("p"), confirm_question), derive(__clone(confirm_target2), (name, $cb, $cc, $cd) => {
+	}, "src/playground_page.vl:521:45"), $G, $H, "src/playground_page.vl:521:25"), child(child(child(styled(view("div"), confirm_bar), child3(styled(view("p"), confirm_question), derive(__clone(confirm_target2), (name, $cb, $cc, $cd) => {
 		return "Replace the current program with " + template_title(name) + "? The edits are not kept.";
-	}), $G, $H), $G, $H), child2(on(styled(view("button"), ghost_button), "click", ($ce, $cf) => {
+	}, "src/playground_page.vl:525:10"), $G, $H, "src/playground_page.vl:523:7"), $G, $H, "src/playground_page.vl:522:6"), child2(on(styled(view("button"), ghost_button), "click", ($ce, $cf) => {
 		return cancel_replace2();
-	}), "Keep editing", $G, $H), $G, $H), child2(on(styled(view("button"), primary_button), "click", ($cg, $ch) => {
+	}), "Keep editing", $G, $H, "src/playground_page.vl:527:7"), $G, $H, "src/playground_page.vl:522:6"), child2(on(styled(view("button"), primary_button), "click", ($cg, $ch) => {
 		return confirm_replace2();
-	}), "Replace", $G, $H), $G, $H), $G, $H), $G, $H), attr(attr(styled(view("div"), editor_host), "id", "editor", $G, $H), "aria-label", "Program editor", $G, $H), $G, $H), $G, $H), child(child(styled(view("div"), panel), child(styled(view("div"), panel_head), child2(styled(view("p"), panel_title), "Result", $G, $H), $G, $H), $G, $H), attr(attr(styled(view("div"), runner_host), "id", "runner", $G, $H), "aria-label", "Program result", $G, $H), $G, $H), $G, $H), child(child(styled(view("div"), panel), child(styled(view("div"), panel_head), child2(styled(view("p"), panel_title), "Diagnostics", $G, $H), $G, $H), $G, $H), child6(child(styled(view("pre"), report_well), child2(show3(styled(view("div"), quiet_row), derive(__clone(diagnostics2), (rows, $ci, $cj, $ck) => {
+	}), "Replace", $G, $H, "src/playground_page.vl:530:7"), $G, $H, "src/playground_page.vl:522:6"), $G, $H, "src/playground_page.vl:521:5"), $G, $H, "src/playground_page.vl:505:4"), attr(attr(styled(view("div"), editor_host), "id", "editor", $G, $H, "src/playground_page.vl:535:5"), "aria-label", "Program editor", $G, $H, "src/playground_page.vl:535:5"), $G, $H, "src/playground_page.vl:505:4"), $G, $H, "src/playground_page.vl:504:3"), child(child(styled(view("div"), panel), child(styled(view("div"), panel_head), child2(styled(view("p"), panel_title), "Result", $G, $H, "src/playground_page.vl:539:6"), $G, $H, "src/playground_page.vl:538:5"), $G, $H, "src/playground_page.vl:537:4"), attr(attr(styled(view("div"), runner_host), "id", "runner", $G, $H, "src/playground_page.vl:541:5"), "aria-label", "Program result", $G, $H, "src/playground_page.vl:541:5"), $G, $H, "src/playground_page.vl:537:4"), $G, $H, "src/playground_page.vl:504:3"), child(child(styled(view("div"), panel), child(styled(view("div"), panel_head), child2(styled(view("p"), panel_title), "Diagnostics", $G, $H, "src/playground_page.vl:545:6"), $G, $H, "src/playground_page.vl:544:5"), $G, $H, "src/playground_page.vl:543:4"), child6(child(styled(view("pre"), report_well), child2(show3(styled(view("div"), quiet_row), derive(__clone(diagnostics2), (rows, $ci, $cj, $ck) => {
 		return rows.length === 0;
-	}), $G, $H), "Nothing to report.", $G, $H), $G, $H), each_by(__clone(diagnostics2), (row) => {
+	}, "src/playground_page.vl:548:48"), $G, $H, "src/playground_page.vl:548:31"), "Nothing to report.", $G, $H, "src/playground_page.vl:548:6"), $G, $H, "src/playground_page.vl:547:5"), each_by(__clone(diagnostics2), (row) => {
 		return row[0];
 	}, (row, $cl) => {
 		return diagnostic_row(get(row), $G, $cl);
-	}), $G, $H), $G, $H), $G, $H), child(child(styled(view("div"), panel), child(styled(view("div"), panel_head), child2(styled(view("p"), panel_title), "Console", $G, $H), $G, $H), $G, $H), child7(child(styled(view("pre"), report_well), child2(show4(styled(view("div"), quiet_row), derive(__clone(console_lines2), (rows, $dG, $dH, $dI) => {
+	}), $G, $H, "src/playground_page.vl:547:5"), $G, $H, "src/playground_page.vl:543:4"), $G, $H, "src/playground_page.vl:504:3"), child(child(styled(view("div"), panel), child(styled(view("div"), panel_head), child2(styled(view("p"), panel_title), "Console", $G, $H, "src/playground_page.vl:556:6"), $G, $H, "src/playground_page.vl:555:5"), $G, $H, "src/playground_page.vl:554:4"), child7(child(styled(view("pre"), report_well), child2(show4(styled(view("div"), quiet_row), derive(__clone(console_lines2), (rows, $dK, $dL, $dM) => {
 		return rows.length === 0;
-	}), $G, $H), "Program output lands here.", $G, $H), $G, $H), each_by(__clone(console_lines2), (row) => {
+	}, "src/playground_page.vl:559:50"), $G, $H, "src/playground_page.vl:559:31"), "Program output lands here.", $G, $H, "src/playground_page.vl:559:6"), $G, $H, "src/playground_page.vl:558:5"), each_by(__clone(console_lines2), (row) => {
 		return row[0];
-	}, (row, $dJ) => {
-		return console_row(get(row), $G, $dJ);
-	}), $G, $H), $G, $H), $G, $H), $G, $H);
+	}, (row, $dN) => {
+		return console_row(get(row), $G, $dN);
+	}), $G, $H, "src/playground_page.vl:558:5"), $G, $H, "src/playground_page.vl:554:4"), $G, $H, "src/playground_page.vl:504:3"), $G, $H, "src/playground_page.vl:474:2");
 }
 function new4(value, caller) {
 	let subscribers = [  ];
@@ -1418,46 +1520,30 @@ function get(self) {
 	return __clone(self[0].v);
 }
 function keys(self) {
-	let result = [  ];
-	for (const entry of __map_values(self[0])) {
-		result.push(__clone(entry[0]));
-	}
-	return result;
+	return __nmap_keys(self[0]);
 }
 function get2(self, key) {
-	const $L = __map_get(self[0], hash(key));
-	let $M = null;
-	if ($L[0] === 0) {
-		const entry = $L[1];
-		$M = [ 0, __clone(entry.slice(1, 3)) ];
-	} else {
-		$M = [ 1 ];
-	}
-	return $M;
+	return __nmap_get(self[0], hash(key));
 }
 function remove(self, key) {
-	self[0].delete(hash(key));
+	__nmap_remove(self[0], hash(key));
 }
 function insert(self, key, value) {
-	self[0].set(hash(key), [ __clone(key), ...__clone(value) ]);
+	__nmap_insert(self[0], hash(key), __clone(key), __clone(value));
 }
 function values(self) {
-	let result = [  ];
-	for (const entry of __map_values(self[0])) {
-		result.push(__clone(entry.slice(1, 3)));
-	}
-	return result;
+	return __nmap_values(self[0]);
 }
-function attr(self, name, value, $S, $T) {
-	apply(value, self, name, $S, $T);
+function attr(self, name, value, $Q, $R, caller) {
+	apply(value, self, name, $Q, $R, caller);
 	return __clone(self);
 }
-function child(self, content, $U, $V) {
-	place(content, self, $U, $V);
+function child(self, content, $S, $T, caller) {
+	place(content, self, $S, $T, caller);
 	return __clone(self);
 }
-function child2(self, content, $U, $V) {
-	place2(content, self, $U, $V);
+function child2(self, content, $S, $T, caller) {
+	place2(content, self, $S, $T, caller);
 	return __clone(self);
 }
 function turn(policy, body) {
@@ -1467,8 +1553,8 @@ function turn(policy, body) {
 	fresh[5].v = true;
 	return result;
 }
-function derive(self, transform) {
-	return [ self, transform ];
+function derive(self, transform, caller) {
+	return [ self, transform, caller ];
 }
 function attach(signal, subscriber) {
 	const handle = [ signal[1], subscriber[0], subscriber[2], __shared_new([ 1 ]) ];
@@ -1488,40 +1574,40 @@ function start(self) {
 	} ];
 }
 function is_none(self) {
-	const $aD = self;
-	return $aD[0] === 1;
+	const $aB = self;
+	return $aB[0] === 1;
 }
 function run_body(runs, body) {
 	const run2 = renew(runs);
-	const $aM = nursery(run2);
-	let $aN = null;
-	if ($aM[0] === 0) {
-		const nursery2 = $aM[1];
-		$aN = (($aO) => {
-			return (($aP) => {
-				return body($aO, $aP);
+	const $aK = nursery(run2);
+	let $aL = null;
+	if ($aK[0] === 0) {
+		const nursery2 = $aK[1];
+		$aL = (($aM) => {
+			return (($aN) => {
+				return body($aM, $aN);
 			})(nursery2);
 		})(run2);
 	} else {
-		$aN = (() => {
+		$aL = (() => {
 			throw __panic("a renewed run carries its nursery", "std/src/reactive.vl:1405:11");
 		})();
 	}
-	return $aN;
+	return $aL;
 }
 function run_once(runs, tracker, body) {
 	const scope = open_run(tracker);
-	const value = run_body(runs, ($av, $aw) => {
-		return (($ax) => {
-			return body($av, $ax, $aw);
+	const value = run_body(runs, ($at, $au) => {
+		return (($av) => {
+			return body($at, $av, $au);
 		})(scope);
 	});
 	close_run(tracker);
 	return value;
 }
 function run_tracked(runs, tracker, body) {
-	let value = run_once(runs, tracker, ($aq, $ar, $as) => {
-		return body($aq, $ar, $as);
+	let value = run_once(runs, tracker, ($ao, $ap, $aq) => {
+		return body($ao, $ap, $aq);
 	});
 	let rounds = 0;
 	while (tracker[0].v[4] && rounds < 100) {
@@ -1538,15 +1624,16 @@ function run_tracked(runs, tracker, body) {
 }
 function start2(self) {
 	const transform = self[1];
+	const site = __clone(self[2]);
 	const upstream = start(__clone(self[0]));
 	const pull = upstream[0];
 	const upstream_attach = upstream[1];
 	const runs = new3();
-	const tracker = new_tracker();
+	const tracker = new_tracker([ 0, site ]);
 	return [ () => {
 		const value = pull();
-		return run_tracked(runs, tracker, ($an, $ao, $ap) => {
-			return transform(value, $an, $ao, $ap);
+		return run_tracked(runs, tracker, ($al, $am, $an) => {
+			return transform(value, $al, $am, $an);
 		});
 	}, (subscriber) => {
 		const handle = upstream_attach(subscriber);
@@ -1592,25 +1679,28 @@ function take(self, item, $by) {
 	});
 	return __clone(item);
 }
-function follow(flow, observer, $al, $am) {
-	take(get_owner($am), sub(flow, observer, "std/src/browser/web/ui.vl:87:24"), $al);
+function follow(flow, observer, $aj, $ak, caller) {
+	take(get_owner($ak), sub(flow, observer, caller), $aj);
 }
-function place_text_flow(flow, parent, $ag, $ah) {
+function place_text_flow(flow, parent, $ae, $af, caller) {
 	const node = document.createTextNode("");
 	parent[0].appendChild(node);
-	defer(get_owner($ah), () => {
-		return node.remove();
+	defer(get_owner($af), () => {
+		if (!(is_leaving(node))) {
+			node.remove();
+		}
+		return;
 	});
-	follow(flow, (value, $ak) => {
+	follow(flow, (value, $ai) => {
 		node.textContent = value;
 		return;
-	}, $ag, $ah);
+	}, $ae, $af, caller);
 }
-function place4(self, parent, $ae, $af) {
-	place_text_flow(self, parent, $ae, $af);
+function place4(self, parent, $ac, $ad, caller) {
+	place_text_flow(self, parent, $ac, $ad, caller);
 }
-function child3(self, content, $U, $V) {
-	place4(content, self, $U, $V);
+function child3(self, content, $S, $T, caller) {
+	place4(content, self, $S, $T, caller);
 	return __clone(self);
 }
 function observe(signal, observer) {
@@ -1641,10 +1731,10 @@ function sub2(self, observer, caller) {
 		})();
 	}, true), caller);
 }
-function follow2(flow, observer, $al, $am) {
-	take(get_owner($am), sub2(flow, observer, "std/src/browser/web/ui.vl:87:24"), $al);
+function follow2(flow, observer, $aj, $ak, caller) {
+	take(get_owner($ak), sub2(flow, observer, caller), $aj);
 }
-function show(self, condition, $bC, $bD) {
+function show(self, condition, $bC, $bD, caller) {
 	const element = __clone(self[0]);
 	const restored = element.style.getPropertyValue("display");
 	follow2(condition, (visible, $bE) => {
@@ -1655,7 +1745,7 @@ function show(self, condition, $bC, $bD) {
 			element.style.setProperty("display", "none");
 		}
 		return;
-	}, $bC, $bD);
+	}, $bC, $bD, caller);
 	return __clone(self);
 }
 function attach_observer2(self, observer, immediately) {
@@ -1672,25 +1762,28 @@ function sub3(self, observer, caller) {
 		})();
 	}, true), caller);
 }
-function follow3(flow, observer, $al, $am) {
-	take(get_owner($am), sub3(flow, observer, "std/src/browser/web/ui.vl:87:24"), $al);
+function follow3(flow, observer, $aj, $ak, caller) {
+	take(get_owner($ak), sub3(flow, observer, caller), $aj);
 }
-function place_text_flow2(flow, parent, $ag, $ah) {
+function place_text_flow2(flow, parent, $ae, $af, caller) {
 	const node = document.createTextNode("");
 	parent[0].appendChild(node);
-	defer(get_owner($ah), () => {
-		return node.remove();
+	defer(get_owner($af), () => {
+		if (!(is_leaving(node))) {
+			node.remove();
+		}
+		return;
 	});
-	follow3(flow, (value, $ak) => {
+	follow3(flow, (value, $ai) => {
 		node.textContent = value;
 		return;
-	}, $ag, $ah);
+	}, $ae, $af, caller);
 }
-function place5(self, parent, $ae, $af) {
-	place_text_flow2(self, parent, $ae, $af);
+function place5(self, parent, $ac, $ad, caller) {
+	place_text_flow2(self, parent, $ac, $ad, caller);
 }
-function child4(self, content, $U, $V) {
-	place5(content, self, $U, $V);
+function child4(self, content, $S, $T, caller) {
+	place5(content, self, $S, $T, caller);
 	return __clone(self);
 }
 function run_body2(runs, body) {
@@ -1699,9 +1792,9 @@ function run_body2(runs, body) {
 	let $ca = null;
 	if ($bZ[0] === 0) {
 		const nursery2 = $bZ[1];
-		$ca = (($aO) => {
-			return (($aP) => {
-				return body($aO, $aP);
+		$ca = (($aM) => {
+			return (($aN) => {
+				return body($aM, $aN);
 			})(nursery2);
 		})(run2);
 	} else {
@@ -1713,17 +1806,17 @@ function run_body2(runs, body) {
 }
 function run_once2(runs, tracker, body) {
 	const scope = open_run(tracker);
-	const value = run_body2(runs, ($av, $aw) => {
-		return (($ax) => {
-			return body($av, $ax, $aw);
+	const value = run_body2(runs, ($at, $au) => {
+		return (($av) => {
+			return body($at, $av, $au);
 		})(scope);
 	});
 	close_run(tracker);
 	return value;
 }
 function run_tracked2(runs, tracker, body) {
-	let value = run_once2(runs, tracker, ($aq, $ar, $as) => {
-		return body($aq, $ar, $as);
+	let value = run_once2(runs, tracker, ($ao, $ap, $aq) => {
+		return body($ao, $ap, $aq);
 	});
 	let rounds = 0;
 	while (tracker[0].v[4] && rounds < 100) {
@@ -1740,15 +1833,16 @@ function run_tracked2(runs, tracker, body) {
 }
 function start3(self) {
 	const transform = self[1];
+	const site = __clone(self[2]);
 	const upstream = start(__clone(self[0]));
 	const pull = upstream[0];
 	const upstream_attach = upstream[1];
 	const runs = new3();
-	const tracker = new_tracker();
+	const tracker = new_tracker([ 0, site ]);
 	return [ () => {
 		const value = pull();
-		return run_tracked2(runs, tracker, ($an, $ao, $ap) => {
-			return transform(value, $an, $ao, $ap);
+		return run_tracked2(runs, tracker, ($al, $am, $an) => {
+			return transform(value, $al, $am, $an);
 		});
 	}, (subscriber) => {
 		const handle = upstream_attach(subscriber);
@@ -1787,10 +1881,10 @@ function sub4(self, observer, caller) {
 		})();
 	}, true, caller);
 }
-function follow4(flow, observer, $al, $am) {
-	take(get_owner($am), sub4(flow, observer, "std/src/browser/web/ui.vl:87:24"), $al);
+function follow4(flow, observer, $aj, $ak, caller) {
+	take(get_owner($ak), sub4(flow, observer, caller), $aj);
 }
-function show2(self, condition, $bC, $bD) {
+function show2(self, condition, $bC, $bD, caller) {
 	const element = __clone(self[0]);
 	const restored = element.style.getPropertyValue("display");
 	follow4(condition, (visible, $bE) => {
@@ -1801,7 +1895,7 @@ function show2(self, condition, $bC, $bD) {
 			element.style.setProperty("display", "none");
 		}
 		return;
-	}, $bC, $bD);
+	}, $bC, $bD, caller);
 	return __clone(self);
 }
 function on_settle2(self, subscriber) {
@@ -1818,15 +1912,16 @@ function start4(self) {
 }
 function start5(self) {
 	const transform = self[1];
+	const site = __clone(self[2]);
 	const upstream = start4(__clone(self[0]));
 	const pull = upstream[0];
 	const upstream_attach = upstream[1];
 	const runs = new3();
-	const tracker = new_tracker();
+	const tracker = new_tracker([ 0, site ]);
 	return [ () => {
 		const value = pull();
-		return run_tracked2(runs, tracker, ($an, $ao, $ap) => {
-			return transform(value, $an, $ao, $ap);
+		return run_tracked2(runs, tracker, ($al, $am, $an) => {
+			return transform(value, $al, $am, $an);
 		});
 	}, (subscriber) => {
 		const handle = upstream_attach(subscriber);
@@ -1865,10 +1960,10 @@ function sub5(self, observer, caller) {
 		})();
 	}, true, caller);
 }
-function follow5(flow, observer, $al, $am) {
-	take(get_owner($am), sub5(flow, observer, "std/src/browser/web/ui.vl:87:24"), $al);
+function follow5(flow, observer, $aj, $ak, caller) {
+	take(get_owner($ak), sub5(flow, observer, caller), $aj);
 }
-function show3(self, condition, $bC, $bD) {
+function show3(self, condition, $bC, $bD, caller) {
 	const element = __clone(self[0]);
 	const restored = element.style.getPropertyValue("display");
 	follow5(condition, (visible, $bE) => {
@@ -1879,15 +1974,18 @@ function show3(self, condition, $bC, $bD) {
 			element.style.setProperty("display", "none");
 		}
 		return;
-	}, $bC, $bD);
+	}, $bC, $bD, caller);
 	return __clone(self);
 }
-function child5(self, content, $U, $V) {
-	place3(content, self, $U, $V);
+function child5(self, content, $S, $T, caller) {
+	place3(content, self, $S, $T, caller);
 	return __clone(self);
 }
 function each_by(source, key, render) {
 	return [ source, key, render ];
+}
+function first(self) {
+	return __list_get(self, 0);
 }
 function held_span(held, at, count) {
 	if (at === 0 && count === held.v.length) {
@@ -1897,7 +1995,7 @@ function held_span(held, at, count) {
 	let span = [  ];
 	let index = at;
 	while (index < at + count) {
-		span.push(__clone(__at(held.v, index, "std/src/browser/web/ui.vl:1564:13")));
+		span.push(__clone(__at(held.v, index, "std/src/browser/web/ui.vl:1694:13")));
 		index = index + 1;
 	}
 	return span;
@@ -1908,7 +2006,7 @@ function reconcile(old_keys, old_items, items, key_of, same) {
 		claimed.push(false);
 	}
 	const held = old_keys.length;
-	let first = new Map();
+	let first2 = new Map();
 	let next_same = [  ];
 	for (const _ of old_keys) {
 		next_same.push([ 1 ]);
@@ -1916,79 +2014,79 @@ function reconcile(old_keys, old_items, items, key_of, same) {
 	let build = held;
 	while (build > 0) {
 		build = build - 1;
-		const canonical = hash2(__at(old_keys, build, "std/src/reactive.vl:3863:19"));
-		__at_put(next_same, build, __map_get(first, canonical), "std/src/reactive.vl:3864:3");
-		first.set(canonical, build);
+		const canonical = hash2(__at(old_keys, build, "std/src/reactive.vl:3940:19"));
+		__at_put(next_same, build, __map_get(first2, canonical), "std/src/reactive.vl:3941:3");
+		first2.set(canonical, build);
 	}
 	let steps = [  ];
 	for (const item of items) {
 		const item_key = key_of(item);
 		const canonical2 = hash2(item_key);
-		let head = __map_get(first, canonical2);
+		let head = __map_get(first2, canonical2);
 		let advancing = true;
 		while (advancing) {
-			const $cD = head;
-			let $cE = null;
-			if ($cD[0] === 0) {
-				const at = $cD[1];
-				if (__at(claimed, at, "std/src/reactive.vl:3880:9")) {
-					head = __at(next_same, at, "std/src/reactive.vl:3881:14");
+			const $cG = head;
+			let $cH = null;
+			if ($cG[0] === 0) {
+				const at = $cG[1];
+				if (__at(claimed, at, "std/src/reactive.vl:3957:9")) {
+					head = __clone(__at(next_same, at, "std/src/reactive.vl:3958:14"));
 				} else {
 					advancing = false;
 				}
-				$cE = undefined;
+				$cH = undefined;
 			} else {
-				$cE = advancing = false;
+				$cH = advancing = false;
 			}
-			$cE;
+			$cH;
 		}
-		const $cF = head;
-		let $cG = null;
-		if ($cF[0] === 0) {
-			const at2 = $cF[1];
-			$cG = first.set(canonical2, at2);
+		const $cI = head;
+		let $cJ = null;
+		if ($cI[0] === 0) {
+			const at2 = $cI[1];
+			$cJ = first2.set(canonical2, at2);
 		} else {
-			$cG = first.delete(canonical2);
+			$cJ = first2.delete(canonical2);
 		}
-		$cG;
+		$cJ;
 		let found = [ 1 ];
 		let walk = head;
 		let walking = true;
 		while (walking) {
-			const $cH = walk;
-			let $cI = null;
-			if ($cH[0] === 0) {
-				const at3 = $cH[1];
-				if (!(__at(claimed, at3, "std/src/reactive.vl:3899:10")) && __at(old_keys, at3, "std/src/reactive.vl:3899:25") === item_key) {
+			const $cK = walk;
+			let $cL = null;
+			if ($cK[0] === 0) {
+				const at3 = $cK[1];
+				if (!(__at(claimed, at3, "std/src/reactive.vl:3976:10")) && __at(old_keys, at3, "std/src/reactive.vl:3976:25") === item_key) {
 					found = [ 0, at3 ];
 					walking = false;
 				} else {
-					walk = __at(next_same, at3, "std/src/reactive.vl:3906:14");
+					walk = __clone(__at(next_same, at3, "std/src/reactive.vl:3983:14"));
 				}
-				$cI = undefined;
+				$cL = undefined;
 			} else {
-				$cI = walking = false;
+				$cL = walking = false;
 			}
-			$cI;
+			$cL;
 		}
 		let step = [ 2 ];
-		const $cJ = found;
-		if ($cJ[0] === 0) {
-			__at_put(claimed, $cJ[1], true, "std/src/reactive.vl:3914:4");
-			let $cK = null;
-			if (same(__at(old_items, $cJ[1], "std/src/reactive.vl:3915:19"), item)) {
-				$cK = [ 0, $cJ[1] ];
+		const $cM = found;
+		if ($cM[0] === 0) {
+			__at_put(claimed, $cM[1], true, "std/src/reactive.vl:3991:4");
+			let $cN = null;
+			if (same(__at(old_items, $cM[1], "std/src/reactive.vl:3992:19"), item)) {
+				$cN = [ 0, $cM[1] ];
 			} else {
-				$cK = [ 1, $cJ[1] ];
+				$cN = [ 1, $cM[1] ];
 			}
-			step = $cK;
+			step = $cN;
 		}
 		steps.push(step);
 	}
 	let removed = [  ];
 	let index = 0;
 	while (index < held) {
-		if (!(__at(claimed, index, "std/src/reactive.vl:3922:7"))) {
+		if (!(__at(claimed, index, "std/src/reactive.vl:3999:7"))) {
 			removed.push(index);
 		}
 		index = index + 1;
@@ -2004,11 +2102,11 @@ function reverse(self) {
 	}
 	return result;
 }
-function open_row_before(self, content, end, $dn, $do) {
+function open_row_before(self, content, end, $dr, $ds) {
 	const marker = document.createTextNode("");
 	host(self).insertBefore(marker, end);
 	const staging = document.createDocumentFragment();
-	place(content, [ __clone(staging) ], $dn, $do);
+	place(content, [ __clone(staging) ], $dr, $ds, "std/src/browser/web/ui.vl:801:11");
 	host(self).insertBefore(staging, end);
 	return [ marker ];
 }
@@ -2026,11 +2124,11 @@ function drop_delta_cursor(self, cursor) {
 
 }
 function open_rows(self) {
-	const $dt = delta_cursor(self);
-	let $du = null;
-	if ($dt[0] === 0) {
-		const cursor = $dt[1];
-		$du = [ () => {
+	const $dx = delta_cursor(self);
+	let $dy = null;
+	if ($dx[0] === 0) {
+		const cursor = $dx[1];
+		$dy = [ () => {
 			return get(self);
 		}, (subscriber) => {
 			return on_settle2(self, subscriber);
@@ -2040,7 +2138,7 @@ function open_rows(self) {
 			return drop_delta_cursor(self, cursor);
 		} ];
 	} else {
-		$du = [ () => {
+		$dy = [ () => {
 			return get(self);
 		}, (subscriber) => {
 			return on_settle2(self, subscriber);
@@ -2050,41 +2148,41 @@ function open_rows(self) {
 			return;
 		} ];
 	}
-	return $du;
+	return $dy;
 }
 function live_ops(ops) {
 	let last2 = [ 1 ];
 	let index = 0;
 	for (const op of ops) {
-		const $dv = op;
-		let $dw = null;
-		if ($dv[0] === 2) {
-			const _items = $dv[1];
+		const $dz = op;
+		let $dA = null;
+		if ($dz[0] === 2) {
+			const _items = $dz[1];
 			last2 = [ 0, index ];
-			$dw = undefined;
+			$dA = undefined;
 		} else {
-			$dw = undefined;
+			$dA = undefined;
 		}
-		$dw;
+		$dA;
 		index = index + 1;
 	}
-	const $dx = last2;
-	let $dy = null;
-	if ($dx[0] === 0 && $dx[1] > 0) {
-		$dy = $dx[1];
+	const $dB = last2;
+	let $dC = null;
+	if ($dB[0] === 0 && $dB[1] > 0) {
+		$dC = $dB[1];
 	} else {
 		return __clone(ops);
 	}
-	const from = $dy;
+	const from = $dC;
 	let live = [  ];
 	index = from;
 	while (index < ops.length) {
-		live.push(__at(ops, index, "std/src/browser/web/ui.vl:1596:13"));
+		live.push(__clone(__at(ops, index, "std/src/browser/web/ui.vl:1726:13")));
 		index = index + 1;
 	}
 	return live;
 }
-function place_each_by(parent, source, key, render, $cz, $cA) {
+function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 	const region = open(parent);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
@@ -2092,144 +2190,157 @@ function place_each_by(parent, source, key, render, $cz, $cA) {
 	const row_rows = region[2];
 	const row_owners = __shared_new([  ]);
 	defer(get_owner($cA), () => {
-		for (const owner of row_owners.v) {
-			dispose2(owner);
-		}
-		close(region);
-		return;
+		return close_with(region, () => {
+			for (const owner of row_owners.v) {
+				dispose2(owner);
+			}
+			return;
+		});
 	});
 	const reconcile_span = (at, count, list) => {
 		const whole = at === 0 && count === row_rows.v.length;
 		const previous_cells = held_span(row_cells, at, count);
 		const previous_rows = held_span(row_rows, at, count);
 		const previous_owners = held_span(row_owners, at, count);
-		let $cC = null;
+		let $cF = null;
 		if (at + count < row_rows.v.length) {
-			$cC = __at(row_rows.v, at + count, "std/src/browser/web/ui.vl:1992:4")[0];
+			$cF = __at(row_rows.v, at + count, "std/src/browser/web/ui.vl:2139:4")[0];
 		} else {
-			$cC = region[0];
+			$cF = region[0];
 		}
-		const boundary = __clone($cC);
+		const boundary = __clone($cF);
 		const same = (_before, _after) => {
 			return true;
 		};
-		let $cL = null;
+		let $cO = null;
 		if (whole) {
-			$cL = reconcile(__clone(row_keys.v), __clone(row_items.v), list, key, same);
+			$cO = reconcile(__clone(row_keys.v), __clone(row_items.v), list, key, same);
 		} else {
-			$cL = reconcile(held_span(row_keys, at, count), held_span(row_items, at, count), list, key, same);
+			$cO = reconcile(held_span(row_keys, at, count), held_span(row_items, at, count), list, key, same);
 		}
-		const plan = $cL;
+		const plan = $cO;
 		const settled = settled_steps(plan[0]);
 		const references = row_references(plan[0], previous_rows, settled, boundary);
 		let staying = [  ];
+		let retiring = [  ];
 		let fill = 0;
 		while (fill < previous_rows.length) {
 			staying.push(false);
+			retiring.push(false);
 			fill = fill + 1;
+		}
+		for (const gone of plan[1]) {
+			__at_put(retiring, gone, true, "std/src/browser/web/ui.vl:2173:4");
 		}
 		let settled_at = 0;
 		for (const step of plan[0]) {
-			let $cY = null;
-			if (__at(settled, settled_at, "std/src/browser/web/ui.vl:2023:7")) {
-				const $cW = step;
-				let $cX = null;
-				if ($cW[0] === 0) {
-					const index = $cW[1];
-					__at_put(staying, index, true, "std/src/browser/web/ui.vl:2026:7");
-					$cX = undefined;
+			let $db = null;
+			if (__at(settled, settled_at, "std/src/browser/web/ui.vl:2177:7")) {
+				const $cZ = step;
+				let $da = null;
+				if ($cZ[0] === 0) {
+					const index = $cZ[1];
+					__at_put(staying, index, true, "std/src/browser/web/ui.vl:2180:7");
+					$da = undefined;
 				} else {
-					$cX = undefined;
+					$da = undefined;
 				}
-				$cY = $cX;
+				$db = $da;
 			}
-			$cY;
+			$db;
 			settled_at = settled_at + 1;
 		}
 		let cut = [  ];
 		let index2 = 0;
 		for (const row of previous_rows) {
-			if (__at(staying, index2, "std/src/browser/web/ui.vl:2038:7")) {
+			let $dd = null;
+			if (__at(staying, index2, "std/src/browser/web/ui.vl:2192:7")) {
 				cut.push([ 1 ]);
 			} else {
-				let $cZ = null;
+				let $dc = null;
 				if (index2 + 1 < previous_rows.length) {
-					$cZ = __at(previous_rows, index2 + 1, "std/src/browser/web/ui.vl:2042:6")[0];
+					$dc = __at(previous_rows, index2 + 1, "std/src/browser/web/ui.vl:2196:6")[0];
 				} else {
-					$cZ = boundary;
+					$dc = boundary;
 				}
-				const end = __clone($cZ);
-				cut.push([ 0, cut_row(region, row, end) ]);
+				const end = __clone($dc);
+				if (__at(retiring, index2, "std/src/browser/web/ui.vl:2200:8")) {
+					const owner = __clone(__at(previous_owners, index2, "std/src/browser/web/ui.vl:2204:18"));
+					retire_row(region, row, end, () => {
+						return dispose2(owner);
+					});
+					cut.push([ 1 ]);
+				} else {
+					cut.push([ 0, cut_row(region, row, end) ]);
+				}
+				$dd = undefined;
 			}
+			$dd;
 			index2 = index2 + 1;
-		}
-		for (const gone of plan[1]) {
-			dispose2(__at(previous_owners, gone, "std/src/browser/web/ui.vl:2051:4"));
-			drop_row(region, __at(previous_rows, gone, "std/src/browser/web/ui.vl:2052:20"));
 		}
 		let next_cells = [  ];
 		let next_rows = [  ];
 		let next_owners = [  ];
 		let position = 0;
 		for (const step2 of plan[0]) {
-			const item = __clone(__at(list, position, "std/src/browser/web/ui.vl:2059:15"));
-			const reference = __clone(__at(references, position, "std/src/browser/web/ui.vl:2060:20"));
-			const $da = step2;
-			let $db = null;
-			if ($da[0] === 0) {
-				const kept = $da[1];
-				const cell = __clone(__at(previous_cells, kept, "std/src/browser/web/ui.vl:2063:17"));
-				set3(cell, item, $cz, "std/src/browser/web/ui.vl:2064:11");
+			const item = __clone(__at(list, position, "std/src/browser/web/ui.vl:2218:15"));
+			const reference = __clone(__at(references, position, "std/src/browser/web/ui.vl:2219:20"));
+			const $de = step2;
+			let $df = null;
+			if ($de[0] === 0) {
+				const kept = $de[1];
+				const cell = __clone(__at(previous_cells, kept, "std/src/browser/web/ui.vl:2222:17"));
+				set3(cell, item, $cz, "std/src/browser/web/ui.vl:2223:11");
 				next_cells.push(cell);
-				const $di = __at(cut, kept, "std/src/browser/web/ui.vl:2066:12");
-				let $dj = null;
-				if ($di[0] === 0) {
-					const content = __clone($di[1]);
-					insert_row(region, __at(previous_rows, kept, "std/src/browser/web/ui.vl:2068:26"), content, reference);
-					$dj = undefined;
+				const $dm = __at(cut, kept, "std/src/browser/web/ui.vl:2225:12");
+				let $dn = null;
+				if ($dm[0] === 0) {
+					const content = __clone($dm[1]);
+					insert_row(region, __at(previous_rows, kept, "std/src/browser/web/ui.vl:2227:26"), content, reference);
+					$dn = undefined;
 				} else {
-					$dj = undefined;
+					$dn = undefined;
 				}
-				$dj;
-				next_rows.push(__clone(__at(previous_rows, kept, "std/src/browser/web/ui.vl:2072:21")));
-				next_owners.push(__clone(__at(previous_owners, kept, "std/src/browser/web/ui.vl:2073:23")));
-				$db = undefined;
-			} else if ($da[0] === 1) {
-				const kept2 = $da[1];
-				const cell2 = __clone(__at(previous_cells, kept2, "std/src/browser/web/ui.vl:2079:17"));
-				set3(cell2, item, $cz, "std/src/browser/web/ui.vl:2080:11");
+				$dn;
+				next_rows.push(__clone(__at(previous_rows, kept, "std/src/browser/web/ui.vl:2231:21")));
+				next_owners.push(__clone(__at(previous_owners, kept, "std/src/browser/web/ui.vl:2232:23")));
+				$df = undefined;
+			} else if ($de[0] === 1) {
+				const kept2 = $de[1];
+				const cell2 = __clone(__at(previous_cells, kept2, "std/src/browser/web/ui.vl:2238:17"));
+				set3(cell2, item, $cz, "std/src/browser/web/ui.vl:2239:11");
 				next_cells.push(cell2);
-				const $dk = __at(cut, kept2, "std/src/browser/web/ui.vl:2082:12");
-				let $dl = null;
-				if ($dk[0] === 0) {
-					const content2 = __clone($dk[1]);
-					insert_row(region, __at(previous_rows, kept2, "std/src/browser/web/ui.vl:2084:26"), content2, reference);
-					$dl = undefined;
+				const $do = __at(cut, kept2, "std/src/browser/web/ui.vl:2241:12");
+				let $dp = null;
+				if ($do[0] === 0) {
+					const content2 = __clone($do[1]);
+					insert_row(region, __at(previous_rows, kept2, "std/src/browser/web/ui.vl:2243:26"), content2, reference);
+					$dp = undefined;
 				} else {
-					$dl = undefined;
+					$dp = undefined;
 				}
-				$dl;
-				next_rows.push(__clone(__at(previous_rows, kept2, "std/src/browser/web/ui.vl:2088:21")));
-				next_owners.push(__clone(__at(previous_owners, kept2, "std/src/browser/web/ui.vl:2089:23")));
-				$db = undefined;
+				$dp;
+				next_rows.push(__clone(__at(previous_rows, kept2, "std/src/browser/web/ui.vl:2247:21")));
+				next_owners.push(__clone(__at(previous_owners, kept2, "std/src/browser/web/ui.vl:2248:23")));
+				$df = undefined;
 			} else {
-				const cell3 = new4(item, "std/src/browser/web/ui.vl:2092:44");
-				const owner = new3();
+				const cell3 = new4(item, "std/src/browser/web/ui.vl:2251:44");
+				const owner2 = new3();
 				next_cells.push(__clone(cell3));
-				next_rows.push(run_with_owner(owner, ($dm) => {
-					return open_row_before(region, render(cell3, $dm), reference, $cz, $dm);
+				next_rows.push(run_with_owner(owner2, ($dq) => {
+					return open_row_before(region, render(cell3, $dq), reference, $cz, $dq);
 				}));
-				next_owners.push(owner);
-				$db = undefined;
+				next_owners.push(owner2);
+				$df = undefined;
 			}
-			$db;
+			$df;
 			position = position + 1;
 		}
 		let next_keys = [  ];
 		for (const item2 of list) {
 			next_keys.push(key(item2));
 		}
-		let $dp = null;
+		let $dt = null;
 		if (whole) {
 			hold_rows(region, next_rows);
 			row_keys.v = next_keys;
@@ -2239,25 +2350,25 @@ function place_each_by(parent, source, key, render, $cz, $cA) {
 		} else {
 			let taken = 0;
 			while (taken < count) {
-				__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2120:33");
-				__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2121:37");
-				__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2122:35");
-				__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2123:33");
-				__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2124:35");
+				__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2279:33");
+				__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2280:37");
+				__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2281:35");
+				__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2282:33");
+				__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2283:35");
 				taken = taken + 1;
 			}
 			let offset = 0;
 			while (offset < next_rows.length) {
-				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset, "std/src/browser/web/ui.vl:2129:42")), "std/src/browser/web/ui.vl:2129:22");
-				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset, "std/src/browser/web/ui.vl:2130:44")), "std/src/browser/web/ui.vl:2130:24");
-				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset, "std/src/browser/web/ui.vl:2131:43")), "std/src/browser/web/ui.vl:2131:23");
-				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset, "std/src/browser/web/ui.vl:2132:42")), "std/src/browser/web/ui.vl:2132:22");
-				__insert_at(row_items.v, at + offset, __clone(__at(list, offset, "std/src/browser/web/ui.vl:2133:43")), "std/src/browser/web/ui.vl:2133:23");
+				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset, "std/src/browser/web/ui.vl:2288:42")), "std/src/browser/web/ui.vl:2288:22");
+				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset, "std/src/browser/web/ui.vl:2289:44")), "std/src/browser/web/ui.vl:2289:24");
+				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset, "std/src/browser/web/ui.vl:2290:43")), "std/src/browser/web/ui.vl:2290:23");
+				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset, "std/src/browser/web/ui.vl:2291:42")), "std/src/browser/web/ui.vl:2291:22");
+				__insert_at(row_items.v, at + offset, __clone(__at(list, offset, "std/src/browser/web/ui.vl:2292:43")), "std/src/browser/web/ui.vl:2292:23");
 				offset = offset + 1;
 			}
-			$dp = undefined;
+			$dt = undefined;
 		}
-		return $dp;
+		return $dt;
 	};
 	const reconcile_pass = (list) => {
 		return reconcile_span(0, row_rows.v.length, list);
@@ -2265,128 +2376,131 @@ function place_each_by(parent, source, key, render, $cz, $cA) {
 	const splice_rows = (at, removed, inserted) => {
 		let taken = 0;
 		while (taken < removed) {
-			let $dq = null;
+			let $du = null;
 			if (at + 1 < row_rows.v.length) {
-				$dq = __at(row_rows.v, at + 1, "std/src/browser/web/ui.vl:2148:5")[0];
+				$du = __at(row_rows.v, at + 1, "std/src/browser/web/ui.vl:2307:5")[0];
 			} else {
-				$dq = region[0];
+				$du = region[0];
 			}
-			const end = __clone($dq);
-			const going = __clone(__at(row_rows.v, at, "std/src/browser/web/ui.vl:2152:16"));
-			cut_row(region, going, end);
-			dispose2(__at(row_owners.v, at, "std/src/browser/web/ui.vl:2154:4"));
-			drop_row(region, going);
-			__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2156:32");
-			__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2157:36");
-			__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2158:34");
-			__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2159:32");
-			__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2160:34");
+			const end = __clone($du);
+			const going = __clone(__at(row_rows.v, at, "std/src/browser/web/ui.vl:2311:16"));
+			const owner = __clone(__at(row_owners.v, at, "std/src/browser/web/ui.vl:2312:16"));
+			retire_row(region, going, end, () => {
+				return dispose2(owner);
+			});
+			__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2314:32");
+			__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2315:36");
+			__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2316:34");
+			__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2317:32");
+			__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2318:34");
 			taken = taken + 1;
 		}
-		let $dr = null;
+		let $dv = null;
 		if (at < row_rows.v.length) {
-			$dr = __at(row_rows.v, at, "std/src/browser/web/ui.vl:2164:4")[0];
+			$dv = __at(row_rows.v, at, "std/src/browser/web/ui.vl:2322:4")[0];
 		} else {
-			$dr = region[0];
+			$dv = region[0];
 		}
-		const reference = __clone($dr);
+		const reference = __clone($dv);
 		let offset = 0;
 		for (const item of inserted) {
-			const cell = new4(__clone(item), "std/src/browser/web/ui.vl:2170:42");
-			const owner = new3();
-			const row = run_with_owner(owner, ($ds) => {
-				return open_row_before(region, render(cell, $ds), reference, $cz, $ds);
+			const cell = new4(__clone(item), "std/src/browser/web/ui.vl:2328:42");
+			const owner2 = new3();
+			const row = run_with_owner(owner2, ($dw) => {
+				return open_row_before(region, render(cell, $dw), reference, $cz, $dw);
 			});
-			__insert_at(row_rows.v, at + offset, row, "std/src/browser/web/ui.vl:2173:21");
-			__insert_at(row_owners.v, at + offset, owner, "std/src/browser/web/ui.vl:2174:23");
-			__insert_at(row_cells.v, at + offset, __clone(cell), "std/src/browser/web/ui.vl:2175:22");
-			__insert_at(row_keys.v, at + offset, key(item), "std/src/browser/web/ui.vl:2176:21");
-			__insert_at(row_items.v, at + offset, __clone(item), "std/src/browser/web/ui.vl:2177:22");
+			__insert_at(row_rows.v, at + offset, row, "std/src/browser/web/ui.vl:2331:21");
+			__insert_at(row_owners.v, at + offset, owner2, "std/src/browser/web/ui.vl:2332:23");
+			__insert_at(row_cells.v, at + offset, __clone(cell), "std/src/browser/web/ui.vl:2333:22");
+			__insert_at(row_keys.v, at + offset, key(item), "std/src/browser/web/ui.vl:2334:21");
+			__insert_at(row_items.v, at + offset, __clone(item), "std/src/browser/web/ui.vl:2335:22");
 			offset = offset + 1;
 		}
 		return;
 	};
 	const instance = open_rows(source);
 	const drain2 = instance[2];
-	const handle = instance[1](subscriber_of(() => {
+	const run2 = subscriber_of(() => {
 		for (const op of live_ops(drain2())) {
-			const $dz = op;
-			let $dA = null;
-			if ($dz[0] === 0) {
-				const at = $dz[1];
-				const removed = $dz[2];
-				const inserted = $dz[3];
+			const $dD = op;
+			let $dE = null;
+			if ($dD[0] === 0) {
+				const at = $dD[1];
+				const removed = $dD[2];
+				const inserted = $dD[3];
 				if (removed.length === 0 || inserted.length === 0) {
 					splice_rows(at, removed.length, inserted);
 				} else {
 					reconcile_span(at, removed.length, inserted);
 				}
-				$dA = undefined;
-			} else if ($dz[0] === 1) {
-				const at2 = $dz[1];
-				const _was = $dz[2];
-				const value = $dz[3];
-				const $dB = __list_get(row_keys.v, at2);
-				let $dC = null;
-				if ($dB[0] === 0) {
-					const held = $dB[1];
-					$dC = key(value) === held;
+				$dE = undefined;
+			} else if ($dD[0] === 1) {
+				const at2 = $dD[1];
+				const _was = $dD[2];
+				const value = $dD[3];
+				const $dF = __list_get(row_keys.v, at2);
+				let $dG = null;
+				if ($dF[0] === 0) {
+					const held = $dF[1];
+					$dG = key(value) === held;
 				} else {
-					$dC = false;
+					$dG = false;
 				}
-				const same_key = $dC;
-				let $dF = null;
+				const same_key = $dG;
+				let $dJ = null;
 				if (same_key) {
-					const $dD = __list_get(row_cells.v, at2);
-					let $dE = null;
-					if ($dD[0] === 0) {
-						const cell = $dD[1];
-						__at_put(row_items.v, at2, __clone(value), "std/src/browser/web/ui.vl:2211:9");
-						set3(cell, value, $cz, "std/src/browser/web/ui.vl:2212:14");
-						$dE = undefined;
+					const $dH = __list_get(row_cells.v, at2);
+					let $dI = null;
+					if ($dH[0] === 0) {
+						const cell = $dH[1];
+						__at_put(row_items.v, at2, __clone(value), "std/src/browser/web/ui.vl:2369:9");
+						set3(cell, value, $cz, "std/src/browser/web/ui.vl:2370:14");
+						$dI = undefined;
 					} else {
-						$dE = undefined;
+						$dI = undefined;
 					}
-					$dF = $dE;
+					$dJ = $dI;
 				} else {
 					splice_rows(at2, 1, [ __clone(value) ]);
 				}
-				$dA = $dF;
-			} else if ($dz[0] === 2) {
-				const items = $dz[1];
-				$dA = reconcile_pass(items);
+				$dE = $dJ;
+			} else if ($dD[0] === 2) {
+				const items = $dD[1];
+				$dE = reconcile_pass(items);
 			} else {
-				const from = $dz[1];
-				const count = $dz[2];
-				const to = $dz[3];
+				const from = $dD[1];
+				const count = $dD[2];
+				const to = $dD[3];
 				let moved = __clone(row_items.v);
 				let lifted = [  ];
 				let taken = 0;
 				while (taken < count) {
-					lifted.push(__remove_at(moved, from, "std/src/browser/web/ui.vl:2230:25"));
+					lifted.push(__remove_at(moved, from, "std/src/browser/web/ui.vl:2388:25"));
 					taken = taken + 1;
 				}
 				let offset = 0;
 				for (const item of lifted) {
-					__insert_at(moved, to + offset, __clone(item), "std/src/browser/web/ui.vl:2235:13");
+					__insert_at(moved, to + offset, __clone(item), "std/src/browser/web/ui.vl:2393:13");
 					offset = offset + 1;
 				}
 				reconcile_pass(moved);
-				$dA = undefined;
+				$dE = undefined;
 			}
-			$dA;
+			$dE;
 		}
 		return;
-	}, false));
+	}, false);
+	place_subscriber(run2[0], caller);
+	const handle = instance[1](run2);
 	also_releasing(handle, instance[3]);
 	take(get_owner($cA), handle, $cz);
 	reconcile_pass(instance[0]());
 }
-function place6(self, parent, $cx, $cy) {
-	place_each_by(parent, __clone(self[0]), self[1], self[2], $cx, $cy);
+function place6(self, parent, $cx, $cy, caller) {
+	place_each_by(parent, __clone(self[0]), self[1], self[2], $cx, $cy, caller);
 }
-function child6(self, content, $U, $V) {
-	place6(content, self, $U, $V);
+function child6(self, content, $S, $T, caller) {
+	place6(content, self, $S, $T, caller);
 	return __clone(self);
 }
 function start6(self) {
@@ -2400,15 +2514,16 @@ function start6(self) {
 }
 function start7(self) {
 	const transform = self[1];
+	const site = __clone(self[2]);
 	const upstream = start6(__clone(self[0]));
 	const pull = upstream[0];
 	const upstream_attach = upstream[1];
 	const runs = new3();
-	const tracker = new_tracker();
+	const tracker = new_tracker([ 0, site ]);
 	return [ () => {
 		const value = pull();
-		return run_tracked2(runs, tracker, ($an, $ao, $ap) => {
-			return transform(value, $an, $ao, $ap);
+		return run_tracked2(runs, tracker, ($al, $am, $an) => {
+			return transform(value, $al, $am, $an);
 		});
 	}, (subscriber) => {
 		const handle = upstream_attach(subscriber);
@@ -2447,10 +2562,10 @@ function sub6(self, observer, caller) {
 		})();
 	}, true, caller);
 }
-function follow6(flow, observer, $al, $am) {
-	take(get_owner($am), sub6(flow, observer, "std/src/browser/web/ui.vl:87:24"), $al);
+function follow6(flow, observer, $aj, $ak, caller) {
+	take(get_owner($ak), sub6(flow, observer, caller), $aj);
 }
-function show4(self, condition, $bC, $bD) {
+function show4(self, condition, $bC, $bD, caller) {
 	const element = __clone(self[0]);
 	const restored = element.style.getPropertyValue("display");
 	follow6(condition, (visible, $bE) => {
@@ -2461,15 +2576,15 @@ function show4(self, condition, $bC, $bD) {
 			element.style.setProperty("display", "none");
 		}
 		return;
-	}, $bC, $bD);
+	}, $bC, $bD, caller);
 	return __clone(self);
 }
 function open_rows2(self) {
-	const $er = delta_cursor(self);
-	let $es = null;
-	if ($er[0] === 0) {
-		const cursor = $er[1];
-		$es = [ () => {
+	const $ew = delta_cursor(self);
+	let $ex = null;
+	if ($ew[0] === 0) {
+		const cursor = $ew[1];
+		$ex = [ () => {
 			return get(self);
 		}, (subscriber) => {
 			return on_settle2(self, subscriber);
@@ -2479,7 +2594,7 @@ function open_rows2(self) {
 			return drop_delta_cursor(self, cursor);
 		} ];
 	} else {
-		$es = [ () => {
+		$ex = [ () => {
 			return get(self);
 		}, (subscriber) => {
 			return on_settle2(self, subscriber);
@@ -2489,9 +2604,9 @@ function open_rows2(self) {
 			return;
 		} ];
 	}
-	return $es;
+	return $ex;
 }
-function place_each_by2(parent, source, key, render, $cz, $cA) {
+function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 	const region = open(parent);
 	const row_keys = __shared_new([  ]);
 	const row_items = __shared_new([  ]);
@@ -2499,144 +2614,157 @@ function place_each_by2(parent, source, key, render, $cz, $cA) {
 	const row_rows = region[2];
 	const row_owners = __shared_new([  ]);
 	defer(get_owner($cA), () => {
-		for (const owner of row_owners.v) {
-			dispose2(owner);
-		}
-		close(region);
-		return;
+		return close_with(region, () => {
+			for (const owner of row_owners.v) {
+				dispose2(owner);
+			}
+			return;
+		});
 	});
 	const reconcile_span = (at, count, list) => {
 		const whole = at === 0 && count === row_rows.v.length;
 		const previous_cells = held_span(row_cells, at, count);
 		const previous_rows = held_span(row_rows, at, count);
 		const previous_owners = held_span(row_owners, at, count);
-		let $dO = null;
+		let $dS = null;
 		if (at + count < row_rows.v.length) {
-			$dO = __at(row_rows.v, at + count, "std/src/browser/web/ui.vl:1992:4")[0];
+			$dS = __at(row_rows.v, at + count, "std/src/browser/web/ui.vl:2139:4")[0];
 		} else {
-			$dO = region[0];
+			$dS = region[0];
 		}
-		const boundary = __clone($dO);
+		const boundary = __clone($dS);
 		const same = (_before, _after) => {
 			return true;
 		};
-		let $dX = null;
+		let $eb = null;
 		if (whole) {
-			$dX = reconcile(__clone(row_keys.v), __clone(row_items.v), list, key, same);
+			$eb = reconcile(__clone(row_keys.v), __clone(row_items.v), list, key, same);
 		} else {
-			$dX = reconcile(held_span(row_keys, at, count), held_span(row_items, at, count), list, key, same);
+			$eb = reconcile(held_span(row_keys, at, count), held_span(row_items, at, count), list, key, same);
 		}
-		const plan = $dX;
+		const plan = $eb;
 		const settled = settled_steps(plan[0]);
 		const references = row_references(plan[0], previous_rows, settled, boundary);
 		let staying = [  ];
+		let retiring = [  ];
 		let fill = 0;
 		while (fill < previous_rows.length) {
 			staying.push(false);
+			retiring.push(false);
 			fill = fill + 1;
+		}
+		for (const gone of plan[1]) {
+			__at_put(retiring, gone, true, "std/src/browser/web/ui.vl:2173:4");
 		}
 		let settled_at = 0;
 		for (const step of plan[0]) {
-			let $ea = null;
-			if (__at(settled, settled_at, "std/src/browser/web/ui.vl:2023:7")) {
-				const $dY = step;
-				let $dZ = null;
-				if ($dY[0] === 0) {
-					const index = $dY[1];
-					__at_put(staying, index, true, "std/src/browser/web/ui.vl:2026:7");
-					$dZ = undefined;
+			let $ee = null;
+			if (__at(settled, settled_at, "std/src/browser/web/ui.vl:2177:7")) {
+				const $ec = step;
+				let $ed = null;
+				if ($ec[0] === 0) {
+					const index = $ec[1];
+					__at_put(staying, index, true, "std/src/browser/web/ui.vl:2180:7");
+					$ed = undefined;
 				} else {
-					$dZ = undefined;
+					$ed = undefined;
 				}
-				$ea = $dZ;
+				$ee = $ed;
 			}
-			$ea;
+			$ee;
 			settled_at = settled_at + 1;
 		}
 		let cut = [  ];
 		let index2 = 0;
 		for (const row of previous_rows) {
-			if (__at(staying, index2, "std/src/browser/web/ui.vl:2038:7")) {
+			let $eg = null;
+			if (__at(staying, index2, "std/src/browser/web/ui.vl:2192:7")) {
 				cut.push([ 1 ]);
 			} else {
-				let $eb = null;
+				let $ef = null;
 				if (index2 + 1 < previous_rows.length) {
-					$eb = __at(previous_rows, index2 + 1, "std/src/browser/web/ui.vl:2042:6")[0];
+					$ef = __at(previous_rows, index2 + 1, "std/src/browser/web/ui.vl:2196:6")[0];
 				} else {
-					$eb = boundary;
+					$ef = boundary;
 				}
-				const end = __clone($eb);
-				cut.push([ 0, cut_row(region, row, end) ]);
+				const end = __clone($ef);
+				if (__at(retiring, index2, "std/src/browser/web/ui.vl:2200:8")) {
+					const owner = __clone(__at(previous_owners, index2, "std/src/browser/web/ui.vl:2204:18"));
+					retire_row(region, row, end, () => {
+						return dispose2(owner);
+					});
+					cut.push([ 1 ]);
+				} else {
+					cut.push([ 0, cut_row(region, row, end) ]);
+				}
+				$eg = undefined;
 			}
+			$eg;
 			index2 = index2 + 1;
-		}
-		for (const gone of plan[1]) {
-			dispose2(__at(previous_owners, gone, "std/src/browser/web/ui.vl:2051:4"));
-			drop_row(region, __at(previous_rows, gone, "std/src/browser/web/ui.vl:2052:20"));
 		}
 		let next_cells = [  ];
 		let next_rows = [  ];
 		let next_owners = [  ];
 		let position = 0;
 		for (const step2 of plan[0]) {
-			const item = __clone(__at(list, position, "std/src/browser/web/ui.vl:2059:15"));
-			const reference = __clone(__at(references, position, "std/src/browser/web/ui.vl:2060:20"));
-			const $ec = step2;
-			let $ed = null;
-			if ($ec[0] === 0) {
-				const kept = $ec[1];
-				const cell = __clone(__at(previous_cells, kept, "std/src/browser/web/ui.vl:2063:17"));
-				set3(cell, item, $cz, "std/src/browser/web/ui.vl:2064:11");
+			const item = __clone(__at(list, position, "std/src/browser/web/ui.vl:2218:15"));
+			const reference = __clone(__at(references, position, "std/src/browser/web/ui.vl:2219:20"));
+			const $eh = step2;
+			let $ei = null;
+			if ($eh[0] === 0) {
+				const kept = $eh[1];
+				const cell = __clone(__at(previous_cells, kept, "std/src/browser/web/ui.vl:2222:17"));
+				set3(cell, item, $cz, "std/src/browser/web/ui.vl:2223:11");
 				next_cells.push(cell);
-				const $ek = __at(cut, kept, "std/src/browser/web/ui.vl:2066:12");
-				let $el = null;
-				if ($ek[0] === 0) {
-					const content = __clone($ek[1]);
-					insert_row(region, __at(previous_rows, kept, "std/src/browser/web/ui.vl:2068:26"), content, reference);
-					$el = undefined;
+				const $ep = __at(cut, kept, "std/src/browser/web/ui.vl:2225:12");
+				let $eq = null;
+				if ($ep[0] === 0) {
+					const content = __clone($ep[1]);
+					insert_row(region, __at(previous_rows, kept, "std/src/browser/web/ui.vl:2227:26"), content, reference);
+					$eq = undefined;
 				} else {
-					$el = undefined;
+					$eq = undefined;
 				}
-				$el;
-				next_rows.push(__clone(__at(previous_rows, kept, "std/src/browser/web/ui.vl:2072:21")));
-				next_owners.push(__clone(__at(previous_owners, kept, "std/src/browser/web/ui.vl:2073:23")));
-				$ed = undefined;
-			} else if ($ec[0] === 1) {
-				const kept2 = $ec[1];
-				const cell2 = __clone(__at(previous_cells, kept2, "std/src/browser/web/ui.vl:2079:17"));
-				set3(cell2, item, $cz, "std/src/browser/web/ui.vl:2080:11");
+				$eq;
+				next_rows.push(__clone(__at(previous_rows, kept, "std/src/browser/web/ui.vl:2231:21")));
+				next_owners.push(__clone(__at(previous_owners, kept, "std/src/browser/web/ui.vl:2232:23")));
+				$ei = undefined;
+			} else if ($eh[0] === 1) {
+				const kept2 = $eh[1];
+				const cell2 = __clone(__at(previous_cells, kept2, "std/src/browser/web/ui.vl:2238:17"));
+				set3(cell2, item, $cz, "std/src/browser/web/ui.vl:2239:11");
 				next_cells.push(cell2);
-				const $em = __at(cut, kept2, "std/src/browser/web/ui.vl:2082:12");
-				let $en = null;
-				if ($em[0] === 0) {
-					const content2 = __clone($em[1]);
-					insert_row(region, __at(previous_rows, kept2, "std/src/browser/web/ui.vl:2084:26"), content2, reference);
-					$en = undefined;
+				const $er = __at(cut, kept2, "std/src/browser/web/ui.vl:2241:12");
+				let $es = null;
+				if ($er[0] === 0) {
+					const content2 = __clone($er[1]);
+					insert_row(region, __at(previous_rows, kept2, "std/src/browser/web/ui.vl:2243:26"), content2, reference);
+					$es = undefined;
 				} else {
-					$en = undefined;
+					$es = undefined;
 				}
-				$en;
-				next_rows.push(__clone(__at(previous_rows, kept2, "std/src/browser/web/ui.vl:2088:21")));
-				next_owners.push(__clone(__at(previous_owners, kept2, "std/src/browser/web/ui.vl:2089:23")));
-				$ed = undefined;
+				$es;
+				next_rows.push(__clone(__at(previous_rows, kept2, "std/src/browser/web/ui.vl:2247:21")));
+				next_owners.push(__clone(__at(previous_owners, kept2, "std/src/browser/web/ui.vl:2248:23")));
+				$ei = undefined;
 			} else {
-				const cell3 = new4(item, "std/src/browser/web/ui.vl:2092:44");
-				const owner = new3();
+				const cell3 = new4(item, "std/src/browser/web/ui.vl:2251:44");
+				const owner2 = new3();
 				next_cells.push(__clone(cell3));
-				next_rows.push(run_with_owner(owner, ($dm) => {
-					return open_row_before(region, render(cell3, $dm), reference, $cz, $dm);
+				next_rows.push(run_with_owner(owner2, ($dq) => {
+					return open_row_before(region, render(cell3, $dq), reference, $cz, $dq);
 				}));
-				next_owners.push(owner);
-				$ed = undefined;
+				next_owners.push(owner2);
+				$ei = undefined;
 			}
-			$ed;
+			$ei;
 			position = position + 1;
 		}
 		let next_keys = [  ];
 		for (const item2 of list) {
 			next_keys.push(key(item2));
 		}
-		let $eo = null;
+		let $et = null;
 		if (whole) {
 			hold_rows(region, next_rows);
 			row_keys.v = next_keys;
@@ -2646,25 +2774,25 @@ function place_each_by2(parent, source, key, render, $cz, $cA) {
 		} else {
 			let taken = 0;
 			while (taken < count) {
-				__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2120:33");
-				__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2121:37");
-				__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2122:35");
-				__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2123:33");
-				__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2124:35");
+				__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2279:33");
+				__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2280:37");
+				__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2281:35");
+				__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2282:33");
+				__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2283:35");
 				taken = taken + 1;
 			}
 			let offset = 0;
 			while (offset < next_rows.length) {
-				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset, "std/src/browser/web/ui.vl:2129:42")), "std/src/browser/web/ui.vl:2129:22");
-				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset, "std/src/browser/web/ui.vl:2130:44")), "std/src/browser/web/ui.vl:2130:24");
-				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset, "std/src/browser/web/ui.vl:2131:43")), "std/src/browser/web/ui.vl:2131:23");
-				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset, "std/src/browser/web/ui.vl:2132:42")), "std/src/browser/web/ui.vl:2132:22");
-				__insert_at(row_items.v, at + offset, __clone(__at(list, offset, "std/src/browser/web/ui.vl:2133:43")), "std/src/browser/web/ui.vl:2133:23");
+				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset, "std/src/browser/web/ui.vl:2288:42")), "std/src/browser/web/ui.vl:2288:22");
+				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset, "std/src/browser/web/ui.vl:2289:44")), "std/src/browser/web/ui.vl:2289:24");
+				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset, "std/src/browser/web/ui.vl:2290:43")), "std/src/browser/web/ui.vl:2290:23");
+				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset, "std/src/browser/web/ui.vl:2291:42")), "std/src/browser/web/ui.vl:2291:22");
+				__insert_at(row_items.v, at + offset, __clone(__at(list, offset, "std/src/browser/web/ui.vl:2292:43")), "std/src/browser/web/ui.vl:2292:23");
 				offset = offset + 1;
 			}
-			$eo = undefined;
+			$et = undefined;
 		}
-		return $eo;
+		return $et;
 	};
 	const reconcile_pass = (list) => {
 		return reconcile_span(0, row_rows.v.length, list);
@@ -2672,128 +2800,131 @@ function place_each_by2(parent, source, key, render, $cz, $cA) {
 	const splice_rows = (at, removed, inserted) => {
 		let taken = 0;
 		while (taken < removed) {
-			let $ep = null;
+			let $eu = null;
 			if (at + 1 < row_rows.v.length) {
-				$ep = __at(row_rows.v, at + 1, "std/src/browser/web/ui.vl:2148:5")[0];
+				$eu = __at(row_rows.v, at + 1, "std/src/browser/web/ui.vl:2307:5")[0];
 			} else {
-				$ep = region[0];
+				$eu = region[0];
 			}
-			const end = __clone($ep);
-			const going = __clone(__at(row_rows.v, at, "std/src/browser/web/ui.vl:2152:16"));
-			cut_row(region, going, end);
-			dispose2(__at(row_owners.v, at, "std/src/browser/web/ui.vl:2154:4"));
-			drop_row(region, going);
-			__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2156:32");
-			__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2157:36");
-			__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2158:34");
-			__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2159:32");
-			__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2160:34");
+			const end = __clone($eu);
+			const going = __clone(__at(row_rows.v, at, "std/src/browser/web/ui.vl:2311:16"));
+			const owner = __clone(__at(row_owners.v, at, "std/src/browser/web/ui.vl:2312:16"));
+			retire_row(region, going, end, () => {
+				return dispose2(owner);
+			});
+			__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2314:32");
+			__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2315:36");
+			__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2316:34");
+			__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2317:32");
+			__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2318:34");
 			taken = taken + 1;
 		}
-		let $eq = null;
+		let $ev = null;
 		if (at < row_rows.v.length) {
-			$eq = __at(row_rows.v, at, "std/src/browser/web/ui.vl:2164:4")[0];
+			$ev = __at(row_rows.v, at, "std/src/browser/web/ui.vl:2322:4")[0];
 		} else {
-			$eq = region[0];
+			$ev = region[0];
 		}
-		const reference = __clone($eq);
+		const reference = __clone($ev);
 		let offset = 0;
 		for (const item of inserted) {
-			const cell = new4(__clone(item), "std/src/browser/web/ui.vl:2170:42");
-			const owner = new3();
-			const row = run_with_owner(owner, ($ds) => {
-				return open_row_before(region, render(cell, $ds), reference, $cz, $ds);
+			const cell = new4(__clone(item), "std/src/browser/web/ui.vl:2328:42");
+			const owner2 = new3();
+			const row = run_with_owner(owner2, ($dw) => {
+				return open_row_before(region, render(cell, $dw), reference, $cz, $dw);
 			});
-			__insert_at(row_rows.v, at + offset, row, "std/src/browser/web/ui.vl:2173:21");
-			__insert_at(row_owners.v, at + offset, owner, "std/src/browser/web/ui.vl:2174:23");
-			__insert_at(row_cells.v, at + offset, __clone(cell), "std/src/browser/web/ui.vl:2175:22");
-			__insert_at(row_keys.v, at + offset, key(item), "std/src/browser/web/ui.vl:2176:21");
-			__insert_at(row_items.v, at + offset, __clone(item), "std/src/browser/web/ui.vl:2177:22");
+			__insert_at(row_rows.v, at + offset, row, "std/src/browser/web/ui.vl:2331:21");
+			__insert_at(row_owners.v, at + offset, owner2, "std/src/browser/web/ui.vl:2332:23");
+			__insert_at(row_cells.v, at + offset, __clone(cell), "std/src/browser/web/ui.vl:2333:22");
+			__insert_at(row_keys.v, at + offset, key(item), "std/src/browser/web/ui.vl:2334:21");
+			__insert_at(row_items.v, at + offset, __clone(item), "std/src/browser/web/ui.vl:2335:22");
 			offset = offset + 1;
 		}
 		return;
 	};
 	const instance = open_rows2(source);
 	const drain2 = instance[2];
-	const handle = instance[1](subscriber_of(() => {
+	const run2 = subscriber_of(() => {
 		for (const op of live_ops(drain2())) {
-			const $ex = op;
-			let $ey = null;
-			if ($ex[0] === 0) {
-				const at = $ex[1];
-				const removed = $ex[2];
-				const inserted = $ex[3];
+			const $eC = op;
+			let $eD = null;
+			if ($eC[0] === 0) {
+				const at = $eC[1];
+				const removed = $eC[2];
+				const inserted = $eC[3];
 				if (removed.length === 0 || inserted.length === 0) {
 					splice_rows(at, removed.length, inserted);
 				} else {
 					reconcile_span(at, removed.length, inserted);
 				}
-				$ey = undefined;
-			} else if ($ex[0] === 1) {
-				const at2 = $ex[1];
-				const _was = $ex[2];
-				const value = $ex[3];
-				const $ez = __list_get(row_keys.v, at2);
-				let $eA = null;
-				if ($ez[0] === 0) {
-					const held = $ez[1];
-					$eA = key(value) === held;
+				$eD = undefined;
+			} else if ($eC[0] === 1) {
+				const at2 = $eC[1];
+				const _was = $eC[2];
+				const value = $eC[3];
+				const $eE = __list_get(row_keys.v, at2);
+				let $eF = null;
+				if ($eE[0] === 0) {
+					const held = $eE[1];
+					$eF = key(value) === held;
 				} else {
-					$eA = false;
+					$eF = false;
 				}
-				const same_key = $eA;
-				let $eD = null;
+				const same_key = $eF;
+				let $eI = null;
 				if (same_key) {
-					const $eB = __list_get(row_cells.v, at2);
-					let $eC = null;
-					if ($eB[0] === 0) {
-						const cell = $eB[1];
-						__at_put(row_items.v, at2, __clone(value), "std/src/browser/web/ui.vl:2211:9");
-						set3(cell, value, $cz, "std/src/browser/web/ui.vl:2212:14");
-						$eC = undefined;
+					const $eG = __list_get(row_cells.v, at2);
+					let $eH = null;
+					if ($eG[0] === 0) {
+						const cell = $eG[1];
+						__at_put(row_items.v, at2, __clone(value), "std/src/browser/web/ui.vl:2369:9");
+						set3(cell, value, $cz, "std/src/browser/web/ui.vl:2370:14");
+						$eH = undefined;
 					} else {
-						$eC = undefined;
+						$eH = undefined;
 					}
-					$eD = $eC;
+					$eI = $eH;
 				} else {
 					splice_rows(at2, 1, [ __clone(value) ]);
 				}
-				$ey = $eD;
-			} else if ($ex[0] === 2) {
-				const items = $ex[1];
-				$ey = reconcile_pass(items);
+				$eD = $eI;
+			} else if ($eC[0] === 2) {
+				const items = $eC[1];
+				$eD = reconcile_pass(items);
 			} else {
-				const from = $ex[1];
-				const count = $ex[2];
-				const to = $ex[3];
+				const from = $eC[1];
+				const count = $eC[2];
+				const to = $eC[3];
 				let moved = __clone(row_items.v);
 				let lifted = [  ];
 				let taken = 0;
 				while (taken < count) {
-					lifted.push(__remove_at(moved, from, "std/src/browser/web/ui.vl:2230:25"));
+					lifted.push(__remove_at(moved, from, "std/src/browser/web/ui.vl:2388:25"));
 					taken = taken + 1;
 				}
 				let offset = 0;
 				for (const item of lifted) {
-					__insert_at(moved, to + offset, __clone(item), "std/src/browser/web/ui.vl:2235:13");
+					__insert_at(moved, to + offset, __clone(item), "std/src/browser/web/ui.vl:2393:13");
 					offset = offset + 1;
 				}
 				reconcile_pass(moved);
-				$ey = undefined;
+				$eD = undefined;
 			}
-			$ey;
+			$eD;
 		}
 		return;
-	}, false));
+	}, false);
+	place_subscriber(run2[0], caller);
+	const handle = instance[1](run2);
 	also_releasing(handle, instance[3]);
 	take(get_owner($cA), handle, $cz);
 	reconcile_pass(instance[0]());
 }
-function place7(self, parent, $cx, $cy) {
-	place_each_by2(parent, __clone(self[0]), self[1], self[2], $cx, $cy);
+function place7(self, parent, $cx, $cy, caller) {
+	place_each_by2(parent, __clone(self[0]), self[1], self[2], $cx, $cy, caller);
 }
-function child7(self, content, $U, $V) {
-	place7(content, self, $U, $V);
+function child7(self, content, $S, $T, caller) {
+	place7(content, self, $S, $T, caller);
 	return __clone(self);
 }
 function comp(body) {
@@ -2801,11 +2932,11 @@ function comp(body) {
 	const result = body(scope);
 	return [ result, scope ];
 }
-function set4(self, value, $eQ, caller) {
-	set3(self, value, $eQ, caller);
+function set4(self, value, $eV, caller) {
+	set3(self, value, $eV, caller);
 }
-function set_with(self, transform, $eP) {
-	set4(self, transform(get(self)), $eP, "std/src/reactive.vl:2510:8");
+function set_with(self, transform, $eU) {
+	set4(self, transform(get(self)), $eU, "std/src/reactive.vl:2546:8");
 }
 const minting_derivation = __shared_new(false);
 const next_subscriber_id = __shared_new(0);
@@ -2835,40 +2966,41 @@ const waking = __shared_new([ 1 ]);
 const no_cleanups = __shared_new([  ]);
 const owner_lists_allocated_count = __shared_new(0);
 const run_nurseries_allocated_count = __shared_new(0);
-const app_fill = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::overflow", [ "::overflow", "syp1ckj", "overflow:hidden" ] ], [ "::flex-direction", [ "::flex-direction", "s1atdsbb", "flex-direction:column" ] ], [ "::height", [ "::height", "s22x0wn", "height:100%" ] ] ]) ] ];
-const quad_grid = [ [ new Map([ [ "::display", [ "::display", "sbipssh", "display:grid" ] ], [ "::flex", [ "::flex", "smaui08", "flex:1 1 auto" ] ], [ "::gap", [ "::gap", "s1x5z460", "gap:1px" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ], [ "::background-color", [ "::background-color", "s1h4num7", "background-color:var(--stroke-hard)" ] ], [ "::grid-template-columns", [ "::grid-template-columns", "send2h", "grid-template-columns:minmax(0, 1fr)" ] ], [ "::grid-template-rows", [ "::grid-template-rows", "s11r85rj", "grid-template-rows:minmax(0, 8fr) minmax(0, 6fr) minmax(0, 4fr) minmax(0, 4fr)" ] ], [ "1024px::grid-template-columns", [ "1024px::grid-template-columns", "s1ox8bcr", "grid-template-columns:minmax(0, 3fr) minmax(0, 2fr)" ] ], [ "1024px::grid-template-rows", [ "1024px::grid-template-rows", "s1th8vpw", "grid-template-rows:minmax(0, 7fr) minmax(0, 3fr)" ] ] ]) ] ];
-const panel = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::overflow", [ "::overflow", "syp1ckj", "overflow:hidden" ] ], [ "::flex-direction", [ "::flex-direction", "s1atdsbb", "flex-direction:column" ] ], [ "::min-width", [ "::min-width", "sitgfdt", "min-width:0" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ], [ "::background-color", [ "::background-color", "s1ydv2q1", "background-color:var(--down-normal)" ] ] ]) ] ];
-const panel_head = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::align-items", [ "::align-items", "s1rpzmas", "align-items:center" ] ], [ "::flex-wrap", [ "::flex-wrap", "szotvx1", "flex-wrap:wrap" ] ], [ "::flex-shrink", [ "::flex-shrink", "s1lr51x", "flex-shrink:0" ] ], [ "::gap", [ "::gap", "s8myyot", "gap:var(--space-1)" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::min-height", [ "::min-height", "sonfe9c", "min-height:32px" ] ], [ "::background-color", [ "::background-color", "ssxqr8g", "background-color:var(--down-bright)" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ "::justify-content", [ "::justify-content", "s1yv3ji6", "justify-content:space-between" ] ], [ "::border-bottom", [ "::border-bottom", "sepksxk", "border-bottom:1px solid var(--stroke-soft)" ] ] ]) ] ];
-const app_bar = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::align-items", [ "::align-items", "s1rpzmas", "align-items:center" ] ], [ "::flex-wrap", [ "::flex-wrap", "szotvx1", "flex-wrap:wrap" ] ], [ "::flex-shrink", [ "::flex-shrink", "s1lr51x", "flex-shrink:0" ] ], [ "::gap", [ "::gap", "s8myyot", "gap:var(--space-1)" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::min-height", [ "::min-height", "sonfe9c", "min-height:32px" ] ], [ "::background-color", [ "::background-color", "ssxqr8g", "background-color:var(--down-bright)" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ "::border-bottom", [ "::border-bottom", "sehiopn", "border-bottom:1px solid var(--stroke-hard)" ] ] ]) ] ];
-const rail_divider = [ [ new Map([ [ "::width", [ "::width", "sgdl0ko", "width:1px" ] ], [ "::align-self", [ "::align-self", "s1h12z4", "align-self:stretch" ] ], [ "::margin-left", [ "::margin-left", "szjswwl", "margin-left:2px" ] ], [ "::margin-right", [ "::margin-right", "suw81y3", "margin-right:2px" ] ], [ "::background-color", [ "::background-color", "s1h4num7", "background-color:var(--stroke-hard)" ] ] ]) ] ];
-const page_title = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::color", [ "::color", "s1miqier", "color:var(--up-bright)" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ] ]) ] ];
-const panel_title = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::font-weight", [ "::font-weight", "skjzfp8", "font-weight:500" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ] ]) ] ];
-const editor_host = [ [ new Map([ [ "::overflow", [ "::overflow", "syp1ckj", "overflow:hidden" ] ], [ "::flex", [ "::flex", "smaui08", "flex:1 1 auto" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ] ]) ] ];
-const runner_host = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::flex", [ "::flex", "smaui08", "flex:1 1 auto" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ], [ "::background-color", [ "::background-color", "s1ydv2q1", "background-color:var(--down-normal)" ] ] ]) ] ];
-const ghost_button = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::font-family", [ "::font-family", "s19qv9u6", "font-family:inherit" ] ], [ "::border-radius", [ "::border-radius", "s94jh8x", "border-radius:4px" ] ], [ "::transition", [ "::transition", "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ], [ "::cursor", [ "::cursor", "s1onu0uk", "cursor:pointer" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::background-color", [ "::background-color", "s1wmjjx5", "background-color:transparent" ] ], [ "::border", [ "::border", "s1mnphwb", "border:none" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ], [ ":hover:background-color", [ ":hover:background-color", "s1s7tv0o", "background-color:var(--down-hover)" ] ], [ ":active:background-color", [ ":active:background-color", "skghblk", "background-color:var(--down-active)" ] ] ]) ] ];
-const primary_button = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vfx", "padding-left:var(--space-3)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdpv", "padding-right:var(--space-3)" ] ], [ "::font-family", [ "::font-family", "s19qv9u6", "font-family:inherit" ] ], [ "::border-radius", [ "::border-radius", "s94jh8x", "border-radius:4px" ] ], [ "::transition", [ "::transition", "sj84onl", "transition:filter 80ms ease" ] ], [ "::cursor", [ "::cursor", "s1onu0uk", "cursor:pointer" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::color", [ "::color", "s30khfz", "color:var(--primary-on)" ] ], [ "::background-color", [ "::background-color", "s19dy6kf", "background-color:var(--primary)" ] ], [ "::border", [ "::border", "s1mnphwb", "border:none" ] ], [ ":hover:filter", [ ":hover:filter", "s15eo8y8", "filter:brightness(1.08)" ] ], [ ":active:filter", [ ":active:filter", "sdue9po", "filter:brightness(0.94)" ] ] ]) ] ];
-const select_box = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-top", [ "::padding-top", "s1foenn1", "padding-top:0" ] ], [ "::padding-bottom", [ "::padding-bottom", "s1hggi4x", "padding-bottom:0" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s16t3pvj", "padding-right:22px" ] ], [ "::font-family", [ "::font-family", "s19qv9u6", "font-family:inherit" ] ], [ "::border-radius", [ "::border-radius", "s94jh8x", "border-radius:4px" ] ], [ "::transition", [ "::transition", "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ], [ "::cursor", [ "::cursor", "s1onu0uk", "cursor:pointer" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::appearance", [ "::appearance", "sxfhabj", "appearance:none" ] ], [ "::height", [ "::height", "s22xxov", "height:24px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::background-color", [ "::background-color", "s1ydv2q1", "background-color:var(--down-normal)" ] ], [ "::border", [ "::border", "s8ckzec", "border:1px solid var(--stroke-soft)" ] ], [ "::background-image", [ "::background-image", "sg7ln4b", "background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)" ] ], [ "::background-position", [ "::background-position", "s1cysvk2", "background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)" ] ], [ "::background-size", [ "::background-size", "s1fnd457", "background-size:4px 4px, 4px 4px" ] ], [ "::background-repeat", [ "::background-repeat", "s1q9mjsm", "background-repeat:no-repeat" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ], [ ":hover:border-color", [ ":hover:border-color", "s1of7ou7", "border-color:var(--stroke-hard)" ] ] ]) ] ];
-const version_select = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk1zs", "font-size:12px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-top", [ "::padding-top", "s1foenn1", "padding-top:0" ] ], [ "::padding-bottom", [ "::padding-bottom", "s1hggi4x", "padding-bottom:0" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s16t3pvj", "padding-right:22px" ] ], [ "::font-family", [ "::font-family", "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ], [ "::border-radius", [ "::border-radius", "s94jh8x", "border-radius:4px" ] ], [ "::transition", [ "::transition", "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ], [ "::cursor", [ "::cursor", "s1onu0uk", "cursor:pointer" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::appearance", [ "::appearance", "sxfhabj", "appearance:none" ] ], [ "::height", [ "::height", "s22xxov", "height:24px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::background-color", [ "::background-color", "s1ydv2q1", "background-color:var(--down-normal)" ] ], [ "::border", [ "::border", "s8ckzec", "border:1px solid var(--stroke-soft)" ] ], [ "::background-image", [ "::background-image", "sg7ln4b", "background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)" ] ], [ "::background-position", [ "::background-position", "s1cysvk2", "background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)" ] ], [ "::background-size", [ "::background-size", "s1fnd457", "background-size:4px 4px, 4px 4px" ] ], [ "::background-repeat", [ "::background-repeat", "s1q9mjsm", "background-repeat:no-repeat" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ], [ ":hover:border-color", [ ":hover:border-color", "s1of7ou7", "border-color:var(--stroke-hard)" ] ], [ "::font-feature-settings", [ "::font-feature-settings", "s1r74r55", "font-feature-settings:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ] ]) ] ];
-const status_line = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::padding-left", [ "::padding-left", "s13w7ve3", "padding-left:var(--space-1)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdo1", "padding-right:var(--space-1)" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::margin-left", [ "::margin-left", "s10oplpw", "margin-left:auto" ] ], [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
-const confirm_bar = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::align-items", [ "::align-items", "s1rpzmas", "align-items:center" ] ], [ "::flex-wrap", [ "::flex-wrap", "szotvx1", "flex-wrap:wrap" ] ], [ "::flex-shrink", [ "::flex-shrink", "s1lr51x", "flex-shrink:0" ] ], [ "::gap", [ "::gap", "s8myypq", "gap:var(--space-2)" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::min-height", [ "::min-height", "sonfe9c", "min-height:32px" ] ], [ "::background-color", [ "::background-color", "ssxqr8g", "background-color:var(--down-bright)" ] ], [ "::box-sizing", [ "::box-sizing", "s9fgd5j", "box-sizing:border-box" ] ], [ "::border-bottom", [ "::border-bottom", "sepksxk", "border-bottom:1px solid var(--stroke-soft)" ] ] ]) ] ];
-const confirm_question = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::letter-spacing", [ "::letter-spacing", "sbq2ipd", "letter-spacing:-0.01em" ] ], [ "::line-height", [ "::line-height", "snq8awq", "line-height:16px" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::margin-right", [ "::margin-right", "sp4tc1m", "margin-right:auto" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ] ]) ] ];
-const report_well = [ [ new Map([ [ "::font-family", [ "::font-family", "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ], [ "::font-feature-settings", [ "::font-feature-settings", "s1r74r55", "font-feature-settings:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ], [ "::overflow", [ "::overflow", "s19aluk0", "overflow:auto" ] ], [ "::flex", [ "::flex", "smaui08", "flex:1 1 auto" ] ], [ "::padding-top", [ "::padding-top", "sku5tg9", "padding-top:4px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzv99", "padding-bottom:4px" ] ], [ "::margin", [ "::margin", "s1tlfgp4", "margin:var(--space-0)" ] ], [ "::min-height", [ "::min-height", "sivwxlf", "min-height:0" ] ], [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::line-height", [ "::line-height", "snq8cl8", "line-height:18px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::white-space", [ "::white-space", "s41qynl", "white-space:pre-wrap" ] ] ]) ] ];
-const diag_row_error = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5sm0", "padding-top:3px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzuf0", "padding-bottom:3px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::border-top", [ "::border-top", "szweawk", "border-top:1px solid var(--stroke-soft)" ] ], [ "::border-left", [ "::border-left", "s1v5t6xm", "border-left:2px solid var(--down-danger)" ] ], [ ":first-child:border-top", [ ":first-child:border-top", "sq2xqkq", "border-top:1px solid transparent" ] ], [ "::background-color", [ "::background-color", "s1er9mcg", "background-color:rgb(from var(--down-danger) r g b / 0.07)" ] ] ]) ] ];
-const diag_row_warning = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5sm0", "padding-top:3px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzuf0", "padding-bottom:3px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::border-top", [ "::border-top", "szweawk", "border-top:1px solid var(--stroke-soft)" ] ], [ "::border-left", [ "::border-left", "somu7p8", "border-left:2px solid var(--down-caution)" ] ], [ ":first-child:border-top", [ ":first-child:border-top", "sq2xqkq", "border-top:1px solid transparent" ] ], [ "::background-color", [ "::background-color", "s6ng1wh", "background-color:rgb(from var(--down-caution) r g b / 0.06)" ] ] ]) ] ];
-const diag_error = [ [ new Map([ [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::color", [ "::color", "sxurvz1", "color:var(--up-error)" ] ] ]) ] ];
-const diag_warning = [ [ new Map([ [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::color", [ "::color", "s7y076u", "color:var(--up-caution)" ] ] ]) ] ];
-const diag_site = [ [ new Map([ [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
-const diag_note = [ [ new Map([ [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
-const diag_trace = [ [ new Map([ [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
-const console_line = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5qxi", "padding-top:1px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzsqi", "padding-bottom:1px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ] ]) ] ];
-const console_error = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5qxi", "padding-top:1px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzsqi", "padding-bottom:1px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::color", [ "::color", "sxurvz1", "color:var(--up-error)" ] ] ]) ] ];
-const quiet_row = [ [ new Map([ [ "::padding-top", [ "::padding-top", "sku5sm0", "padding-top:3px" ] ], [ "::padding-bottom", [ "::padding-bottom", "s14jzuf0", "padding-bottom:3px" ] ], [ "::padding-left", [ "::padding-left", "s13w7vf0", "padding-left:var(--space-2)" ] ], [ "::padding-right", [ "::padding-right", "s1anvdoy", "padding-right:var(--space-2)" ] ], [ "::color", [ "::color", "shpfnhp", "color:var(--up-dim)" ] ] ]) ] ];
-const code_palette = [ [ new Map([ [ "::--code-face", [ "::--code-face", "sepvury", "--code-face:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ], [ "::--code-features", [ "::--code-features", "s1xx7ixb", "--code-features:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ], [ "::--code-size", [ "::--code-size", "s17tflw5", "--code-size:13px" ] ], [ "::--code-bg", [ "::--code-bg", "sr79rlz", "--code-bg:var(--down-normal)" ] ], [ "::--code-fg", [ "::--code-fg", "s19c5xn7", "--code-fg:var(--up-bright)" ] ], [ "::--code-dim", [ "::--code-dim", "s1u3ovjb", "--code-dim:var(--up-dim)" ] ], [ "::--code-gutter-edge", [ "::--code-gutter-edge", "s19k3kma", "--code-gutter-edge:var(--stroke-soft)" ] ], [ "::--code-active-line", [ "::--code-active-line", "s1fhczbb", "--code-active-line:rgb(from var(--up-bright) r g b / 0.04)" ] ], [ "::--code-active-gutter", [ "::--code-active-gutter", "s1t1pcq8", "--code-active-gutter:rgb(from var(--up-bright) r g b / 0.07)" ] ], [ "::--code-selection", [ "::--code-selection", "snky57a", "--code-selection:rgb(from var(--up-bright) r g b / 0.18)" ] ], [ "::--code-keyword", [ "::--code-keyword", "sbb9pzp", "--code-keyword:var(--primary)" ] ], [ "::--code-string", [ "::--code-string", "s18b2uzn", "--code-string:var(--accent)" ] ], [ "::--code-plain", [ "::--code-plain", "s8onzey", "--code-plain:var(--up-normal)" ] ], [ "::--code-callable", [ "::--code-callable", "s16k06qr", "--code-callable:var(--tint-callable)" ] ], [ "::--code-type", [ "::--code-type", "s1n2n3b1", "--code-type:var(--up-bright)" ] ], [ "::--code-comment", [ "::--code-comment", "s5j3euk", "--code-comment:var(--tint-comment)" ] ], [ "::--code-attr", [ "::--code-attr", "s14j98t0", "--code-attr:rgb(from var(--primary) r g b / 0.65)" ] ], [ "::--code-path", [ "::--code-path", "s7em04x", "--code-path:rgb(from var(--up-bright) r g b / 0.6)" ] ], [ "::--code-operator", [ "::--code-operator", "s8nt3s2", "--code-operator:rgb(from var(--up-bright) r g b / 0.72)" ] ], [ "::--code-error", [ "::--code-error", "s1dxptvb", "--code-error:var(--up-error)" ] ], [ "::--code-caution", [ "::--code-caution", "s1yauy2a", "--code-caution:var(--up-caution)" ] ] ]) ] ];
-const shell = [ [ new Map([ [ "::min-height", [ "::min-height", "sondrfd", "min-height:100%" ] ], [ "::font-family", [ "::font-family", "s1om2gx7", "font-family:\'Inter\', system-ui, -apple-system, sans-serif" ] ], [ "::font-size", [ "::font-size", "sayk3oa", "font-size:14px" ] ], [ "::line-height", [ "::line-height", "snq8cl8", "line-height:18px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::background-color", [ "::background-color", "s4e3ofu", "background-color:var(--down-dim)" ] ] ]) ] ];
-const no_drag = [ [ new Map([ [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ "::-webkit-user-drag", [ "::-webkit-user-drag", "svfmjlf", "-webkit-user-drag:none" ] ] ]) ] ];
-const nav_brand = [ [ new Map([ [ "::display", [ "::display", "sbiovxm", "display:flex" ] ], [ "::gap", [ "::gap", "s8myyqn", "gap:var(--space-3)" ] ], [ "::align-items", [ "::align-items", "s1rpzmas", "align-items:center" ] ], [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::font-weight", [ "::font-weight", "skjzgjh", "font-weight:600" ] ], [ "::letter-spacing", [ "::letter-spacing", "s1odkmbv", "letter-spacing:0.35em" ] ] ]) ] ];
-const nav_mark = [ [ new Map([ [ "::display", [ "::display", "sowfjmu", "display:block" ] ], [ "::width", [ "::width", "s178hbq8", "width:36px" ] ], [ "::height", [ "::height", "s22x9bm", "height:18px" ] ], [ "::background-color", [ "::background-color", "syz58y5", "background-color:var(--up-bright)" ] ], [ "::-webkit-mask", [ "::-webkit-mask", "scqkrg6", "-webkit-mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ], [ "::mask", [ "::mask", "s11mtiwm", "mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ] ]) ] ];
-const nav_link = [ [ new Map([ [ "::font-size", [ "::font-size", "sayk2u1", "font-size:13px" ] ], [ "::color", [ "::color", "ssxqrx8", "color:var(--up-normal)" ] ], [ "::text-decoration", [ "::text-decoration", "svrgm1f", "text-decoration:none" ] ], [ "::transition", [ "::transition", "sbcnc8a", "transition:color 80ms ease" ] ], [ "::user-select", [ "::user-select", "s1iy45h3", "user-select:none" ] ], [ ":hover:color", [ ":hover:color", "s1ytnaev", "color:var(--up-bright)" ] ] ]) ] ];
+const leaving_runs = __shared_new([  ]);
+const app_fill = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sbiovxm", "display:flex" ] ] ] ], [ "::overflow", [ "::overflow", [ 0, [ "syp1ckj", "overflow:hidden" ] ] ] ], [ "::flex-direction", [ "::flex-direction", [ 0, [ "s1atdsbb", "flex-direction:column" ] ] ] ], [ "::height", [ "::height", [ 0, [ "s22x0wn", "height:100%" ] ] ] ] ]), undefined ] ] ];
+const quad_grid = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sbipssh", "display:grid" ] ] ] ], [ "::flex", [ "::flex", [ 0, [ "smaui08", "flex:1 1 auto" ] ] ] ], [ "::gap", [ "::gap", [ 0, [ "s1x5z460", "gap:1px" ] ] ] ], [ "::min-height", [ "::min-height", [ 0, [ "sivwxlf", "min-height:0" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s1h4num7", "background-color:var(--stroke-hard)" ] ] ] ], [ "::grid-template-columns", [ "::grid-template-columns", [ 0, [ "send2h", "grid-template-columns:minmax(0, 1fr)" ] ] ] ], [ "::grid-template-rows", [ "::grid-template-rows", [ 0, [ "s11r85rj", "grid-template-rows:minmax(0, 8fr) minmax(0, 6fr) minmax(0, 4fr) minmax(0, 4fr)" ] ] ] ], [ "1024px::grid-template-columns", [ "1024px::grid-template-columns", [ 0, [ "s1ox8bcr", "grid-template-columns:minmax(0, 3fr) minmax(0, 2fr)" ] ] ] ], [ "1024px::grid-template-rows", [ "1024px::grid-template-rows", [ 0, [ "s1th8vpw", "grid-template-rows:minmax(0, 7fr) minmax(0, 3fr)" ] ] ] ] ]), undefined ] ] ];
+const panel = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sbiovxm", "display:flex" ] ] ] ], [ "::overflow", [ "::overflow", [ 0, [ "syp1ckj", "overflow:hidden" ] ] ] ], [ "::flex-direction", [ "::flex-direction", [ 0, [ "s1atdsbb", "flex-direction:column" ] ] ] ], [ "::min-width", [ "::min-width", [ 0, [ "sitgfdt", "min-width:0" ] ] ] ], [ "::min-height", [ "::min-height", [ 0, [ "sivwxlf", "min-height:0" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ] ] ]), undefined ] ] ];
+const panel_head = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sbiovxm", "display:flex" ] ] ] ], [ "::align-items", [ "::align-items", [ 0, [ "s1rpzmas", "align-items:center" ] ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ 0, [ "szotvx1", "flex-wrap:wrap" ] ] ] ], [ "::flex-shrink", [ "::flex-shrink", [ 0, [ "s1lr51x", "flex-shrink:0" ] ] ] ], [ "::gap", [ "::gap", [ 0, [ "s8myyot", "gap:var(--space-1)" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ], [ "::padding-top", [ "::padding-top", [ 0, [ "sku5tg9", "padding-top:4px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzv99", "padding-bottom:4px" ] ] ] ], [ "::min-height", [ "::min-height", [ 0, [ "sonfe9c", "min-height:32px" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "ssxqr8g", "background-color:var(--down-bright)" ] ] ] ], [ "::box-sizing", [ "::box-sizing", [ 0, [ "s9fgd5j", "box-sizing:border-box" ] ] ] ], [ "::justify-content", [ "::justify-content", [ 0, [ "s1yv3ji6", "justify-content:space-between" ] ] ] ], [ "::border-bottom", [ "::border-bottom", [ 0, [ "sepksxk", "border-bottom:1px solid var(--stroke-soft)" ] ] ] ] ]), undefined ] ] ];
+const app_bar = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sbiovxm", "display:flex" ] ] ] ], [ "::align-items", [ "::align-items", [ 0, [ "s1rpzmas", "align-items:center" ] ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ 0, [ "szotvx1", "flex-wrap:wrap" ] ] ] ], [ "::flex-shrink", [ "::flex-shrink", [ 0, [ "s1lr51x", "flex-shrink:0" ] ] ] ], [ "::gap", [ "::gap", [ 0, [ "s8myyot", "gap:var(--space-1)" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ], [ "::padding-top", [ "::padding-top", [ 0, [ "sku5tg9", "padding-top:4px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzv99", "padding-bottom:4px" ] ] ] ], [ "::min-height", [ "::min-height", [ 0, [ "sonfe9c", "min-height:32px" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "ssxqr8g", "background-color:var(--down-bright)" ] ] ] ], [ "::box-sizing", [ "::box-sizing", [ 0, [ "s9fgd5j", "box-sizing:border-box" ] ] ] ], [ "::border-bottom", [ "::border-bottom", [ 0, [ "sehiopn", "border-bottom:1px solid var(--stroke-hard)" ] ] ] ] ]), undefined ] ] ];
+const rail_divider = [ [ [ new Map([ [ "::width", [ "::width", [ 0, [ "sgdl0ko", "width:1px" ] ] ] ], [ "::align-self", [ "::align-self", [ 0, [ "s1h12z4", "align-self:stretch" ] ] ] ], [ "::margin-left", [ "::margin-left", [ 0, [ "szjswwl", "margin-left:2px" ] ] ] ], [ "::margin-right", [ "::margin-right", [ 0, [ "suw81y3", "margin-right:2px" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s1h4num7", "background-color:var(--stroke-hard)" ] ] ] ] ]), undefined ] ] ];
+const page_title = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8awq", "line-height:16px" ] ] ] ], [ "::margin", [ "::margin", [ 0, [ "s1tlfgp4", "margin:var(--space-0)" ] ] ] ], [ "::font-weight", [ "::font-weight", [ 0, [ "skjzgjh", "font-weight:600" ] ] ] ], [ "::color", [ "::color", [ 0, [ "s1miqier", "color:var(--up-bright)" ] ] ] ], [ "::user-select", [ "::user-select", [ 0, [ "s1iy45h3", "user-select:none" ] ] ] ] ]), undefined ] ] ];
+const panel_title = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8awq", "line-height:16px" ] ] ] ], [ "::margin", [ "::margin", [ 0, [ "s1tlfgp4", "margin:var(--space-0)" ] ] ] ], [ "::font-weight", [ "::font-weight", [ 0, [ "skjzfp8", "font-weight:500" ] ] ] ], [ "::color", [ "::color", [ 0, [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ], [ "::user-select", [ "::user-select", [ 0, [ "s1iy45h3", "user-select:none" ] ] ] ] ]), undefined ] ] ];
+const editor_host = [ [ [ new Map([ [ "::overflow", [ "::overflow", [ 0, [ "syp1ckj", "overflow:hidden" ] ] ] ], [ "::flex", [ "::flex", [ 0, [ "smaui08", "flex:1 1 auto" ] ] ] ], [ "::min-height", [ "::min-height", [ 0, [ "sivwxlf", "min-height:0" ] ] ] ] ]), undefined ] ] ];
+const runner_host = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sbiovxm", "display:flex" ] ] ] ], [ "::flex", [ "::flex", [ 0, [ "smaui08", "flex:1 1 auto" ] ] ] ], [ "::min-height", [ "::min-height", [ 0, [ "sivwxlf", "min-height:0" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ] ] ]), undefined ] ] ];
+const ghost_button = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8awq", "line-height:16px" ] ] ] ], [ "::padding-top", [ "::padding-top", [ 0, [ "sku5tg9", "padding-top:4px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzv99", "padding-bottom:4px" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ], [ "::font-family", [ "::font-family", [ 0, [ "s19qv9u6", "font-family:inherit" ] ] ] ], [ "::border-radius", [ "::border-radius", [ 0, [ "s94jh8x", "border-radius:4px" ] ] ] ], [ "::transition", [ "::transition", [ 0, [ "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ] ] ], [ "::cursor", [ "::cursor", [ 0, [ "s1onu0uk", "cursor:pointer" ] ] ] ], [ "::user-select", [ "::user-select", [ 0, [ "s1iy45h3", "user-select:none" ] ] ] ], [ "::color", [ "::color", [ 0, [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s1wmjjx5", "background-color:transparent" ] ] ] ], [ "::border", [ "::border", [ 0, [ "s1mnphwb", "border:none" ] ] ] ], [ ":hover:color", [ ":hover:color", [ 0, [ "s1ytnaev", "color:var(--up-bright)" ] ] ] ], [ ":hover:background-color", [ ":hover:background-color", [ 0, [ "s1s7tv0o", "background-color:var(--down-hover)" ] ] ] ], [ ":active:background-color", [ ":active:background-color", [ 0, [ "skghblk", "background-color:var(--down-active)" ] ] ] ] ]), undefined ] ] ];
+const primary_button = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8awq", "line-height:16px" ] ] ] ], [ "::padding-top", [ "::padding-top", [ 0, [ "sku5tg9", "padding-top:4px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzv99", "padding-bottom:4px" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vfx", "padding-left:var(--space-3)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdpv", "padding-right:var(--space-3)" ] ] ] ], [ "::font-family", [ "::font-family", [ 0, [ "s19qv9u6", "font-family:inherit" ] ] ] ], [ "::border-radius", [ "::border-radius", [ 0, [ "s94jh8x", "border-radius:4px" ] ] ] ], [ "::transition", [ "::transition", [ 0, [ "sj84onl", "transition:filter 80ms ease" ] ] ] ], [ "::cursor", [ "::cursor", [ 0, [ "s1onu0uk", "cursor:pointer" ] ] ] ], [ "::user-select", [ "::user-select", [ 0, [ "s1iy45h3", "user-select:none" ] ] ] ], [ "::font-weight", [ "::font-weight", [ 0, [ "skjzgjh", "font-weight:600" ] ] ] ], [ "::color", [ "::color", [ 0, [ "s30khfz", "color:var(--primary-on)" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s19dy6kf", "background-color:var(--primary)" ] ] ] ], [ "::border", [ "::border", [ 0, [ "s1mnphwb", "border:none" ] ] ] ], [ ":hover:filter", [ ":hover:filter", [ 0, [ "s15eo8y8", "filter:brightness(1.08)" ] ] ] ], [ ":active:filter", [ ":active:filter", [ 0, [ "sdue9po", "filter:brightness(0.94)" ] ] ] ] ]), undefined ] ] ];
+const select_box = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8awq", "line-height:16px" ] ] ] ], [ "::padding-top", [ "::padding-top", [ 0, [ "s1foenn1", "padding-top:0" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s1hggi4x", "padding-bottom:0" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s16t3pvj", "padding-right:22px" ] ] ] ], [ "::font-family", [ "::font-family", [ 0, [ "s19qv9u6", "font-family:inherit" ] ] ] ], [ "::border-radius", [ "::border-radius", [ 0, [ "s94jh8x", "border-radius:4px" ] ] ] ], [ "::transition", [ "::transition", [ 0, [ "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ] ] ], [ "::cursor", [ "::cursor", [ 0, [ "s1onu0uk", "cursor:pointer" ] ] ] ], [ "::user-select", [ "::user-select", [ 0, [ "s1iy45h3", "user-select:none" ] ] ] ], [ "::appearance", [ "::appearance", [ 0, [ "sxfhabj", "appearance:none" ] ] ] ], [ "::height", [ "::height", [ 0, [ "s22xxov", "height:24px" ] ] ] ], [ "::color", [ "::color", [ 0, [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ] ], [ "::border", [ "::border", [ 0, [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ] ], [ "::background-image", [ "::background-image", [ 0, [ "sg7ln4b", "background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)" ] ] ] ], [ "::background-position", [ "::background-position", [ 0, [ "s1cysvk2", "background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)" ] ] ] ], [ "::background-size", [ "::background-size", [ 0, [ "s1fnd457", "background-size:4px 4px, 4px 4px" ] ] ] ], [ "::background-repeat", [ "::background-repeat", [ 0, [ "s1q9mjsm", "background-repeat:no-repeat" ] ] ] ], [ "::box-sizing", [ "::box-sizing", [ 0, [ "s9fgd5j", "box-sizing:border-box" ] ] ] ], [ ":hover:color", [ ":hover:color", [ 0, [ "s1ytnaev", "color:var(--up-bright)" ] ] ] ], [ ":hover:border-color", [ ":hover:border-color", [ 0, [ "s1of7ou7", "border-color:var(--stroke-hard)" ] ] ] ] ]), undefined ] ] ];
+const version_select = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk1zs", "font-size:12px" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8awq", "line-height:16px" ] ] ] ], [ "::padding-top", [ "::padding-top", [ 0, [ "s1foenn1", "padding-top:0" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s1hggi4x", "padding-bottom:0" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s16t3pvj", "padding-right:22px" ] ] ] ], [ "::font-family", [ "::font-family", [ 0, [ "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ] ], [ "::border-radius", [ "::border-radius", [ 0, [ "s94jh8x", "border-radius:4px" ] ] ] ], [ "::transition", [ "::transition", [ 0, [ "s1x0qwck", "transition:background-color 80ms ease, border-color 80ms ease, color 80ms ease" ] ] ] ], [ "::cursor", [ "::cursor", [ 0, [ "s1onu0uk", "cursor:pointer" ] ] ] ], [ "::user-select", [ "::user-select", [ 0, [ "s1iy45h3", "user-select:none" ] ] ] ], [ "::appearance", [ "::appearance", [ 0, [ "sxfhabj", "appearance:none" ] ] ] ], [ "::height", [ "::height", [ 0, [ "s22xxov", "height:24px" ] ] ] ], [ "::color", [ "::color", [ 0, [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s1ydv2q1", "background-color:var(--down-normal)" ] ] ] ], [ "::border", [ "::border", [ 0, [ "s8ckzec", "border:1px solid var(--stroke-soft)" ] ] ] ], [ "::background-image", [ "::background-image", [ 0, [ "sg7ln4b", "background-image:linear-gradient(45deg, transparent 50%, currentcolor 50%), linear-gradient(135deg, currentcolor 50%, transparent 50%)" ] ] ] ], [ "::background-position", [ "::background-position", [ 0, [ "s1cysvk2", "background-position:calc(100% - 13px) calc(50% - 1px), calc(100% - 9px) calc(50% - 1px)" ] ] ] ], [ "::background-size", [ "::background-size", [ 0, [ "s1fnd457", "background-size:4px 4px, 4px 4px" ] ] ] ], [ "::background-repeat", [ "::background-repeat", [ 0, [ "s1q9mjsm", "background-repeat:no-repeat" ] ] ] ], [ "::box-sizing", [ "::box-sizing", [ 0, [ "s9fgd5j", "box-sizing:border-box" ] ] ] ], [ ":hover:color", [ ":hover:color", [ 0, [ "s1ytnaev", "color:var(--up-bright)" ] ] ] ], [ ":hover:border-color", [ ":hover:border-color", [ 0, [ "s1of7ou7", "border-color:var(--stroke-hard)" ] ] ] ], [ "::font-feature-settings", [ "::font-feature-settings", [ 0, [ "s1r74r55", "font-feature-settings:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ] ] ] ]), undefined ] ] ];
+const status_line = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8awq", "line-height:16px" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7ve3", "padding-left:var(--space-1)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdo1", "padding-right:var(--space-1)" ] ] ] ], [ "::margin", [ "::margin", [ 0, [ "s1tlfgp4", "margin:var(--space-0)" ] ] ] ], [ "::margin-left", [ "::margin-left", [ 0, [ "s10oplpw", "margin-left:auto" ] ] ] ], [ "::color", [ "::color", [ 0, [ "shpfnhp", "color:var(--up-dim)" ] ] ] ] ]), undefined ] ] ];
+const confirm_bar = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sbiovxm", "display:flex" ] ] ] ], [ "::align-items", [ "::align-items", [ 0, [ "s1rpzmas", "align-items:center" ] ] ] ], [ "::flex-wrap", [ "::flex-wrap", [ 0, [ "szotvx1", "flex-wrap:wrap" ] ] ] ], [ "::flex-shrink", [ "::flex-shrink", [ 0, [ "s1lr51x", "flex-shrink:0" ] ] ] ], [ "::gap", [ "::gap", [ 0, [ "s8myypq", "gap:var(--space-2)" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ], [ "::padding-top", [ "::padding-top", [ 0, [ "sku5tg9", "padding-top:4px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzv99", "padding-bottom:4px" ] ] ] ], [ "::min-height", [ "::min-height", [ 0, [ "sonfe9c", "min-height:32px" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "ssxqr8g", "background-color:var(--down-bright)" ] ] ] ], [ "::box-sizing", [ "::box-sizing", [ 0, [ "s9fgd5j", "box-sizing:border-box" ] ] ] ], [ "::border-bottom", [ "::border-bottom", [ 0, [ "sepksxk", "border-bottom:1px solid var(--stroke-soft)" ] ] ] ] ]), undefined ] ] ];
+const confirm_question = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "sbq2ipd", "letter-spacing:-0.01em" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8awq", "line-height:16px" ] ] ] ], [ "::margin", [ "::margin", [ 0, [ "s1tlfgp4", "margin:var(--space-0)" ] ] ] ], [ "::margin-right", [ "::margin-right", [ 0, [ "sp4tc1m", "margin-right:auto" ] ] ] ], [ "::color", [ "::color", [ 0, [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ] ]), undefined ] ] ];
+const report_well = [ [ [ new Map([ [ "::font-family", [ "::font-family", [ 0, [ "sofexq0", "font-family:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ] ], [ "::font-feature-settings", [ "::font-feature-settings", [ 0, [ "s1r74r55", "font-feature-settings:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ] ] ], [ "::overflow", [ "::overflow", [ 0, [ "s19aluk0", "overflow:auto" ] ] ] ], [ "::flex", [ "::flex", [ 0, [ "smaui08", "flex:1 1 auto" ] ] ] ], [ "::padding-top", [ "::padding-top", [ 0, [ "sku5tg9", "padding-top:4px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzv99", "padding-bottom:4px" ] ] ] ], [ "::margin", [ "::margin", [ 0, [ "s1tlfgp4", "margin:var(--space-0)" ] ] ] ], [ "::min-height", [ "::min-height", [ 0, [ "sivwxlf", "min-height:0" ] ] ] ], [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8cl8", "line-height:18px" ] ] ] ], [ "::color", [ "::color", [ 0, [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ], [ "::white-space", [ "::white-space", [ 0, [ "s41qynl", "white-space:pre-wrap" ] ] ] ] ]), undefined ] ] ];
+const diag_row_error = [ [ [ new Map([ [ "::padding-top", [ "::padding-top", [ 0, [ "sku5sm0", "padding-top:3px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzuf0", "padding-bottom:3px" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ], [ "::border-top", [ "::border-top", [ 0, [ "szweawk", "border-top:1px solid var(--stroke-soft)" ] ] ] ], [ "::border-left", [ "::border-left", [ 0, [ "s1v5t6xm", "border-left:2px solid var(--down-danger)" ] ] ] ], [ ":first-child:border-top", [ ":first-child:border-top", [ 0, [ "sq2xqkq", "border-top:1px solid transparent" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s1er9mcg", "background-color:rgb(from var(--down-danger) r g b / 0.07)" ] ] ] ] ]), undefined ] ] ];
+const diag_row_warning = [ [ [ new Map([ [ "::padding-top", [ "::padding-top", [ 0, [ "sku5sm0", "padding-top:3px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzuf0", "padding-bottom:3px" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ], [ "::border-top", [ "::border-top", [ 0, [ "szweawk", "border-top:1px solid var(--stroke-soft)" ] ] ] ], [ "::border-left", [ "::border-left", [ 0, [ "somu7p8", "border-left:2px solid var(--down-caution)" ] ] ] ], [ ":first-child:border-top", [ ":first-child:border-top", [ 0, [ "sq2xqkq", "border-top:1px solid transparent" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s6ng1wh", "background-color:rgb(from var(--down-caution) r g b / 0.06)" ] ] ] ] ]), undefined ] ] ];
+const diag_error = [ [ [ new Map([ [ "::font-weight", [ "::font-weight", [ 0, [ "skjzgjh", "font-weight:600" ] ] ] ], [ "::color", [ "::color", [ 0, [ "sxurvz1", "color:var(--up-error)" ] ] ] ] ]), undefined ] ] ];
+const diag_warning = [ [ [ new Map([ [ "::font-weight", [ "::font-weight", [ 0, [ "skjzgjh", "font-weight:600" ] ] ] ], [ "::color", [ "::color", [ 0, [ "s7y076u", "color:var(--up-caution)" ] ] ] ] ]), undefined ] ] ];
+const diag_site = [ [ [ new Map([ [ "::color", [ "::color", [ 0, [ "shpfnhp", "color:var(--up-dim)" ] ] ] ] ]), undefined ] ] ];
+const diag_note = [ [ [ new Map([ [ "::color", [ "::color", [ 0, [ "shpfnhp", "color:var(--up-dim)" ] ] ] ] ]), undefined ] ] ];
+const diag_trace = [ [ [ new Map([ [ "::color", [ "::color", [ 0, [ "shpfnhp", "color:var(--up-dim)" ] ] ] ] ]), undefined ] ] ];
+const console_line = [ [ [ new Map([ [ "::padding-top", [ "::padding-top", [ 0, [ "sku5qxi", "padding-top:1px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzsqi", "padding-bottom:1px" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ] ]), undefined ] ] ];
+const console_error = [ [ [ new Map([ [ "::padding-top", [ "::padding-top", [ 0, [ "sku5qxi", "padding-top:1px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzsqi", "padding-bottom:1px" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ], [ "::color", [ "::color", [ 0, [ "sxurvz1", "color:var(--up-error)" ] ] ] ] ]), undefined ] ] ];
+const quiet_row = [ [ [ new Map([ [ "::padding-top", [ "::padding-top", [ 0, [ "sku5sm0", "padding-top:3px" ] ] ] ], [ "::padding-bottom", [ "::padding-bottom", [ 0, [ "s14jzuf0", "padding-bottom:3px" ] ] ] ], [ "::padding-left", [ "::padding-left", [ 0, [ "s13w7vf0", "padding-left:var(--space-2)" ] ] ] ], [ "::padding-right", [ "::padding-right", [ 0, [ "s1anvdoy", "padding-right:var(--space-2)" ] ] ] ], [ "::color", [ "::color", [ 0, [ "shpfnhp", "color:var(--up-dim)" ] ] ] ] ]), undefined ] ] ];
+const code_palette = [ [ [ new Map([ [ "::--code-face", [ "::--code-face", [ 0, [ "sepvury", "--code-face:\'CommitMonoV143\', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" ] ] ] ], [ "::--code-features", [ "::--code-features", [ 0, [ "s1xx7ixb", "--code-features:\"ss01\", \"ss02\", \"ss03\", \"ss04\", \"ss05\", \"cv04\", \"cv06\", \"cv08\"" ] ] ] ], [ "::--code-size", [ "::--code-size", [ 0, [ "s17tflw5", "--code-size:13px" ] ] ] ], [ "::--code-bg", [ "::--code-bg", [ 0, [ "sr79rlz", "--code-bg:var(--down-normal)" ] ] ] ], [ "::--code-fg", [ "::--code-fg", [ 0, [ "s19c5xn7", "--code-fg:var(--up-bright)" ] ] ] ], [ "::--code-dim", [ "::--code-dim", [ 0, [ "s1u3ovjb", "--code-dim:var(--up-dim)" ] ] ] ], [ "::--code-gutter-edge", [ "::--code-gutter-edge", [ 0, [ "s19k3kma", "--code-gutter-edge:var(--stroke-soft)" ] ] ] ], [ "::--code-active-line", [ "::--code-active-line", [ 0, [ "s1fhczbb", "--code-active-line:rgb(from var(--up-bright) r g b / 0.04)" ] ] ] ], [ "::--code-active-gutter", [ "::--code-active-gutter", [ 0, [ "s1t1pcq8", "--code-active-gutter:rgb(from var(--up-bright) r g b / 0.07)" ] ] ] ], [ "::--code-selection", [ "::--code-selection", [ 0, [ "snky57a", "--code-selection:rgb(from var(--up-bright) r g b / 0.18)" ] ] ] ], [ "::--code-keyword", [ "::--code-keyword", [ 0, [ "sbb9pzp", "--code-keyword:var(--primary)" ] ] ] ], [ "::--code-string", [ "::--code-string", [ 0, [ "s18b2uzn", "--code-string:var(--accent)" ] ] ] ], [ "::--code-plain", [ "::--code-plain", [ 0, [ "s8onzey", "--code-plain:var(--up-normal)" ] ] ] ], [ "::--code-callable", [ "::--code-callable", [ 0, [ "s16k06qr", "--code-callable:var(--tint-callable)" ] ] ] ], [ "::--code-type", [ "::--code-type", [ 0, [ "s1n2n3b1", "--code-type:var(--up-bright)" ] ] ] ], [ "::--code-comment", [ "::--code-comment", [ 0, [ "s5j3euk", "--code-comment:var(--tint-comment)" ] ] ] ], [ "::--code-attr", [ "::--code-attr", [ 0, [ "s14j98t0", "--code-attr:rgb(from var(--primary) r g b / 0.65)" ] ] ] ], [ "::--code-path", [ "::--code-path", [ 0, [ "s7em04x", "--code-path:rgb(from var(--up-bright) r g b / 0.6)" ] ] ] ], [ "::--code-operator", [ "::--code-operator", [ 0, [ "s8nt3s2", "--code-operator:rgb(from var(--up-bright) r g b / 0.72)" ] ] ] ], [ "::--code-error", [ "::--code-error", [ 0, [ "s1dxptvb", "--code-error:var(--up-error)" ] ] ] ], [ "::--code-caution", [ "::--code-caution", [ 0, [ "s1yauy2a", "--code-caution:var(--up-caution)" ] ] ] ] ]), undefined ] ] ];
+const shell = [ [ [ new Map([ [ "::min-height", [ "::min-height", [ 0, [ "sondrfd", "min-height:100%" ] ] ] ], [ "::font-family", [ "::font-family", [ 0, [ "s1om2gx7", "font-family:\'Inter\', system-ui, -apple-system, sans-serif" ] ] ] ], [ "::font-size", [ "::font-size", [ 0, [ "sayk3oa", "font-size:14px" ] ] ] ], [ "::line-height", [ "::line-height", [ 0, [ "snq8cl8", "line-height:18px" ] ] ] ], [ "::color", [ "::color", [ 0, [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "s4e3ofu", "background-color:var(--down-dim)" ] ] ] ] ]), undefined ] ] ];
+const no_drag = [ [ [ new Map([ [ "::user-select", [ "::user-select", [ 0, [ "s1iy45h3", "user-select:none" ] ] ] ], [ "::-webkit-user-drag", [ "::-webkit-user-drag", [ 0, [ "svfmjlf", "-webkit-user-drag:none" ] ] ] ] ]), undefined ] ] ];
+const nav_brand = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sbiovxm", "display:flex" ] ] ] ], [ "::gap", [ "::gap", [ 0, [ "s8myyqn", "gap:var(--space-3)" ] ] ] ], [ "::align-items", [ "::align-items", [ 0, [ "s1rpzmas", "align-items:center" ] ] ] ], [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::font-weight", [ "::font-weight", [ 0, [ "skjzgjh", "font-weight:600" ] ] ] ], [ "::letter-spacing", [ "::letter-spacing", [ 0, [ "s1odkmbv", "letter-spacing:0.35em" ] ] ] ] ]), undefined ] ] ];
+const nav_mark = [ [ [ new Map([ [ "::display", [ "::display", [ 0, [ "sowfjmu", "display:block" ] ] ] ], [ "::width", [ "::width", [ 0, [ "s178hbq8", "width:36px" ] ] ] ], [ "::height", [ "::height", [ 0, [ "s22x9bm", "height:18px" ] ] ] ], [ "::background-color", [ "::background-color", [ 0, [ "syz58y5", "background-color:var(--up-bright)" ] ] ] ], [ "::-webkit-mask", [ "::-webkit-mask", [ 0, [ "scqkrg6", "-webkit-mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ] ] ], [ "::mask", [ "::mask", [ 0, [ "s11mtiwm", "mask:url(https://vilan-lang.org/assets/mark.svg) center / contain no-repeat" ] ] ] ] ]), undefined ] ] ];
+const nav_link = [ [ [ new Map([ [ "::font-size", [ "::font-size", [ 0, [ "sayk2u1", "font-size:13px" ] ] ] ], [ "::color", [ "::color", [ 0, [ "ssxqrx8", "color:var(--up-normal)" ] ] ] ], [ "::text-decoration", [ "::text-decoration", [ 0, [ "svrgm1f", "text-decoration:none" ] ] ] ], [ "::transition", [ "::transition", [ 0, [ "sbcnc8a", "transition:color 80ms ease" ] ] ] ], [ "::user-select", [ "::user-select", [ 0, [ "s1iy45h3", "user-select:none" ] ] ] ], [ ":hover:color", [ ":hover:color", [ 0, [ "s1ytnaev", "color:var(--up-bright)" ] ] ] ] ]), undefined ] ] ];
 const console_cap = 300;
 const status = new5("Loading the compiler\u{2026}", "src/playground.vl:281:23");
 const diagnostics = new6([  ], "src/playground.vl:282:51");
@@ -2989,7 +3121,7 @@ mount_root("app", ($F) => {
 VilanPlayground.init("#editor", VilanPlayground.example("counter"));
 VilanPlayground.startCompiler((event) => {
 	const kind = event.kind;
-	let $eM = null;
+	let $eR = null;
 	if (kind === "ready") {
 		set3(can_format, event.canFormat, [ 1 ], "src/playground.vl:463:15");
 		set3(can_platform, event.canPlatform, [ 1 ], "src/playground.vl:464:17");
@@ -3012,7 +3144,7 @@ VilanPlayground.startCompiler((event) => {
 		if (!(event.changed)) {
 			set(confirm_target, "", [ 1 ], "src/playground.vl:491:20");
 		}
-		$eM = undefined;
+		$eR = undefined;
 	} else if (kind === "command") {
 		const command = event.command;
 		if (command === "run") {
@@ -3024,7 +3156,7 @@ VilanPlayground.startCompiler((event) => {
 		} else if (command === "mode") {
 			set(mode, event.name, [ 1 ], "src/playground.vl:502:10");
 		}
-		$eM = undefined;
+		$eR = undefined;
 	} else if (kind === "formatted") {
 		const declined = event.declined;
 		if (declined !== "") {
@@ -3034,7 +3166,7 @@ VilanPlayground.startCompiler((event) => {
 		} else {
 			set(status, "Format made no changes.", [ 1 ], "src/playground.vl:513:12");
 		}
-		$eM = undefined;
+		$eR = undefined;
 	} else if (kind === "shared") {
 		if (event.copied) {
 			set(status, "Link copied to the clipboard.", [ 1 ], "src/playground.vl:517:12");
@@ -3043,33 +3175,33 @@ VilanPlayground.startCompiler((event) => {
 			set(status, "Link ready in the address bar.", [ 1 ], "src/playground.vl:520:12");
 			flash_share("Link ready");
 		}
-		$eM = undefined;
+		$eR = undefined;
 	} else if (kind === "checked") {
 		const count = apply_diagnostics(event);
-		let $eN = null;
+		let $eS = null;
 		if (event.ok) {
 			if (event.platform === "node") {
 				set(status, "No problems (server check, vilan " + event.version + ").", [ 1 ], "src/playground.vl:528:13");
 			} else {
 				set(status, "No problems (vilan " + event.version + ").", [ 1 ], "src/playground.vl:530:13");
 			}
-			$eN = undefined;
+			$eS = undefined;
 		} else if (count === 1) {
 			set(status, "1 problem; see the diagnostics.", [ 1 ], "src/playground.vl:533:12");
 		} else {
 			set(status, "" + count + " problems; see the diagnostics.", [ 1 ], "src/playground.vl:535:12");
 		}
-		$eM = $eN;
+		$eR = $eS;
 	} else if (kind === "result") {
 		apply_diagnostics(event);
-		let $eO = null;
+		let $eT = null;
 		if (event.platform === "node") {
 			if (event.ok) {
 				set(status, "Server program checks clean (vilan " + event.version + ").", [ 1 ], "src/playground.vl:543:13");
 			} else {
 				set(status, "Build failed; see the diagnostics.", [ 1 ], "src/playground.vl:545:13");
 			}
-			$eO = undefined;
+			$eT = undefined;
 		} else {
 			set3(console_lines, [  ], [ 1 ], "src/playground.vl:548:19");
 			if (event.ok) {
@@ -3082,13 +3214,13 @@ VilanPlayground.startCompiler((event) => {
 				run_token.v = "";
 				VilanPlayground.clearProgram();
 			}
-			$eO = undefined;
+			$eT = undefined;
 		}
-		$eM = $eO;
+		$eR = $eT;
 	} else if (kind === "crash") {
 		set(status, "The compiler crashed on this input; it has been restarted. Please report the program that did it.", [ 1 ], "src/playground.vl:565:11");
 	}
-	return $eM;
+	return $eR;
 });
 window.addEventListener("message", (host_event) => {
 	const message = host_event.data;
