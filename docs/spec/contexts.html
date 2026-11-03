@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -431,12 +431,29 @@ accepted but is the trap: the literal is injected, <code>provide</code> is not, 
 what <code>provide</code> registers belongs to the owner <code>while_on</code>’s caller was
 made with, and disposing <code>owner</code> takes nothing back. The checker warns
 when such a parameter — one whose type carries no <code>owner_scope</code>, answering
-a <code>View</code> or nothing — is called inside a body that establishes an owner
+nothing — is called directly by a body that establishes an owner
 (<code>swap</code>, <code>when</code>, <code>each</code>, <code>run_with_owner</code>, an overlay’s <code>attach</code>, a
-clause-typed field): “<code>probes</code> is a closure parameter called inside
-<code>swap</code>’s body, which establishes an owner … type it
-<code>(sync |…| View) context owner_scope</code> so it takes the owner at the call”.
-The clause on the parameter is the fix in every case.</p>
+clause-typed field): “<code>provide</code> is a closure parameter called inside
+<code>run_with_owner</code>’s body, which establishes an owner … type it
+<code>(sync || void) context owner_scope</code> so it takes the owner at the call”.
+The clause on the parameter is the fix.</p>
+<p><strong>A closure parameter answering a view takes the owner at the call.</strong> A
+<code>fun</code>’s parameter whose closure type answers <code>View</code> — or a <code>Slot</code>, the
+trait the UI places — carries <code>context owner_scope</code> by default, and the
+<code>sync</code> marker with it: <code>fun with_org(body: |Org| View): View</code> declares
+<code>body: (sync |Org| View) context owner_scope</code>, so everything <code>body</code> builds
+— every effect, every store hold — belongs to the body that calls it and
+is released with that body, which is where a view is shown. The implied
+clause is part of the parameter’s type like a written one: it threads,
+lands and is restricted exactly as §8.5 says above (a literal argument is
+injected; the parameter can be called, forwarded or passed to <code>run</code>, and
+storing it in a field needs a field typed with the clause), and a type
+printed in a diagnostic shows it. Writing it anyway is accepted and adds
+nothing; a clause naming another context keeps it after the implied one
+(<code>(|str| View) context page_focus</code> is <code>context (owner_scope, page_focus)</code>). An <code>async</code>-marked parameter, and an <code>external</code> function’s,
+keep what they wrote. A closure answering anything else — <code>void</code>, a
+value — keeps capturing at creation: an event handler’s registrations
+belong to the component that armed it.</p>
 <h2 id="86-declared-requirements-the-context-clause-on-a-fun"><a class="header" href="#86-declared-requirements-the-context-clause-on-a-fun">8.6 Declared requirements: the <code>context</code> clause on a <code>fun</code></a></h2>
 <p>A function’s requirement is <strong>inferred</strong> from its body by default (§8.3):
 it is whatever its body transitively reads, and it flows to every caller.

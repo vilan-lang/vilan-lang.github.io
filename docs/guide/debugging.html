@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -438,9 +438,12 @@ A map changes no byte of the program it describes: the script is the same with
 it and without it, but for the comment that names it.</p>
 <h2 id="who-woke-this-effect-the-reactive-trace"><a class="header" href="#who-woke-this-effect-the-reactive-trace">Who woke this effect: the reactive trace</a></h2>
 <p><code>trace(true)</code> (<code>std::reactive::trace::trace</code>) writes a line to stderr for every subscriber a
-write wakes, naming the write and the cell:</p>
-<pre><code class="language-text">[reactive] effect #4 woken by cell #1 (made at src/main.vl:6:14), set at src/main.vl:12:2
+write wakes, naming where it was made, the write and the cell:</p>
+<pre><code class="language-text">[reactive] effect #4 at src/views.vl:12:4 woken by cell #1 (made at src/main.vl:6:14), set at src/main.vl:12:2
 </code></pre>
+<p>An effect, a derivation (<code>.memo()</code>, <code>.distinct()</code>, <code>.switch(..)</code>) and a UI
+binding (<code>&lt;p&gt;{count}&lt;/p&gt;</code>, <code>bind_text</code>, <code>each</code>) each name your line that made
+them.</p>
 <p>In the VS Code debugger the lines are in the Debug Console too, and a stop in
 an effect a turn ran later — at the end of a <code>batch</code>, or on a microtask — has
 the write that woke it below a label naming the cause in the Call Stack. The

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -218,15 +218,17 @@ children is worth splitting. A directory with no body (the pure namespace
 above) has nothing to load and costs nothing. Emission is unaffected: it
 follows reachability, so a parent body nothing references contributes no
 output.</p>
-<p><strong>What a parent DOES contribute is its <code>impl</code> blocks.</strong> Items are reached
-by a module’s own path and nothing below it; implementations are not
-items, and a plain <code>import pkg::a::b;</code> admits every block declared along
-the path — <code>a</code>’s as well as <code>a::b</code>’s. So an extension impl written in a
-directory’s body arrives in any file that imports a module beneath it,
-without that file naming <code>a</code>, and <code>a.vl</code> is the place to put one that
-every child’s importer should have. <code>only</code> declines them all and an impl
-selector takes the blocks it names (§4.3); a block the declaring module
-does not <code>export</code> is not admitted at all (§4.8).</p>
+<p><strong>A parent’s <code>impl</code> blocks arrive only when something names it.</strong> A plain
+<code>import pkg::a::b;</code> admits the blocks of the module its leaf stands in —
+<code>b</code>’s, or <code>a</code>’s when <code>b</code> is an item of <code>a</code> — and never a directory body
+above the leaf (§4.3.1). A block written in <code>a.vl</code> reaches a file that
+imports <code>pkg::a</code> or a name from it, that selects it (<code>import pkg::a::(impl T);</code>), or whose package prelude re-exports the admission
+(§4.7) — the prelude is the place for a block every file of a package
+should have. Before v0.54.0 the path’s directory bodies were admitted too;
+a file that leaned on that gets B688’s refusal, naming the import to add.
+<code>only</code> declines a statement’s blocks and an impl selector takes the blocks
+it names (§4.3); a block the declaring module does not <code>export</code> is not
+admitted at all (§4.8).</p>
 <h2 id="42-the-three-namespaces"><a class="header" href="#42-the-three-namespaces">4.2 The three namespaces</a></h2>
 <p>A path’s first segment selects a namespace:</p>
 <ul>
@@ -314,28 +316,42 @@ without one, and the imported item is the same item under a second
 spelling — go-to-definition on <code>Document</code> lands on <code>Json</code>, and a rename
 of <code>Json</code> rewrites the alias with every other reference to it. The form
 reaches a set member too (<code>import a::{ b as x, c };</code>), and a re-export
-publishes the alias (<code>export import a::b as c;</code> publishes <code>c</code>).</p>
+publishes the alias (<code>export import a::b as c;</code> publishes <code>c</code>). Two
+names are reserved and no alias may bind them: <code>self</code> names the file’s
+own module and <code>super</code> its parent (§4.3.1), so <code>import a::b as self;</code>
+is refused.</p>
 </li>
 <li>
 <p><code>import std::list only;</code> binds the statement’s names and <strong>no
 implementations</strong>. A plain <code>import</code> brings every <code>impl</code> declared in the
-files on the path to its leaf — that is how an extension impl arrives —
-and <code>only</code> is the spelling that declines them.</p>
+module its leaf stands in — that is how an extension impl arrives — and
+<code>only</code> is the spelling that declines them.</p>
 </li>
 <li>
-<p><code>import std::list::{ (impl List&lt;i32&gt;) };</code> is an <strong>impl selector</strong>: a
-brace-set element that binds no name and admits exactly the <code>impl</code>
-blocks of the module whose subject unifies with the written type. A set
-naming one means “these implementations only”, so <code>only</code> is for
-statements without a selector. <code>_</code> is the placeholder — <code>(impl List&lt;_&gt;)</code>
-admits every <code>List</code> block whatever its element, and <code>(impl _)</code> admits
-every block the module declares — and no <code>type X</code> binders are written in
-a selector. <code>import std::list::{ (impl List&lt;i32&gt;)::first };</code> takes ONE
+<p><code>import std::list::(impl List&lt;i32&gt;);</code> is an <strong>impl selector</strong>: a
+projection of the module that binds no name and admits exactly the
+<code>impl</code> blocks it declares whose subject unifies with the written type.
+It is written bare after the module path when it is the statement’s
+one member — as <code>import a::b;</code> is the one-name form of <code>import a::{ b };</code> — and inside a brace set beside the names it travels with
+(<code>import std::list::{ List, (impl List&lt;i32&gt;) };</code>); <code>vilan fmt</code> writes
+the bare form for a one-member set. A set naming one means “these
+implementations only”, so <code>only</code> is for statements without a
+selector. Two symbols, two meanings: <strong><code>_</code> is
+unspecified</strong> — a hole, here an element left open, so <code>(impl List&lt;_&gt;)</code>
+admits every <code>List</code> block whatever its element (types §5.4); <strong><code>*</code> is
+everything</strong> — a set, so <code>(impl *)</code> admits every block the module
+declares, as <code>export *;</code> exports every item. <code>(impl _)</code>, the spelling
+before v0.54.0, is read as <code>(impl *)</code> with a steer, and <code>List&lt;*&gt;</code> is not
+a type. No <code>type X</code> binders are written in a selector. <code>import std::list::{ (impl List&lt;i32&gt;)::first };</code> takes ONE
 member into the type’s namespace for this file, and
 <code>::{ first, last }</code> takes several; a selector takes no <code>as</code>, because a
 method is called by name on a receiver. The subject resolves in the
 IMPORTING file’s scope: <code>impl S</code> after <code>import item::Struct as S;</code>
-reaches <code>S</code>, and <code>impl item::Struct</code> is the qualified spelling.</p>
+reaches <code>S</code>, and <code>impl item::Struct</code> is the qualified spelling. A path
+in the subject may also begin at a ROOT, at any position of the type —
+<code>(impl pkg::lib::overlay::Overlay)</code>, <code>(impl (pkg::d::T, std::e::U))</code>, <code>(impl List&lt;pkg::d::T&gt;)</code>, a closure or an array type —
+and resolves from that root as an import path’s first segment does
+(§4.3.1, row 11), whatever the importing file has imported.</p>
 </li>
 </ul>
 <p><code>use path</code> binds names from an already-visible type’s namespace without
@@ -350,6 +366,68 @@ which takes an item the module does not export and says so.</p>
 current platform’s layers (e.g. <code>std::web::ui</code> in a Node build) still loads,
 so its items type-check. The error is reported where platform-colored
 code becomes <strong>reachable</strong> from the build’s entry (§11).</p>
+<h3 id="431-what-an-import-means--the-elaboration"><a class="header" href="#431-what-an-import-means--the-elaboration">4.3.1 What an import means — the elaboration</a></h3>
+<p>Every import form above is sugar over three things, and this table is
+the normative definition of each (the design record is
+<a href="https://github.com/vilan-lang/proposals/blob/main/proposal/import-foundation.md"><code>import-foundation.md</code></a>):</p>
+<ul>
+<li>a <strong>root value</strong>, written <code>(import X)</code> — <code>X</code> is <code>pkg</code>, <code>std</code> or a
+dependency’s manifest name — which evaluates to the package’s module
+tree. A root is reached by evaluation, never by lookup: nothing in any
+scope is named <code>pkg</code>, which is what §4.2’s reservation means. A bare
+root head anywhere a path stands (<code>pkg::m::S</code>) reads as
+<code>(import pkg)::m::S</code>;</li>
+<li><strong>projections</strong> — <code>::name</code> on a module is its item or submodule (never
+both, §4.2), on a type its namespace member (§4.6); <code>::(impl T)</code> on a
+module is the set of its <code>impl</code> blocks whose subject unifies with <code>T</code>
+(<code>with Tr</code> narrows to the blocks implementing <code>Tr</code>), <code>::name</code> on that
+set the members so named, and <code>::*</code> every member of the set (or every
+export of a module). <code>::{ a, b }</code> is two projections of one value;</li>
+<li><strong><code>use P</code></strong> — the metalanguage’s binding form, not a keyword of the
+surface: a module, item or type member is bound under its leaf name (or
+the <code>as</code> name), and a set of blocks or members is <strong>admitted</strong> — its
+members join this file’s method namespace for their subjects (§4.6).
+<code>export use P</code> publishes the result too.</li>
+</ul>
+<p>The statement <code>import P;</code> is <code>use P′;</code> with <code>P′</code> the path under the
+bare-head rule. The forms, each as it elaborates (<code>a</code> a root-headed
+module path):</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>spelling</th><th>elaborates to</th></tr>
+</thead>
+<tbody>
+<tr><td><code>import a::b;</code></td><td><code>use a::b; use a::b::(impl *)::*;</code> — the leaf bound and the LEAF module’s blocks admitted (a leaf that is an item of <code>a</code> admits <code>a</code>’s). A directory body ABOVE the leaf admits nothing through it (§4.1): its blocks arrive through an import that names it, or a prelude. Before v0.54.0 the path’s bodies were admitted too — the one term the surface never wrote</td></tr>
+<tr><td><code>import a::b as c;</code></td><td><code>use a::b as c; use a::b::(impl *)::*;</code></td></tr>
+<tr><td><code>import a::{ b, c as d, self };</code></td><td><code>use a::b; use a::c as d; use a; use a::(impl *)::*;</code> — one <code>use</code> per member; <code>self</code> is the namespace the set sits in</td></tr>
+<tr><td><code>import a::b only;</code></td><td><code>use a::b;</code> — no admission term</td></tr>
+<tr><td><code>import a::{ (impl T) };</code></td><td><code>use a::(impl T)::*;</code> — these blocks and no other of <code>a</code>’s: a selector set IS the statement’s admission term, written out</td></tr>
+<tr><td><code>import a::{ (impl T with Tr) };</code></td><td><code>use a::(impl T with Tr)::*;</code></td></tr>
+<tr><td><code>import a::{ (impl T)::first };</code></td><td><code>use a::(impl T)::first;</code></td></tr>
+<tr><td><code>import a::{ (impl T)::{ first, last } };</code></td><td><code>use a::(impl T)::first; use a::(impl T)::last;</code></td></tr>
+<tr><td><code>import a::{ (impl *) };</code></td><td><code>use a::(impl *)::*;</code> — the plain form’s admission term, written out</td></tr>
+<tr><td><code>import a::(impl T);</code></td><td>the one-selector set without braces, as <code>a::b</code> is the one-name set without braces (A181; <code>vilan fmt</code> writes it so)</td></tr>
+<tr><td><code>import a::{ (impl pkg::x::T) };</code></td><td><code>use a::(impl (import pkg)::x::T)::*;</code> — the subject is a type path, whose head may be a root (A181)</td></tr>
+<tr><td><code>import a::{ #hidden };</code></td><td><code>use #a::hidden;</code> — the reach marker rides on the projection (§4.8)</td></tr>
+<tr><td><code>export *;</code></td><td><code>export use self::*;</code></td></tr>
+<tr><td><code>export import a::b;</code></td><td><code>export use a::b;</code></td></tr>
+<tr><td><code>export import a::(impl T);</code></td><td><code>export use a::(impl T)::*;</code> — a re-exported admission: importers of this module, and every file of a package whose prelude it is, admit the blocks</td></tr>
+<tr><td><code>export import a::*;</code></td><td><code>export use a::*;</code> — every name <code>a</code> publishes, published here as if declared here; written only as a re-export (a plain <code>import a::*;</code> is refused)</td></tr>
+<tr><td>the package prelude (§4.7)</td><td><code>use P::*;</code> for the prelude module’s exports, before every file’s first statement, as the weakest rung (§4.4)</td></tr>
+<tr><td><code>mod self;</code></td><td>the implicit <code>use (import pkg)::&lt;this file's path&gt; as self;</code> made explicit, as the host of the file’s attributes (§4.1)</td></tr>
+<tr><td><code>import pkg::m;</code> then <code>m::x</code></td><td><code>use (import pkg)::m; use (import pkg)::m::(impl *)::*;</code> then the binding <code>m</code> projected: a path whose head is a NAME in scope resolves the head by §4.4’s ladder and projects from there</td></tr>
+<tr><td><code>pkg::m::S</code> written inline, <code>(import pkg)::m::S</code></td><td>the bare and the explicit root head, in any position (not yet built: today refused as “<code>pkg</code> is a namespace, not a value”)</td></tr>
+<tr><td><code>self::x</code>, <code>super::x</code></td><td><code>(import pkg)::&lt;this file's module&gt;::x</code> and <code>(import pkg)::&lt;its parent&gt;::x</code> — two implicit, location-derived, reserved bindings every file begins with; <code>super</code> is one level (the bindings are not yet built; an import alias spelling either name is refused already)</td></tr>
+<tr><td><code>use T::{ a, b };</code> (§3.2’s <code>use</code> statement)</td><td><code>use T::a; use T::b;</code> with <code>T</code> a name in scope — the one surface statement whose head is not a root</td></tr>
+</tbody>
+</table>
+</div>
+<p>An inline path admits nothing: it is explicit at its site for what it
+NAMES — an item, a member named by path — and a bare method call on a
+receiver resolves only through what the file’s import statements and its
+prelude admit (<code>visibility.md</code> §3.2; the ruling the design record asks
+for, recommended this way).</p>
 <h2 id="44-scopes-and-shadowing"><a class="header" href="#44-scopes-and-shadowing">4.4 Scopes and shadowing</a></h2>
 <p>Scopes nest: module → function/impl → block → closure. Name lookup walks
 outward from the use site to the innermost binding. A <code>let</code>/<code>mut</code> binding
@@ -426,8 +504,8 @@ type written whole at the head — <code>[i32; 3]::default()</code> binds the im
 and <code>N</code> as <code>List&lt;str&gt;</code> binds <code>List</code>’s <code>T</code>.</p>
 <p>A type has <strong>one namespace per importing file</strong>, and receiver position is
 not part of a name. The namespace is the union of the <code>impl</code> blocks that
-file’s own import statements admit (§4.3): a plain <code>import a::b;</code> admits
-every block declared in <code>a</code>’s file and in every file on the path to it,
+file’s own import statements admit (§4.3), with the re-exported admissions
+of the modules it imports from and of its prelude (§4.7): a plain <code>import a::b;</code> admits every block declared in the module its leaf stands in,
 <code>import a::b only;</code> admits none, and
 <code>import a::{ (impl T) }</code> admits exactly the blocks whose subject unifies
 with <code>T</code>. A block’s members are what it declares AND the trait defaults it
@@ -571,6 +649,15 @@ declaration or an explicit import of a prelude name wins, silently, with
 no diagnostic (§4.4). A file that declares its own <code>fun print</code> gets its
 own; a file that imports <code>std::io::print</code> gets that import, and the
 import is simply redundant rather than an error.</p>
+<p><strong>A package’s prelude is where it admits its extension blocks once.</strong> A
+prelude module may re-export an admission — <code>export import pkg::app_overlay::(impl Overlay);</code> — and every file of the package admits
+those blocks with no import of its own (§4.3.1; any importer of a module
+that re-exports an admission takes it the same way). With the glob
+re-export, <code>export import std::web::prelude::*;</code>, a package prelude that
+extends std’s web set is two lines:</p>
+<pre><code class="language-vilan fragment">export import std::web::prelude::*;
+export import pkg::app_overlay::(impl pkg::lib::overlay::Overlay);
+</code></pre>
 <p><strong>A prelude is per package and never inherited.</strong> A dependency’s files
 resolve under the prelude <em>its</em> manifest declares — not its consumer’s,
 not a workspace root’s, and not per platform layer. Two packages that

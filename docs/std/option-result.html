@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -204,6 +204,7 @@ impl Option&lt;type T&gt; {
 	// always leaving a valid Option behind
 	fun take(&amp;mut self): Option&lt;T&gt;                   // Some(v) -&gt; None here, Some(v) out
 	fun replace(&amp;mut self, own value: T): Option&lt;T&gt;  // value in, old contents out
+	fun get_or_insert(&amp;mut self, lazy value: T): &amp;mut T borrows self   // fill a None, then the payload in place
 
 	// transformation
 	fun map&lt;U&gt;(own self, fn: |T| U): Option&lt;U&gt;
@@ -291,6 +292,11 @@ and hands the old back. Both leave a valid <code>Option</code> behind, which is 
 them the sanctioned way to move a value <em>out</em> of a place. For a <code>resource</code> this
 is the partial move that works through a loan, or out of an aggregate with a
 <code>Drop</code> inside (<code>self.slot.take()</code>), and <code>match opt.take() { Some(let c) =&gt; drop(c), None =&gt; {} }</code> is the conditional-teardown idiom.</p>
+<p><code>get_or_insert</code> fills a <code>None</code> with <code>value</code> — <code>lazy</code>, so evaluated only then —
+and answers a view of the payload, so what is written through it lands in the
+<code>Option</code> itself: <code>cache.get_or_insert(build()).push(x)</code>. On a map’s slot it is
+the entry idiom (<code>groups.slot(key).get_or_insert([]).push(row)</code>,
+<a href="collections.html#reading-and-writing-in-place">collections.md</a>).</p>
 <h2 id="resultt-e"><a class="header" href="#resultt-e"><code>Result&lt;T, E&gt;</code></a></h2>
 <pre><code class="language-vilan fragment">enum Result&lt;T, E&gt; { Ok(T), Err(E) }
 

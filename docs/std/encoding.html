@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,8 +174,8 @@
                     <main>
                         <h1 id="encoding-reference"><a class="header" href="#encoding-reference">Encoding reference</a></h1>
 <p>JSON (<code>std::json</code>), the codec-agnostic wire layer (<code>std::wire</code>), the binary
-codec (<code>std::binary</code>), raw bytes (<code>std::bytes</code>), and base64
-(<code>std::base64</code>).</p>
+codec (<code>std::binary</code>), raw bytes (<code>std::bytes</code>), base64 (<code>std::base64</code>), and
+percent-encoding (<code>std::url</code>).</p>
 <p>The short version: derive <code>Json</code> for JSON in/out at app boundaries, derive
 <code>Wire</code> for rpc payloads, and let the codecs do the rest. Everything below
 “Derives” here is plumbing you only meet when building custom transports or
@@ -572,6 +572,32 @@ reader’s are.</p>
 <pre><code class="language-vilan fragment">fun encode_url(bytes: Bytes): str
 fun decode_url(text: str): Option&lt;Bytes&gt;
 </code></pre>
+<h2 id="percent-encoding-stdurl"><a class="header" href="#percent-encoding-stdurl">Percent-encoding (<code>std::url</code>)</a></h2>
+<p>The pair for building and reading URLs, on every platform (node, the browser,
+native):</p>
+<pre><code class="language-vilan fragment">fun percent_encode(text: str): str   // encodeURIComponent's set
+fun percent_decode(text: str): str   // total: never fails
+</code></pre>
+<p><code>percent_encode</code> escapes every byte of the UTF-8 encoding as <code>%XX</code>
+(upper-case hex) except the unreserved <code>A-Z a-z 0-9 - _ . ! ~ * ' ( )</code>, so its
+answer is safe as one path segment, one query value, or a
+<code>Content-Disposition</code> filename. <code>percent_decode</code> reads escapes back and never
+fails: a malformed escape (<code>%zz</code>, a lone <code>%</code>) is not an escape and stays as
+written, and a run of escapes whose bytes are not UTF-8 (<code>%FF</code>, <code>%41%FF</code>)
+decodes to itself, byte for byte, while a good run beside it still decodes.</p>
+<pre><code class="language-vilan">import std::url::{ percent_decode, percent_encode };
+
+fun main() {
+	let name = "Q3 report/final é.pdf";
+	let link = i"/files/{percent_encode(name)}";
+	print(link);                                // /files/Q3%20report%2Ffinal%20%C3%A9.pdf
+	print(percent_decode("Q3%20report%2Ffinal%20%C3%A9.pdf") == name);   // true
+	print(percent_decode("100% sure, %zz%20"));  // "100% sure, %zz " — malformed pieces kept
+}
+</code></pre>
+<p>The two answer the same bytes on every backend. <code>std::web::router</code>
+re-exports <code>percent_decode</code>, which its <code>parse_path</code> and <code>parse_query</code> use on
+every piece.</p>
 
                     </main>
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -186,6 +186,7 @@
 fun space(step: i32): Length       // spacing scale: space(1) = 0.25rem
 
 impl Length {
+	fun dp(value: f64): Length     // design pixels: 1/16 rem; the PROPERTY picks rem or px
 	fun px(value: f64): Length
 	fun rem(value: f64): Length
 	fun em(value: f64): Length     // relative to the element's own font size
@@ -197,7 +198,17 @@ impl Length {
 	fun var(name: str): Length     // a CSS custom-property reference ("--w")
 	fun calc(expression: str): Length  // "100% - 2rem" — no calc(..) wrapper
 	fun raw(expression: str): Length   // a COMPLETE value, verbatim: "clamp(..)"
+
+	fun root_px(): f64             // 16 — the one constant: 16px = 1rem
+	fun as_rem(self): Length       // px, rem and dp lengths only
+	fun as_px(self): Length
+	fun as_dp(self): Length
+	fun rendered(self, role: Role): str  // a dp in role's unit; anything else as written
 }
+
+enum Unit { Dp, Px, Rem, Em, Pct, Vh, Vw, Text }
+enum Role { Rem, Px }              // the unit a property prefers for a dp
+// + - between lengths, * / by an f64; &lt; &lt;= &gt; &gt;= and == (see "Lengths are data")
 
 impl Color {
 	fun white(): Color
@@ -246,6 +257,75 @@ or <code>view.style_var</code> writing it at runtime). Both spell the name with 
 nothing says so until the page is wrong. <code>.alpha()</code> composes over it
 through the same relative-colour form, so a variable-backed colour
 translucifies exactly like a ramp token.</p>
+<h3 id="lengths-are-data"><a class="header" href="#lengths-are-data">Lengths are data</a></h3>
+<p>A <code>Length</code> is a number and a <code>Unit</code> — <code>Length::px(8)</code> is <code>8</code> of <code>Unit::Px</code>,
+rendered <code>8px</code> at the edge — or, for <code>auto</code>, the bare <code>0</code>, <code>var</code>, <code>calc</code>,
+<code>raw</code> and the <code>space</code> tokens, a <strong>text</strong> length (<code>Unit::Text</code>) that keeps
+its whole value. So lengths compute:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Expression</th><th>Renders</th></tr>
+</thead>
+<tbody>
+<tr><td><code>rem(1) + rem(0.5)</code></td><td><code>1.5rem</code> — one unit stays that unit</td></tr>
+<tr><td><code>px(8) * 1.5</code>, <code>px(8) / 2</code></td><td><code>12px</code>, <code>4px</code> — scaling a unit length scales its number</td></tr>
+<tr><td><code>dp(8) + dp(4)</code>, <code>dp(8) * 1.5</code></td><td><code>dp(12)</code> — a dp stays a dp, and its property picks the unit</td></tr>
+<tr><td><code>rem(0.5) + dp(1)</code>, <code>px(8) + dp(1)</code></td><td><code>0.5625rem</code>, <code>9px</code> — a dp is 1px at the root size, 1/16 rem, so it bridges the two</td></tr>
+<tr><td><code>px(8) + rem(0.5)</code></td><td><code>calc(8px + 0.5rem)</code> — two units are CSS’s own answer</td></tr>
+<tr><td><code>em(1) + pct(50)</code></td><td><code>calc(1em + 50%)</code></td></tr>
+<tr><td><code>space(4) * 2</code></td><td><code>calc(var(--space-4) * 2)</code> — a token composes through <code>calc</code></td></tr>
+<tr><td><code>space(4) + px(1)</code></td><td><code>calc(var(--space-4) + 1px)</code>, and <code>--space-4</code> is still declared</td></tr>
+<tr><td><code>(space(4) + px(1)) * 2</code></td><td><code>calc((var(--space-4) + 1px) * 2)</code> — a <code>calc</code> keeps composing</td></tr>
+<tr><td><code>zero() + px(3)</code></td><td><code>3px</code> — the bare <code>0</code> is the zero, never <code>calc(0 + ..)</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>A length built from several tokens declares every one of them on the sheet.
+<code>auto</code> is not a quantity and refuses arithmetic, and dividing by zero is
+refused — at build time, since a style is built in a <code>const</code>.</p>
+<p><code>as_rem</code>, <code>as_px</code> and <code>as_dp</code> convert between the three units with a fixed
+size, through <code>Length::root_px()</code> (16px = 1rem); on an <code>em</code>, a <code>%</code>, a
+viewport unit or a text length they fail the build, because those have no
+size until layout. Lengths of one unit compare by number, and <code>px</code>, <code>rem</code>
+and <code>dp</code> compare with each other through the same constant; comparing any
+other mix fails the build (“compare lengths in one unit; convert first”).
+<code>==</code> is structural: <code>px(16) == rem(1)</code> is <code>false</code>, since they are different
+CSS.</p>
+<h3 id="design-pixels-dp"><a class="header" href="#design-pixels-dp">Design pixels: <code>dp</code></a></h3>
+<p><code>Length::dp(8)</code> (<code>dp(8)</code> in a hole) is 8 pixels at the root size — 1/16
+rem, the <code>n / 16</code> an app would otherwise write at every site — and it has
+<strong>no unit of its own</strong>: the property that receives it picks one. The
+spacing and sizing builders write it in rem, so it follows the reader’s
+text size (<code>padding(dp(8))</code> is <code>padding:0.5rem</code>); the border widths write
+it in px, so a hairline stays one (<code>border(dp(1), gray(300))</code> is
+<code>border:1px solid var(--gray-300)</code>). That choice is the builder’s <strong>role</strong>,
+named beside it in <code>style.vl</code>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Role</th><th>Builders</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Role::Rem</code></td><td><code>gap</code>, <code>padding*</code>, <code>margin*</code>, <code>width</code>, <code>height</code>, <code>size</code>, <code>min_*</code>, <code>max_*</code>, <code>top</code>, <code>right</code>, <code>bottom</code>, <code>left</code>, <code>inset</code>, <code>radius</code>, <code>font_size</code>, <code>letter_spacing</code>, <code>line_height_length</code></td></tr>
+<tr><td><code>Role::Px</code></td><td><code>border</code>, <code>border_top</code>, <code>border_right</code>, <code>border_bottom</code>, <code>border_left</code> (the width)</td></tr>
+</tbody>
+</table>
+</div>
+<p>A property written by NAME — <code>raw</code>, <code>with_length</code>, a <code>css</code> block’s undotted
+declaration (which is <code>raw</code>, its several arguments through <code>piece_for</code>) —
+takes the role the name gives it: px for the hairlines (<code>border</code> and every
+border width, <code>outline</code>, <code>outline-width</code>, <code>outline-offset</code>, <code>box-shadow</code>),
+rem for every other property, a border’s radius, colour and style
+included. So a <code>css</code> block’s <code>border(dp(1), gray(300));</code> writes <code>1px</code>, the
+same rule as the dotted <code>.border(dp(1), gray(300))</code>. <code>with_length_as(property, value, role)</code> names the role outright (a custom property that holds a
+hairline). Where no property chooses at all — <code>piece</code>, <code>css_text()</code> — a
+<code>dp</code> is rem (<code>Length::rendered(role)</code> writes one in either). Only a <code>dp</code> is
+affected: <code>px(8)</code> means CSS px and
+<code>rem(0.5)</code> means rem in every property, and a <code>dp</code> composed into a <code>calc</code>
+(<code>dp(8) + space(4)</code>) is text from then on, written in rem. The numbers are
+exact — <code>dp(6)</code> is <code>0.375rem</code> — and <code>dp(0)</code> is <code>0rem</code> (<code>0px</code> in a border),
+a unit length like any other; the bare <code>0</code> is <code>zero()</code>.</p>
 <p><code>calc</code> wraps and <code>raw</code> does not: <code>Length::calc(e)</code> is
 <code>Length::raw("calc(" + e + ")")</code>. Write <code>calc</code> for arithmetic, <code>raw</code> for a
 value that is already whole — <code>clamp()</code>, <code>min()</code>, <code>max()</code>, <code>env()</code>,
@@ -353,6 +433,7 @@ too, since the family is a fact about the CSS property.</p>
 <p>Escape hatches:</p>
 <pre><code class="language-vilan fragment">fun raw&lt;V: CssValue&gt;(self, property: str, value: V): Style
 fun with_length(self, property: str, value: Length): Style
+fun with_length_as(self, property: str, value: Length, role: Role): Style
 fun with_color(self, property: str, value: Color): Style
 </code></pre>
 <p><code>CssValue</code> is what a declaration’s value may be: a <code>str</code> (a complete CSS
@@ -360,8 +441,9 @@ value, verbatim), a <code>Length</code>, or a <code>Color</code>. A <code>Length
 theme token — <code>space(4)</code>, <code>Color::blue(300)</code> — carries its own <code>:root</code>
 declaration onto the stylesheet, so <code>.raw("padding", space(4))</code> is never a
 dangling <code>var()</code>. <code>with_length</code> and <code>with_color</code> are <code>raw</code> at those two value
-types, kept for the spelling the surface has always had.</p>
-<p>Pass the value, not its text: <code>space(4).text</code> is the string
+types, kept for the spelling the surface has always had; a <code>dp</code> takes the
+role its property’s name gives it (above), and <code>with_length_as</code> names one.</p>
+<p>Pass the value, not its text: <code>space(4).css_text()</code> is the string
 <code>var(--space-4)</code> with the declaration left behind, and a <code>str</code> carries no
 token.</p>
 <p>Two free functions sit beside <code>raw</code>, both ambient inside a <code>css</code> block:</p>
@@ -377,8 +459,8 @@ types, for a position that wants the type.</p>
 sheet on the way past — <code>CssPiece</code> is <code>CssValue</code>’s twin over <code>str</code>,
 <code>Length</code>, <code>Color</code> and the numbers, because a part sits inside text that
 supplies the unit while a whole value must carry its own. A declaration
-with SEVERAL arguments joins them with a space through <code>piece</code>
-automatically; write it yourself only where the parts are glued:
+with SEVERAL arguments joins them with a space through <code>piece_for(property, value)</code>, <code>piece</code> with the property’s role, automatically; write <code>piece</code>
+yourself only where the parts are glued:
 <code>padding(i"calc({piece(space(4))} + 2px)");</code>.</p>
 <h2 id="conditions"><a class="header" href="#conditions">Conditions</a></h2>
 <p>A condition is a <strong>value</strong>, and a set of them is the same value. <code>on</code> puts a

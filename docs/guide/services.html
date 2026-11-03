@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -398,13 +398,15 @@ check is still what decides who may act.</p>
 <ul>
 <li>On the client they return <code>Result&lt;T, RpcError&gt;</code> and are implicitly
 awaited, like any async call.</li>
-<li><code>RpcError</code> tells you what went wrong, in six variants:
+<li><code>RpcError</code> tells you what went wrong, in eight variants:
 <code>Transport(str)</code> (couldn’t reach the server), <code>Decode(str)</code>,
 <code>Remote(str)</code> (the handler failed), <code>Contract(str)</code> (the connect-time
 check below refused a drifted server), <code>Unauthorized</code> (the credential
-will not open this connection) and <code>Unavailable</code> (the server is up and
+will not open this connection), <code>Unavailable</code> (the server is up and
 refusing for now — retry later, and re-authenticating is beside the
-point). Errors are values. Look at them and decide.</li>
+point), <code>Timeout</code> (<code>dial_within</code>’s deadline ran out) and <code>Cancelled</code>
+(the dial’s nursery was cancelled before it opened). Errors are values.
+Look at them and decide.</li>
 <li>At connect time, both sides compare a hash of the service’s shape. If
 a stale client meets a redeployed server, the connect fails cleanly —
 as <code>Contract(reason)</code> — instead of calls corrupting halfway. This is

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -193,7 +193,7 @@ generates for each type a <code>dbg</code> reaches, the same on both backends:</
 <tr><td>a struct</td><td><code>Point { x = 1, y = 2 }</code>, a field-less one by its name</td></tr>
 <tr><td>an enum variant</td><td><code>Shape::Circle(1.5)</code>, <code>Shape::Empty</code>; <code>Some(5)</code>, <code>None</code>, <code>Ok(1)</code>, <code>Err("no")</code></td></tr>
 <tr><td>a tuple, a list</td><td><code>(1, "two", 3.0)</code>, <code>[1, 2, 3]</code></td></tr>
-<tr><td>a string</td><td><code>"a \"quoted\" line\n"</code></td></tr>
+<tr><td>a string</td><td><code>"a \"quoted\" line\n"</code>; every other control character as <code>\u{..}</code> (<code>"\u{1b}[1m"</code>), so none reaches the terminal raw</td></tr>
 <tr><td>a float, an integer</td><td><code>3.0</code>, <code>0.25</code>, <code>1e+21</code>, <code>-0.0</code>; <code>7</code>, <code>-3</code></td></tr>
 <tr><td>a closure</td><td>`&lt;closure</td></tr>
 <tr><td>a <code>HashMap</code>, a <code>HashSet</code></td><td><code>HashMap { "ada" =&gt; 36 }</code>, <code>HashSet { "a", "b" }</code>, in insertion order</td></tr>

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -566,7 +566,11 @@ further in. A chain that fits stays on (or collapses back to) one line.</li>
 budget breaks one entry per line, with a trailing comma after every one
 — the last included, so adding an entry is a one-line diff. One that
 fits stays inline <em>without</em> a trailing comma, so the comma marks a
-split and nothing else.</li>
+split and nothing else. A literal that is a method’s receiver breaks
+the same way, the call riding its closing bracket — <code>Body {</code> ⏎ fields ⏎
+<code>}.size()</code> — wherever it stands: a statement’s value, another literal’s
+field, a <code>then</code>/<code>else</code> arm. Two links or more still split one link per
+line, below the receiver’s <code>}</code>.</li>
 <li>A struct literal’s field written long where the shorthand says the same
 thing — <code>A { x = x }</code> — is printed as the shorthand <code>A { x }</code>. The two are
 one construct with two spellings, and the formatter picks one; a field whose
@@ -733,6 +737,17 @@ tree whose prose is written narrower than its code — std’s is written to 84 
 would otherwise be re-filled to a width nobody chose the day it opted in. The
 key is read only when <code>wrap_comments</code> is on: with the knob off nothing is
 re-laid-out at any width.</p>
+<p><strong>A project changes two things about <code>vilan fmt</code>, and nothing else.</strong> Its
+<code>[fmt]</code> keys decide whether comments are re-filled and to what width, and its
+<code>generated</code> root (below) decides which files are not formatted at all. Every
+other rule — how code is laid out, the import block, the width code is laid
+out to — is the file’s own, the same in any tree or in none. So a file
+formatted on its own, with no <code>vilan.toml</code> above it, takes the defaults: its
+comments stay as written even where its package would re-fill them. A copy of
+one of std’s modules formatted in a scratch directory re-fills nothing that
+<code>vilan fmt</code> in std re-fills, because std’s manifest opts in. To see what a
+file’s tree does to it, format it in its tree, or put its <code>vilan.toml</code> beside
+the copy.</p>
 <p><strong>Ten classes are never re-filled</strong>, because re-wrapping them destroys
 something: fenced code blocks; list items (an item is a line, and joining two
 makes one); tables; headings; block quotes; a line with an interior run of two

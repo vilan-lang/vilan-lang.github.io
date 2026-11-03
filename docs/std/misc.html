@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -253,8 +253,9 @@ of the results by spawning the <code>settle_all</code> itself:
 <p><code>nursery(body)</code> joins every task spawned in the body’s dynamic extent:
 the body’s value passes through, the first-observed failure re-raises
 with its spawn origin, and everything else is absorbed. <code>cancel()</code>
-aborts the nursery’s signal; <code>sleep</code> and <code>fetch</code> carry the ambient
-signal automatically, so in-flight IO in the extent rejects promptly,
+aborts the nursery’s signal; <code>sleep</code>, <code>fetch</code> and the rpc dial
+(<code>connect</code>, <code>connect_socket</code>, <a href="rpc.html#cancelling-a-dial-and-a-deadline"><code>dial_within</code></a>)
+carry the ambient signal automatically, so in-flight IO in the extent rejects promptly,
 and those rejections absorb as cancellation echoes. <code>Task::race</code> +
 <code>cancel()</code> is the race idiom: first settled wins, the losers’ IO stops.
 Spec: <a href="../spec/execution.html">§7.7</a>. <code>ambient_signal()</code> bridges host
@@ -588,7 +589,7 @@ over <code>entries()</code> binds each <code>(key, value)</code> the same way:</
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../std/process.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../std/image.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -602,7 +603,7 @@ over <code>entries()</code> binds each <code>(key, value)</code> the same way:</
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../std/process.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../std/image.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

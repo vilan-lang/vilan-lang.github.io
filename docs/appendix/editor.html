@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -530,7 +530,7 @@ sees it.</p>
 <tr><th>Action</th><th>Does</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Organize Imports</strong></td><td>sorts each top-level import run into canonical order (the same key <code>vilan fmt</code> uses), prunes unused leaves (shrinking a brace set rather than deleting it), and strips imports the prelude already covers. A statement whose every leaf is unused is <em>rewritten</em> rather than deleted when the module’s file is where an <code>impl</code> the code calls a method from lives — <code>impl</code>s travel with any import that reaches the module, so deleting the statement would break the build. The rewrite is the narrowest statement that keeps it: an impl SELECTOR (<code>import pkg::a::b;</code> becomes <code>import pkg::a::{ (impl Style) };</code>) when everything the file uses from that module is one subject’s blocks, and the bare module import (<code>import pkg::a;</code>) when it is not. A selector is a leaf like any other: one whose implementation the file never calls a method from fades and prunes, one it does use stays. Visibility spellings are preserved verbatim, never rewritten: a reach marker (<code>#helper</code>) stays on its leaf, a trailing <code>only</code> stays on its statement, and a selector keeps the type it was written with. The module-level <code>export *;</code> is not an import and does not move — a NEW leading import is inserted above it, so the marker keeps the slot <code>vilan fmt</code> gives it, just below the file’s import run. Offered only when it would change something</td></tr>
+<tr><td><strong>Organize Imports</strong></td><td>sorts each top-level import run into canonical order (the same key <code>vilan fmt</code> uses), prunes unused leaves (shrinking a brace set rather than deleting it), and strips imports the prelude already covers. A statement whose every leaf is unused is <em>rewritten</em> rather than deleted when the module’s file is where an <code>impl</code> the code calls a method from lives — <code>impl</code>s travel with any import that reaches the module, so deleting the statement would break the build. The rewrite is the narrowest statement that keeps it: an impl SELECTOR (<code>import pkg::a::b;</code> becomes <code>import pkg::a::(impl Style);</code>) when everything the file uses from that module is one subject’s blocks, and the bare module import (<code>import pkg::a;</code>) when it is not. A selector is a leaf like any other: one whose implementation the file never calls a method from fades and prunes, one it does use stays. Visibility spellings are preserved verbatim, never rewritten: a reach marker (<code>#helper</code>) stays on its leaf, a trailing <code>only</code> stays on its statement, and a selector keeps the type it was written with. The module-level <code>export *;</code> is not an import and does not move — a NEW leading import is inserted above it, so the marker keeps the slot <code>vilan fmt</code> gives it, just below the file’s import run. Offered only when it would change something</td></tr>
 <tr><td><strong>Add All Missing Imports</strong></td><td>applies every unambiguous import quickfix in the file at once, skipping the ambiguous ones</td></tr>
 <tr><td><strong>Keep <code>auto</code> types current</strong></td><td>rewrites every stale <code>auto</code> in the file and fills every bare one (<code>source.fixAll.vilan.auto</code>, what <code>vilan.autoTypes.onSave</code> runs) — nothing while the file has any other error</td></tr>
 </tbody>

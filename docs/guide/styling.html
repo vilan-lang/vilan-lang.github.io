@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -486,6 +486,24 @@ does not model — <code>Length::raw("clamp(1100px, 100vw, 1920px)")</code>,
 writing <em>arithmetic</em> and want the wrapper supplied; use <code>raw</code> when the
 value is already whole, which is also what lets one named expression be
 reused across several properties. An empty value stops the build.</li>
+<li><strong>Lengths compute.</strong> A <code>Length</code> is a number and a unit (or, for a
+token, <code>calc</code>, <code>var</code>, <code>raw</code>, <code>auto</code> and <code>zero()</code>, its text), so <code>+</code> and
+<code>-</code> take two lengths and <code>*</code> and <code>/</code> a number: <code>Length::rem(1) + Length::rem(0.5)</code> is <code>1.5rem</code>, and a mix CSS cannot fold — <code>px</code> with
+<code>rem</code>, any token — is written as the <code>calc(..)</code> CSS would want,
+<code>space(4) + Length::px(1)</code> being <code>calc(var(--space-4) + 1px)</code> with
+<code>--space-4</code> still declared. <code>as_rem()</code>/<code>as_px()</code> convert at 16px = 1rem,
+and lengths compare with <code>&lt;</code>; both refuse, at build time, a unit whose
+size depends on layout (<code>em</code>, <code>%</code>, <code>vh</code>, <code>vw</code>).</li>
+<li><strong><code>dp</code>, design pixels.</strong> <code>Length::dp(8)</code> (<code>dp(8)</code> in a hole) is the
+8 of a design measured in pixels, at the root size — 1/16 rem — and the
+property decides how to write it. In <code>padding(dp(8))</code> it is
+<code>padding:0.5rem</code>, so the spacing grows with the reader’s text size, as
+rem should; in a border, <code>.border(dp(1), gray(300))</code>, it is <code>1px</code>, so a
+hairline stays a hairline at any text size. Spacing and sizing are rem,
+border widths are px, and anywhere no property chooses (<code>raw</code>, a block’s
+undotted <code>border(..)</code> declaration, <code>piece</code>) it is rem. <code>px(..)</code> and
+<code>rem(..)</code> keep meaning exactly that unit everywhere; reach for <code>dp</code> when
+the number came from a design, and for <code>px</code> when you mean CSS pixels.</li>
 <li><strong><code>Color</code></strong> has <code>Color::white()</code>, <code>Color::black()</code>,
 <code>Color::transparent()</code>, <code>Color::current()</code> (CSS’s <code>currentColor</code> — the
 element’s own text colour, for a border or an SVG fill that follows
@@ -570,8 +588,8 @@ does. <code>with_length</code> and <code>with_color</code> are the same thing un
 and stay available; they are <code>raw</code> at those two value types.</p>
 <p>Reach for the value, not its text. A token is a <em>pair</em> — the reference
 (<code>var(--space-4)</code>) and the <code>:root</code> line that declares it — and reading the
-<code>.text</code> field of one hands over the reference alone, so <code>space(4).text</code> puts a
-<code>var()</code> on the sheet that nothing defines. (That is the field, not the
+text of one hands over the reference alone, so <code>space(4).css_text()</code> puts a
+<code>var()</code> on the sheet that nothing defines. (That is the rendering, not the
 <code>Length::raw(..)</code> constructor above, which is a value in its own right and
 declares nothing to lose.) Passing <code>space(4)</code> itself keeps the pair together.</p>
 <p>The typed surface grows by demand — if you find yourself reaching for <code>raw</code>

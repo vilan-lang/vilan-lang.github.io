@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1138,9 +1138,9 @@ fun trace(on: bool)
 (the browser’s console) for every <strong>wake</strong> a write causes — each subscriber the
 write reached, as it runs — naming what woke it:</p>
 <pre><code class="language-text">[reactive] effect #4 at src/views.vl:30:8 woken by cell #1 (made at src/main.vl:6:14), set at src/main.vl:12:2
-[reactive] derivation #2 woken by cell #1, set at src/main.vl:9:7
-[reactive] effect #5 woken by cell #3, set by derivation #2
-[reactive] effect #6 woken by derivation #2
+[reactive] derivation #2 at src/main.vl:8:40 woken by cell #1, set at src/main.vl:9:7
+[reactive] effect #5 at src/views.vl:31:4 woken by cell #3 (made at src/main.vl:8:40), set by derivation #2
+[reactive] effect #6 at src/views.vl:34:11 woken by derivation #2
 </code></pre>
 <p>A subscriber is an <code>effect</code> (it acts on a value) or a <code>derivation</code> (a pipe’s
 stage, a <code>.memo()</code>, a relay), numbered by its id; a cell by its identity,
@@ -1153,6 +1153,17 @@ write through a <code>S: Signal&lt;T&gt;</code> bound or a <code>dyn Signal</cod
 concrete cell’s does. A write std makes inside a traced wake (a <code>.memo()</code>
 publishing its value) says <code>set by</code> that wake instead, and a relay’s wake
 (<code>distinct</code>, <code>switch</code>) names the relay.</p>
+<p>A <strong>derivation</strong> names where your code made it: a seal (<code>.memo()</code>, <code>.cell()</code>,
+the <code>_global</code> twins, a collection’s <code>.memo()</code>, <code>unzip</code>, <code>selector</code>) at that
+call — and the cell it writes is “made at” the same place — and a stage’s own
+relay (<code>.distinct()</code>, <code>.distinct_by(..)</code>, <code>.switch(..)</code>, <code>.switch_some(..)</code>,
+<code>.and_then(..)</code>, <code>.then_some(..)</code>, <code>.flatten()</code>, and a tracked read’s edge in a
+<code>derive</code> or an <code>effect</code>) at the call that made the stage. A <strong>UI binding</strong>
+names the element that made it: <code>std::web::ui</code>’s helpers (<code>.child(..)</code> and the
+<code>{hole}</code> it stands for, <code>bind_*</code>, <code>attr</code>, <code>show</code>, <code>style_var</code>, the <code>each</code> /
+<code>when</code> / <code>swap</code> forms) track their caller from your call down to the
+subscription, so <code>&lt;p&gt;{count}&lt;/p&gt;</code>’s line says <code>effect #3 at src/views.vl:12:4</code>,
+the <code>&lt;p&gt;</code>, where it named nothing.</p>
 <p>The lines are the same bytes on both backends. Turn the trace on before the
 cells you want named are made (a cell remembers where it was made only while
 the trace is on), and off with <code>trace(false)</code>. The scheduler reaches the trace

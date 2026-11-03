@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -429,6 +429,8 @@ enum RpcError {
 	Contract(str),    // connect-time shape mismatch (old client vs new server)
 	Unauthorized,     // 401/403 at the handshake: not with this credential
 	Unavailable,      // 503 at the handshake: not now — the app's own refusal
+	Timeout,          // `dial_within`'s deadline ran out: retry later, and say so
+	Cancelled,        // the dial's nursery was cancelled before it opened
 }
 </code></pre>
 <p>Infrastructure failures only: an <em>application</em> “not found” belongs in the
@@ -452,6 +454,8 @@ disagree</strong>:</p>
 <tr><td><code>Failure(Remote(..))</code> — a handler failed</td><td><strong>500</strong></td></tr>
 <tr><td>a <code>Service::factory</code> service on this leg</td><td><strong>501</strong>, as an envelope</td></tr>
 <tr><td><code>Failure(Unavailable)</code></td><td><strong>503</strong></td></tr>
+<tr><td><code>Failure(Timeout)</code> — a handler’s own upstream dial ran out of time</td><td><strong>504</strong></td></tr>
+<tr><td><code>Failure(Transport(..))</code> or <code>Failure(Cancelled)</code> — client-side readings a server never produces</td><td><strong>500</strong></td></tr>
 <tr><td>a non-POST on <code>{mount}rpc</code></td><td><strong>405</strong>, <code>Allow: POST</code></td></tr>
 </tbody>
 </table>
@@ -528,6 +532,48 @@ anything that needs current mirrors.</p>
 </code></pre>
 <p>Keep a hook short — it runs inside the reconnect loop’s own extent, so a long
 round-trip inside one holds the reconnect open behind it.</p>
+<h2 id="cancelling-a-dial-and-a-deadline"><a class="header" href="#cancelling-a-dial-and-a-deadline">Cancelling a dial, and a deadline</a></h2>
+<pre><code class="language-vilan fragment">fun dial_within&lt;T&gt;(ms: i32, dial: async || Result&lt;T, RpcError&gt;): Result&lt;T, RpcError&gt;
+</code></pre>
+<p>A dial (<code>connect</code>, <code>connect_with</code>, <code>connect_socket</code>, <code>dial_socket</code>) honours
+the cancel signal of the nursery it runs in. Cancelled before the socket
+opens, it closes the half-open socket and answers <code>Err(RpcError::Cancelled)</code>
+(<code>connect_socket</code>’s <code>Err</code> is the sentence <code>"the dial was cancelled"</code>); an
+abort during the backoff between attempts ends it the same way, rather than
+counting as one more failed attempt. An abort that lands after the socket
+opened is not the dial’s business: the connection is returned as before and
+stays the caller’s — it is not torn down with the nursery, and neither is its
+reconnect loop. So the <code>std::task</code> race idiom bounds a dial, and
+<code>dial_within</code> is that idiom in one call: <code>Err(RpcError::Timeout)</code> when <code>ms</code>
+pass first, with the dial cancelled, so no socket it would have opened later
+is left running.</p>
+<pre><code class="language-vilan norun">import std::io::print;
+import std::result::Result::{ Err, Ok };
+import std::rpc::{ RpcError, SocketDuplex, dial_socket, dial_within };
+
+fun open(url: str): Result&lt;SocketDuplex, RpcError&gt; {
+	dial_socket(url, []).map_err(|failure| RpcError::Transport(failure.message()))
+}
+
+fun main() {
+	match dial_within(4000, || open("ws://localhost:4000/")) {
+		Ok(let _socket) =&gt; print("connected"),
+		Err(RpcError::Timeout) =&gt; print("Can't reach the server"),
+		Err(let other) =&gt; print(other.debug()),
+	}
+}
+</code></pre>
+<p>It wraps any dial — a generated client’s is
+<code>dial_within(4000, || KoltClient::connect_with(url, codec, protocols))</code>. The
+two errors are two answers to two questions: <code>Timeout</code> is about time (show
+it, retry later), <code>Cancelled</code> about the caller’s own intent (there is nothing
+to report). When the dial wins, only the deadline’s timer is called off, never
+the nursery, so nothing the connection set up is cancelled with it. The
+nursery joins the losing dial before <code>dial_within</code> returns, which is what makes
+“nothing left running” a guarantee — and why a hand-written dial that ignores
+cancellation (no std IO, no <code>ambient_signal()</code>) holds the answer until it
+settles. On the native backend <code>dial_within</code> runs over any dial; the WebSocket
+dial itself is JS-only there today.</p>
 <h2 id="transports"><a class="header" href="#transports">Transports</a></h2>
 <pre><code class="language-vilan fragment">trait Transport {
 	fun call(self, request: Frame): Task&lt;Result&lt;Frame, str&gt;&gt;;
@@ -599,7 +645,7 @@ per disconnect, through <code>drop_session</code>.</p>
 <pre><code class="language-vilan fragment">fun connect_socket(url: str): Result&lt;SocketDuplex, str&gt;   // dial + announcement (backoff); offers `vilan-rpc`
 fun connect_socket_with(url: str, protocols: List&lt;str&gt;): Result&lt;SocketDuplex, str&gt;
 fun dial_socket(url: str, protocols: List&lt;str&gt;): Result&lt;SocketDuplex, DialFailure&gt;
-enum DialFailure { Unreachable(str), Refused(str) }   // Refused carries "401"/"403"/"503"
+enum DialFailure { Unreachable(str), Refused(str), Cancelled }   // Refused carries "401"/"403"/"503"
 impl SocketDuplex {
 	fun transport(self): SocketTransport
 }

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -233,11 +233,13 @@ instead the block’s <strong>trailing expression</strong> and supplies the bloc
 <h2 id="32-imports-and-exports"><a class="header" href="#32-imports-and-exports">3.2 Imports and exports</a></h2>
 <pre><code class="language-text">import  = "import" path-branch [ "only" ] ;   (* impls-free, §4.3 *)
 use     = "use"    path-branch ;
-path-branch = [ "#" ] NAME [ "::" ( path-branch | path-set )
+path-branch = [ "#" ] NAME [ "::" ( path-branch | path-set
+                                   | [ "#" ] impl-selector     (* bare, §4.3 *)
+                                   | "*" )   (* a glob: `export import` only, §4.7 *)
                    | "as" NAME ] ;        (* alias, §4.3 *)
 path-set    = "{" set-element { "," set-element } [ "," ] "}" ;
-set-element = path-branch | impl-selector ;
-impl-selector = "(" "impl" type [ "with" type ] ")"
+set-element = path-branch | [ "#" ] impl-selector ;
+impl-selector = "(" "impl" ( type | "*" ) [ "with" type ] ")"
                 [ "::" ( MEMBER | "{" MEMBER { "," MEMBER } [ "," ] "}" ) ] ;
 NAME        = IDENT | "true" | "false" ;   (* variant re-exports *)
 
@@ -304,6 +306,11 @@ does the same for one head. A keyword set no order makes legal (<code>async cons
 shape — <code>[</code> then a name — leads a head; <code>export *;</code> takes none. The
 marker is written once: a second <code>export</code> on one declaration is refused
 (B492).</p>
+<p>So is each attribute but <code>[hint(..)]</code>, which a declaration may carry more
+than once: a repeat is an <strong>error</strong> at the repeat, read as if it were not
+written, so nothing else is reported for it — <code>`[deprecated]` is written twice over `f`; keep one</code>. A repeated <code>[derive(..)]</code> is read with the lists merged,
+and the error spells the merge: <code>[derive(PartialEq)]</code> ⏎ <code>[derive(Json)]</code> ⏎
+<code>struct Pair</code> — <code>merge them, `[derive(PartialEq, Json)]`</code> (E355).</p>
 <p>A <code>#</code> before a path element is the <strong>reach</strong> marker:
 <code>import pkg::a::{ #hidden };</code> imports an item the module does not export,
 deliberately (§4.3, §4.8).</p>
@@ -319,18 +326,26 @@ says the statement brings its names and no implementations (§4.3). Like
 <code>as</code> it is <strong>contextual</strong> — an ordinary identifier everywhere else, read
 as the modifier only where the whole path has ended — and a <code>use</code> refuses
 it, because a <code>use</code> never brought an implementation along.</p>
-<p>An <code>impl-selector</code> is a brace-set ELEMENT that binds no name: it says
-which of the module’s <code>impl</code> blocks this file admits, and its optional
-<code>::</code> tail names the members it takes (§4.3). <code>_</code> stands for any type at
-an argument position (<code>(impl List&lt;_&gt;)</code>) and <code>(impl _)</code> selects every
-implementation the module declares; a selector writes no <code>type X</code> binders
-and takes no <code>as</code>. <code>with TRAIT</code> names the block by the trait it implements,
+<p>An <code>impl-selector</code> binds no name: it says which of the module’s <code>impl</code>
+blocks this file admits, and its optional <code>::</code> tail names the members it
+takes (§4.3). It follows a module path — bare, <code>import a::(impl T);</code>, the
+one-selector spelling exactly as <code>import a::b;</code> is the one-name spelling
+of <code>import a::{ b };</code>, or as an element of a set beside the names it
+travels with — and <code>vilan fmt</code> writes a one-member set holding one in the
+bare form, so braces appear only with two or more members. At the head of
+a statement, with no module before it, a selector is refused. <code>_</code> stands for any type at
+an argument position (<code>(impl List&lt;_&gt;)</code>, a hole) and <code>(impl *)</code> selects
+every implementation the module declares (a set; <code>(impl _)</code>, the earlier
+spelling, is read as <code>(impl *)</code> with a steer); a selector writes no
+<code>type X</code> binders and takes no <code>as</code>. <code>with TRAIT</code> names the block by the trait it implements,
 as its declaration does — <code>(impl Box with One)</code> takes <code>impl Box with One</code>
 and no other <code>Box</code> block — which is how a block with no declarations of its
 own (all defaults, or a marker) is named; the trait resolves in the
 importing file’s scope, as the subject does. The subject is the ordinary <code>type</code> production, and it
 resolves in the IMPORTING file’s scope, so <code>impl S</code> reaches an alias that
-file bound and <code>impl item::Struct</code> is the qualified spelling.</p>
+file bound and <code>impl item::Struct</code> is the qualified spelling; a path in it
+may also begin at a ROOT — <code>pkg</code>, <code>std</code>, a dependency — anywhere a path
+stands in the type (<code>(impl (pkg::d::T, std::e::U))</code>, <code>(impl List&lt;pkg::d::T&gt;)</code>), resolved as an import path’s first segment is.</p>
 <p>A <code>::</code> path may <strong>not cross a line break</strong>: the segment after a <code>::</code>
 must begin on the same line the <code>::</code> is on. Without the rule <code>a::</code> at the
 end of a line joins whatever the next line starts with — <code>style::</code> then
@@ -1047,6 +1062,11 @@ same three places, with the same escape: <code>if (css { … }).class_list() != 
 (up to the enclosing bracket or comma) folds; parenthesize to narrow
 (§9).</li>
 </ul>
+<p>A struct literal names <strong>every</strong> field. There is no update form: a tuple
+spreads (<code>(0, ..pair, 9)</code>), but <code>Point { x = 1, ..origin() }</code> is refused at
+the <code>..</code>, the literal read without its tail, so the fields the tail was to
+fill are not reported missing as well (B657). Bind the base and assign the
+fields that change: <code>mut p = origin(); p.x = 1;</code>.</p>
 <p>A closure’s body is one expression (commonly a block). <code>||</code> in operand
 position always begins a zero-parameter closure; logical-or is only
 recognized between two operands.</p>

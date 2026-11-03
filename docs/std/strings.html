@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -285,6 +285,41 @@ is an error, not a truncation.</li>
 </code></pre>
 <p>Empty ranges are legal, so the natural boundary cases all work:
 <code>substring(0, 0)</code>, <code>substring(len(), len())</code>, and <code>substring(0, len())</code>.</p>
+<h3 id="a-cut-inside-a-surrogate-pair"><a class="header" href="#a-cut-inside-a-surrogate-pair">A cut inside a surrogate pair</a></h3>
+<p>Every index into a <code>str</code> counts <strong>UTF-16 code units</strong> — <code>len()</code>, <code>substring</code>,
+<code>code_at</code>, and the answers of <code>index_of</code> and <code>last_index_of</code> alike — so a
+character outside the Basic Multilingual Plane (<code>😀</code>, most emoji, many CJK
+extension characters) is two units, a <em>surrogate pair</em>. A bound can therefore
+fall <em>between</em> the two halves of one character, and half a character is not text:
+the native backend cannot hold it at all.</p>
+<p>The rule, the same on both backends: <strong>a bound inside a pair moves back to the
+start of that character.</strong></p>
+<ul>
+<li><code>substring(start, end)</code> checks the range first (<code>0 &lt;= start &lt;= end &lt;= len()</code>, as above), then floors each bound: <code>"😀".substring(0, 1)</code> is <code>""</code>,
+<code>"😀".substring(1, 2)</code> is <code>"😀"</code>, and <code>"a😀b".substring(2, 4)</code> is <code>"😀b"</code>.
+Flooring keeps the property a cut must have — <code>s.substring(0, k) + s.substring(k, s.len())</code> is <code>s</code> at every <code>k</code> — so a scanner that steps one
+unit at a time and appends <code>substring(i, i + 1)</code> rebuilds its text exactly
+(the first half answers <code>""</code>, the second the whole character).</li>
+<li><code>code_at(index)</code> answers the code UNIT at <code>index</code> — either half of a pair, as
+a number (<code>"😀".code_at(1)</code> is <code>56832</code>). A number is representable on both
+backends, so it is not rounded.</li>
+<li><code>index_of</code> / <code>last_index_of</code> answer where a needle STARTS, and a needle is
+text, so the answer is always a character boundary.</li>
+<li><code>split("")</code> and <code>replace("", to)</code> cut between <strong>characters</strong>, not units:
+<code>"a😀b".split("")</code> is three pieces and <code>"a😀b".replace("", "-")</code> is
+<code>"-a-😀-b-"</code>.</li>
+</ul>
+<p>So no <code>str</code> operation answers half a character on either backend, and a
+truncation written <code>text.substring(0, max)</code> stays within <code>max</code> units, one fewer
+when the cut would have split a pair.</p>
+<pre><code class="language-vilan">fun main() {
+	let face = "😀";
+	print(face.len());                                  // 2
+	print(face.substring(0, 1).is_empty());             // true — floored to 0
+	print(face.substring(1, 2) == face);                // true
+	print("a😀b".split("").len());                       // 3
+}
+</code></pre>
 <h3 id="cutting-a-known-affix"><a class="header" href="#cutting-a-known-affix">Cutting a known affix</a></h3>
 <p>Reaching for <code>substring</code> to drop a leading or trailing marker is what invited
 the arithmetic in the first place. Prefer the verbs, which return <code>Option&lt;str&gt;</code>

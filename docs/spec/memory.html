@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -291,6 +291,12 @@ later write through <code>v</code> does not reach; and <code>out = *v</code> and
 copy alike. A constructor that KEEPS its argument (<code>Shared::new</code>, <code>ListCell::of</code>)
 declares it <code>own</code>, so a value its caller still reads afterwards is copied in
 rather than shared with the new cell.</p>
+<p>A tuple written only to be taken apart — <code>match (self, other)</code>, the shape a
+derived <code>PartialEq</code> over an enum takes — is not a construction: nothing outlives
+the match, so its patterns bind pieces of the places it names, and each capture
+copies (or shares, when nothing can write the place) exactly as a capture of
+that place alone would. A payload-less variant named bare (<code>None</code>) names no
+place at all: every use is a fresh value.</p>
 <p>The return reads <strong>through</strong> a view to reach the place, because a returned
 expression can name storage without being a place: <code>fun grab(&amp;self): Inner { &amp;self.inner }</code> hands back a reference, and <code>fun get(h: &amp;Holder): (i32, i32) { peek(h) }</code> hands back what the <code>borrows</code> callee projected — which is <code>h</code>’s
 storage, named in the call. Both copy, exactly as the bare <code>self.inner</code> /

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -273,12 +273,12 @@ projection’s name, as a call; a type that does not derive <code>Storable</code
 projections, so its store reads no fields this way. The handle’s own fields
 are std’s <code>[internal]</code> machinery and are not members outside std, so a field
 of <code>T</code> named <code>path</code> or <code>root</code> reads <code>T</code>’s field.</p>
-<p>A handle is data: copying it allocates nothing, and it has no owner. It is a
-<code>Source&lt;T&gt;</code>, so every pipe, effect and binding takes one (<code>city.derive(..)</code>,
-<code>&lt;p&gt;{city}&lt;/p&gt;</code>), and a <code>Signal&lt;T&gt;</code>, so anything that writes a signal writes it
-(<code>set_with</code>, <code>optimistic</code>, <code>bind_value</code>). Every handle to one path of one store
-has one <code>identity()</code>, so a body that <code>track()</code>s a handle on every run keeps one
-edge on it.</p>
+<p>A handle is data: copying it allocates nothing, a projection allocates one step
+of its path, and it has no owner. It is a <code>Source&lt;T&gt;</code>, so every pipe, effect
+and binding takes one (<code>city.derive(..)</code>, <code>&lt;p&gt;{city}&lt;/p&gt;</code>), and a <code>Signal&lt;T&gt;</code>,
+so anything that writes a signal writes it (<code>set_with</code>, <code>optimistic</code>,
+<code>bind_value</code>). Every handle to one path of one store has one <code>identity()</code>, so
+a body that <code>track()</code>s a handle on every run keeps one edge on it.</p>
 <h2 id="what-a-write-wakes"><a class="header" href="#what-a-write-wakes">What a write wakes</a></h2>
 <blockquote>
 <p>A write wakes exactly the live slots whose value changed.</p>
@@ -416,7 +416,12 @@ write to the enum’s own handle (<code>presence.set(..)</code>).</li>
 </ul>
 <p>A payload variant’s handle also has <code>live()</code>, its discriminant as a <code>StoreFlag</code>,
 and <code>assume()</code>, the payload as a <code>Store&lt;P&gt;</code> for code that only runs while the
-variant is live.</p>
+variant is live. <code>assume()</code> needs an owner — it stands a keeper on the variant
+that goes with the ambient owner, as an <code>on_cleanup</code> does — so a call outside
+every owner is refused at compile time (“context <code>owner_scope</code> is read here,
+but this code can be reached without an enclosing <code>run</code>”); <code>when_live</code> calls it
+inside its body’s owner, and code of your own wraps it in <code>run_with_owner</code> or
+<code>comp</code>.</p>
 <h3 id="when_live--rebuild-only-on-the-variant"><a class="header" href="#when_live--rebuild-only-on-the-variant">when_live — rebuild only on the variant</a></h3>
 <p><code>when_some</code> hands its body a cell of the WHOLE payload, so every binding in the
 body reruns on every write to any of its fields. <code>when_live</code> follows only the
@@ -427,9 +432,12 @@ discriminant, and hands the body the payload’s own <code>Store&lt;P&gt;</code>
 when it goes away; a write inside the payload wakes only the bindings that read
 what changed. Should a derivation in the body run in the turn that ends the
 variant — a derivation settles before the effect that tears the body down — it
-reads the LAST payload a read through the live variant saw (a message edited
-and then deleted shows its edit, never the text the body was built over), and a
-write then lands nowhere. On the server it renders the live payload once.</p>
+reads the payload as it stood when the variant ended — a message edited and
+then deleted shows its edit, never the text the body was built over — and a
+write then lands nowhere. The handle keeps nothing on a read: a read below it
+lends the payload in place, and the payload is copied once, by the write that
+ends the variant, for that fallback — released with the body’s owner. On the
+server it renders the live payload once.</p>
 <h2 id="collections"><a class="header" href="#collections">Collections</a></h2>
 <p>A collection field takes its declared shape — no derive to write:</p>
 <ul>
@@ -437,7 +445,11 @@ write then lands nowhere. On the server it renders the live payload once.</p>
 slot is that key’s alone: a write to key 7 wakes the readers of key 7 and
 nobody else. <code>at(key).set(None)</code> removes the key, and <code>.some()</code> reaches into
 a present value. <code>insert(key, value)</code> and <code>remove(key)</code> are the same two
-writes.</li>
+writes. The step lends the map’s slot IN PLACE on both backends
+(<code>HashMap::peek</code> / <code>slot</code>): a read of one field through
+<code>at(key).some().title()</code> copies only that field, however large the value it
+sits in, and a write through <code>at(key)</code> lands where the value is — no copy out
+and back in.</li>
 <li>a <strong><code>HashSet&lt;T&gt;</code></strong> likewise: <code>contains(x)</code> is a <code>Store&lt;bool&gt;</code>, and
 <code>set(true)</code>/<code>set(false)</code> (or <code>insert</code>/<code>remove</code>) add and remove <code>x</code>.</li>
 <li>a <strong><code>List&lt;T&gt;</code></strong> is a SEQUENCE node. Every <code>SequenceCell</code> write — <code>push</code>,

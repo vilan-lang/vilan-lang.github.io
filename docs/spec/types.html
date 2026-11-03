@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -473,7 +473,11 @@ writes <code>Self</code>, and a body that spells a name out is told which head w
 declare it.</p>
 <p>A binder the head never mentions again needs no name, and is written <code>_</code> —
 the wildcard of <code>Some(_)</code> and <code>let _</code>, in the impl-subject position, with
-the same optional bound:</p>
+the same optional bound. <code>_</code> means <strong>unspecified</strong> everywhere it appears —
+a name not kept (<code>let _</code>), a pattern that binds nothing, an element left
+open (<code>List&lt;_&gt;</code>), a length left open (<code>[type T; _]</code>) — where <code>*</code> means
+<strong>everything</strong>, a set operation (<code>export *;</code>, <code>::*</code>, <code>(impl *)</code>; names
+§4.3), and is never a type: <code>List&lt;*&gt;</code> is not written.</p>
 <pre><code class="language-vilan fragment">impl Source&lt;Option&lt;_: Source&lt;type U&gt;&gt;&gt; { … }    // a signal of an optional signal
 impl Pair&lt;_, _&gt; { … }                           // for every Pair, whatever it holds
 </code></pre>

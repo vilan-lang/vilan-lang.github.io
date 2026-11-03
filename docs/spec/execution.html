@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -272,7 +272,12 @@ the trait’s member, every implementation of it takes the hidden parameter
 whether or not it writes the attribute, and every call naming the member
 passes a location — a static call, a call through a generic bound and a call
 through a <code>dyn</code> object’s table alike. An implementation that marks a member
-its trait does not declare tracking is refused. std’s <code>panic</code>, <code>assert</code>, <code>unwrap</code>,
+its trait does not declare tracking is refused, and so is the attribute on a
+trait member the compiler calls with no argument list to pass a site through:
+an operator’s member (<code>add</code>, <code>eq</code>, <code>lt</code>, … — an operator resolves its trait by
+name, so a program’s own <code>trait Add</code> is one), a <code>to_string</code> answering <code>str</code>
+(a concatenation or an i-string hole renders a bounded operand through it),
+<code>Drop::drop</code> and <code>Try</code>’s members. std’s <code>panic</code>, <code>assert</code>, <code>unwrap</code>,
 <code>unwrap_err</code>, <code>expect</code>, <code>expect_err</code> and <code>List::remove</code>/<code>insert</code> are
 tracking, and so is every subscript: <code>xs[i]</code> out of bounds reports the
 subscript’s own site.</p>

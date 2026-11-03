@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3381610f.js";
+            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-41cea96b.js"></script>
+        <script src="../toc-5297bdd6.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,7 +174,8 @@
                     <main>
                         <h1 id="process-modules-reference"><a class="header" href="#process-modules-reference">Process modules reference</a></h1>
 <p>The process modules (Node/Deno/Bun builds): <code>std::db</code>, <code>std::http</code>,
-<code>std::fs</code>, <code>std::process</code>, <code>std::rpc::server</code>, <code>std::watch</code>. Task-oriented
+<code>std::fs</code>, <code>std::process</code>, <code>std::rpc::server</code>, <code>std::watch</code> — and
+<code>std::image</code>, which has <a href="image.html">a page of its own</a>. Task-oriented
 usage: <a href="../guide/persistence.html">Persistence and the server</a>.</p>
 <h2 id="stddb-sqlite"><a class="header" href="#stddb-sqlite">std::db: SQLite</a></h2>
 <pre><code class="language-vilan fragment">[resource]
@@ -267,8 +268,25 @@ impl Request {
 	fun method(self): str
 	fun body(self): str      // the body as text, read on the first call
 	fun bytes(self): Bytes   // the same body raw (binary POSTs)
+	fun body_stream(self): BodyReader   // the body a piece at a time
 	fun max_body_bytes(own self, limit: usize): Request   // this request's cap (a route's)
 	fun header(self, name: str): Option&lt;str&gt;   // a request header, case-insensitive
+}
+impl BodyReader {
+	async fun next(self, size: usize): Option&lt;Bytes&gt;   // at most `size` bytes; None at the end
+}
+
+// multipart/form-data, read part by part off the stream
+impl Multipart {
+	fun of(request: Request): Multipart              // 400 unless a form with a boundary
+	async fun next_part(self): Option&lt;Part&gt;           // skips what was left of the last part
+}
+// Part { name: str, filename: Option&lt;str&gt;, content_type: str, headers: List&lt;(str, str)&gt;, reader: PartReader }
+impl Part {
+	fun header(self, name: str): Option&lt;str&gt;
+}
+impl PartReader {
+	async fun next(self, size: usize): Option&lt;Bytes&gt;   // None at the part's end
 }
 impl Response {
 	fun builder(): ResponseBuilder
@@ -304,6 +322,10 @@ interface, so anything on the network can reach it (and Windows asks the
 user about the firewall). A server meant for this machine only (a desktop
 app’s own, a dev tool, a test) binds the loopback: <code>.host("127.0.0.1")</code>, or
 <code>"::1"</code> for IPv6. <code>url()</code> then names that address.</p>
+<p><strong>A handler that panics is answered <code>500</code>.</strong> The panic is reported once on
+stderr — <code>unhandled task error (spawned in an http request handler): panicked at &lt;site&gt;: &lt;message&gt;</code>, the line any unobserved task’s failure
+prints — and the client gets <code>500 Internal Server Error</code> with <code>Connection: close</code> (a response that had already started streaming is cut off instead).
+The server goes on serving the next request, on both backends.</p>
 <p><strong>Request bodies: capped, and read when the handler asks.</strong> A handler runs
 on the request’s head. The body stays on the wire until the handler calls
 <code>bytes()</code> or <code>body()</code>; the first call reads it whole, and a later one
@@ -360,9 +382,99 @@ one within the cap is drained (node discards it and keeps the connection
 alive for the client’s next request; the native server, which closes every
 connection, discards it before the close so the client reads its response
 rather than a reset), and one over the cap, or chunked, is not — the
-response says <code>Connection: close</code> and the connection is closed. The body is
-read whole into memory when it is read; streaming it as it arrives is not
-here yet.</p>
+response says <code>Connection: close</code> and the connection is closed.</p>
+<p><strong>Reading a body as a stream.</strong> <code>bytes()</code> holds the whole body in memory
+at once, which is the right shape for a form or a JSON call and the wrong
+one for an upload. <code>body_stream()</code> reads it a piece at a time instead:
+<code>next(size)</code> answers the next piece — at most <code>size</code> bytes, whatever has
+arrived up to that — and <code>None</code> once the body has ended, so an upload
+costs a piece of memory rather than its whole size:</p>
+<pre><code class="language-vilan norun">import std::http::{ Request, Response, Server };
+
+fun upload(request: Request): Response {
+	let reader = request.max_body_bytes(1024 * 1024 * 1024).body_stream();
+	mut total = 0usize;
+	for {
+		let piece = match reader.next(65536) {
+			Some(let piece) =&gt; piece,
+			None =&gt; jump break,
+		};
+		total = total + piece.len();   // write it to a file, hash it, parse it
+	}
+	Response::builder().body(i"received {total} bytes").build()
+}
+
+fun main() {
+	Server::builder().port(3000).on_request(|request| upload(request)).build().start();
+}
+</code></pre>
+<p>A short piece does not mean the end — only <code>None</code> does. The connection
+reads only as far as the calls ask, so a client sending faster than the
+handler reads is made to wait rather than buffered. The cap is the same
+cap, counted as the pieces arrive: a declared <code>Content-Length</code> over it is
+refused at the first <code>next</code>, and a chunked body at the piece that crosses
+it, with whatever the handler has already read behind it — the same <code>413</code>,
+and the handler ends at that <code>next</code>. A stream the handler leaves
+unfinished is treated as an unread body (drained within the cap, closed
+past it).</p>
+<p>A body is read <strong>whole or as a stream, not both</strong>: <code>bytes()</code>/<code>body()</code>
+after <code>body_stream()</code>, or the other way round, is a fault in the handler.
+It is answered <code>500 Internal Server Error</code> with a sentence naming both
+calls, the same sentence goes to the server’s stderr, and the handler ends
+there. A second <code>body_stream()</code> is a second reader of the one stream.</p>
+<p><strong>Reading a form.</strong> A browser’s file upload is <code>multipart/form-data</code>:
+the fields and files of a form, one after the other in one body, each with
+a small head of its own. <code>Multipart::of(request)</code> reads such a body part by
+part off the stream — <code>next_part()</code> answers the next <code>Part</code> with its
+<code>name</code>, its <code>filename</code> (<code>Some</code> for a file input), its <code>content_type</code>
+(<code>text/plain</code> when the part did not say) and its bytes through
+<code>part.reader</code>, whose <code>next(size)</code> ends at the part’s end exactly as the
+body’s does:</p>
+<pre><code class="language-vilan norun">import std::http::{ Multipart, Request, Response, Server };
+
+fun upload(request: Request): Response {
+	let form = Multipart::of(request.max_body_bytes(100 * 1024 * 1024));
+	mut stored = 0usize;
+	for {
+		let part = match form.next_part() {
+			Some(let part) =&gt; part,
+			None =&gt; jump break,
+		};
+		if part.filename.is_none() {
+			jump continue;   // a plain field: skipped unread
+		}
+		for {
+			let piece = match part.reader.next(65536) {
+				Some(let piece) =&gt; piece,
+				None =&gt; jump break,
+			};
+			stored = stored + piece.len();   // write it where the file goes
+		}
+	}
+	Response::builder().body(i"stored {stored} bytes").build()
+}
+
+fun main() {
+	Server::builder().port(3000).on_request(|request| upload(request)).build().start();
+}
+</code></pre>
+<p>Only a window on the stream is held, so a 10 MiB file costs what one
+<code>next</code> asks for. A part left unread is skipped by the next <code>next_part</code>.
+The cap is the request’s, over the whole form, and the body is the
+stream’s, so the one-way rule applies: <code>bytes()</code> on the same request is
+refused. A malformed form is answered <code>400 Bad Request</code> with the defect
+named, and the handler ends there: a <code>Content-Type</code> that is not
+<code>multipart/form-data</code> or names no <code>boundary</code> (at <code>of</code>), a delimiter line
+with something after the boundary, a part header without a colon, a part
+head over 64 KiB, and a body that ends before the closing <code>--boundary--</code>.
+A mounted rpc service still refuses a form on its POST leg (its CSRF gate,
+see std::rpc::server).</p>
+<p>Measured on Linux, one 64 MiB upload hashed from the stream grows the
+native server’s peak memory by under a mebibyte, where reading 25 MiB whole
+costs 25 MB; on node the stream holds one socket read at a time and the
+peak is the garbage collector’s lag behind node’s own read buffers (about
+20–30 MB, below a bare <code>on("data")</code> loop’s), where reading 25 MiB whole
+costs 54 MB.</p>
 <p><code>Request::header</code> reads one header off the request, and the conditional
 request built on it ships whole. <code>etag_of</code> mints a <strong>strong validator</strong> for
 a body: the first 32 hex digits of its sha-256 with the quotes included,
@@ -1239,22 +1351,23 @@ impl KeyDecoder {
 	fun finish(&amp;mut self)              // the end of input: what is pending resolves
 }
 </code></pre>
-<p>The loop reads like <code>read_line</code>’s, and ends on the keys the program chooses
-(a leg’s comma-separated patterns are an or-pattern):</p>
+<p><code>for key in keys</code> walks the keys through <code>next</code> and ends with the input
+(<code>None</code>); the loop LOANS the handle, so raw mode is restored after the loop, on
+both backends. It ends earlier on the keys the program chooses (a leg’s
+comma-separated patterns are an or-pattern):</p>
 <pre><code class="language-vilan norun">import std::debug::Debug;
 import std::io::{ print, write };
-import std::option::Option::{ self, None, Some };
 import std::process::{ Key, keys };
 
 fun main() {
 	let keys = keys();
 	mut row = 0;
-	for {
-		match keys.next() {
-			Some(Key::Char("q")), Some(Key::Ctrl("c")), Some(Key::Escape), None =&gt; jump break,
-			Some(Key::Up) =&gt; row -= 1,
-			Some(Key::Down) =&gt; row += 1,
-			Some(let other) =&gt; print(other.debug()),
+	for key in keys {
+		match key {
+			Key::Char("q"), Key::Ctrl("c"), Key::Escape =&gt; jump break,
+			Key::Up =&gt; row -= 1,
+			Key::Down =&gt; row += 1,
+			let other =&gt; print(other.debug()),
 		}
 		write(i"\rrow {row}   ");
 	}
@@ -1379,7 +1492,7 @@ fun main() {
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../std/misc.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../std/image.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -1393,7 +1506,7 @@ fun main() {
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../std/misc.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../std/image.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
