@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-c020c95c.js";
+            window.path_to_searchindex_js = "../searchindex-0fb020b6.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-5297bdd6.js"></script>
+        <script src="../toc-acf8d271.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -176,7 +176,9 @@
 <p>Signals, effects, ownership, turns, and the higher-level cells. Concepts and
 usage patterns: the <a href="../guide/reactive.html">reactive guide</a>. The fine-grained
 version of a whole struct — a handle per field, generated from the type — is a
-<a href="store.html">store</a>.</p>
+<a href="store.html">store</a>. A reactive wrapper for a structure of your own, with slots
+that follow their items, is a <a href="lens.html">lens</a> (<code>std::reactive::lens</code>, imported
+by name).</p>
 <p>Import what you use:</p>
 <pre><code class="language-vilan fragment">import std::reactive::{
 	Signal, SignalCell, Source, Flow, Pipe, MemoCell, MaybeSignal, Subscriber, Subscription,

@@ -1,0 +1,751 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Lenses - The Vilan documentation</title>
+
+
+        <!-- Custom HTML head -->
+        <link rel="stylesheet" href="/chrome/header.css">
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-25ad18c5.css">
+        <link rel="stylesheet" href="../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../css/chrome-d279d366.css">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-8a28418f.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-f8cb5b1f.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-1af6398e.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-265c7273.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../theme/css/vilan-09a971c3.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-0fb020b6.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-acf8d271.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <nav class="s1onro1c s80ttlx si5ywm6 s1dq5yi8 sc9brgc shx44pg" style="--nav-fade:1"><div class="s1vtg8d6 s16t4hls s10oplpw sp4tc1m s1eamei2 sbiovxm s1yv3ji6 s1rpzmas s2310lv"><a class="sbiovxm s8myyqn s1rpzmas sayk2u1 skjzgjh s1odkmbv ssxqrx8 svrgm1f sbcnc8a s1iy45h3 s1ytnaev" href="/"><span class="sowfjmu s178hbq8 s22x9bm syz58y5 scqkrg6 s11mtiwm s1iy45h3 svfmjlf" aria-hidden="true"></span><span>VILAN</span></a><div class="sbiovxm s8myyte"><a class="sayk2u1 ssxqrx8 svrgm1f sbcnc8a s1iy45h3 s1ytnaev" href="/#install">Install</a><a class="sayk2u1 ssxqrx8 svrgm1f sbcnc8a s1iy45h3 s1ytnaev" href="/docs/tour/hello-vilan.html">Learn</a><a class="sayk2u1 ssxqrx8 svrgm1f sbcnc8a s1iy45h3 s1ytnaev" href="/playground/">Playground</a><a class="sayk2u1 ssxqrx8 svrgm1f sbcnc8a s1iy45h3 s1ytnaev" href="/docs/">Docs</a></div></div></nav>                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The Vilan documentation</h1>
+
+                    <div class="right-buttons">
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="stdreactivelens-reference"><a class="header" href="#stdreactivelens-reference">std::reactive::lens reference</a></h1>
+<p>One reactive wrapper for any structure, with the shape passed in. A plain
+<code>List&lt;T&gt;</code>, a <code>HashMap&lt;K, V&gt;</code> or a rope of your own goes in; what comes out is
+the only way to write it, and every write says what it did. Readers ask for
+exactly as much as they watch: the whole value, one item (a <strong>slot</strong>, which
+follows its item wherever it goes), or one part of one item. Concepts: the
+<a href="../guide/reactive.html">reactive guide</a>; the pipe model this builds on:
+<a href="reactive.html">std::reactive</a>.</p>
+<pre><code class="language-vilan fragment">import std::reactive::lens::{ SequenceLens, KeyedLens, SetLens, Indexed, Resizable, Lookup, Membership, Change, sequence, indexed, keyed, set };
+</code></pre>
+<p>The module is reached <strong>by name</strong>. <code>std::reactive</code> does not re-export it, so a
+program that never imports it does not pay to analyze it. <code>ListCell</code>,
+<code>HashMapCell</code> and <code>HashSetCell</code> are not built on it: they stay what
+<a href="cells.html">Cells</a> describes, and the lens is the answer for a structure std
+has no cell for, and for rows whose slots follow their items.</p>
+<h2 id="at-a-glance"><a class="header" href="#at-a-glance">At a glance</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Item</th><th>Kind</th><th>One line</th></tr>
+</thead>
+<tbody>
+<tr><td><code>sequence(value)</code> / <code>SequenceLens::over(value)</code></td><td>constructor</td><td>a lens over anything <code>Resizable&lt;T&gt;</code>, addressed by position</td></tr>
+<tr><td><code>indexed(value)</code> / <code>SequenceLens::indexed(value)</code></td><td>constructor</td><td>a READ-ONLY sequence lens over anything <code>Indexed&lt;T&gt;</code>: written through <code>update</code> and <code>plan</code> only</td></tr>
+<tr><td><code>keyed(value)</code> / <code>KeyedLens::over(value)</code></td><td>constructor</td><td>a lens over anything <code>Lookup&lt;K, V&gt;</code>, addressed by key</td></tr>
+<tr><td><code>set(value)</code> / <code>SetLens::over(value)</code></td><td>constructor</td><td>a lens over anything <code>Membership&lt;T&gt;</code>, addressed by member</td></tr>
+<tr><td><code>Lens&lt;S, A, T, H&gt;</code></td><td>struct</td><td>the lens itself: structure, address, item, handler</td></tr>
+<tr><td><code>SequenceLens&lt;S, T&gt;</code>, <code>KeyedLens&lt;S, K, V&gt;</code></td><td>struct</td><td>the same lens, naming only the types that matter; <code>lens()</code> hands out the full one</td></tr>
+<tr><td><code>.slot(at)</code></td><td>method</td><td>an <code>ItemSlot</code>: a <code>Source&lt;Option&lt;T&gt;&gt;</code> that follows the item now at <code>at</code></td></tr>
+<tr><td><code>.part(name, read)</code></td><td>method on a slot</td><td>one part of one item, as a source of its own</td></tr>
+<tr><td><code>.slot(at).sequence(..)</code></td><td>method on a slot</td><td>a lens over a sequence inside the item</td></tr>
+<tr><td><code>.items()</code></td><td>method</td><td>std’s op feed of values, for <code>map</code>, <code>filter</code>, <code>memo</code>, folds</td></tr>
+<tr><td><code>.rows()</code></td><td>method</td><td>the op feed of slots, for <code>each</code></td></tr>
+<tr><td><code>.index_by(key)</code></td><td>method</td><td>a list that is also looked up by id: <code>find(key)</code> is a slot</td></tr>
+<tr><td><code>.entries()</code></td><td>method on a keyed lens</td><td>std’s map op feed, for the map operators</td></tr>
+<tr><td><code>.members()</code></td><td>method on a set lens</td><td>std’s set op feed (<code>SetOp</code>), a <code>SetSource</code></td></tr>
+<tr><td><code>.update(..)</code>, <code>.plan(..)</code></td><td>methods</td><td>a write the shape has no method for, naming its changes</td></tr>
+<tr><td><code>sequence_checked(value)</code></td><td>constructor</td><td>a sequence lens that checks every <code>update</code> and <code>plan</code></td></tr>
+<tr><td><code>Change&lt;A&gt;</code></td><td>enum</td><td>what one write did: <code>Splice</code>, <code>Insert</code>, <code>Replace</code>, <code>Delete</code>, <code>Edit</code>, <code>Move</code>, <code>Reset</code></td></tr>
+<tr><td><code>Indexed&lt;T&gt;</code>, <code>Resizable&lt;T&gt;</code>, <code>Lookup&lt;K, V&gt;</code>, <code>Membership&lt;T&gt;</code></td><td>traits</td><td>the shapes: what a structure implements to go under a lens</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="a-sequence-lens"><a class="header" href="#a-sequence-lens">A sequence lens</a></h2>
+<p>A sequence lens has std’s whole sequence surface (<code>push</code>, <code>insert_at</code>,
+<code>remove_at</code>, <code>splice</code>, <code>clear</code> and the rest of <code>SequenceCell</code>), and every one of
+those writes says what it did, so no call site names a change. A slot follows
+the ITEM: an insert above it moves it and does not wake it, and once its item
+is deleted it reads <code>None</code> and wakes once to say so.</p>
+<pre><code class="language-vilan">import std::reactive::SequenceCell;
+import std::reactive::lens::SequenceLens;
+
+fun main() {
+	let names = SequenceLens::over(["ada", "bob", "cy"]);
+	let bob = names.slot(1);
+	let _watch = bob.on_change(|name| print(i"bob's slot now reads {name.debug()}"));
+	names.insert_at(0, "zed");      // bob moves to 2; his slot does not wake
+	print(bob.get());               // Some("bob")
+	print(bob.at());                // Some(2)
+	bob.set("Bob");                 // a write through the slot lands on his item
+	names.remove_at(2);             // gone: the slot reads None, and wakes once
+	print(names.all());
+}
+</code></pre>
+<p><code>get()</code> on the lens is the whole value, and a reader of it wakes on every
+write; that is the coarse read. <code>slot(at)</code> is one item. A position past the
+end has no item to follow, so its slot reads <code>None</code> and stays so.</p>
+<p>Inside one turn the slots move AT the write, and observers run once, at the
+settle: <code>batch(|| { names.insert_at(0, "x"); slot.set("y"); })</code> writes <code>"y"</code>
+over the slot’s item, not over whatever was at its old position.</p>
+<h2 id="changes"><a class="header" href="#changes">Changes</a></h2>
+<p>A write’s changes are addresses, never values: a slot reads the structure in
+place when it is asked.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Change</th><th>Meaning</th></tr>
+</thead>
+<tbody>
+<tr><td><code>Splice(at, removed, inserted)</code></td><td><code>removed</code> items left at <code>at</code> and <code>inserted</code> arrived there — what every sequence write records</td></tr>
+<tr><td><code>Insert(at, n)</code></td><td><code>n</code> items arrived at <code>at</code> (<code>Splice(at, 0, n)</code>)</td></tr>
+<tr><td><code>Delete(at, n)</code></td><td><code>n</code> items left at <code>at</code> (<code>Splice(at, n, 0)</code>)</td></tr>
+<tr><td><code>Replace(at)</code></td><td>the item at <code>at</code> is another item now</td></tr>
+<tr><td><code>Edit(at, part)</code></td><td>one part of the item at <code>at</code> changed; it is the same item</td></tr>
+<tr><td><code>Move(from, to)</code></td><td>the same item, now at <code>to</code>; its slot goes with it, silently</td></tr>
+<tr><td><code>Reset</code></td><td>anything may have changed</td></tr>
+</tbody>
+</table>
+</div>
+<p>One splice is one change: a listener never pairs a delete with an insert. A
+keyed lens reads a <code>Splice</code> of a key as its <code>Replace</code>.</p>
+<p>The shape’s methods write these for you. For a write the shape has no method
+for, <code>update</code> takes the write and the changes it made, and <code>plan</code> names its one
+change BEFORE the write, which lets the op feeds see what is about to leave:</p>
+<pre><code class="language-vilan">import std::reactive::lens::{ Change, sequence_checked };
+
+fun main() {
+	let list = sequence_checked(["a", "b", "c", "d"]);
+	let taken = list.plan(Change::Delete(1usize, 2usize), |held| {
+		let gone = [held[1], held[2]];
+		held.splice(1, 2, []);
+		gone
+	});
+	list.update(|held| {
+		held.insert(0, "z");
+		(void, [Change::Insert(0usize, 1usize)])
+	});
+	print(taken);
+	print(list.all());
+}
+</code></pre>
+<p>A change that lies points slots at the wrong items. <code>sequence_checked</code> copies
+the structure once per <code>update</code> or <code>plan</code> and panics when the lengths do not
+add up or something outside the window the changes name moved; use it in tests
+and debug builds. <code>explain_sequence(before, after, changes)</code> is the same check,
+answering what is wrong instead of panicking. The literals carry <code>usize</code>
+because an integer literal is not yet inferred through <code>Change&lt;A&gt;</code>.</p>
+<h2 id="a-structure-of-your-own"><a class="header" href="#a-structure-of-your-own">A structure of your own</a></h2>
+<p>A structure goes under a lens by implementing its shape. A sequence’s shape
+comes in two halves: <code>Indexed&lt;T&gt;</code> is the reading half (<code>count</code>, <code>item</code>, and a
+default <code>lend</code>), and <code>Resizable&lt;T&gt;</code>, which requires <code>Indexed&lt;T&gt;</code>, is the
+writing half (<code>splice</code>, and defaults for <code>put</code>, <code>change</code> and <code>shift</code>). A
+structure overrides a default when it can do better, and one <code>impl .. with Resizable&lt;T&gt;</code> may write the members of both halves. The structure holds
+no reactive code:</p>
+<pre><code class="language-vilan">import std::reactive::SequenceCell;
+import std::reactive::lens::{ Resizable, SequenceLens };
+
+/// Lines of text kept in chunks of at most four.
+export struct Rope {
+	chunks: List&lt;List&lt;str&gt;&gt;,
+}
+
+export impl Rope with Resizable&lt;str&gt; {
+	fun count(self): usize {
+		mut total: usize = 0;
+		for chunk in self.chunks {
+			total += chunk.len();
+		}
+		total
+	}
+
+	fun item(self, at: usize): Option&lt;str&gt; {
+		mut start: usize = 0;
+		for chunk in self.chunks {
+			if at &lt; start + chunk.len() {
+				ret chunk.get(at - start);
+			}
+			start += chunk.len();
+		}
+		None
+	}
+
+	fun splice(&amp;mut self, at: usize, removed: usize, inserted: List&lt;str&gt;) {
+		mut lines: List&lt;str&gt; = [];
+		for chunk in self.chunks {
+			lines.push_many(chunk);
+		}
+		mut taken: usize = 0;
+		for taken &lt; removed {
+			lines.remove(at);
+			taken += 1;
+		}
+		mut offset: usize = 0;
+		for line in inserted {
+			lines.insert(at + offset, line);
+			offset += 1;
+		}
+		mut chunks: List&lt;List&lt;str&gt;&gt; = [];
+		mut piece: List&lt;str&gt; = [];
+		for line in lines {
+			piece.push(line);
+			if piece.len() == 4 {
+				chunks.push(piece);
+				piece = [];
+			}
+		}
+		if piece.len() &gt; 0 {
+			chunks.push(piece);
+		}
+		self.chunks = chunks;
+	}
+}
+
+fun main() {
+	let text = SequenceLens::over(Rope { chunks = [["one", "two", "three"], ["four", "five"]] });
+	let five = text.slot(4);
+	text.splice(1, 0, ["one and a half", "one and three quarters"]);   // one change
+	print(five.get());   // Some("five"): the slot followed its line across a chunk split
+	print(five.at());    // Some(6)
+}
+</code></pre>
+<p><strong>A shape impl in a module that exports anything must be <code>export impl</code>.</strong> The
+lens’s generic body reaches the impl through its bound, and a module with an
+explicit export surface exports its impls only when they are written <code>export impl</code>. Without it, the build stops with an error that points into the lens:</p>
+<pre><code class="language-vilan fragment">impl Rope with Resizable&lt;str&gt; { .. }   // in a module that exports `Rope`
+// error: 'item' is provided by an `impl` in module `rope`, and module `lens`
+// does not admit it: a generic body resolves under the file it was DECLARED in ..
+</code></pre>
+<p>The fix is <code>export impl Rope with Resizable&lt;str&gt;</code>, not the import the message
+suggests (tracker B712). A module with <code>export *;</code> exports its impls already.</p>
+<p><code>List&lt;T&gt;</code> is <code>Indexed&lt;T&gt;</code> and <code>Resizable&lt;T&gt;</code>, <code>HashMap&lt;K, V&gt;</code> is
+<code>Lookup&lt;K, V&gt;</code> and <code>HashSet&lt;T&gt;</code> is <code>Membership&lt;T&gt;</code> out of the box.</p>
+<h2 id="a-read-only-sequence"><a class="header" href="#a-read-only-sequence">A read-only sequence</a></h2>
+<p>Some structures decide where an item goes: a sorted index puts <code>25</code> after
+<code>20</code>, whatever the caller wanted. Such a structure implements <code>Indexed&lt;T&gt;</code>
+and not <code>Resizable&lt;T&gt;</code>, and goes under <code>indexed(value)</code>. Its lens has
+everything that READS a sequence — slots, parts, <code>rows()</code>, <code>items()</code>,
+<code>length()</code>, <code>index_by</code> — and no <code>splice</code>, <code>push</code>, <code>insert_at</code> or <code>move_item</code>
+that could put an item where the order says it does not belong. Calling one
+is a build error (<code>'SortedIndex' does not implement trait 'Resizable&lt;i32&gt;'</code>).</p>
+<p>It is written through <code>update</code>, beside the structure’s own mutator, which
+returns the change it made because only it knows where the item landed. When
+the caller can say where first, <code>plan</code> is exact: the op feed sees what is
+about to leave.</p>
+<pre><code class="language-vilan">import std::reactive::lens::{ Change, Indexed, indexed };
+
+struct SortedIndex {
+	items: List&lt;i32&gt;,
+}
+
+impl SortedIndex {
+	fun place(self, value: i32): usize {
+		mut at: usize = 0;
+		for at &lt; self.items.len() &amp;&amp; self.items[at] &lt;= value {
+			at += 1;
+		}
+		at
+	}
+
+	/// The structure decides, and says what it did.
+	fun insert(&amp;mut self, value: i32): Change&lt;usize&gt; {
+		let at = self.place(value);
+		self.items.insert(at, value);
+		Change::Insert(at, 1)
+	}
+}
+
+impl SortedIndex with Indexed&lt;i32&gt; {
+	fun count(self): usize {
+		self.items.len()
+	}
+
+	fun item(self, at: usize): Option&lt;i32&gt; {
+		self.items.get(at)
+	}
+}
+
+fun main() {
+	let prices = indexed(SortedIndex { items = [10, 20, 30] });
+	let thirty = prices.slot(2);
+	prices.update(|held| (void, [held.insert(25)]));
+	print(prices.all());   // [10, 20, 25, 30]
+	print(thirty.at());    // Some(3): the slot followed 30, and did not wake
+	let gone = prices.peek(|held| held.place(10)) - 1;
+	prices.plan(Change::Delete(gone, 1usize), |held| {
+		held.items.remove(gone);
+	});
+	print(prices.all());   // [20, 25, 30]
+}
+</code></pre>
+<p>A write AT a position through the lens itself — <code>replace</code>, <code>edit</code>, or a slot’s
+<code>set</code> and <code>edit</code> — is a runtime panic on a read-only lens, not a build error:
+those methods are shared by every lens. Write the item through <code>update</code>.</p>
+<h2 id="a-real-rope"><a class="header" href="#a-real-rope">A real rope</a></h2>
+<p>The structure above is a toy: its <code>splice</code> re-cuts every chunk. The corpus
+program <code>vilan/test/lens-rope.vl</code> is the real thing, and it is still nothing
+but a shape impl. Lines live in chunks of at most <code>cap</code> lines (and at least
+half that, unless there is one chunk), with each chunk’s starting line kept so
+<code>item(at)</code> is a binary search. Its <code>splice</code> cuts again only the chunks the span
+touches, plus one neighbour when what is left would be under half a chunk (the
+merge), and replaces them in place; <code>put</code> and <code>change</code> write one line where it
+sits and cut nothing.</p>
+<p>What that buys under the lens:</p>
+<ul>
+<li>A slot follows its line through every split and merge. Chunks are the
+rope’s business; the lens’s slot table never hears of them.</li>
+<li>A 5,000-line paste is <code>splice(at, 0, lines)</code>: ONE <code>Splice</code> change, one row
+op carrying 5,000 rows, a <code>map</code> over <code>items()</code> that runs for the 5,000
+arrivals and nothing else, and one wake for the whole value and the length.</li>
+<li><code>index_by</code> keeps working across both, by the same one change.</li>
+</ul>
+<h2 id="parts"><a class="header" href="#parts">Parts</a></h2>
+<p><code>slot.part(name, read)</code> is one part of one item, as a source. It wakes when
+that part is edited or the item is replaced or deleted, and not when another
+part is. <code>edit(name, change)</code> writes in place and names the part:</p>
+<pre><code class="language-vilan">import std::reactive::Source;
+import std::reactive::lens::sequence;
+
+[derive(PartialEq)]
+struct Task {
+	title: str,
+	done: bool,
+}
+
+fun main() {
+	let tasks = sequence([Task { title = "write", done = false }, Task { title = "ship", done = false }]);
+	let ship = tasks.slot(1);
+	let title = ship.part("title", |task| task.title);
+	let done = ship.part("done", |task| task.done);
+	let _t = title.on_change(|text| print(i"title: {text.debug()}"));
+	let _d = done.on_change(|flag| print(i"done: {flag.debug()}"));
+	ship.edit("done", |task| task.done = true);   // prints only "done: Some(true)"
+}
+</code></pre>
+<p>Parts are named by strings for now; a typed field key replaces them (B711), and
+until then a misspelt name compiles and leaves its watcher asleep.</p>
+<h2 id="rows-for-each"><a class="header" href="#rows-for-each">Rows for <code>each</code></a></h2>
+<p><code>rows()</code> is the op feed of SLOTS. <code>each</code> renders one row per slot and hands
+the row its item’s slot, so nothing is copied, a row whose item is edited is
+not rebuilt, and a moved item’s row moves. Key the rows by <code>slot.key()</code>:</p>
+<pre><code class="language-vilan browser">import std::reactive::lens::sequence;
+import std::web::ui::{ View, each, mount_root };
+
+fun main() {
+	let names = sequence(["ada", "bob", "cy"]);
+	let _root = mount_root("app", || {
+		&lt;ul&gt;
+			{each(names.rows(), |slot| slot.key(), |slot| {
+				&lt;li&gt;{slot.derive(|name| name.unwrap_or(""))}&lt;/li&gt;
+			})}
+		&lt;/ul&gt;
+	});
+}
+</code></pre>
+<p><code>items()</code> is the feed of VALUES for std’s collection operators: <code>map</code>,
+<code>filter</code>, <code>count</code> and <code>memo</code> follow a lens through it with no operator changed.</p>
+<pre><code class="language-vilan">import std::reactive::{ CollFlow, CollPipe, SequenceCell, Source };
+import std::reactive::lens::sequence;
+
+fun main() {
+	let numbers = sequence([1, 2, 3, 4]);
+	let evens = numbers.items().filter(|n| n % 2 == 0).memo();
+	numbers.splice(0, 2, [10, 11]);
+	print(evens.get());   // [10, 4]
+}
+</code></pre>
+<h2 id="an-index-by-key"><a class="header" href="#an-index-by-key">An index by key</a></h2>
+<p>A list that is also looked up by id is an index over a sequence lens, not a
+second structure. <code>index_by(key)</code> keeps a map from each item’s key to its slot,
+in step with every write; <code>find(key)</code> is one lookup:</p>
+<pre><code class="language-vilan">import std::reactive::SequenceCell;
+import std::reactive::lens::sequence;
+
+fun main() {
+	let tabs = sequence(["inbox", "drafts", "sent"]);
+	let by_name = tabs.index_by(|name| *name);
+	tabs.insert_at(0, "starred");
+	match by_name.find("sent") {
+		Some(let slot) =&gt; print(slot.at()),   // Some(3)
+		None =&gt; print("not found"),
+	}
+}
+</code></pre>
+<h2 id="a-keyed-lens"><a class="header" href="#a-keyed-lens">A keyed lens</a></h2>
+<p>The keyed handler’s slots follow the KEY: a slot exists before its key does,
+reads <code>None</code> while the key is absent, and reads the key again when it returns.
+A write to one key wakes that key’s slot and no other.</p>
+<pre><code class="language-vilan">import std::hash_map::HashMap;
+import std::reactive::Source;
+import std::reactive::lens::KeyedLens;
+
+fun main() {
+	let empty: HashMap&lt;str, i32&gt; = HashMap::new();
+	let ages = KeyedLens::over(empty);
+	let ada = ages.slot("ada");
+	let _watch = ada.on_change(|age| print(i"ada: {age.debug()}"));
+	ages.put("ada", 36);    // ada: Some(36)
+	ages.put("bob", 41);    // nothing: another key
+	ages.remove("ada");     // ada: None
+	ages.put("ada", 37);    // ada: Some(37)
+	print(ages.length().get());
+}
+</code></pre>
+<p><code>entries()</code> is std’s map op feed (<code>MapOp</code>), so <code>filter</code>, <code>map_values</code> and
+<code>memo</code> follow a keyed lens; <code>reconcile_keyed(next)</code> becomes <code>next</code> by the
+changes that get there and leaves equal values alone.</p>
+<h2 id="a-sequence-of-ids-and-a-keyed-lens-of-records"><a class="header" href="#a-sequence-of-ids-and-a-keyed-lens-of-records">A sequence of ids and a keyed lens of records</a></h2>
+<p>A keyed lens has no order, and does not need one. What a list of records
+looked up by id wants is two lenses: a SEQUENCE of ids, which owns the order,
+and a KEYED lens of records, which owns the data (R14). Rows come from the
+ids; each row reads its record through the keyed lens’s slot for that id. A
+reorder touches only the ids, so no record’s reader wakes; an edit of a record
+touches only the records, so no row moves. <code>index_by</code> on the ids answers where
+an id sits now.</p>
+<pre><code class="language-vilan">import std::hash_map::HashMap;
+import std::reactive::lens::{ KeyedLens, sequence };
+import std::reactive::{ SequenceCell, Source };
+
+[derive(PartialEq)]
+struct Task {
+	title: str,
+	done: bool,
+}
+
+fun main() {
+	mut start: HashMap&lt;str, Task&gt; = HashMap::new();
+	start.insert("t1", Task { title = "write", done = false });
+	start.insert("t2", Task { title = "review", done = false });
+	start.insert("t3", Task { title = "ship", done = false });
+	let records = KeyedLens::over(start);
+	let order = sequence(["t1", "t2", "t3"]);
+	let place = order.index_by(|id| *id);
+
+	// A row per id; each reads its record by key.
+	let rows = order.rows();
+	let first = rows.get()[0];
+	let ship = records.slot("t3");
+	let _w = ship.on_change(|task| print(i"t3 woke: {task.map(|task| task.title).debug()}"));
+
+	order.move_item(2, 0);                       // the order changed; no record woke
+	print(place.find("t3").map(|slot| slot.at()));   // Some(Some(0))
+	records.edit("t3", "done", |task| task.done = true);   // t3 woke; no row moved
+	print(first.get());                          // Some("t1"): the row still holds its id
+	order.push("t4");
+	records.put("t4", Task { title = "celebrate", done = false });
+	print(order.all());
+}
+</code></pre>
+<p>The pairing costs one lookup per row and keeps each lens doing one thing: the
+sequence’s slots follow positions, the keyed lens’s slots follow keys, and
+neither needs a handler the other has.</p>
+<h2 id="a-set-lens"><a class="header" href="#a-set-lens">A set lens</a></h2>
+<p>A set is addressed by its members, so its lens is keyed by member. A structure
+goes under one by implementing <code>Membership&lt;T&gt;</code> (<code>contains</code>, <code>members</code>, <code>add</code>,
+<code>remove</code>, and a default <code>count</code>); <code>HashSet&lt;T&gt;</code> does out of the box. A member’s
+slot is its PRESENCE: <code>slot(x)</code> is a <code>Source&lt;bool&gt;</code>, as <code>HashSetCell</code>’s
+<code>contains(x)</code> is, which exists before <code>x</code> joins, wakes when <code>x</code> joins or
+leaves, and wakes for no other member. (Its <code>Option&lt;T&gt;</code> would only echo back
+the <code>x</code> the caller already holds.)</p>
+<pre><code class="language-vilan">import std::hash_set::HashSet;
+import std::reactive::Source;
+import std::reactive::lens::SetLens;
+
+fun main() {
+	let empty: HashSet&lt;str&gt; = HashSet::new();
+	let tags = SetLens::over(empty);
+	let urgent = tags.slot("urgent");
+	let _watch = urgent.on_change(|on| print(i"urgent: {on}"));
+	tags.add("urgent");      // urgent: true
+	tags.add("later");       // nothing: another member
+	tags.add("urgent");      // nothing: already held, nothing is written
+	tags.remove("urgent");   // urgent: false
+	print(tags.length().get());
+	mut next: HashSet&lt;str&gt; = HashSet::new();
+	next.insert("later");
+	next.insert("soon");
+	tags.reconcile_set(next);   // one turn: "soon" joins, nothing else is written
+	print(tags.all().len());
+}
+</code></pre>
+<p><code>add</code> and <code>remove</code> answer whether they wrote, and write nothing for a member
+already held or already absent. <code>members()</code> is std’s set op feed (<code>SetOp</code>): a
+<code>SetSource</code>, so a set flow opens over it. Every op is known from the change
+alone, since a member is its own address, so a write that names several
+changes through <code>update</code> replays them in order. <code>reconcile_set(next)</code> is the
+diff door: one change per member that left or joined, in one turn.</p>
+<h2 id="nesting"><a class="header" href="#nesting">Nesting</a></h2>
+<p><code>slot.sequence(part, empty, lend, borrow)</code> is a lens over a sequence INSIDE
+the slot’s item. A write through it is an <code>Edit</code> of that part on the outer item:
+watchers of that part hear it, watchers of the item’s other parts do not. When
+the outer list shifts, the inner lens follows its item; when the item is
+deleted, the inner lens reads <code>empty</code>.</p>
+<pre><code class="language-vilan">import std::reactive::SequenceCell;
+import std::reactive::lens::sequence;
+
+[derive(PartialEq)]
+struct Section {
+	title: str,
+	items: List&lt;str&gt;,
+}
+
+fun main() {
+	let sections = sequence([Section { title = "Todo", items = ["a"] }, Section { title = "Doing", items = ["x", "y"] }]);
+	let doing = sections.slot(1);
+	let empty: List&lt;str&gt; = [];
+	let items = doing.sequence("items", empty, |section, read| read(&amp;section.items), |section, change| change(&amp;mut section.items));
+	let _title = doing.part("title", |section| section.title).on_change(|_t| print("the title woke"));
+	let _count = doing.part("items", |section| section.items.len()).on_change(|n| print(i"items: {n.debug()}"));
+	items.push("z");                                                    // items: Some(3)
+	sections.insert_at(0, Section { title = "Inbox", items = [] });   // the inner lens follows "Doing"
+	print(items.all());
+}
+</code></pre>
+<p><code>lend</code> and <code>borrow</code> say where the inner sequence is in the item; a typed field
+key will replace both. Make the inner lens once per slot and part and share it:
+two inner lenses over one part do not see each other’s writes.</p>
+<h2 id="async-data"><a class="header" href="#async-data">Async data</a></h2>
+<p>Data that arrives from a server is a lens plus a phase, side by side:
+<a href="loaded.html">std::reactive::lens::loaded</a>. A refresh lands by key, so rows keep
+their slots and a failure never blanks them; pages splice in at either end
+with no duplicate rows; and optimistic changes are an OVERLAY beside the lens,
+never a write to it, so a delete hides its row and a rejected delete shows it
+again in its own slot.</p>
+<h2 id="lifetime"><a class="header" href="#lifetime">Lifetime</a></h2>
+<p>A slot is counted by its handles. Made inside an owner scope — a view, a row,
+a derive’s run — a slot, a feed and an index are released with that owner;
+outside one, call <code>release()</code> on each when done. The slot ends with its last
+handle: it follows nothing from then on, and a new ask makes a new slot.</p>
+<h2 id="what-it-costs"><a class="header" href="#what-it-costs">What it costs</a></h2>
+<ul>
+<li><strong>A new way to be wrong.</strong> A change named at an <code>update</code> call site can lie,
+and a lie points slots at the wrong items. The shape methods cannot; use them,
+and <code>sequence_checked</code> where <code>update</code> is unavoidable.</li>
+<li><strong>Two ways to read.</strong> <code>get()</code> is coarse and slots are fine. A view that
+indexes <code>get()</code> works, and re-renders on every write.</li>
+<li><strong>Nothing is kept for what nobody asked for.</strong> A lens nobody follows holds its
+structure and one notification cell: the slot table is made by the first
+<code>slot</code>, a slot’s cell by the first listener, and the length’s and the
+positions’ cells by the first <code>length()</code> and <code>index()</code>. Its bare writes cost
+about what a <code>ListCell</code>’s do. It still holds more memory than a <code>ListCell</code>
+(about twice, for a small list): its handle, its access closures and its
+empty tables.</li>
+<li><strong>Native, with one gap.</strong> A program over the lens builds on the native
+backend and prints what node prints (since B709). Its cells are not all
+released there yet: a lens program ends with counted cells still live, a
+cycle a counted cell cannot break where JS’s collector does.</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../std/store.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../std/loaded.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../std/store.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../std/loaded.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../theme/vilan-695bf958.js"></script>
+        <script src="../theme/picker-309f18e2.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
