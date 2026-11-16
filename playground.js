@@ -531,12 +531,12 @@ function renew(self) {
 	const $aw = self[0].v[3];
 	let $ax = null;
 	if ($aw[0] === 0) {
-		const nursery2 = __clone($aw[1]);
+		const nursery2 = $aw[1];
 		let $ay = null;
 		if (has_spawned(nursery2)) {
 			$ay = [ 1 ];
 		} else {
-			$ay = [ 0, nursery2 ];
+			$ay = [ 0, __clone(nursery2) ];
 		}
 		$ax = $ay;
 	} else {
@@ -846,6 +846,70 @@ function also_releasing(handle, release) {
 		return $bx;
 	} ];
 }
+function settled_steps(steps) {
+	let forward = [  ];
+	let forward_count = 0;
+	let highest = [ 1 ];
+	for (const step of steps) {
+		const $cP = step;
+		let $cQ = null;
+		if ($cP[0] === 0) {
+			const index = $cP[1];
+			const $cR = highest;
+			let $cS = null;
+			if ($cR[0] === 0) {
+				const top = $cR[1];
+				$cS = index > top;
+			} else {
+				$cS = true;
+			}
+			const rises = $cS;
+			if (rises) {
+				highest = [ 0, index ];
+				forward_count = forward_count + 1;
+				forward.push(true);
+			} else {
+				forward.push(false);
+			}
+			$cQ = undefined;
+		} else {
+			forward.push(false);
+			$cQ = undefined;
+		}
+		$cQ;
+	}
+	let backward = [  ];
+	let backward_count = 0;
+	let lowest = steps.length;
+	let at = steps.length;
+	while (at > 0) {
+		at = at - 1;
+		const $cT = __at(steps, at, "std/src/reactive/delta.vl:2663:9");
+		let $cU = null;
+		if ($cT[0] === 0) {
+			const index2 = $cT[1];
+			if (index2 < lowest) {
+				lowest = index2;
+				backward_count = backward_count + 1;
+				backward.push(true);
+			} else {
+				backward.push(false);
+			}
+			$cU = undefined;
+		} else {
+			backward.push(false);
+			$cU = undefined;
+		}
+		$cU;
+	}
+	let $cV = null;
+	if (forward_count >= backward_count) {
+		$cV = forward;
+	} else {
+		$cV = reverse(backward);
+	}
+	return $cV;
+}
 function has_spawned(self) {
 	return __nursery_has_spawned(self);
 }
@@ -1129,7 +1193,7 @@ function close_with(self, disposal) {
 function is_leaving(node) {
 	let at = 0;
 	while (at < leaving_runs.v.length) {
-		if (__dom_run_holds(__at(leaving_runs.v, at, "std/src/browser/web/ui.vl:975:16"), node)) {
+		if (__dom_run_holds(__at(leaving_runs.v, at, "std/src/browser/web/ui.vl:976:16"), node)) {
 			return true;
 		}
 		at = at + 1;
@@ -1154,70 +1218,6 @@ function place3(self, parent, caller) {
 		parent[0].appendChild(item[0]);
 	}
 }
-function settled_steps(steps) {
-	let forward = [  ];
-	let forward_count = 0;
-	let highest = [ 1 ];
-	for (const step of steps) {
-		const $cP = step;
-		let $cQ = null;
-		if ($cP[0] === 0) {
-			const index = $cP[1];
-			const $cR = highest;
-			let $cS = null;
-			if ($cR[0] === 0) {
-				const top = $cR[1];
-				$cS = index > top;
-			} else {
-				$cS = true;
-			}
-			const rises = $cS;
-			if (rises) {
-				highest = [ 0, index ];
-				forward_count = forward_count + 1;
-				forward.push(true);
-			} else {
-				forward.push(false);
-			}
-			$cQ = undefined;
-		} else {
-			forward.push(false);
-			$cQ = undefined;
-		}
-		$cQ;
-	}
-	let backward = [  ];
-	let backward_count = 0;
-	let lowest = steps.length;
-	let at = steps.length;
-	while (at > 0) {
-		at = at - 1;
-		const $cT = __at(steps, at, "std/src/browser/web/ui.vl:1659:9");
-		let $cU = null;
-		if ($cT[0] === 0) {
-			const index2 = $cT[1];
-			if (index2 < lowest) {
-				lowest = index2;
-				backward_count = backward_count + 1;
-				backward.push(true);
-			} else {
-				backward.push(false);
-			}
-			$cU = undefined;
-		} else {
-			backward.push(false);
-			$cU = undefined;
-		}
-		$cU;
-	}
-	let $cV = null;
-	if (forward_count >= backward_count) {
-		$cV = forward;
-	} else {
-		$cV = reverse(backward);
-	}
-	return $cV;
-}
 function row_references(steps, rows, settled, anchor) {
 	let references = [  ];
 	let reference = __clone(anchor);
@@ -1226,12 +1226,12 @@ function row_references(steps, rows, settled, anchor) {
 		at = at - 1;
 		references.push(__clone(reference));
 		let $cY = null;
-		if (__at(settled, at, "std/src/browser/web/ui.vl:1751:6")) {
-			const $cW = __at(steps, at, "std/src/browser/web/ui.vl:1752:10");
+		if (__at(settled, at, "std/src/browser/web/ui.vl:1642:6")) {
+			const $cW = __at(steps, at, "std/src/browser/web/ui.vl:1643:10");
 			let $cX = null;
 			if ($cW[0] === 0) {
 				const index = $cW[1];
-				reference = __clone(__at(rows, index, "std/src/browser/web/ui.vl:1754:18")[0]);
+				reference = __clone(__at(rows, index, "std/src/browser/web/ui.vl:1645:18")[0]);
 				$cX = undefined;
 			} else {
 				$cX = undefined;
@@ -1249,7 +1249,7 @@ function mount_target(id) {
 	const element = document.getElementById(id);
 	if (__is_null(element)) {
 		(() => {
-			throw __panic("mount: no element with id \'" + id + "\'", "std/src/browser/web/ui.vl:2553:3");
+			throw __panic("mount: no element with id \'" + id + "\'", "std/src/browser/web/ui.vl:2444:3");
 		})();
 	}
 	return element;
@@ -1995,7 +1995,7 @@ function held_span(held, at, count) {
 	let span = [  ];
 	let index = at;
 	while (index < at + count) {
-		span.push(__clone(__at(held.v, index, "std/src/browser/web/ui.vl:1694:13")));
+		span.push(__clone(__at(held.v, index, "std/src/browser/web/ui.vl:1617:13")));
 		index = index + 1;
 	}
 	return span;
@@ -2106,7 +2106,7 @@ function open_row_before(self, content, end, $dr, $ds) {
 	const marker = document.createTextNode("");
 	host(self).insertBefore(marker, end);
 	const staging = document.createDocumentFragment();
-	place(content, [ __clone(staging) ], $dr, $ds, "std/src/browser/web/ui.vl:801:11");
+	place(content, [ __clone(staging) ], $dr, $ds, "std/src/browser/web/ui.vl:802:11");
 	host(self).insertBefore(staging, end);
 	return [ marker ];
 }
@@ -2177,7 +2177,7 @@ function live_ops(ops) {
 	let live = [  ];
 	index = from;
 	while (index < ops.length) {
-		live.push(__clone(__at(ops, index, "std/src/browser/web/ui.vl:1726:13")));
+		live.push(__clone(__at(ops, index, "std/src/reactive/delta.vl:2712:13")));
 		index = index + 1;
 	}
 	return live;
@@ -2204,7 +2204,7 @@ function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 		const previous_owners = held_span(row_owners, at, count);
 		let $cF = null;
 		if (at + count < row_rows.v.length) {
-			$cF = __at(row_rows.v, at + count, "std/src/browser/web/ui.vl:2139:4")[0];
+			$cF = __at(row_rows.v, at + count, "std/src/browser/web/ui.vl:2030:4")[0];
 		} else {
 			$cF = region[0];
 		}
@@ -2230,17 +2230,17 @@ function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 			fill = fill + 1;
 		}
 		for (const gone of plan[1]) {
-			__at_put(retiring, gone, true, "std/src/browser/web/ui.vl:2173:4");
+			__at_put(retiring, gone, true, "std/src/browser/web/ui.vl:2064:4");
 		}
 		let settled_at = 0;
 		for (const step of plan[0]) {
 			let $db = null;
-			if (__at(settled, settled_at, "std/src/browser/web/ui.vl:2177:7")) {
+			if (__at(settled, settled_at, "std/src/browser/web/ui.vl:2068:7")) {
 				const $cZ = step;
 				let $da = null;
 				if ($cZ[0] === 0) {
 					const index = $cZ[1];
-					__at_put(staying, index, true, "std/src/browser/web/ui.vl:2180:7");
+					__at_put(staying, index, true, "std/src/browser/web/ui.vl:2071:7");
 					$da = undefined;
 				} else {
 					$da = undefined;
@@ -2254,18 +2254,18 @@ function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 		let index2 = 0;
 		for (const row of previous_rows) {
 			let $dd = null;
-			if (__at(staying, index2, "std/src/browser/web/ui.vl:2192:7")) {
+			if (__at(staying, index2, "std/src/browser/web/ui.vl:2083:7")) {
 				cut.push([ 1 ]);
 			} else {
 				let $dc = null;
 				if (index2 + 1 < previous_rows.length) {
-					$dc = __at(previous_rows, index2 + 1, "std/src/browser/web/ui.vl:2196:6")[0];
+					$dc = __at(previous_rows, index2 + 1, "std/src/browser/web/ui.vl:2087:6")[0];
 				} else {
 					$dc = boundary;
 				}
 				const end = __clone($dc);
-				if (__at(retiring, index2, "std/src/browser/web/ui.vl:2200:8")) {
-					const owner = __clone(__at(previous_owners, index2, "std/src/browser/web/ui.vl:2204:18"));
+				if (__at(retiring, index2, "std/src/browser/web/ui.vl:2091:8")) {
+					const owner = __clone(__at(previous_owners, index2, "std/src/browser/web/ui.vl:2095:18"));
 					retire_row(region, row, end, () => {
 						return dispose2(owner);
 					});
@@ -2283,48 +2283,48 @@ function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 		let next_owners = [  ];
 		let position = 0;
 		for (const step2 of plan[0]) {
-			const item = __clone(__at(list, position, "std/src/browser/web/ui.vl:2218:15"));
-			const reference = __clone(__at(references, position, "std/src/browser/web/ui.vl:2219:20"));
+			const item = __clone(__at(list, position, "std/src/browser/web/ui.vl:2109:15"));
+			const reference = __clone(__at(references, position, "std/src/browser/web/ui.vl:2110:20"));
 			const $de = step2;
 			let $df = null;
 			if ($de[0] === 0) {
 				const kept = $de[1];
-				const cell = __clone(__at(previous_cells, kept, "std/src/browser/web/ui.vl:2222:17"));
-				set3(cell, item, $cz, "std/src/browser/web/ui.vl:2223:11");
+				const cell = __clone(__at(previous_cells, kept, "std/src/browser/web/ui.vl:2113:17"));
+				set3(cell, item, $cz, "std/src/browser/web/ui.vl:2114:11");
 				next_cells.push(cell);
-				const $dm = __at(cut, kept, "std/src/browser/web/ui.vl:2225:12");
+				const $dm = __at(cut, kept, "std/src/browser/web/ui.vl:2116:12");
 				let $dn = null;
 				if ($dm[0] === 0) {
 					const content = __clone($dm[1]);
-					insert_row(region, __at(previous_rows, kept, "std/src/browser/web/ui.vl:2227:26"), content, reference);
+					insert_row(region, __at(previous_rows, kept, "std/src/browser/web/ui.vl:2118:26"), content, reference);
 					$dn = undefined;
 				} else {
 					$dn = undefined;
 				}
 				$dn;
-				next_rows.push(__clone(__at(previous_rows, kept, "std/src/browser/web/ui.vl:2231:21")));
-				next_owners.push(__clone(__at(previous_owners, kept, "std/src/browser/web/ui.vl:2232:23")));
+				next_rows.push(__clone(__at(previous_rows, kept, "std/src/browser/web/ui.vl:2122:21")));
+				next_owners.push(__clone(__at(previous_owners, kept, "std/src/browser/web/ui.vl:2123:23")));
 				$df = undefined;
 			} else if ($de[0] === 1) {
 				const kept2 = $de[1];
-				const cell2 = __clone(__at(previous_cells, kept2, "std/src/browser/web/ui.vl:2238:17"));
-				set3(cell2, item, $cz, "std/src/browser/web/ui.vl:2239:11");
+				const cell2 = __clone(__at(previous_cells, kept2, "std/src/browser/web/ui.vl:2129:17"));
+				set3(cell2, item, $cz, "std/src/browser/web/ui.vl:2130:11");
 				next_cells.push(cell2);
-				const $do = __at(cut, kept2, "std/src/browser/web/ui.vl:2241:12");
+				const $do = __at(cut, kept2, "std/src/browser/web/ui.vl:2132:12");
 				let $dp = null;
 				if ($do[0] === 0) {
 					const content2 = __clone($do[1]);
-					insert_row(region, __at(previous_rows, kept2, "std/src/browser/web/ui.vl:2243:26"), content2, reference);
+					insert_row(region, __at(previous_rows, kept2, "std/src/browser/web/ui.vl:2134:26"), content2, reference);
 					$dp = undefined;
 				} else {
 					$dp = undefined;
 				}
 				$dp;
-				next_rows.push(__clone(__at(previous_rows, kept2, "std/src/browser/web/ui.vl:2247:21")));
-				next_owners.push(__clone(__at(previous_owners, kept2, "std/src/browser/web/ui.vl:2248:23")));
+				next_rows.push(__clone(__at(previous_rows, kept2, "std/src/browser/web/ui.vl:2138:21")));
+				next_owners.push(__clone(__at(previous_owners, kept2, "std/src/browser/web/ui.vl:2139:23")));
 				$df = undefined;
 			} else {
-				const cell3 = new4(item, "std/src/browser/web/ui.vl:2251:44");
+				const cell3 = new4(item, "std/src/browser/web/ui.vl:2142:44");
 				const owner2 = new3();
 				next_cells.push(__clone(cell3));
 				next_rows.push(run_with_owner(owner2, ($dq) => {
@@ -2350,20 +2350,20 @@ function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 		} else {
 			let taken = 0;
 			while (taken < count) {
-				__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2279:33");
-				__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2280:37");
-				__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2281:35");
-				__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2282:33");
-				__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2283:35");
+				__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2170:33");
+				__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2171:37");
+				__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2172:35");
+				__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2173:33");
+				__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2174:35");
 				taken = taken + 1;
 			}
 			let offset = 0;
 			while (offset < next_rows.length) {
-				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset, "std/src/browser/web/ui.vl:2288:42")), "std/src/browser/web/ui.vl:2288:22");
-				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset, "std/src/browser/web/ui.vl:2289:44")), "std/src/browser/web/ui.vl:2289:24");
-				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset, "std/src/browser/web/ui.vl:2290:43")), "std/src/browser/web/ui.vl:2290:23");
-				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset, "std/src/browser/web/ui.vl:2291:42")), "std/src/browser/web/ui.vl:2291:22");
-				__insert_at(row_items.v, at + offset, __clone(__at(list, offset, "std/src/browser/web/ui.vl:2292:43")), "std/src/browser/web/ui.vl:2292:23");
+				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset, "std/src/browser/web/ui.vl:2179:42")), "std/src/browser/web/ui.vl:2179:22");
+				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset, "std/src/browser/web/ui.vl:2180:44")), "std/src/browser/web/ui.vl:2180:24");
+				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset, "std/src/browser/web/ui.vl:2181:43")), "std/src/browser/web/ui.vl:2181:23");
+				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset, "std/src/browser/web/ui.vl:2182:42")), "std/src/browser/web/ui.vl:2182:22");
+				__insert_at(row_items.v, at + offset, __clone(__at(list, offset, "std/src/browser/web/ui.vl:2183:43")), "std/src/browser/web/ui.vl:2183:23");
 				offset = offset + 1;
 			}
 			$dt = undefined;
@@ -2378,42 +2378,42 @@ function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 		while (taken < removed) {
 			let $du = null;
 			if (at + 1 < row_rows.v.length) {
-				$du = __at(row_rows.v, at + 1, "std/src/browser/web/ui.vl:2307:5")[0];
+				$du = __at(row_rows.v, at + 1, "std/src/browser/web/ui.vl:2198:5")[0];
 			} else {
 				$du = region[0];
 			}
 			const end = __clone($du);
-			const going = __clone(__at(row_rows.v, at, "std/src/browser/web/ui.vl:2311:16"));
-			const owner = __clone(__at(row_owners.v, at, "std/src/browser/web/ui.vl:2312:16"));
+			const going = __clone(__at(row_rows.v, at, "std/src/browser/web/ui.vl:2202:16"));
+			const owner = __clone(__at(row_owners.v, at, "std/src/browser/web/ui.vl:2203:16"));
 			retire_row(region, going, end, () => {
 				return dispose2(owner);
 			});
-			__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2314:32");
-			__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2315:36");
-			__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2316:34");
-			__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2317:32");
-			__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2318:34");
+			__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2205:32");
+			__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2206:36");
+			__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2207:34");
+			__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2208:32");
+			__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2209:34");
 			taken = taken + 1;
 		}
 		let $dv = null;
 		if (at < row_rows.v.length) {
-			$dv = __at(row_rows.v, at, "std/src/browser/web/ui.vl:2322:4")[0];
+			$dv = __at(row_rows.v, at, "std/src/browser/web/ui.vl:2213:4")[0];
 		} else {
 			$dv = region[0];
 		}
 		const reference = __clone($dv);
 		let offset = 0;
 		for (const item of inserted) {
-			const cell = new4(__clone(item), "std/src/browser/web/ui.vl:2328:42");
+			const cell = new4(__clone(item), "std/src/browser/web/ui.vl:2219:42");
 			const owner2 = new3();
 			const row = run_with_owner(owner2, ($dw) => {
 				return open_row_before(region, render(cell, $dw), reference, $cz, $dw);
 			});
-			__insert_at(row_rows.v, at + offset, row, "std/src/browser/web/ui.vl:2331:21");
-			__insert_at(row_owners.v, at + offset, owner2, "std/src/browser/web/ui.vl:2332:23");
-			__insert_at(row_cells.v, at + offset, __clone(cell), "std/src/browser/web/ui.vl:2333:22");
-			__insert_at(row_keys.v, at + offset, key(item), "std/src/browser/web/ui.vl:2334:21");
-			__insert_at(row_items.v, at + offset, __clone(item), "std/src/browser/web/ui.vl:2335:22");
+			__insert_at(row_rows.v, at + offset, row, "std/src/browser/web/ui.vl:2222:21");
+			__insert_at(row_owners.v, at + offset, owner2, "std/src/browser/web/ui.vl:2223:23");
+			__insert_at(row_cells.v, at + offset, __clone(cell), "std/src/browser/web/ui.vl:2224:22");
+			__insert_at(row_keys.v, at + offset, key(item), "std/src/browser/web/ui.vl:2225:21");
+			__insert_at(row_items.v, at + offset, __clone(item), "std/src/browser/web/ui.vl:2226:22");
 			offset = offset + 1;
 		}
 		return;
@@ -2453,8 +2453,8 @@ function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 					let $dI = null;
 					if ($dH[0] === 0) {
 						const cell = $dH[1];
-						__at_put(row_items.v, at2, __clone(value), "std/src/browser/web/ui.vl:2369:9");
-						set3(cell, value, $cz, "std/src/browser/web/ui.vl:2370:14");
+						__at_put(row_items.v, at2, __clone(value), "std/src/browser/web/ui.vl:2260:9");
+						set3(cell, value, $cz, "std/src/browser/web/ui.vl:2261:14");
 						$dI = undefined;
 					} else {
 						$dI = undefined;
@@ -2475,12 +2475,12 @@ function place_each_by(parent, source, key, render, $cz, $cA, caller) {
 				let lifted = [  ];
 				let taken = 0;
 				while (taken < count) {
-					lifted.push(__remove_at(moved, from, "std/src/browser/web/ui.vl:2388:25"));
+					lifted.push(__remove_at(moved, from, "std/src/browser/web/ui.vl:2279:25"));
 					taken = taken + 1;
 				}
 				let offset = 0;
 				for (const item of lifted) {
-					__insert_at(moved, to + offset, __clone(item), "std/src/browser/web/ui.vl:2393:13");
+					__insert_at(moved, to + offset, __clone(item), "std/src/browser/web/ui.vl:2284:13");
 					offset = offset + 1;
 				}
 				reconcile_pass(moved);
@@ -2628,7 +2628,7 @@ function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 		const previous_owners = held_span(row_owners, at, count);
 		let $dS = null;
 		if (at + count < row_rows.v.length) {
-			$dS = __at(row_rows.v, at + count, "std/src/browser/web/ui.vl:2139:4")[0];
+			$dS = __at(row_rows.v, at + count, "std/src/browser/web/ui.vl:2030:4")[0];
 		} else {
 			$dS = region[0];
 		}
@@ -2654,17 +2654,17 @@ function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 			fill = fill + 1;
 		}
 		for (const gone of plan[1]) {
-			__at_put(retiring, gone, true, "std/src/browser/web/ui.vl:2173:4");
+			__at_put(retiring, gone, true, "std/src/browser/web/ui.vl:2064:4");
 		}
 		let settled_at = 0;
 		for (const step of plan[0]) {
 			let $ee = null;
-			if (__at(settled, settled_at, "std/src/browser/web/ui.vl:2177:7")) {
+			if (__at(settled, settled_at, "std/src/browser/web/ui.vl:2068:7")) {
 				const $ec = step;
 				let $ed = null;
 				if ($ec[0] === 0) {
 					const index = $ec[1];
-					__at_put(staying, index, true, "std/src/browser/web/ui.vl:2180:7");
+					__at_put(staying, index, true, "std/src/browser/web/ui.vl:2071:7");
 					$ed = undefined;
 				} else {
 					$ed = undefined;
@@ -2678,18 +2678,18 @@ function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 		let index2 = 0;
 		for (const row of previous_rows) {
 			let $eg = null;
-			if (__at(staying, index2, "std/src/browser/web/ui.vl:2192:7")) {
+			if (__at(staying, index2, "std/src/browser/web/ui.vl:2083:7")) {
 				cut.push([ 1 ]);
 			} else {
 				let $ef = null;
 				if (index2 + 1 < previous_rows.length) {
-					$ef = __at(previous_rows, index2 + 1, "std/src/browser/web/ui.vl:2196:6")[0];
+					$ef = __at(previous_rows, index2 + 1, "std/src/browser/web/ui.vl:2087:6")[0];
 				} else {
 					$ef = boundary;
 				}
 				const end = __clone($ef);
-				if (__at(retiring, index2, "std/src/browser/web/ui.vl:2200:8")) {
-					const owner = __clone(__at(previous_owners, index2, "std/src/browser/web/ui.vl:2204:18"));
+				if (__at(retiring, index2, "std/src/browser/web/ui.vl:2091:8")) {
+					const owner = __clone(__at(previous_owners, index2, "std/src/browser/web/ui.vl:2095:18"));
 					retire_row(region, row, end, () => {
 						return dispose2(owner);
 					});
@@ -2707,48 +2707,48 @@ function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 		let next_owners = [  ];
 		let position = 0;
 		for (const step2 of plan[0]) {
-			const item = __clone(__at(list, position, "std/src/browser/web/ui.vl:2218:15"));
-			const reference = __clone(__at(references, position, "std/src/browser/web/ui.vl:2219:20"));
+			const item = __clone(__at(list, position, "std/src/browser/web/ui.vl:2109:15"));
+			const reference = __clone(__at(references, position, "std/src/browser/web/ui.vl:2110:20"));
 			const $eh = step2;
 			let $ei = null;
 			if ($eh[0] === 0) {
 				const kept = $eh[1];
-				const cell = __clone(__at(previous_cells, kept, "std/src/browser/web/ui.vl:2222:17"));
-				set3(cell, item, $cz, "std/src/browser/web/ui.vl:2223:11");
+				const cell = __clone(__at(previous_cells, kept, "std/src/browser/web/ui.vl:2113:17"));
+				set3(cell, item, $cz, "std/src/browser/web/ui.vl:2114:11");
 				next_cells.push(cell);
-				const $ep = __at(cut, kept, "std/src/browser/web/ui.vl:2225:12");
+				const $ep = __at(cut, kept, "std/src/browser/web/ui.vl:2116:12");
 				let $eq = null;
 				if ($ep[0] === 0) {
 					const content = __clone($ep[1]);
-					insert_row(region, __at(previous_rows, kept, "std/src/browser/web/ui.vl:2227:26"), content, reference);
+					insert_row(region, __at(previous_rows, kept, "std/src/browser/web/ui.vl:2118:26"), content, reference);
 					$eq = undefined;
 				} else {
 					$eq = undefined;
 				}
 				$eq;
-				next_rows.push(__clone(__at(previous_rows, kept, "std/src/browser/web/ui.vl:2231:21")));
-				next_owners.push(__clone(__at(previous_owners, kept, "std/src/browser/web/ui.vl:2232:23")));
+				next_rows.push(__clone(__at(previous_rows, kept, "std/src/browser/web/ui.vl:2122:21")));
+				next_owners.push(__clone(__at(previous_owners, kept, "std/src/browser/web/ui.vl:2123:23")));
 				$ei = undefined;
 			} else if ($eh[0] === 1) {
 				const kept2 = $eh[1];
-				const cell2 = __clone(__at(previous_cells, kept2, "std/src/browser/web/ui.vl:2238:17"));
-				set3(cell2, item, $cz, "std/src/browser/web/ui.vl:2239:11");
+				const cell2 = __clone(__at(previous_cells, kept2, "std/src/browser/web/ui.vl:2129:17"));
+				set3(cell2, item, $cz, "std/src/browser/web/ui.vl:2130:11");
 				next_cells.push(cell2);
-				const $er = __at(cut, kept2, "std/src/browser/web/ui.vl:2241:12");
+				const $er = __at(cut, kept2, "std/src/browser/web/ui.vl:2132:12");
 				let $es = null;
 				if ($er[0] === 0) {
 					const content2 = __clone($er[1]);
-					insert_row(region, __at(previous_rows, kept2, "std/src/browser/web/ui.vl:2243:26"), content2, reference);
+					insert_row(region, __at(previous_rows, kept2, "std/src/browser/web/ui.vl:2134:26"), content2, reference);
 					$es = undefined;
 				} else {
 					$es = undefined;
 				}
 				$es;
-				next_rows.push(__clone(__at(previous_rows, kept2, "std/src/browser/web/ui.vl:2247:21")));
-				next_owners.push(__clone(__at(previous_owners, kept2, "std/src/browser/web/ui.vl:2248:23")));
+				next_rows.push(__clone(__at(previous_rows, kept2, "std/src/browser/web/ui.vl:2138:21")));
+				next_owners.push(__clone(__at(previous_owners, kept2, "std/src/browser/web/ui.vl:2139:23")));
 				$ei = undefined;
 			} else {
-				const cell3 = new4(item, "std/src/browser/web/ui.vl:2251:44");
+				const cell3 = new4(item, "std/src/browser/web/ui.vl:2142:44");
 				const owner2 = new3();
 				next_cells.push(__clone(cell3));
 				next_rows.push(run_with_owner(owner2, ($dq) => {
@@ -2774,20 +2774,20 @@ function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 		} else {
 			let taken = 0;
 			while (taken < count) {
-				__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2279:33");
-				__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2280:37");
-				__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2281:35");
-				__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2282:33");
-				__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2283:35");
+				__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2170:33");
+				__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2171:37");
+				__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2172:35");
+				__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2173:33");
+				__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2174:35");
 				taken = taken + 1;
 			}
 			let offset = 0;
 			while (offset < next_rows.length) {
-				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset, "std/src/browser/web/ui.vl:2288:42")), "std/src/browser/web/ui.vl:2288:22");
-				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset, "std/src/browser/web/ui.vl:2289:44")), "std/src/browser/web/ui.vl:2289:24");
-				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset, "std/src/browser/web/ui.vl:2290:43")), "std/src/browser/web/ui.vl:2290:23");
-				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset, "std/src/browser/web/ui.vl:2291:42")), "std/src/browser/web/ui.vl:2291:22");
-				__insert_at(row_items.v, at + offset, __clone(__at(list, offset, "std/src/browser/web/ui.vl:2292:43")), "std/src/browser/web/ui.vl:2292:23");
+				__insert_at(row_rows.v, at + offset, __clone(__at(next_rows, offset, "std/src/browser/web/ui.vl:2179:42")), "std/src/browser/web/ui.vl:2179:22");
+				__insert_at(row_owners.v, at + offset, __clone(__at(next_owners, offset, "std/src/browser/web/ui.vl:2180:44")), "std/src/browser/web/ui.vl:2180:24");
+				__insert_at(row_cells.v, at + offset, __clone(__at(next_cells, offset, "std/src/browser/web/ui.vl:2181:43")), "std/src/browser/web/ui.vl:2181:23");
+				__insert_at(row_keys.v, at + offset, __clone(__at(next_keys, offset, "std/src/browser/web/ui.vl:2182:42")), "std/src/browser/web/ui.vl:2182:22");
+				__insert_at(row_items.v, at + offset, __clone(__at(list, offset, "std/src/browser/web/ui.vl:2183:43")), "std/src/browser/web/ui.vl:2183:23");
 				offset = offset + 1;
 			}
 			$et = undefined;
@@ -2802,42 +2802,42 @@ function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 		while (taken < removed) {
 			let $eu = null;
 			if (at + 1 < row_rows.v.length) {
-				$eu = __at(row_rows.v, at + 1, "std/src/browser/web/ui.vl:2307:5")[0];
+				$eu = __at(row_rows.v, at + 1, "std/src/browser/web/ui.vl:2198:5")[0];
 			} else {
 				$eu = region[0];
 			}
 			const end = __clone($eu);
-			const going = __clone(__at(row_rows.v, at, "std/src/browser/web/ui.vl:2311:16"));
-			const owner = __clone(__at(row_owners.v, at, "std/src/browser/web/ui.vl:2312:16"));
+			const going = __clone(__at(row_rows.v, at, "std/src/browser/web/ui.vl:2202:16"));
+			const owner = __clone(__at(row_owners.v, at, "std/src/browser/web/ui.vl:2203:16"));
 			retire_row(region, going, end, () => {
 				return dispose2(owner);
 			});
-			__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2314:32");
-			__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2315:36");
-			__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2316:34");
-			__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2317:32");
-			__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2318:34");
+			__remove_at(row_rows.v, at, "std/src/browser/web/ui.vl:2205:32");
+			__remove_at(row_owners.v, at, "std/src/browser/web/ui.vl:2206:36");
+			__remove_at(row_cells.v, at, "std/src/browser/web/ui.vl:2207:34");
+			__remove_at(row_keys.v, at, "std/src/browser/web/ui.vl:2208:32");
+			__remove_at(row_items.v, at, "std/src/browser/web/ui.vl:2209:34");
 			taken = taken + 1;
 		}
 		let $ev = null;
 		if (at < row_rows.v.length) {
-			$ev = __at(row_rows.v, at, "std/src/browser/web/ui.vl:2322:4")[0];
+			$ev = __at(row_rows.v, at, "std/src/browser/web/ui.vl:2213:4")[0];
 		} else {
 			$ev = region[0];
 		}
 		const reference = __clone($ev);
 		let offset = 0;
 		for (const item of inserted) {
-			const cell = new4(__clone(item), "std/src/browser/web/ui.vl:2328:42");
+			const cell = new4(__clone(item), "std/src/browser/web/ui.vl:2219:42");
 			const owner2 = new3();
 			const row = run_with_owner(owner2, ($dw) => {
 				return open_row_before(region, render(cell, $dw), reference, $cz, $dw);
 			});
-			__insert_at(row_rows.v, at + offset, row, "std/src/browser/web/ui.vl:2331:21");
-			__insert_at(row_owners.v, at + offset, owner2, "std/src/browser/web/ui.vl:2332:23");
-			__insert_at(row_cells.v, at + offset, __clone(cell), "std/src/browser/web/ui.vl:2333:22");
-			__insert_at(row_keys.v, at + offset, key(item), "std/src/browser/web/ui.vl:2334:21");
-			__insert_at(row_items.v, at + offset, __clone(item), "std/src/browser/web/ui.vl:2335:22");
+			__insert_at(row_rows.v, at + offset, row, "std/src/browser/web/ui.vl:2222:21");
+			__insert_at(row_owners.v, at + offset, owner2, "std/src/browser/web/ui.vl:2223:23");
+			__insert_at(row_cells.v, at + offset, __clone(cell), "std/src/browser/web/ui.vl:2224:22");
+			__insert_at(row_keys.v, at + offset, key(item), "std/src/browser/web/ui.vl:2225:21");
+			__insert_at(row_items.v, at + offset, __clone(item), "std/src/browser/web/ui.vl:2226:22");
 			offset = offset + 1;
 		}
 		return;
@@ -2877,8 +2877,8 @@ function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 					let $eH = null;
 					if ($eG[0] === 0) {
 						const cell = $eG[1];
-						__at_put(row_items.v, at2, __clone(value), "std/src/browser/web/ui.vl:2369:9");
-						set3(cell, value, $cz, "std/src/browser/web/ui.vl:2370:14");
+						__at_put(row_items.v, at2, __clone(value), "std/src/browser/web/ui.vl:2260:9");
+						set3(cell, value, $cz, "std/src/browser/web/ui.vl:2261:14");
 						$eH = undefined;
 					} else {
 						$eH = undefined;
@@ -2899,12 +2899,12 @@ function place_each_by2(parent, source, key, render, $cz, $cA, caller) {
 				let lifted = [  ];
 				let taken = 0;
 				while (taken < count) {
-					lifted.push(__remove_at(moved, from, "std/src/browser/web/ui.vl:2388:25"));
+					lifted.push(__remove_at(moved, from, "std/src/browser/web/ui.vl:2279:25"));
 					taken = taken + 1;
 				}
 				let offset = 0;
 				for (const item of lifted) {
-					__insert_at(moved, to + offset, __clone(item), "std/src/browser/web/ui.vl:2393:13");
+					__insert_at(moved, to + offset, __clone(item), "std/src/browser/web/ui.vl:2284:13");
 					offset = offset + 1;
 				}
 				reconcile_pass(moved);

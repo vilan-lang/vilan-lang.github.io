@@ -506,12 +506,12 @@ function renew(self) {
 	const $bp = self[0].v[3];
 	let $bq = null;
 	if ($bp[0] === 0) {
-		const nursery2 = __clone($bp[1]);
+		const nursery2 = $bp[1];
 		let $br = null;
 		if (has_spawned(nursery2)) {
 			$br = [ 1 ];
 		} else {
-			$br = [ 0, nursery2 ];
+			$br = [ 0, __clone(nursery2) ];
 		}
 		$bq = $br;
 	} else {
@@ -1046,7 +1046,7 @@ function on(self, event, handler) {
 function is_leaving(node) {
 	let at = 0;
 	while (at < leaving_runs.v.length) {
-		if (__dom_run_holds(__at(leaving_runs.v, at, "std/src/browser/web/ui.vl:975:16"), node)) {
+		if (__dom_run_holds(__at(leaving_runs.v, at, "std/src/browser/web/ui.vl:976:16"), node)) {
 			return true;
 		}
 		at = at + 1;
@@ -1071,7 +1071,7 @@ function mount_target(id) {
 	const element = document.getElementById(id);
 	if (__is_null(element)) {
 		(() => {
-			throw __panic("mount: no element with id \'" + id + "\'", "std/src/browser/web/ui.vl:2553:3");
+			throw __panic("mount: no element with id \'" + id + "\'", "std/src/browser/web/ui.vl:2444:3");
 		})();
 	}
 	return element;
