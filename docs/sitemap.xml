@@ -18,6 +18,7 @@
   <url><loc>https://vilan-lang.org/docs/guide/tracked-reads.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/ui.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/guide/walkthrough.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/guide/wisdom.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/spec/appendix.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/spec/const.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/spec/contexts.html</loc></url>
@@ -36,6 +37,7 @@
   <url><loc>https://vilan-lang.org/docs/std/debug.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/dev.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/encoding.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/std/gfx.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/image.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/lens.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/loaded.html</loc></url>
@@ -54,6 +56,8 @@
   <url><loc>https://vilan-lang.org/docs/std/time.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/traits.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/std/transient.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/std/ui.html</loc></url>
+  <url><loc>https://vilan-lang.org/docs/std/window.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/tour/async.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/tour/coming-from-javascript.html</loc></url>
   <url><loc>https://vilan-lang.org/docs/tour/control-flow.html</loc></url>

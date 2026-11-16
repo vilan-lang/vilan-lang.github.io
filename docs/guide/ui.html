@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0fb020b6.js";
+            window.path_to_searchindex_js = "../searchindex-f177e307.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-acf8d271.js"></script>
+        <script src="../toc-5929b7c1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -417,7 +417,8 @@ an <code>if</code> or <code>match</code> inside a hole runs once at build, exact
 in a chain; reactive structure is <code>.show</code> in head position and the
 <code>when</code>/<code>swap</code>/<code>each</code> values in holes, with <code>Signal</code> values in slots. The sugar adds no
 semantics: an element means <code>std::web::ui::view</code> whatever the file has
-imported, so element syntax needs no <code>view</code> import of its own (a <code>View</code>
+imported — unless its tag names an <code>[element]</code> function, which makes it
+a <a href="../spec/grammar.html">typed element</a> — so element syntax needs no <code>view</code> import of its own (a <code>View</code>
 you write as a TYPE still needs one, and the editor offers it), and
 everything this guide says about ownership, boundaries, and binding
 types applies unchanged.</p>
@@ -1025,7 +1026,7 @@ framework already puts them there.</li>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-695bf958.js"></script>
+        <script src="../theme/vilan-17fbd3e1.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

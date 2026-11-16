@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0fb020b6.js";
+            window.path_to_searchindex_js = "../searchindex-f177e307.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-acf8d271.js"></script>
+        <script src="../toc-5929b7c1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,7 +175,8 @@
                         <h1 id="process-modules-reference"><a class="header" href="#process-modules-reference">Process modules reference</a></h1>
 <p>The process modules (Node/Deno/Bun builds): <code>std::db</code>, <code>std::http</code>,
 <code>std::fs</code>, <code>std::process</code>, <code>std::rpc::server</code>, <code>std::watch</code> — and
-<code>std::image</code>, which has <a href="image.html">a page of its own</a>. Task-oriented
+<code>std::image</code>, which has <a href="image.html">a page of its own</a>, and the native-only
+<code>std::window</code> (<a href="window.html">its page</a>). Task-oriented
 usage: <a href="../guide/persistence.html">Persistence and the server</a>.</p>
 <h2 id="stddb-sqlite"><a class="header" href="#stddb-sqlite">std::db: SQLite</a></h2>
 <pre><code class="language-vilan fragment">[resource]
@@ -189,27 +190,52 @@ impl Database {
 	fun prepare(self, sql: str): Statement
 	fun migrate(self, migrations: List&lt;Migration&gt;): List&lt;str&gt;  // → the names applied
 }
+trait SqlValue { fun sql_value(self): any }  // what a parameter list holds
+// impls: i8 u8 i16 u16 i32 u32 i53 u53 usize f32 f64, str, bool, Bytes,
+//        Option&lt;T: SqlValue&gt;
+
 impl Statement {
-	fun run(self, parameters: List&lt;any&gt;): i32          // → last insert id
-	fun all(self, parameters: List&lt;any&gt;): List&lt;Row&gt;
-	fun first(self, parameters: List&lt;any&gt;): Option&lt;Row&gt;
+	fun run(self, parameters: List&lt;dyn SqlValue&gt;): i32          // → last insert id
+	fun all(self, parameters: List&lt;dyn SqlValue&gt;): List&lt;Row&gt;
+	fun first(self, parameters: List&lt;dyn SqlValue&gt;): Option&lt;Row&gt;
 }
 impl Row {
-	fun text(self, name: str): str
+	fun text(self, name: str): str          // each typed reader panics on NULL
 	fun integer(self, name: str): i32
 	fun big_integer(self, name: str): i53   // i53-wide INTEGER (epoch millis)
 	fun real(self, name: str): f64
+	fun bytes(self, name: str): Bytes       // a BLOB
+	fun optional_text(self, name: str): Option&lt;str&gt;   // None for NULL
+	fun optional_integer(self, name: str): Option&lt;i32&gt;
+	fun optional_big_integer(self, name: str): Option&lt;i53&gt;
+	fun optional_real(self, name: str): Option&lt;f64&gt;
+	fun optional_bytes(self, name: str): Option&lt;Bytes&gt;
 	fun is_null(self, name: str): bool
 }
 </code></pre>
 <p>Parameters are <code>?</code> placeholders. Synchronous by design (fits the rpc
 dispatch path). <code>desc</code> and other SQL keywords fail as column names.</p>
-<p>A bind list holds numbers, <code>str</code>s, <code>bool</code>s and <code>Option</code>s of them. A <code>bool</code>
-binds as the integer 0 or 1, and an <code>Option</code> as its value or NULL, so a
-nullable column takes the <code>Option</code> directly: <code>.run([title, status_id])</code>
-with <code>status_id: Option&lt;u53&gt;</code>. Anything else (a struct, a list, a tuple,
-another enum) is refused when the statement runs, naming its index in the
-list: <code>std::db: cannot bind the parameter at index 2 of 3: …</code>.</p>
+<p>A parameter list is a <code>List&lt;dyn SqlValue&gt;</code>: a number, a <code>str</code>, a <code>bool</code>
+(bound as the integer 0 or 1), <code>Bytes</code> (a BLOB) or an <code>Option</code> of one (its
+value, or NULL), so a nullable column takes the <code>Option</code> directly:
+<code>.run([title, status_id])</code> with <code>status_id: Option&lt;u53&gt;</code>. A literal’s
+elements become <code>SqlValue</code>s where they are written, so <code>[id, 1.5, "x"]</code>
+needs no annotation. Anything else (a struct, a list, a tuple, another
+enum) is a compile error at the element, naming its type and the types that
+implement <code>SqlValue</code>. A list built with a concrete element type does not
+become one as a whole: build it as a <code>List&lt;dyn SqlValue&gt;</code> (<code>push</code> each
+value), or rebuild it with <code>values.map(|value| value)</code> under that
+annotation. <code>SqlValue</code> is open, so a program’s own wrapper type can bind
+as the value it holds:</p>
+<pre><code class="language-vilan fragment">struct UserId { uuid: str }
+impl UserId with SqlValue {
+	fun sql_value(self): any { self.uuid.sql_value() }
+}
+</code></pre>
+<p>The typed readers read a value: a NULL column (or a name the row does not
+have) stops the program with a panic that names the column, the reader and
+its <code>optional_</code> twin (<code>std::db: column 'edited_at' is NULL (or not in the row) and …</code>), reported at the reader’s call. A nullable column
+reads through the <code>optional_</code> twin, which answers <code>None</code> for NULL.</p>
 <p><code>Database</code> is a <strong><code>resource</code></strong>: it has a single owner and <em>moves</em> rather than
 copies, and it closes its <code>node:sqlite</code> handle at its owner’s last use. A
 <code>let db = Database::open(..)</code> local closes after the last statement that uses
@@ -248,6 +274,9 @@ impl ServerBuilder {
 	fun host(own self, address: str): ServerBuilder   // bind one address; default: every interface
 	fun max_body_bytes(own self, limit: usize): ServerBuilder   // the body cap; default 1 MiB
 	fun max_body_bytes_under(own self, mount: str, limit: usize): ServerBuilder   // a mount's cap
+	fun headers_timeout(own self, timeout: Duration): ServerBuilder      // default 60 s
+	fun request_timeout(own self, timeout: Duration): ServerBuilder      // default 300 s
+	fun keep_alive_timeout(own self, timeout: Duration): ServerBuilder   // default 5 s
 	fun on_request(own self, handler: async |Request| Response): ServerBuilder
 	fun on_upgrade(own self, handler: |NodeRequest, NodeSocket, Bytes| void): ServerBuilder
 	fun on_start(own self, callback: |Server| void): ServerBuilder
@@ -271,6 +300,7 @@ impl Request {
 	fun body_stream(self): BodyReader   // the body a piece at a time
 	fun max_body_bytes(own self, limit: usize): Request   // this request's cap (a route's)
 	fun header(self, name: str): Option&lt;str&gt;   // a request header, case-insensitive
+	fun peer_address(self): Option&lt;str&gt;        // the connection's remote end; None once it is gone
 }
 impl BodyReader {
 	async fun next(self, size: usize): Option&lt;Bytes&gt;   // at most `size` bytes; None at the end
@@ -326,6 +356,48 @@ app’s own, a dev tool, a test) binds the loopback: <code>.host("127.0.0.1")</c
 stderr — <code>unhandled task error (spawned in an http request handler): panicked at &lt;site&gt;: &lt;message&gt;</code>, the line any unobserved task’s failure
 prints — and the client gets <code>500 Internal Server Error</code> with <code>Connection: close</code> (a response that had already started streaming is cut off instead).
 The server goes on serving the next request, on both backends.</p>
+<p><strong>Connections are kept, and every part of a request has a deadline.</strong> A
+connection serves one request after another, as node’s does: an HTTP/1.1
+client keeps it unless it says <code>Connection: close</code> (or the response does —
+<code>set_header("Connection", "close")</code> is honoured), and an HTTP/1.0 client is
+answered and closed. Each answer says which, in node’s own fields
+(<code>Connection: keep-alive</code> with <code>Keep-Alive: timeout=5</code>, or <code>Connection: close</code>); a streaming response goes out <code>Transfer-Encoding: chunked</code>.
+Requests a client pipelines are answered in the order they were sent, and a
+request that upgrades (a WebSocket) leaves the connection’s request loop —
+the socket is the upgrade handler’s from then on. The status line’s reason
+phrase is node’s on both backends (<code>413 Payload Too Large</code>, <code>422 Unprocessable Entity</code>, <code>unknown</code> for a code node does not name).</p>
+<p>Three deadlines bound a connection, node’s by name and by default, and set
+the same way on both backends:</p>
+<ul>
+<li><code>headers_timeout</code> (60 s): the request’s head must arrive within it,
+counted from its first byte — from the accept, for a new connection, so a
+client that connects and sends nothing is bounded too;</li>
+<li><code>request_timeout</code> (300 s): the whole request, its body included. Only the
+request is timed: a response that takes long (a stream, a long poll) is not;</li>
+<li><code>keep_alive_timeout</code> (5 s): how long a connection may sit idle between
+requests. It is announced in whole seconds, and the server closes one
+second past it, as node does, so a client acting on the announcement does
+not race the close.</li>
+</ul>
+<p>A request that misses its head or request deadline is answered <code>408 Request Timeout</code> (unless its response has started), a handler waiting on its body
+ends at the read as it does for a client that hangs up, and the connection
+closes. A zero <code>Duration</code> switches a deadline off. Node checks for expired
+requests on an interval (<code>std::http</code> sets it to half the nearest deadline,
+or node’s own 30 s, whichever is sooner), so a deadline fires up to that
+much late on node; the native server checks continuously.</p>
+<pre><code class="language-vilan norun">import std::http::{ Response, Server };
+import std::time::Duration;
+
+fun main() {
+	Server::builder()
+		.port(8080)
+		.headers_timeout(Duration::seconds(10))
+		.keep_alive_timeout(Duration::seconds(30))
+		.on_request(|request| Response::builder().body("ok").build())
+		.build()
+		.start();
+}
+</code></pre>
 <p><strong>Request bodies: capped, and read when the handler asks.</strong> A handler runs
 on the request’s head. The body stays on the wire until the handler calls
 <code>bytes()</code> or <code>body()</code>; the first call reads it whole, and a later one
@@ -334,7 +406,7 @@ a <code>401</code> for a request that is not signed in, a refusal off a declared
 <code>Content-Length</code>, a quota — never receives an upload it is about to turn
 away.</p>
 <p>Every read is capped: <strong>1 MiB</strong> unless the app says otherwise. A body over
-the cap is answered <code>413 Content Too Large</code> and its connection closed
+the cap is answered <code>413 Payload Too Large</code> and its connection closed
 without the rest being read — a declared <code>Content-Length</code> over the cap
 before a byte of the body arrives, a chunked body (no declared length) at
 the chunk that crosses it, counted as it arrives. The handler ends at the
@@ -378,11 +450,9 @@ fun main() {
 <code>Request::bytes</code>, so it is under the cap too — a service mounted at
 <code>/rpc/</code> takes a cap of its own with <code>.max_body_bytes_under("/rpc/", n)</code>.</p>
 <p>A body the handler never read is not left in the way of the connection:
-one within the cap is drained (node discards it and keeps the connection
-alive for the client’s next request; the native server, which closes every
-connection, discards it before the close so the client reads its response
-rather than a reset), and one over the cap, or chunked, is not — the
-response says <code>Connection: close</code> and the connection is closed.</p>
+one within the cap is drained — discarded, and the connection kept for the
+client’s next request, on both backends — and one over the cap, or chunked,
+is not: the response says <code>Connection: close</code> and the connection is closed.</p>
 <p><strong>Reading a body as a stream.</strong> <code>bytes()</code> holds the whole body in memory
 at once, which is the right shape for a form or a JSON call and the wrong
 one for an upload. <code>body_stream()</code> reads it a piece at a time instead:
@@ -528,6 +598,16 @@ but nothing is split for you either; <code>set-cookie</code> is node’s one unj
 header and arrives comma-joined without the space, which a cookie value’s
 own commas make unsafe to split, so repeated <code>set-cookie</code> is not readable
 through this accessor.</p>
+<p><code>Request::peer_address</code> is the address of the connection’s remote end, as
+node’s <code>request.socket.remoteAddress</code> spells it: <code>Some("127.0.0.1")</code> from a
+server bound to <code>127.0.0.1</code>, <code>Some("::1")</code> for a client of <code>::1</code>, and an IPv4
+client of a dual-stack listener (bound to <code>::</code>, node’s default with no
+<code>host</code>) mapped as <code>Some("::ffff:127.0.0.1")</code>. It is <code>None</code> once the socket is
+gone — a client that hung up. Behind a proxy it is the <strong>proxy’s</strong> address; an
+app that trusts a forwarding header (<code>X-Forwarded-For</code>) reads that with
+<code>header</code> instead. Both backends bind a server with no <code>host</code> to <code>::</code>
+dual-stack, so an IPv4 client of one reads <code>Some("::ffff:127.0.0.1")</code> on
+either — see <a href="../guide/native.html">the native guide</a>.</p>
 <p><code>ServerBuilder::port(0)</code> asks the OS for a free port instead of guessing
 one, and the <code>Server</code> handed to <code>on_start</code> carries the port it actually
 bound, so <code>port()</code> and <code>url()</code> are right in either case:</p>
@@ -1535,7 +1615,7 @@ fun main() {
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-695bf958.js"></script>
+        <script src="../theme/vilan-17fbd3e1.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

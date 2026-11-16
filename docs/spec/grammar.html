@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0fb020b6.js";
+            window.path_to_searchindex_js = "../searchindex-f177e307.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-acf8d271.js"></script>
+        <script src="../toc-5929b7c1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -250,7 +250,7 @@ export      = { lead-attribute }   (* the item's own prefix, in THE order below 
 lead-attribute = deprecated-label | internal-label | hint-label | platform-attr
                | resource-attr | extern-attr | "[" "must_use" "]"
                | "[" "track_caller" "]" | "[" "rpc" "]"
-               | "[" "trait_only" "]" | derive-attr | service-attr
+               | "[" "trait_only" "]" | "[" "element" "]" | derive-attr | service-attr
                | client-service-attr | macro-attr ;
 </code></pre>
 <p><code>import</code> brings names from another module into scope; <code>use</code> brings names
@@ -287,7 +287,8 @@ macro attribute (among themselves, as written);</li>
 <li>the checks — <code>[must_use]</code>, then <code>[track_caller]</code>, then <code>[rpc]</code>, then
 <code>[trait_only]</code>;</li>
 <li>the fence — <code>[platform(..)]</code>;</li>
-<li>the class — <code>[resource]</code>.</li>
+<li>the class — <code>[resource]</code> on a type, <code>[element]</code> on a function (no
+declaration takes both).</li>
 </ol>
 <p>So <code>[derive(Wire)]</code> ⏎ <code>export struct Handle { … }</code>, <code>[platform("browser")]</code>
 ⏎ <code>export impl …</code>, <code>[deprecated("use g")]</code> ⏎ <code>[must_use]</code> ⏎ <code>export async fun f()</code>, <code>[deprecated("use b")] export import a::b as c;</code>, and <code>async macro fun</code> (B524). A head written in another order is read exactly as if written
@@ -362,6 +363,7 @@ together and leave a trailing separator where it was.</p>
            [ extern-attr ] [ "[" "must_use" "]" ] [ "[" "track_caller" "]" ]
            [ "[" "rpc" "]" ] [ "[" "trait_only" "]" ]
            [ "[" "platform" "(" STRING { "," STRING } [ "," ] ")" "]" ]
+           [ "[" "element" "]" ]             (* a free, bodied, parameterless fun: §3.6's typed element *)
            [ "async" ] [ "external" ]
            "fun" MEMBER [ generic-params ]   (* IDENT unless an impl/trait member *)
            "(" [ parameter { "," parameter } [ "," ] ] ")"
@@ -667,8 +669,8 @@ macro-block      = "macro" block ;
 macro receives their text, not their values (§10). The built-in
 attribute names (<code>derive</code>, <code>service</code>, <code>client_service</code>, <code>extern</code>,
 <code>must_use</code>, <code>track_caller</code>, <code>rpc</code>, <code>trait_only</code>, <code>doc</code>, <code>expose</code>,
-<code>platform</code>, <code>deprecated</code>, <code>internal</code>, <code>resource</code>, <code>hint</code>, <code>reactive</code>) are not
-available as user macro-attribute names.</p>
+<code>platform</code>, <code>deprecated</code>, <code>internal</code>, <code>resource</code>, <code>hint</code>, <code>reactive</code>,
+<code>element</code>) are not available as user macro-attribute names.</p>
 <p><code>[reactive(..)]</code> is a field’s store knobs, read by <code>[derive(Storable)]</code>
 (<code>std::reactive::store</code>) and by nothing else: <code>coarse</code> makes the field one slot,
 compared whole, and <code>name = "x"</code> generates its projection as <code>x()</code>. The
@@ -944,6 +946,68 @@ same call written after the element, <code>&lt;div /&gt;.len()</code>, is an ord
 postfix call on a <code>View</code> value and takes any method, whatever it
 returns. A name no method answers keeps the ordinary member error. The
 lowering of an admitted link is unchanged.</p>
+<p>A <strong>typed element</strong> is one whose tag NAMES, in the scope of the element,
+a function declared <code>[element]</code> (native-ui.md §12). The tag resolves as a
+name written there would: a local binding shadows an outer function, an
+<code>import</code> (renamed or not) brings one in, and a binding declared later in
+the block is not yet in scope. Such an element lowers to a method chain on
+what that function returns, and is checked as that chain:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Source</th><th>Lowers to</th></tr>
+</thead>
+<tbody>
+<tr><td><code>&lt;row …&gt;</code></td><td><code>row()</code></td></tr>
+<tr><td>an attribute <code>gap(8)</code></td><td><code>.gap(8)</code>, in source order</td></tr>
+<tr><td>a bare attribute <code>wrap</code></td><td><code>.wrap()</code></td></tr>
+<tr><td>a child — a nested element, a quoted string, a <code>{…}</code> hole</td><td><code>.child(value)</code>, in source order</td></tr>
+</tbody>
+</table>
+</div>
+<pre><code class="language-vilan">struct Row {
+	log: str,
+}
+
+impl Row {
+	fun gap(self, value: i32): Row {
+		Row { log = self.log + i" gap={value}" }
+	}
+	fun wrap(self): Row {
+		Row { log = self.log + " wrap" }
+	}
+	fun child(self, value: str): Row {
+		Row { log = self.log + " " + value }
+	}
+}
+
+[element]
+fun row(): Row {
+	Row { log = "row" }
+}
+
+fun main() {
+	let name = "b";
+	print(&lt;row wrap gap(8)&gt;"a"{name}&lt;/row&gt;.log);   // row wrap gap=8 a b
+}
+</code></pre>
+<p>Nothing is string-keyed: an unknown attribute is an unknown method of the
+builder, reported at the attribute’s name, and a value of the wrong type
+is that method’s ordinary mismatch, at the value. An <code>[element]</code> function
+is a free, bodied <code>fun</code> with no parameters — the tag calls it with none —
+and the attribute is refused anywhere else (a method, an <code>external fun</code>,
+a function with parameters, any other declaration). The web element’s own
+forms have no meaning on a typed tag and are each refused by name: a
+dotted <code>.method(…)</code> link, an <code>on:event(…)</code> item and a hyphenated
+attribute. Every other tag — including one whose name is a function
+WITHOUT the marker (<code>fun button()</code> leaves <code>&lt;button&gt;</code> alone) — is the web
+element above, unchanged. <code>vilan fmt</code> sorts no typed element’s head: its
+items are calls, in the order written. The formatter reads one file, so it
+keeps the written order for every tag that may name an <code>[element]</code>
+function — one the file declares so, a name an <code>import</code> binds, and every
+tag under a glob import. The tag has no type-argument form, so a generic
+<code>[element]</code> function’s type parameters are inferred exactly as the
+hand-written chain’s would be.</p>
 <p>A <strong>fragment</strong> <code>&lt;&gt;…&lt;/&gt;</code> is the nameless head, and it is a different
 lowering rather than an element with no tag: it desugars to a LIST
 LITERAL of its children, so its type is <code>List&lt;View&gt;</code>. <code>&lt;&gt;</code> and <code>&lt;/&gt;</code>
@@ -1293,7 +1357,7 @@ catch-all.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-695bf958.js"></script>
+        <script src="../theme/vilan-17fbd3e1.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

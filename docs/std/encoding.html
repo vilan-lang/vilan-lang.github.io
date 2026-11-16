@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0fb020b6.js";
+            window.path_to_searchindex_js = "../searchindex-f177e307.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-acf8d271.js"></script>
+        <script src="../toc-5929b7c1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -321,6 +321,7 @@ value.kind(): JsonKind
 value.is_null(): bool
 value.field(name: str): JsonValue
 value.has_field(name: str): bool
+value.keys(): List&lt;str&gt;  // an object's keys; empty for anything else
 value.elements(): List&lt;JsonValue&gt;
 value.tag(): str         // an enum discriminator, NOT a type — see below
 </code></pre>
@@ -336,6 +337,12 @@ for a key the object does not have is the host’s <code>undefined</code>, whose
 none of the six — <code>==</code> answers <code>false</code> for it, as it always did, and an
 exhaustive <code>match</code> over <code>JsonKind</code> panics naming it. <code>has_field</code> is the
 check that keeps you out of that case.</p>
+<p><code>keys()</code> is how an object whose keys are DATA is walked — a map sent as
+JSON, a set of named settings — where <code>field</code> needs the name up front. The
+keys come in JavaScript’s order, <code>Object.keys</code>’s: integer-like keys
+ascending first, then the rest as they were written. Anything that is not
+an object answers the empty list, so an array, a string, <code>null</code> and a
+missing field all have no keys rather than their indices or a throw.</p>
 <p><code>tag()</code> answers a different question and is not a spelling of <code>kind()</code>: it
 reads an <strong>externally-tagged enum’s discriminator</strong> — the string itself for a
 bare <code>"Variant"</code>, the single key for a <code>{"Variant":…}</code> object. That is what a
@@ -349,6 +356,10 @@ fun main() {
 	print(value.kind() == JsonKind::Object);        // true
 	print(value.field("name").kind().value());      // string
 	print(value.has_field("age"));                  // false
+	for key in value.keys() {
+		print(key);                                 // name, then tags
+	}
+	print(value.field("tags").keys().len());        // 0 — an array has no keys
 
 	for element in value.field("tags").elements() {
 		if element.kind() == JsonKind::String {
@@ -568,9 +579,36 @@ the whole is how a caller gets a value that was never sent. Each is a sticky
 failure naming what was expected and what was found, exactly as the JSON
 reader’s are.</p>
 <h2 id="base64-stdbase64"><a class="header" href="#base64-stdbase64">Base64 (<code>std::base64</code>)</a></h2>
-<p>URL-safe alphabet, no padding (the JWT flavor):</p>
+<p>Two flavours. The URL-safe alphabet with no padding (the JWT flavor), and
+the standard alphabet, padded — what a file upload, a data URL or an email
+part carries, and what node’s <code>Buffer.toString("base64")</code> writes:</p>
 <pre><code class="language-vilan fragment">fun encode_url(bytes: Bytes): str
 fun decode_url(text: str): Option&lt;Bytes&gt;
+fun encode(bytes: Bytes): str             // standard alphabet (`+`, `/`), padded with `=`
+fun decode(text: str): Option&lt;Bytes&gt;      // strict: `None` unless `encode` could have written it
+</code></pre>
+<p><code>decode</code> is strict where node’s <code>Buffer.from(text, "base64")</code> is not: node
+skips characters it does not know, accepts the URL-safe pair, and decodes a
+truncated or unpadded tail into fewer bytes. Here the length must be a
+multiple of four, every character must be in the standard alphabet — no
+<code>-</code>/<code>_</code>, no whitespace or line breaks — the <code>=</code> padding may only end the
+text, and the bits it leaves over must be zero. So every text <code>decode</code>
+accepts is the one encoding of its bytes, and a mangled upload is <code>None</code>
+instead of different data. Strip line breaks first if a source wraps its
+base64 (MIME does, at 76 columns).</p>
+<pre><code class="language-vilan">import std::base64::{ decode, encode };
+import std::bytes::{ decode_utf8, encode_utf8 };
+
+fun main() {
+	let encoded = encode(encode_utf8("héllo"));
+	print(encoded);                               // aMOpbGxv
+	match decode(encoded) {
+		Some(let bytes) =&gt; print(decode_utf8(bytes)), // héllo
+		None =&gt; print("not base64"),
+	}
+	print(decode("aMOpbGxv\n").is_none());          // true — a line break is refused
+	print(decode("aMOpbGx").is_none());            // true — the length is not a multiple of four
+}
 </code></pre>
 <h2 id="percent-encoding-stdurl"><a class="header" href="#percent-encoding-stdurl">Percent-encoding (<code>std::url</code>)</a></h2>
 <p>The pair for building and reading URLs, on every platform (node, the browser,
@@ -650,7 +688,7 @@ every piece.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-695bf958.js"></script>
+        <script src="../theme/vilan-17fbd3e1.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0fb020b6.js";
+            window.path_to_searchindex_js = "../searchindex-f177e307.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-acf8d271.js"></script>
+        <script src="../toc-5929b7c1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -251,6 +251,13 @@ function that (transitively) reaches a strict read is strict; a
 function whose only demands are safe reads is safe. One function may be
 strict for one context and safe for another. Each context threads
 independently.</p>
+<p>What a function <em>carries</em> is decided per function, by its entries: it
+carries the bare <code>T</code> only when every path into it passes through a
+<code>run</code>. A generic whose dispatch can select a strict read for one
+instance and a safe read for another, called both under a <code>run</code> and
+without one, carries <code>Option&lt;T&gt;</code>: its safe reads answer <code>None</code> where the
+caller had no <code>run</code>, and its strict reads, which coverage proved are
+reached only under one, read the <code>Some</code>.</p>
 <h2 id="83-coverage"><a class="header" href="#83-coverage">8.3 Coverage</a></h2>
 <p>For every strict read, the compiler checks, over the whole call graph,
 that the reading code cannot be entered without the value. It is a
@@ -569,7 +576,7 @@ language rules; they are specified by their reference pages.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-695bf958.js"></script>
+        <script src="../theme/vilan-17fbd3e1.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 

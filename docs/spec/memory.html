@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0fb020b6.js";
+            window.path_to_searchindex_js = "../searchindex-f177e307.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-acf8d271.js"></script>
+        <script src="../toc-5929b7c1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -277,7 +277,10 @@ The same holds for a place handed to a parameter declared <code>own</code> — a
 way of saying the callee keeps it, which is how <code>List::push</code> is written — and
 for a place a body <strong>returns</strong> that it does not own, which is every place
 reached through a <strong>loaned</strong> parameter: bare, <code>&amp;</code>, and <code>&amp;mut</code> alike (§6.8’s R3
-calls all three loans). What decides is the <em>return</em>, not the place: a
+calls all three loans), and every place reached through a <strong>module-level</strong>
+binding — a <code>let</code>, a <code>mut</code> or a <code>lazy let</code>, the payload a module-level
+<code>Shared</code> cell’s <code>read()</code> hands back, a field or element of one — which outlives
+every call just as the caller’s storage does, so <code>fun all(): List&lt;i32&gt; { registry }</code> and <code>fun current(): List&lt;i32&gt; { cell.read() }</code> copy. What decides is the <em>return</em>, not the place: a
 signature that hands back a value hands back a value, so <code>fun make(&amp;self): (i32, i32) { self.pair }</code> copies, while a signature that hands back a <strong>view</strong>
 (<code>fun slot(&amp;mut self): &amp;mut (i32, i32) borrows self</code>) is rule 3’s sanctioned
 projection and keeps naming the receiver’s storage. Together these are what
@@ -311,6 +314,20 @@ a move out of a loan and is refused, with or without the <code>&amp;</code>.</p>
 	mut rows = [xs];        // a copy: the element is not xs's storage
 	rows[0].push(9);
 	print(xs.len());        // 2
+}
+</code></pre>
+<pre><code class="language-vilan">import std::shared::Shared;
+
+let cell: Shared&lt;List&lt;i32&gt;&gt; = Shared::new([1, 2]);
+
+fun current(): List&lt;i32&gt; {
+	cell.read()             // a copy: the module-level cell outlives the call
+}
+
+fun main() {
+	mut mine = current();
+	mine.push(9);
+	print(cell.read().len());   // 2
 }
 </code></pre>
 <p>A consequence worth naming: the list a pure <code>List</code> method returns never shares
@@ -588,6 +605,15 @@ such an argument (and one whose callee writes the cell); the native backend
 copies every read out of the cell’s borrow where it stands. This is not
 §6.9’s view of a captured binding, which is taken after the call’s other
 arguments.</p>
+<p>A <strong>pattern</strong> over a read is a capture like any other (§6.1): <code>if cell.read() is Some(let xs)</code> binds what the cell held when the pattern matched, and a write
+to the cell inside the arm (in place, through a call, or by a rebind) never
+reaches <code>xs</code>. Rule 2 lets an implementation skip the copy when nothing could
+tell: when no write of the cell can run while the <code>match</code> or <code>if</code> that binds
+the captures runs, nothing in it suspends, and every capture is only viewed
+(immutable, handed out of no value seam, captured by no closure), both backends
+read the payload in place (the native one under the cell’s shared borrow)
+instead of copying it out whole. A guard clause’s capture (<code>cell.read() is Some(let xs) else ret;</code>) outlives its statement, so it is copied unless no
+write mutates the cell in place anywhere.</p>
 <h2 id="68-resources-and-destruction"><a class="header" href="#68-resources-and-destruction">6.8 Resources and destruction</a></h2>
 <p><em>(Design: <a href="https://github.com/vilan-lang/proposals/blob/main/proposal/destruction.md">destruction</a>.)</em> Rule 1 copies values, and a
 droppable value cannot survive copying: a copied file handle double-closes,
@@ -1337,7 +1363,7 @@ first demand, at most once, memoize.</p>
         <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../theme/vilan-695bf958.js"></script>
+        <script src="../theme/vilan-17fbd3e1.js"></script>
         <script src="../theme/picker-309f18e2.js"></script>
 
 
