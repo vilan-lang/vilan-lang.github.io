@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f177e307.js";
+            window.path_to_searchindex_js = "../searchindex-459d217c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-5929b7c1.js"></script>
@@ -429,7 +429,10 @@ assignment, so <code>let v = if c { &amp;a } else { &amp;b }</code> initializes 
 binding, and as an argument or operand — <code>same(2, &amp;2)</code> at a by-value
 parameter is refused with “drop the <code>&amp;</code>”) is a compile error, never
 a silent coercion to the pointee (so the <code>(base, key)</code> representation of a
-scalar view can’t leak); write <code>*v</code> to copy the value out. A method call’s
+scalar view can’t leak); write <code>*v</code> to copy the value out. A <em>scalar</em> here
+is any type whose runtime value is an immutable host value — the numbers,
+<code>str</code>, <code>bool</code> and a backed enum (types §5.3) — and a <code>match</code> or an <code>is</code> over
+a scalar view tests the value it reads, as over <code>*v</code>. A method call’s
 RECEIVER is not a value position: <code>v.method(..)</code> reads through the view to
 the referent place, a scalar’s as an aggregate’s (<code>n.abs()</code> with <code>n: &amp;i32</code>,
 <code>s.len()</code> with <code>s: &amp;str</code>). A closure’s view

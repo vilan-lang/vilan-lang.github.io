@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f177e307.js";
+            window.path_to_searchindex_js = "../searchindex-459d217c.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-5929b7c1.js"></script>
@@ -317,6 +317,11 @@ rule.</p>
 number holds exactly and the variant <em>is</em> that number: a discriminant
 past the bound would cross a host boundary as a different value than the
 source wrote. The continuation stops at the same edge.</p>
+<p>Because it is a bare host value, a backed enum is a <strong>scalar</strong> to a view,
+exactly like <code>bool</code>, <code>str</code> and the numbers (memory §6.3): <code>&amp;mut level</code>
+names the place, a callee’s <code>slot = Level::High</code> writes it, and the view
+is read as a value only through <code>*</code> (<code>*slot == Level::High</code>). A tagged enum
+is an aggregate to a view, as a struct is.</p>
 <h3 id="backed-enum-conversions"><a class="header" href="#backed-enum-conversions">Backed-enum conversions</a></h3>
 <p>Every backed enum gets two members, synthesized by the compiler — no
 <code>derive</code> marker, because writing <code>= "start"</code> is already the opt-in:</p>
